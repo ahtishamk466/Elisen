@@ -63,6 +63,28 @@ neither option alone provided. Budgeting level (Activity vs Work Package)
 remains unresolved with the client; UI shows budget per activity with WP
 roll-up so either final answer fits without rework.
 
+## 2026-08-07 — Storybook is reference-only; real screens live in the app
+**Context:** The Add Project flow was built and shown to the user entirely
+as Storybook stories (`ProjectsListPage.stories.tsx`,
+`AddProjectDrawer.stories.tsx`). The user corrected this: Storybook is their
+design-system reference for us to consult (colors, type, spacing, which
+component to reuse) — not where product screens live or get reviewed.
+**Choice:** Deleted the two feature story files. Wired real routing
+(`react-router-dom`) in `src/app/App.tsx` so `/projects` renders
+`ProjectsListPage` as an actual page at a URL. Moved `index.html` from
+`public/` to the project root, where Vite requires it (it was silently
+being served unprocessed from `public/` before — a second bug this
+surfaced). Dev server runs on port 5180 (5173 collides with the unrelated
+`/frontend` TPMS project also in this workspace).
+**Rationale:** `/components/ui` and `/components/patterns` keep their
+stories — those genuinely are the design-system inventory Storybook exists
+for (CLAUDE.md rule 8b). `/components/features/*` compose those into actual
+product screens and must be reviewed as running application pages, not
+as isolated stories.
+**New dependency:** `react-router-dom@7` — the standard client-side router
+for a React SPA with multiple named screens; needed as soon as there is
+more than one real page to navigate between.
+
 ## 2026-08-07 — Semantic tokens added for danger hover/active
 **Context:** Button's danger variant used `bg-red-700` / `bg-red-800` for its
 hover and active states. The red ramp exists in tokens.css but was never
