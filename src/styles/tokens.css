@@ -1,0 +1,167 @@
+/* Design tokens — source: /docs/DESIGN.md. Do not edit values without updating DESIGN.md. */
+:root {
+  /* Color — Primary ramp */
+  --color-primary-25: #EDF5FF;
+  --color-primary-50: #CCDDF1;
+  --color-primary-100: #AAC6E7;
+  --color-primary-200: #7FA9DB;
+  --color-primary-300: #558DCF;
+  --color-primary-400: #2B71C3;
+  --color-primary-500: #0054B7;
+  --color-primary-600: #004698;
+  --color-primary-700: #00387A;
+  --color-primary-800: #002A5C;
+  --color-primary-900: #001C3D;
+  --color-primary-950: #001125;
+
+  /* Color — Neutral ramp */
+  --color-neutral-25: #FFFFFF;
+  --color-neutral-50: #F8FAFC;
+  --color-neutral-100: #F1F5F9;
+  --color-neutral-200: #E2E8F0;
+  --color-neutral-300: #CBD5E1;
+  --color-neutral-400: #94A3B8;
+  --color-neutral-500: #64748B;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1E293B;
+  --color-neutral-900: #0F172A;
+  --color-neutral-950: #020617;
+
+  /* Color — Red (danger) */
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-200: #fecaca;
+  --color-red-300: #fca5a5;
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-red-800: #991b1b;
+  --color-red-900: #7f1d1d;
+  --color-red-950: #450a0a;
+
+  /* Color — Green (success) */
+  --color-green-50: #ebfef4;
+  --color-green-100: #d0fbe3;
+  --color-green-200: #a4f6cd;
+  --color-green-300: #6aebb3;
+  --color-green-400: #2ed994;
+  --color-green-500: #0abf7c;
+  --color-green-600: #009b65;
+  --color-green-700: #007c54;
+  --color-green-800: #036243;
+  --color-green-900: #035139;
+  --color-green-950: #012d21;
+
+  /* Color — Yellow (warning) */
+  --color-yellow-50: #fffdea;
+  --color-yellow-100: #fff7c5;
+  --color-yellow-200: #fff085;
+  --color-yellow-300: #ffe246;
+  --color-yellow-400: #ffd01b;
+  --color-yellow-500: #fbac00;
+  --color-yellow-600: #e28500;
+  --color-yellow-700: #bb5d02;
+  --color-yellow-800: #984708;
+  --color-yellow-900: #7c3a0b;
+  --color-yellow-950: #481d00;
+
+  /* Color — Semantic */
+  --color-accent: var(--color-primary-500);
+  --color-accent-hover: var(--color-primary-600);
+  --color-accent-subtle: var(--color-primary-25);
+
+  --color-text-primary: var(--color-neutral-950);
+  --color-text-secondary: var(--color-neutral-700);
+  --color-text-muted: var(--color-neutral-500);
+  --color-text-inverse: var(--color-neutral-25);
+
+  --color-border-default: var(--color-neutral-200);
+  --color-border-strong: var(--color-neutral-400);
+
+  --color-success: var(--color-green-600);
+  --color-success-subtle: var(--color-green-50);
+  --color-warning: var(--color-yellow-600);
+  --color-warning-subtle: var(--color-yellow-50);
+  --color-danger: var(--color-red-600);
+  --color-danger-hover: var(--color-red-700);
+  --color-danger-active: var(--color-red-800);
+  --color-danger-subtle: var(--color-red-50);
+  --color-info: var(--color-primary-500);
+  --color-info-subtle: var(--color-primary-25);
+
+  /* Typography */
+  --font-family-sans: "Rethink Sans", Inter, system-ui, sans-serif;
+
+  --font-size-xs: 12px;
+  --line-height-xs: 16px;
+  --font-size-sm: 14px;
+  --line-height-sm: 20px;
+  --font-size-base: 16px;
+  --line-height-base: 24px;
+  --font-size-lg: 18px;
+  --line-height-lg: 26px;
+  --font-size-xl: 20px;
+  --line-height-xl: 28px;
+  --font-size-2xl: 24px;
+  --line-height-2xl: 32px;
+  --font-size-3xl: 32px;
+  --line-height-3xl: 40px;
+  --font-size-4xl: 40px;
+  --line-height-4xl: 48px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Spacing (4px grid) */
+  --spacing-xxss: 2px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-base: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+  --spacing-3xl: 32px;
+  --spacing-4xl: 40px;
+  --spacing-5xl: 48px;
+  --spacing-6xl: 60px;
+
+  /* Shape — 4px is the maximum corner radius anywhere in the UI.
+     radius-full is for circular controls only (radio, toggle, step markers). */
+  --radius-sm: 4px;
+  --radius-full: 9999px;
+
+  --border-width-default: 1px;
+  --border-width-strong: 2px;
+
+  /* Depth */
+  --shadow-sm: 0 1px 2px 0 rgba(2, 6, 23, 0.06);
+  --shadow-md: 0 4px 8px 0 rgba(2, 6, 23, 0.08);
+  --shadow-lg: 0 8px 16px 0 rgba(2, 6, 23, 0.10);
+  --shadow-button: 3px 3px 4px 0 rgba(255, 255, 255, 0.20);
+  --shadow-textfield: 0 1px 2px 0 var(--color-neutral-50);
+
+  /* Motion */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Breakpoints (reference only — enforced via Tailwind config, not usable in media queries as vars) */
+  --breakpoint-mobile: 375px;
+  --breakpoint-tablet: 768px;
+  --breakpoint-laptop: 1280px;
+  --breakpoint-desktop: 1440px;
+
+  /* Z-index */
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-modal: 1200;
+  --z-toast: 1300;
+  --z-tooltip: 1400;
+}
