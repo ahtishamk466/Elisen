@@ -13,12 +13,20 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
 
 export function Drawer({ open, onClose, title, children, footer }: DrawerProps) {
   const panelRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
+  // Focus the panel once, when the drawer transitions to open — not on every
+  // render. Depending on `onClose` here re-stole focus from form fields on
+  // every keystroke, because callers pass a new function each render.
+  useEffect(() => {
+    if (open) panelRef.current?.focus()
+  }, [open])
 
   useEffect(() => {
     if (!open) return
-    panelRef.current?.focus()
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
       if (e.key === 'Tab' && panelRef.current) {
         const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE))
         if (focusable.length === 0) return
@@ -35,7 +43,7 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 

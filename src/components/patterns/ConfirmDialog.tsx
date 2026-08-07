@@ -24,16 +24,23 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   const ref = useRef<HTMLDivElement>(null)
+  const onCancelRef = useRef(onCancel)
+  onCancelRef.current = onCancel
+
+  // Same fix as Drawer: depend only on `open`, not on a callback prop that's
+  // a new function identity every render — see docs/DECISIONS.md.
+  useEffect(() => {
+    if (open) ref.current?.focus()
+  }, [open])
 
   useEffect(() => {
     if (!open) return
-    ref.current?.focus()
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onCancel()
+      if (e.key === 'Escape') onCancelRef.current()
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [open, onCancel])
+  }, [open])
 
   if (!open) return null
 

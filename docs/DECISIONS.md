@@ -10,6 +10,33 @@ Entries follow this format:
 **Rationale:** ...
 ```
 
+## 2026-08-07 — Fixed: typing in Drawer/ConfirmDialog form fields lost focus every keystroke
+**Context:** User reported the Add Project drawer wouldn't let them type
+continuously — only the first character of a field registered. Reproduced:
+the field's value updated correctly in state, but focus jumped away to the
+dialog panel after every single keystroke.
+**Root cause:** `Drawer` and `ConfirmDialog` each had a
+`useEffect(() => { ...; panelRef.current?.focus() ... }, [open, onClose])`.
+Callers (`AddProjectDrawer`) pass an inline arrow function as `onClose`
+(`requestClose`), which is a new function identity on every render. Every
+keystroke → state update → re-render → new `onClose` reference → effect's
+dependency array changed → effect re-ran → `.focus()` called again →
+focus ripped away from the input back to the dialog panel, one character
+after another.
+**Choice:** Split into two effects. The one that calls `.focus()` now
+depends only on `[open]`, so it fires once per open/close transition, not
+per render. The keydown listener (Escape/Tab-trap) still needs the latest
+callback but no longer needs to be in the dependency array — it reads the
+callback through a ref (`onCloseRef.current`) that's updated every render
+without retriggering the effect.
+**Rationale:** This is a correctness bug, not a style choice — any overlay
+component that both (a) focuses itself on open and (b) accepts a callback
+prop is vulnerable to this exact pattern if the caller doesn't memoize the
+callback. Fixing it in the two shared patterns (Drawer, ConfirmDialog)
+protects every current and future screen that uses them, rather than
+asking every caller to remember to wrap their close handler in
+`useCallback`.
+
 ## 2026-08-07 — Design tokens sourced from Figma style guide export
 **Context:** User provided a full style guide export (color ramps, type scale,
 spacing, shadows, button/input/checkbox/toggle/radio specs) as screenshots.
