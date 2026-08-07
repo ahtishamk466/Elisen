@@ -33,6 +33,8 @@ Updated as components are added or changed.
 | Pagination | first / middle / last page | `patterns/Pagination.tsx` | Paged table navigation |
 | AccordionSection | open / closed, optional meta | `patterns/AccordionSection.tsx` | Collapsible grouped content (checklist phases) |
 | AppShell | active nav item / child | `patterns/AppShell.tsx` | Sidebar + header page frame |
+| ActionsMenu | n items, default / danger tone | `patterns/ActionsMenu.tsx` | Row-level "⋮" menu, portaled to avoid table clipping |
+| useDropdown | — (hook) | `patterns/useDropdown.ts` | Shared open/position/outside-click logic for portaled menus |
 
 ## /components/features/projects — feature-specific
 
@@ -45,3 +47,5 @@ Updated as components are added or changed.
 | StepAdditionalDetails | — | `features/projects/StepAdditionalDetails.tsx` | Step 2 — dates, aircraft, proposal, notes |
 | StepTccaSetup | — | `features/projects/StepTccaSetup.tsx` | Step 3 — TCCA project + checklist applicability |
 | useAddProjectForm | — | `features/projects/useAddProjectForm.ts` | Form state, per-step validation, dynamic steps |
+| ProjectDetailPage | Overview built; other tabs pending | `features/projects/ProjectDetailPage.tsx` | Full project detail screen at `/projects/:id` |
+| ExportMenu | HTML/CSV/Text live; PDF/Excel pending a library | `features/projects/ExportMenu.tsx` | Export the current filtered rows |

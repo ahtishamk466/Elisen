@@ -1,23 +1,9 @@
-import { MoreVertical } from 'lucide-react'
-import { Badge, type BadgeTone } from '@/components/ui/Badge'
+import { Eye, Pencil, Copy, Trash2 } from 'lucide-react'
+import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
-import type { ProjectListRow, ProjectPriority, ProjectStatus, ProjectType } from '@/types/project'
-
-const PRIORITY_TONE: Record<ProjectPriority, BadgeTone> = {
-  '1-fire': 'danger', '2-high': 'warning', '3-med': 'info', '4-low': 'neutral',
-}
-const PRIORITY_LABEL: Record<ProjectPriority, string> = {
-  '1-fire': '1 - Fire', '2-high': '2 - High', '3-med': '3 - Med', '4-low': '4 - Low',
-}
-const STATUS_TONE: Record<ProjectStatus, BadgeTone> = {
-  quoted: 'info', active: 'success', 'on-hold': 'warning', complete: 'neutral', cancelled: 'danger',
-}
-const STATUS_LABEL: Record<ProjectStatus, string> = {
-  quoted: 'Quoted', active: 'Active', 'on-hold': 'On hold', complete: 'Complete', cancelled: 'Cancelled',
-}
-const TYPE_LABEL: Record<ProjectType, string> = {
-  internal: 'Internal', 'preferred-duncan': 'Duncan', 'preferred-topaces': 'Top Aces', external: 'External',
-}
+import { ActionsMenu } from '@/components/patterns/ActionsMenu'
+import { PRIORITY_LABEL, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
+import type { ProjectListRow } from '@/types/project'
 
 const HEADERS = ['No. / Type', 'Project', 'Company Name', 'Contact Name', 'Person Res.', 'Hours (Act/Bud)', 'Priority', 'Status', 'Actions']
 
@@ -26,10 +12,13 @@ export interface ProjectsTableProps {
   loading?: boolean
   /** Hours are budget data — hidden below manager per docs/SECURITY.md rule 8. */
   canSeeFinancials?: boolean
-  onOpen?: (row: ProjectListRow) => void
+  onView?: (row: ProjectListRow) => void
+  onEdit?: (row: ProjectListRow) => void
+  onDuplicate?: (row: ProjectListRow) => void
+  onDelete?: (row: ProjectListRow) => void
 }
 
-export function ProjectsTable({ rows, loading = false, canSeeFinancials = true, onOpen }: ProjectsTableProps) {
+export function ProjectsTable({ rows, loading = false, canSeeFinancials = true, onView, onEdit, onDuplicate, onDelete }: ProjectsTableProps) {
   const headers = canSeeFinancials ? HEADERS : HEADERS.filter((h) => h !== 'Hours (Act/Bud)')
 
   return (
@@ -63,7 +52,7 @@ export function ProjectsTable({ rows, loading = false, canSeeFinancials = true, 
                   <td className="px-lg py-base align-top">
                     <button
                       type="button"
-                      onClick={() => onOpen?.(row)}
+                      onClick={() => onView?.(row)}
                       className="text-left text-sm text-text-primary underline-offset-2 hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
                     >
                       {row.title}
@@ -81,20 +70,22 @@ export function ProjectsTable({ rows, loading = false, canSeeFinancials = true, 
                       {row.actualHours > row.budgetHours && <span className="ml-xs text-xs text-danger">over</span>}
                     </td>
                   )}
-                  <td className="px-lg py-base align-top">
-                    <Badge tone={PRIORITY_TONE[row.priority]}>{PRIORITY_LABEL[row.priority]}</Badge>
+                  <td className="px-lg py-base align-top text-sm text-text-primary">
+                    {PRIORITY_LABEL[row.priority]}
                   </td>
                   <td className="px-lg py-base align-top">
-                    <Badge tone={STATUS_TONE[row.status]} appearance="outline" dot>{STATUS_LABEL[row.status]}</Badge>
+                    <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>
                   </td>
                   <td className="px-lg py-base align-top">
-                    <button
-                      type="button"
-                      aria-label={`Actions for project ${row.number}-${row.subNumber}`}
-                      className="rounded-sm p-xs text-text-secondary transition-colors duration-fast hover:bg-neutral-100 hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
-                    >
-                      <MoreVertical size={18} aria-hidden />
-                    </button>
+                    <ActionsMenu
+                      ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
+                      items={[
+                        { label: 'View', icon: <Eye size={16} />, onSelect: () => onView?.(row) },
+                        { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => onEdit?.(row) },
+                        { label: 'Duplicate', icon: <Copy size={16} />, onSelect: () => onDuplicate?.(row) },
+                        { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => onDelete?.(row), tone: 'danger' },
+                      ]}
+                    />
                   </td>
                 </tr>
               ))}

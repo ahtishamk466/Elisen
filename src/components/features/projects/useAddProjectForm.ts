@@ -58,12 +58,12 @@ export const INITIAL: AddProjectValues = {
  * and scope are deliberately optional — projects are created at RFQ stage
  * before either is known.
  */
-export function validateStep(step: number, v: AddProjectValues): Errors {
+export function validateStep(step: number, v: AddProjectValues, isEdit = false): Errors {
   const e: Errors = {}
   if (step === 0) {
     if (!v.number.trim()) e.number = 'Project number is required.'
     else if (!/^\d{4}$/.test(v.number.trim())) e.number = 'Use a 4-digit project number, e.g. 3206.'
-    else if (TAKEN_NUMBERS.includes(v.number.trim()) && v.subNumber === '00')
+    else if (!isEdit && TAKEN_NUMBERS.includes(v.number.trim()) && v.subNumber === '00')
       e.number = `Project ${v.number}-00 already exists. Use a new sub number or a different project number.`
     if (!v.subNumber) e.subNumber = 'Sub number is required.'
     if (!v.type) e.type = 'Type is required.'
@@ -86,8 +86,9 @@ export function validateStep(step: number, v: AddProjectValues): Errors {
   return e
 }
 
-export function useAddProjectForm() {
-  const [values, setValues] = useState<AddProjectValues>(INITIAL)
+export function useAddProjectForm(initialValues?: Partial<AddProjectValues>) {
+  const [base] = useState<AddProjectValues>(() => ({ ...INITIAL, ...initialValues }))
+  const [values, setValues] = useState<AddProjectValues>(base)
   const [errors, setErrors] = useState<Errors>({})
   const [step, setStep] = useState(0)
   const [dirty, setDirty] = useState(false)
@@ -113,11 +114,11 @@ export function useAddProjectForm() {
   const back = useCallback(() => setStep((s) => Math.max(s - 1, 0)), [])
 
   const reset = useCallback(() => {
-    setValues(INITIAL)
+    setValues(base)
     setErrors({})
     setStep(0)
     setDirty(false)
-  }, [])
+  }, [base])
 
   const isLastStep = step === steps.length - 1
 

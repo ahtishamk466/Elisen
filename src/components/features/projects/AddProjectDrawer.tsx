@@ -13,12 +13,23 @@ import { StepTccaSetup } from './StepTccaSetup'
 export interface AddProjectDrawerProps {
   open: boolean
   onClose: () => void
-  onCreated?: (values: AddProjectValues) => void
+  onSubmit?: (values: AddProjectValues) => void
   canSeeFinancials?: boolean
+  /** Edit mode prefills the form and changes copy; pass the row's known fields. */
+  mode?: 'create' | 'edit'
+  initialValues?: Partial<AddProjectValues>
 }
 
-export function AddProjectDrawer({ open, onClose, onCreated, canSeeFinancials = true }: AddProjectDrawerProps) {
-  const form = useAddProjectForm()
+export function AddProjectDrawer({
+  open,
+  onClose,
+  onSubmit,
+  canSeeFinancials = true,
+  mode = 'create',
+  initialValues,
+}: AddProjectDrawerProps) {
+  const isEdit = mode === 'edit'
+  const form = useAddProjectForm(initialValues)
   const { values, errors, setErrors, step, steps, isLastStep, dirty, setField, next, back, reset } = form
   const [confirmClose, setConfirmClose] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -33,26 +44,29 @@ export function AddProjectDrawer({ open, onClose, onCreated, canSeeFinancials = 
     onClose()
   }
 
-  const handleCreate = async () => {
-    const e = validateStep(step, values)
+  const handleSubmit = async () => {
+    const e = validateStep(step, values, isEdit)
     setErrors(e)
     if (Object.keys(e).length > 0) return
     setSubmitting(true)
     // Persistence is wired when the API lands; the flow is complete without it.
     await new Promise((r) => setTimeout(r, 600))
     setSubmitting(false)
-    onCreated?.(values)
+    onSubmit?.(values)
     handleClose()
   }
 
   const stepProps = { values, errors, setField, canSeeFinancials }
+  const title = isEdit && initialValues?.number
+    ? `Edit project ${initialValues.number}-${initialValues.subNumber}`
+    : 'Add new project'
 
   return (
     <>
       <Drawer
         open={open}
         onClose={requestClose}
-        title="Add new project"
+        title={title}
         footer={
           <>
             {step > 0 ? (
@@ -67,8 +81,8 @@ export function AddProjectDrawer({ open, onClose, onCreated, canSeeFinancials = 
                 Cancel
               </Button>
               {isLastStep ? (
-                <Button onClick={handleCreate} loading={submitting}>
-                  Create Project
+                <Button onClick={handleSubmit} loading={submitting}>
+                  {isEdit ? 'Save Changes' : 'Create Project'}
                 </Button>
               ) : (
                 <Button onClick={next}>Continue</Button>
@@ -92,7 +106,7 @@ export function AddProjectDrawer({ open, onClose, onCreated, canSeeFinancials = 
 
       <ConfirmDialog
         open={confirmClose}
-        title="Discard this project?"
+        title={isEdit ? 'Discard these changes?' : 'Discard this project?'}
         description="Your changes haven't been saved. Closing now will discard everything you've entered."
         confirmLabel="Discard"
         cancelLabel="Keep editing"

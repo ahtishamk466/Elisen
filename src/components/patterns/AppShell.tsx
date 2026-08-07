@@ -27,7 +27,7 @@ export interface AppShellProps {
 export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List', title, children }: AppShellProps) {
   return (
     <div className="flex min-h-screen bg-neutral-50">
-      <aside className="hidden w-56 shrink-0 bg-primary-900 laptop:block">
+      <aside className="hidden w-56 shrink-0 bg-primary-700 laptop:block">
         <div className="px-lg py-xl">
           <img src="/logo-elisen.svg" alt="Elisen" width={600} height={104} className="h-6 w-auto brightness-0 invert" />
         </div>
@@ -41,7 +41,7 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
                     href="#"
                     aria-current={active ? 'page' : undefined}
                     className={`flex items-center gap-sm rounded-sm px-base py-sm text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-25
-                      ${active ? 'bg-primary-800 font-semibold text-text-inverse' : 'text-primary-100 hover:bg-primary-800 hover:text-text-inverse'}`}
+                      ${active ? 'bg-primary-600 font-semibold text-text-inverse' : 'text-primary-100 hover:bg-primary-600 hover:text-text-inverse'}`}
                   >
                     <span aria-hidden>{item.icon}</span>
                     <span className="flex-1">{item.label}</span>

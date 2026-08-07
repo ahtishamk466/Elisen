@@ -13,7 +13,7 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
-    'border border-primary-900 bg-primary-900 text-text-inverse hover:bg-primary-800 hover:border-primary-800 active:bg-primary-950 active:border-primary-950 disabled:bg-neutral-100 disabled:border-neutral-200 disabled:text-text-muted',
+    'border border-primary-700 bg-primary-700 text-text-inverse hover:bg-primary-800 hover:border-primary-800 active:bg-primary-900 active:border-primary-900 disabled:bg-neutral-100 disabled:border-neutral-200 disabled:text-text-muted',
   secondary:
     'border border-border-strong bg-transparent text-text-primary hover:border-text-primary active:bg-accent-subtle disabled:border-neutral-200 disabled:text-neutral-300',
   tertiary:

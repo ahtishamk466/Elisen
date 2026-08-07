@@ -1,30 +1,55 @@
 import { useMemo, useState } from 'react'
-import { Plus, Search, SlidersHorizontal, ChevronDown, FolderOpen } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Search, SlidersHorizontal, FolderOpen } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { StatCard } from '@/components/patterns/StatCard'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { Pagination } from '@/components/patterns/Pagination'
+import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { ProjectsTable } from './ProjectsTable'
 import { AddProjectDrawer } from './AddProjectDrawer'
-import { PROJECT_ROWS } from '@/lib/projectFixtures'
+import { ExportMenu } from './ExportMenu'
+import { useProjectsStore } from '@/stores/projectsStore'
+import { getNextProjectNumber } from '@/lib/projectFixtures'
 import type { ProjectListRow } from '@/types/project'
+import type { AddProjectValues } from './useAddProjectForm'
+
+/** Maps the subset of AddProjectValues fields that exist on a list row. */
+function rowToInitialValues(row: ProjectListRow): Partial<AddProjectValues> {
+  return {
+    number: row.number,
+    subNumber: row.subNumber,
+    type: row.type,
+    priority: row.priority,
+    company: row.companyName,
+    contact: row.contactName === '—' ? '' : row.contactName,
+    personResponsible: row.personResponsible,
+  }
+}
 
 export type PageState = 'ready' | 'loading' | 'empty' | 'error'
 
 export interface ProjectsListPageProps {
   state?: PageState
-  rows?: ProjectListRow[]
   canSeeFinancials?: boolean
 }
 
-export function ProjectsListPage({ state = 'ready', rows = PROJECT_ROWS, canSeeFinancials = true }: ProjectsListPageProps) {
+export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: ProjectsListPageProps) {
+  const navigate = useNavigate()
+  const rows = useProjectsStore((s) => s.rows)
+  const addRow = useProjectsStore((s) => s.addRow)
+  const updateRow = useProjectsStore((s) => s.updateRow)
+  const removeRow = useProjectsStore((s) => s.removeRow)
+
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [editingRow, setEditingRow] = useState<ProjectListRow | null>(null)
+  const [deletingRow, setDeletingRow] = useState<ProjectListRow | null>(null)
 
   const filtered = useMemo(() => {
     if (!query.trim()) return rows
@@ -44,6 +69,19 @@ export function ProjectsListPage({ state = 'ready', rows = PROJECT_ROWS, canSeeF
     { value: rows.filter((r) => r.status === 'complete').length, label: 'Completed projects' },
     { value: rows.filter((r) => r.priority === '1-fire').length, label: 'Priority 1 — Fire' },
   ]
+
+  const handleDuplicate = (row: ProjectListRow) => {
+    const number = getNextProjectNumber(rows)
+    addRow({ ...row, id: crypto.randomUUID(), number, subNumber: '00', title: `${row.title} (Copy)`, actualHours: 0, status: 'quoted' })
+    setToast(`Duplicated as project ${number}-00.`)
+  }
+
+  const handleDeleteConfirmed = () => {
+    if (!deletingRow) return
+    removeRow(deletingRow.id)
+    setToast(`Project ${deletingRow.number}-${deletingRow.subNumber} deleted.`)
+    setDeletingRow(null)
+  }
 
   return (
     <AppShell title="Projects — List">
@@ -71,7 +109,10 @@ export function ProjectsListPage({ state = 'ready', rows = PROJECT_ROWS, canSeeF
             <Button variant="secondary" leadingIcon={<SlidersHorizontal size={16} />} aria-label="Filter projects">
               Filter
             </Button>
-            <Button variant="secondary" trailingIcon={<ChevronDown size={16} />}>Export</Button>
+            <ExportMenu
+              rows={filtered}
+              onUnavailableFormat={(format) => setToast(`${format} export isn't wired up yet — HTML, CSV and Text are ready now.`)}
+            />
           </div>
           <span className="hidden tablet:block tablet:flex-1" />
           <Button leadingIcon={<Plus size={16} />} onClick={() => setDrawerOpen(true)}>
@@ -104,7 +145,15 @@ export function ProjectsListPage({ state = 'ready', rows = PROJECT_ROWS, canSeeF
           </div>
         ) : (
           <>
-            <ProjectsTable rows={filtered} loading={loading} canSeeFinancials={canSeeFinancials} />
+            <ProjectsTable
+              rows={filtered}
+              loading={loading}
+              canSeeFinancials={canSeeFinancials}
+              onView={(row) => navigate(`/projects/${row.id}`)}
+              onEdit={setEditingRow}
+              onDuplicate={handleDuplicate}
+              onDelete={setDeletingRow}
+            />
             {!loading && (
               <Pagination
                 page={page}
@@ -121,13 +170,50 @@ export function ProjectsListPage({ state = 'ready', rows = PROJECT_ROWS, canSeeF
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         canSeeFinancials={canSeeFinancials}
-        onCreated={(v) =>
+        onSubmit={(v) =>
           setToast(
             v.tccaRequired === 'yes'
               ? `Project ${v.number}-${v.subNumber} created, with TCCA project ${v.tccaNumber} linked.`
               : `Project ${v.number}-${v.subNumber} created.`,
           )
         }
+      />
+
+      {editingRow && (
+        <AddProjectDrawer
+          key={editingRow.id}
+          open
+          mode="edit"
+          initialValues={rowToInitialValues(editingRow)}
+          onClose={() => setEditingRow(null)}
+          canSeeFinancials={canSeeFinancials}
+          onSubmit={(v) => {
+            updateRow(editingRow.id, {
+              number: v.number,
+              subNumber: v.subNumber,
+              type: v.type as ProjectListRow['type'],
+              priority: v.priority as ProjectListRow['priority'],
+              companyName: v.company,
+              contactName: v.contact || '—',
+              personResponsible: v.personResponsible,
+            })
+            setToast(`Project ${v.number}-${v.subNumber} updated.`)
+          }}
+        />
+      )}
+
+      <ConfirmDialog
+        open={!!deletingRow}
+        title="Delete this project?"
+        description={
+          deletingRow
+            ? `"${deletingRow.title}" (${deletingRow.number}-${deletingRow.subNumber}) will be permanently removed. This cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete project"
+        tone="danger"
+        onConfirm={handleDeleteConfirmed}
+        onCancel={() => setDeletingRow(null)}
       />
     </AppShell>
   )

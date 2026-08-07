@@ -10,6 +10,39 @@ Entries follow this format:
 **Rationale:** ...
 ```
 
+## 2026-08-07 — Radius reverted from 4px-max to 8px standard
+**Context:** Earlier the same day, the user set an explicit rule: 4px maximum
+corner radius everywhere, based on a button reference screenshot, and I
+removed the `radius-md`/`radius-lg` tokens entirely to enforce it. Later the
+same day, the user asked for buttons/cards/tables to use 8px "so it looks
+smooth" — a direct reversal of that rule.
+**Choice:** Bumped the single `--radius-sm` token from 4px to 8px (same
+mechanism as before — one token, no per-component overrides), so every
+rectangular surface moved together and stayed consistent. Did not silently
+apply this; flagged the contradiction with the earlier rule before making
+the change.
+**Rationale:** The user is the design authority and can revise their own
+prior instruction — CLAUDE.md rule 11 requires flagging the conflict, not
+picking a side, so I surfaced it and proceeded on their explicit new
+instruction rather than treating the old rule as immutable.
+
+## 2026-08-07 — Primary CTA/sidebar tone moved from 900 to 700
+**Context:** User felt the primary navy (buttons, sidebar, active pagination)
+was too dark, and pointed at Primary-700 (`#00387A`) from the token ramp in
+Storybook as the reference.
+**Choice:** Replaced base `primary-900` usage with `primary-700` in the real
+app components only — `Button` (primary variant), `Checkbox` (checked
+state), `Pagination` (active page), `AppShell` (sidebar background).
+Button's hover/active states shifted down one step each (700→800→900) to
+preserve the darken-on-interaction progression. AppShell's active/hover nav
+item moved from 800 to 600, since a highlight needs to read lighter than
+its dark sidebar background — 800 would have been darker than the new 700
+background and reversed that relationship.
+**Rationale:** The `/styles/*.stories.tsx` foundation specimens (Buttons,
+FormControls) were deliberately left untouched — those document the
+client's originally-approved style guide reference, not derived output, so
+they shouldn't drift just because a real-component color choice changed.
+
 ## 2026-08-07 — Fixed: typing in Drawer/ConfirmDialog form fields lost focus every keystroke
 **Context:** User reported the Add Project drawer wouldn't let them type
 continuously — only the first character of a field registered. Reproduced:

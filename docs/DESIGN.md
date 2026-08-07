@@ -123,17 +123,17 @@ Base unit: 4px grid.
 
 ### Shape & Depth
 
-Radius — **4px is the maximum corner radius anywhere in the UI** (set
-2026-08-07 from the button reference; larger radii read as consumer SaaS,
-which is an explicit anti-reference).
+Radius — **8px is the standard corner radius for rectangular surfaces**
+(revised 2026-08-07; superseded an earlier 4px-max rule from the same day
+— see docs/DECISIONS.md for both entries).
 
-`radius-sm: 4px` — every rectangular surface: buttons, inputs, selects,
+`radius-sm: 8px` — every rectangular surface: buttons, inputs, selects,
 textareas, cards, sections, dialogs, badges, table containers.
 `radius-full: 9999px` — circular controls only: radio, toggle track/thumb,
 step markers, status dots.
 
-There are deliberately no `md` / `lg` radius tokens; the scale cannot
-express a larger corner.
+There are deliberately no `md` / `lg` radius tokens; the scale expresses
+one rectangular radius plus full-round.
 
 Shadows (from source spec):
 - `shadow-button`: `3px 3px 4px 0 rgba(255,255,255,0.20)`

@@ -53,3 +53,9 @@ export const PEOPLE = ['Sofia Reyes', 'Lloyd Pedvis', 'Remi Rocheleau', 'Kelly O
 /** Numbers already used — drives the duplicate-number validation. */
 export const TAKEN_NUMBERS = ['3200', '3201', '3202', '3203', '3204', '3205']
 export const NEXT_AVAILABLE_NUMBER = '3206'
+
+/** Next unused 4-digit project number, given the current row set. */
+export function getNextProjectNumber(rows: ProjectListRow[]): string {
+  const max = rows.reduce((m, r) => Math.max(m, Number(r.number) || 0), Number(NEXT_AVAILABLE_NUMBER) - 1)
+  return String(max + 1)
+}

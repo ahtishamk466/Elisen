@@ -129,9 +129,11 @@
   --spacing-5xl: 48px;
   --spacing-6xl: 60px;
 
-  /* Shape — 4px is the maximum corner radius anywhere in the UI.
-     radius-full is for circular controls only (radio, toggle, step markers). */
-  --radius-sm: 4px;
+  /* Shape — 8px is the standard corner radius for rectangular surfaces
+     (buttons, cards, tables, inputs, dialogs). Superseded 4px on 2026-08-07 —
+     see docs/DECISIONS.md. radius-full is for circular controls only
+     (radio, toggle, step markers). */
+  --radius-sm: 8px;
   --radius-full: 9999px;
 
   --border-width-default: 1px;

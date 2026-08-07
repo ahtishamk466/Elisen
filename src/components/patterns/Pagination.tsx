@@ -29,7 +29,7 @@ export function Pagination({ page, pageCount, summary, onChange }: PaginationPro
             onClick={() => onChange(p)}
             aria-current={p === page ? 'page' : undefined}
             className={`h-9 w-9 rounded-sm text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
-              ${p === page ? 'bg-primary-900 font-semibold text-text-inverse' : 'border border-border-default text-text-primary hover:bg-neutral-50'}`}
+              ${p === page ? 'bg-primary-700 font-semibold text-text-inverse' : 'border border-border-default text-text-primary hover:bg-neutral-50'}`}
           >
             {p}
           </button>
