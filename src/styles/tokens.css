@@ -134,6 +134,9 @@
      see docs/DECISIONS.md. radius-full is for circular controls only
      (radio, toggle, step markers). */
   --radius-sm: 8px;
+  /* Compact controls only (16px checkboxes etc.) — 8px on a 16px box reads
+     as a circle and becomes indistinguishable from a radio. */
+  --radius-xs: 4px;
   --radius-full: 9999px;
 
   --border-width-default: 1px;

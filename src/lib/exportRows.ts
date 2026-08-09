@@ -14,7 +14,7 @@ const COLUMNS: { header: string; get: (r: ProjectListRow) => string | number }[]
   { header: 'Status', get: (r) => STATUS_LABEL[r.status] },
 ]
 
-function downloadBlob(content: string, filename: string, mime: string) {
+export function downloadBlob(content: string, filename: string, mime: string) {
   const blob = new Blob([content], { type: mime })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')

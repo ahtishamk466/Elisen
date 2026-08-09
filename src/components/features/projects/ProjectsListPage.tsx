@@ -13,6 +13,7 @@ import { ProjectsTable } from './ProjectsTable'
 import { AddProjectDrawer } from './AddProjectDrawer'
 import { ExportMenu } from './ExportMenu'
 import { useProjectsStore } from '@/stores/projectsStore'
+import { useTccaStore } from '@/stores/tccaStore'
 import { getNextProjectNumber } from '@/lib/projectFixtures'
 import type { ProjectListRow } from '@/types/project'
 import type { AddProjectValues } from './useAddProjectForm'
@@ -43,6 +44,7 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
   const addRow = useProjectsStore((s) => s.addRow)
   const updateRow = useProjectsStore((s) => s.updateRow)
   const removeRow = useProjectsStore((s) => s.removeRow)
+  const addTcca = useTccaStore((s) => s.addTcca)
 
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
@@ -170,13 +172,43 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         canSeeFinancials={canSeeFinancials}
-        onSubmit={(v) =>
+        onSubmit={(v) => {
+          const projectId = crypto.randomUUID()
+          addRow({
+            id: projectId,
+            number: v.number,
+            subNumber: v.subNumber,
+            type: v.type as ProjectListRow['type'],
+            title: v.description || 'Untitled project',
+            companyName: v.company,
+            companyNumber: '—',
+            contactName: v.contact || '—',
+            personResponsible: v.personResponsible,
+            actualHours: 0,
+            budgetHours: 0,
+            priority: v.priority as ProjectListRow['priority'],
+            status: (v.status as ProjectListRow['status']) || 'quoted',
+          })
+          if (v.tccaRequired === 'yes') {
+            addTcca({
+              id: crypto.randomUUID(),
+              number: v.tccaNumber,
+              description: v.tccaDescription || v.description || `Certification for project ${v.number}-${v.subNumber}`,
+              status: 'in-progress',
+              openedDate: v.openedDate,
+              closedDate: '',
+              nextAction: '',
+              comments: '',
+              projectIds: [projectId],
+              checklist: Object.fromEntries(v.checklist.map((itemId) => [itemId, ''])),
+            })
+          }
           setToast(
             v.tccaRequired === 'yes'
               ? `Project ${v.number}-${v.subNumber} created, with TCCA project ${v.tccaNumber} linked.`
               : `Project ${v.number}-${v.subNumber} created.`,
           )
-        }
+        }}
       />
 
       {editingRow && (

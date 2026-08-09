@@ -129,11 +129,13 @@ Radius — **8px is the standard corner radius for rectangular surfaces**
 
 `radius-sm: 8px` — every rectangular surface: buttons, inputs, selects,
 textareas, cards, sections, dialogs, badges, table containers.
+`radius-xs: 4px` — compact controls only (the 16px checkbox): 8px on a
+16px box reads as a circle and becomes indistinguishable from a radio.
 `radius-full: 9999px` — circular controls only: radio, toggle track/thumb,
 step markers, status dots.
 
 There are deliberately no `md` / `lg` radius tokens; the scale expresses
-one rectangular radius plus full-round.
+one rectangular radius, one compact-control radius, and full-round.
 
 Shadows (from source spec):
 - `shadow-button`: `3px 3px 4px 0 rgba(255,255,255,0.20)`

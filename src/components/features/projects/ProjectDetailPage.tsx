@@ -10,6 +10,7 @@ import { useProjectsStore } from '@/stores/projectsStore'
 import { getNextProjectNumber } from '@/lib/projectFixtures'
 import { PRIORITY_LABEL, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
 import { AddProjectDrawer } from './AddProjectDrawer'
+import { ProjectTccaTab } from '@/components/features/tcca/ProjectTccaTab'
 import type { ProjectListRow } from '@/types/project'
 import type { AddProjectValues } from './useAddProjectForm'
 
@@ -87,7 +88,17 @@ export function ProjectDetailPage() {
         <div className="grid gap-lg laptop:grid-cols-[320px_1fr]">
           <aside className="grid content-start gap-lg rounded-sm border border-border-default bg-neutral-25 p-lg">
             <div>
-              <p className="text-2xl font-bold text-text-primary">{row.number}-{row.subNumber}</p>
+              <div className="flex items-center gap-xs">
+                <p className="text-2xl font-bold text-text-primary">{row.number}-{row.subNumber}</p>
+                <ActionsMenu
+                  ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
+                  items={[
+                    { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditing(true) },
+                    { label: 'Duplicate', icon: <Copy size={16} />, onSelect: handleDuplicate },
+                    { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(true), tone: 'danger' },
+                  ]}
+                />
+              </div>
               <p className="mt-xs text-sm text-text-primary">{row.title}</p>
               <p className="mt-xxss text-sm text-text-muted">{row.companyName} · {TYPE_LABEL[row.type]}</p>
             </div>
@@ -123,30 +134,20 @@ export function ProjectDetailPage() {
           </aside>
 
           <div className="grid content-start gap-lg">
-            <div className="flex items-center justify-between gap-lg overflow-x-auto rounded-sm border border-border-default bg-neutral-25 px-lg">
-              <nav className="flex gap-lg" aria-label="Project sections">
-                {TABS.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTab(t)}
-                    aria-current={tab === t ? 'page' : undefined}
-                    className={`whitespace-nowrap border-b-2 py-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
-                      ${tab === t ? 'border-text-primary font-semibold text-text-primary' : 'border-transparent text-text-muted hover:text-text-primary'}`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </nav>
-              <ActionsMenu
-                ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
-                items={[
-                  { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditing(true) },
-                  { label: 'Duplicate', icon: <Copy size={16} />, onSelect: handleDuplicate },
-                  { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(true), tone: 'danger' },
-                ]}
-              />
-            </div>
+            <nav className="flex gap-lg overflow-x-auto rounded-sm border border-border-default bg-neutral-25 px-lg" aria-label="Project sections">
+              {TABS.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTab(t)}
+                  aria-current={tab === t ? 'page' : undefined}
+                  className={`whitespace-nowrap border-b-2 py-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
+                    ${tab === t ? 'border-text-primary font-semibold text-text-primary' : 'border-transparent text-text-muted hover:text-text-primary'}`}
+                >
+                  {t}
+                </button>
+              ))}
+            </nav>
 
             {tab === 'Overview' ? (
               <div className="grid gap-lg">
@@ -168,6 +169,8 @@ export function ProjectDetailPage() {
                   description="Dates, aircraft, proposal, notes and reports will appear here once those sections are built against real project data."
                 />
               </div>
+            ) : tab === 'TCCA' ? (
+              <ProjectTccaTab projectId={row.id} />
             ) : (
               <div className="rounded-sm border border-border-default bg-neutral-25">
                 <EmptyState title={`${tab} isn't built yet`} description="This section is planned for a future pass." />

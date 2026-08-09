@@ -92,6 +92,7 @@ export default {
         '6xl': 'var(--spacing-6xl)',
       },
       borderRadius: {
+        xs: 'var(--radius-xs)',
         sm: 'var(--radius-sm)',
         full: 'var(--radius-full)',
       },

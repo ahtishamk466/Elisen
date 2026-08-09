@@ -43,6 +43,36 @@ FormControls) were deliberately left untouched — those document the
 client's originally-approved style guide reference, not derived output, so
 they shouldn't drift just because a real-component color choice changed.
 
+## 2026-08-07 — TCCA flow: corrected structure from user's Opt-2 reference
+**Context:** User asked for a transcript-grounded review of their TCCA flow
+(Opt-2 screens) before building it.
+**Choice:** (1) Two-level structure — the project's TCCA tab and the
+standalone `/tcca-projects` list both lead to a per-TCCA-project detail
+with its own tabs; sub-modules no longer sit beside the list. (2) "Doc
+Status" and "Deliverable Revision" merged into one Documents tab: one
+linked-revision list carrying the government-interaction fields
+(involvement, sent date, accepted/comments). (3) One standard checklist
+per TCCA project — applicability at creation, completion dates on the
+Checklist tab (unticked = N/A, ticked = in progress, dated = complete).
+(4) Added the missing linked-Elisen-projects panel with two-way
+navigation and multi-link support. (5) Project Completion Checklist
+report generates a real downloadable record; other report cards disabled
+pending Jalal's definitions. (6) GCP stays a deferred placeholder.
+(7) Only deliverable revisions cross into TCCA — drawings never do.
+**Rationale:** Each correction traces to explicit transcript statements
+(one certificate per TCCA project; single tracked doc list; checklist
+tick-then-date logic; informational cross-links; drawings tracked on the
+Elisen side only; GCP and reports unresolved with the client).
+
+## 2026-08-07 — radius-xs (4px) added for compact controls
+**Context:** After radius-sm moved to 8px, the 16px checkbox rendered as a
+circle — indistinguishable from a radio button.
+**Choice:** New `--radius-xs: 4px` used only by compact controls; the 8px
+standard stays for cards, tables, inputs, buttons and dialogs.
+**Rationale:** The 8px decision targeted CTAs/cards/tables; a corner
+radius at half the control's height destroys the square affordance that
+tells users "this is a checkbox."
+
 ## 2026-08-07 — Fixed: typing in Drawer/ConfirmDialog form fields lost focus every keystroke
 **Context:** User reported the Add Project drawer wouldn't let them type
 continuously — only the first character of a field registered. Reproduced:

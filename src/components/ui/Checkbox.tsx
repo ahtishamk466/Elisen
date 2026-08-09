@@ -17,7 +17,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
       {/* White check on white box is invisible until peer-checked paints the box navy */}
       <span
         aria-hidden
-        className="flex h-lg w-lg shrink-0 items-center justify-center rounded-sm border border-border-strong bg-neutral-25 transition-colors duration-fast peer-checked:border-primary-700 peer-checked:bg-primary-700 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-text-primary"
+        className="flex h-lg w-lg shrink-0 items-center justify-center rounded-xs border border-border-strong bg-neutral-25 transition-colors duration-fast peer-checked:border-primary-700 peer-checked:bg-primary-700 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-text-primary"
       >
         <svg viewBox="0 0 10 8" fill="none" className="w-full p-xxss" stroke="white" strokeWidth={2}>
           <path d="M1 4l3 3 5-6" strokeLinecap="round" strokeLinejoin="round" />

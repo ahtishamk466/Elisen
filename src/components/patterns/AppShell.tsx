@@ -1,5 +1,13 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { LayoutDashboard, FolderOpen, Clock, ListChecks, ShieldCheck, Users, Settings, ChevronDown, ChevronRight, User } from 'lucide-react'
+
+/** Children with real routes render as router Links; the rest stay inert
+    until their screens exist. */
+const CHILD_ROUTES: Record<string, string> = {
+  'Projects List': '/projects',
+  'TCCA Projects': '/tcca-projects',
+}
 
 interface NavItem {
   label: string
@@ -53,18 +61,24 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
                   </a>
                   {active && item.children && item.children.length > 0 && (
                     <ul className="grid gap-xxss py-xxss">
-                      {item.children.map((child) => (
-                        <li key={child}>
-                          <a
-                            href="#"
-                            aria-current={child === activeChild ? 'page' : undefined}
-                            className={`block rounded-sm py-sm pl-4xl pr-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-25
-                              ${child === activeChild ? 'text-text-inverse' : 'text-primary-100 hover:text-text-inverse'}`}
-                          >
-                            {child}
-                          </a>
-                        </li>
-                      ))}
+                      {item.children.map((child) => {
+                        const childClass = `block rounded-sm py-sm pl-4xl pr-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-25
+                              ${child === activeChild ? 'text-text-inverse' : 'text-primary-100 hover:text-text-inverse'}`
+                        const route = CHILD_ROUTES[child]
+                        return (
+                          <li key={child}>
+                            {route ? (
+                              <Link to={route} aria-current={child === activeChild ? 'page' : undefined} className={childClass}>
+                                {child}
+                              </Link>
+                            ) : (
+                              <a href="#" aria-current={child === activeChild ? 'page' : undefined} className={childClass}>
+                                {child}
+                              </a>
+                            )}
+                          </li>
+                        )
+                      })}
                     </ul>
                   )}
                 </li>
