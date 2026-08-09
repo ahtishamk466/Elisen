@@ -47,7 +47,11 @@ Updated as components are added or changed.
 | StepAdditionalDetails | — | `features/projects/StepAdditionalDetails.tsx` | Step 2 — dates, aircraft, proposal, notes |
 | StepTccaSetup | — | `features/projects/StepTccaSetup.tsx` | Step 3 — TCCA project + checklist applicability |
 | useAddProjectForm | — | `features/projects/useAddProjectForm.ts` | Form state, per-step validation, dynamic steps |
-| ProjectDetailPage | Overview + TCCA built; other tabs pending | `features/projects/ProjectDetailPage.tsx` | Full project detail screen at `/projects/:id` |
+| ProjectDetailPage | Overview + Work Packages + TCCA built; other tabs pending | `features/projects/ProjectDetailPage.tsx` | Full project detail screen at `/projects/:id` |
+| ProjectWorkPackagesTab | empty / populated; delete guards for logged hours | `features/projects/ProjectWorkPackagesTab.tsx` | WP list with roll-ups inside a project |
+| WorkPackageCard | collapsed / expanded, over-budget indicator | `features/projects/WorkPackageCard.tsx` | One package: status, hours roll-up, activities table |
+| WorkPackageDrawer | create / edit | `features/projects/WorkPackageDrawer.tsx` | Free-text package title + description + status |
+| ActivityDrawer | create (catalog picker + task preview) / edit | `features/projects/ActivityDrawer.tsx` | Assign who does the work + budget hours |
 | ExportMenu | HTML/CSV/Text live; PDF/Excel pending a library | `features/projects/ExportMenu.tsx` | Export the current filtered rows |
 
 ## /components/features/tcca — feature-specific

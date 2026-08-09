@@ -43,6 +43,25 @@ FormControls) were deliberately left untouched — those document the
 client's originally-approved style guide reference, not derived output, so
 they shouldn't drift just because a real-component color choice changed.
 
+## 2026-08-07 — Work Packages tab built per the transcript hierarchy
+**Context:** User asked for the Work Packages flow on Project Detail,
+grounded in the meeting transcripts.
+**Choice:** Project → Work Package → Activity (→ Task) as expandable
+cards: free-text package titles with NO templates or defaults (packages
+differ per aircraft — client-explicit); activities picked from the
+standard catalog (who does the work), each with a responsible person and
+budget hours; actual hours read-only (they belong to Time Entry — "time
+tracking is kept completely separate"); tasks shown as read-only chips
+from the standard activity–task associations. Budget entered per activity
+with a per-package roll-up — the activity-vs-package budgeting level is
+still unresolved with the client, and this shape works for either answer.
+Deleting a package or activity with logged hours is blocked with an
+explanation, since it would orphan time records (the "what happens to the
+old information" concern from the transcript).
+**Rationale:** Every structural choice traces to a transcript statement;
+the demo data reproduces the client's own worked example (Certification
+Plan: Airworthiness drafts at 12h, Delegate checks at 3h).
+
 ## 2026-08-07 — TCCA flow: corrected structure from user's Opt-2 reference
 **Context:** User asked for a transcript-grounded review of their TCCA flow
 (Opt-2 screens) before building it.

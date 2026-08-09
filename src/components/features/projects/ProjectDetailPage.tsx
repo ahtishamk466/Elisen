@@ -11,6 +11,7 @@ import { getNextProjectNumber } from '@/lib/projectFixtures'
 import { PRIORITY_LABEL, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
 import { AddProjectDrawer } from './AddProjectDrawer'
 import { ProjectTccaTab } from '@/components/features/tcca/ProjectTccaTab'
+import { ProjectWorkPackagesTab } from './ProjectWorkPackagesTab'
 import type { ProjectListRow } from '@/types/project'
 import type { AddProjectValues } from './useAddProjectForm'
 
@@ -169,6 +170,8 @@ export function ProjectDetailPage() {
                   description="Dates, aircraft, proposal, notes and reports will appear here once those sections are built against real project data."
                 />
               </div>
+            ) : tab === 'Work Packages' ? (
+              <ProjectWorkPackagesTab projectId={row.id} />
             ) : tab === 'TCCA' ? (
               <ProjectTccaTab projectId={row.id} />
             ) : (
