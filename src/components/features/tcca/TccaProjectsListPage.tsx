@@ -1,0 +1,145 @@
+import { useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Plus, Search, Eye, Pencil, Trash2, ShieldCheck } from 'lucide-react'
+import { AppShell } from '@/components/patterns/AppShell'
+import { EmptyState } from '@/components/patterns/EmptyState'
+import { ActionsMenu } from '@/components/patterns/ActionsMenu'
+import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Badge } from '@/components/ui/Badge'
+import { Skeleton } from '@/components/ui/Skeleton'
+import { Alert } from '@/components/ui/Alert'
+import { useProjectsStore } from '@/stores/projectsStore'
+import { useTccaStore } from '@/stores/tccaStore'
+import { TCCA_STATUS_LABEL, TCCA_STATUS_TONE } from '@/lib/tccaDisplay'
+import { TccaProjectDrawer } from './TccaProjectDrawer'
+import type { TccaProject } from '@/types/tcca'
+
+const HEADERS = ['Number', 'Description', 'Linked Project', 'Opened', 'Status', 'Actions']
+
+export interface TccaProjectsListPageProps {
+  state?: 'ready' | 'loading' | 'error'
+}
+
+export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPageProps) {
+  const navigate = useNavigate()
+  const projects = useProjectsStore((s) => s.rows)
+  const tccaProjects = useTccaStore((s) => s.tccaProjects)
+  const addTcca = useTccaStore((s) => s.addTcca)
+  const updateTcca = useTccaStore((s) => s.updateTcca)
+  const removeTcca = useTccaStore((s) => s.removeTcca)
+
+  const [query, setQuery] = useState('')
+  const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<TccaProject | null>(null)
+  const [deleting, setDeleting] = useState<TccaProject | null>(null)
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return tccaProjects
+    const q = query.toLowerCase()
+    return tccaProjects.filter((t) => `${t.number} ${t.description}`.toLowerCase().includes(q))
+  }, [tccaProjects, query])
+
+  const projectLabel = (t: TccaProject) => {
+    const p = projects.find((x) => x.id === t.projectIds[0])
+    if (!p) return t.projectIds.length ? '—' : 'Baseline / DAO'
+    const extra = t.projectIds.length - 1
+    return `${p.number}-${p.subNumber}${extra > 0 ? ` +${extra}` : ''}`
+  }
+
+  const loading = state === 'loading'
+
+  return (
+    <AppShell activeChild="TCCA Projects" title="TCCA Projects">
+      <div className="grid gap-lg">
+        <div className="grid gap-sm tablet:flex tablet:flex-wrap tablet:items-center">
+          <div className="min-w-0 tablet:flex-1" style={{ maxWidth: 380 }}>
+            <label htmlFor="tcca-search" className="sr-only">Search TCCA projects</label>
+            <Input id="tcca-search" value={query} onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by number or description..." leadingIcon={<Search size={16} />} />
+          </div>
+          <span className="hidden tablet:block tablet:flex-1" />
+          <Button leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>Add TCCA project</Button>
+        </div>
+
+        {state === 'error' ? (
+          <Alert title="We couldn't load TCCA projects">
+            Something went wrong fetching the list. Refresh the page, and if it keeps happening, contact your administrator.
+          </Alert>
+        ) : !loading && filtered.length === 0 ? (
+          <div className="rounded-sm border border-border-default bg-neutral-25">
+            <EmptyState
+              icon={<ShieldCheck size={48} strokeWidth={1.5} />}
+              title={query ? 'No TCCA projects match your search' : 'No TCCA projects yet'}
+              description={query ? 'Try a different number or description.' : 'Open a TCCA project when a customer needs Transport Canada approval for their modification.'}
+              action={query
+                ? <Button variant="secondary" onClick={() => setQuery('')}>Clear search</Button>
+                : <Button leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>Add TCCA project</Button>}
+            />
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
+            <table className="w-full border-collapse text-left" style={{ minWidth: 760 }}>
+              <caption className="sr-only">TCCA projects</caption>
+              <thead>
+                <tr className="border-b border-border-default bg-neutral-50">
+                  {HEADERS.map((h) => (
+                    <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading
+                  ? Array.from({ length: 4 }, (_, i) => (
+                      <tr key={i} className="border-b border-border-default last:border-b-0">
+                        {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                      </tr>
+                    ))
+                  : filtered.map((t) => (
+                      <tr key={t.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
+                        <td className="whitespace-nowrap px-lg py-base">
+                          <Link to={`/tcca-projects/${t.id}`} className="text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline">
+                            {t.number}
+                          </Link>
+                        </td>
+                        <td className="px-lg py-base text-sm text-text-primary">{t.description}</td>
+                        <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{projectLabel(t)}</td>
+                        <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{t.openedDate}</td>
+                        <td className="px-lg py-base"><Badge tone={TCCA_STATUS_TONE[t.status]}>{TCCA_STATUS_LABEL[t.status]}</Badge></td>
+                        <td className="px-lg py-base">
+                          <ActionsMenu
+                            ariaLabel={`Actions for ${t.number}`}
+                            items={[
+                              { label: 'View', icon: <Eye size={16} />, onSelect: () => navigate(`/tcca-projects/${t.id}`) },
+                              { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditing(t) },
+                              { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(t), tone: 'danger' },
+                            ]}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {adding && (
+        <TccaProjectDrawer open mode="create" onClose={() => setAdding(false)} onSubmit={addTcca} />
+      )}
+      {editing && (
+        <TccaProjectDrawer open mode="edit" initial={editing} onClose={() => setEditing(null)} onSubmit={(t) => updateTcca(editing.id, t)} />
+      )}
+      <ConfirmDialog
+        open={!!deleting}
+        title="Delete this TCCA project?"
+        description={deleting ? `"${deleting.number}" and its checklist and document tracking will be permanently removed.` : ''}
+        confirmLabel="Delete TCCA project"
+        tone="danger"
+        onConfirm={() => { if (deleting) removeTcca(deleting.id); setDeleting(null) }}
+        onCancel={() => setDeleting(null)}
+      />
+    </AppShell>
+  )
+}
