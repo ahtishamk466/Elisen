@@ -32,18 +32,6 @@ export function StepAdditionalDetails({ values, errors, setField }: StepProps) {
         </FormField>
       </FormSection>
 
-      <FormSection title="Aircraft" subtitle="The aircraft type this project applies to.">
-        <FormField label="Model Name" htmlFor="aircraftModelName">
-          <Input id="aircraftModelName" value={values.aircraftModelName} placeholder="e.g. King Air 350" onChange={(e) => setField('aircraftModelName', e.target.value)} />
-        </FormField>
-        <FormField label="Model Number" htmlFor="aircraftModelNumber">
-          <Input id="aircraftModelNumber" value={values.aircraftModelNumber} placeholder="e.g. BE350" onChange={(e) => setField('aircraftModelNumber', e.target.value)} />
-        </FormField>
-        <FormField label="Manufacturer" htmlFor="aircraftManufacturer">
-          <Input id="aircraftManufacturer" value={values.aircraftManufacturer} placeholder="e.g. Beechcraft" onChange={(e) => setField('aircraftManufacturer', e.target.value)} />
-        </FormField>
-      </FormSection>
-
       <FormSection title="Proposal" subtitle="Optional — fill in once a proposal is in motion.">
         <FormField label="Proposal Submitted" htmlFor="proposalSubmitted">
           <Select id="proposalSubmitted" value={values.proposalSubmitted} onChange={(e) => setField('proposalSubmitted', e.target.value)}>

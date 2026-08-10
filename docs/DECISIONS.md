@@ -240,6 +240,109 @@ its first field — the rest was clipped invisibly.
 **Rationale:** Block flow sizes children to their content and scrolls
 predictably. Noted in the component so it isn't "tidied" back into a grid.
 
+## 2026-08-10 — Timesheet & Hours Worked: merged Timesheet Entry into a drawer, kept Hours Worked separate
+**Context:** User's own app had three menu items — Hours Worked, Timesheet,
+Timesheet Entry — and asked for a senior UX review of whether to merge them.
+Screenshots showed Timesheet Entry was already just the create/edit form
+behind Timesheet's own "+Add" button (a personal list), while Hours Worked
+was a structurally different admin, cross-employee, bulk-oriented table
+(23k+ rows, checkboxes) reusing the same columns.
+**Choice:** Built two screens, not three: `TimesheetListPage` (`/timesheet`,
+scoped to the signed-in employee) and `HoursWorkedPage` (`/hours-worked`,
+admin, all employees) — both render the shared `TimesheetTable` and open the
+same `TimesheetEntryDrawer` for Add/Edit instead of a separate full-page
+"Timesheet Entry" screen. Also resolved two edge cases flagged during the
+review rather than leaving them open: (1) once an entry is `validated`, the
+employee's own Timesheet table drops Edit/Delete down to View + Duplicate
+only — self-validated entries shouldn't be self-editable; (2) Hours Worked
+alone gets `canValidate`, exposing Mark/Unmark validated and retaining full
+Edit/Delete even on validated rows, since the admin is the approval
+authority and needs to be able to correct mistakes after the fact.
+**Rationale:** Matches the "Option A" recommendation from the UX review —
+removes the genuinely redundant navigation (list + its own full-page create
+form) without forcing the admin's bulk/dense-table workflow into a
+single-entry drawer pattern, which would have been the main risk of a full
+3-way merge.
+
+## 2026-08-10 — Drawer conventions: named records, grouped actions, no nested boxes
+**Context:** Reviewing the Aircraft edit drawer, the user raised three issues
+that applied well beyond that one screen.
+**Choice — applied to every add/edit drawer in the app:**
+1. **Every drawer names the record it acts on.** Titles now read
+   `Add Aircraft “3200-00 — STC — Cabin Interior Modification”`. Added
+   `projectLabel()` / `useProjectLabel()`
+   (`features/projects/useProjectLabel.ts`) so project-scoped drawers resolve
+   the label from `projectId` themselves rather than threading a prop through
+   every tab. TCCA drawers name their TCCA project; the timesheet drawer names
+   project · employee · date.
+2. **Footer actions are grouped.** `Drawer`'s footer moved from
+   `justify-between` to `justify-end`, so the secondary (Cancel) always sits
+   immediately beside the primary (Save Changes) instead of being pushed to
+   the opposite edge. Removed the `<span />` spacers every caller used to
+   force that old layout. `AddProjectDrawer`'s wizard Back button now joins the
+   same right-hand group.
+3. **No box-in-a-box.** Repeated entries inside a `FormSection` are separated
+   by a `border-t` rule, not their own bordered card — the FormSection is
+   already the container. Applied to the Aircraft drawer's entry list.
+**Rationale:** (1) is a straightforward orientation win — the user should never
+have to guess which record a drawer is mutating. (2) and (3) were fixed in the
+shared `Drawer` / section markup rather than per-screen, so future drawers
+inherit the correct behaviour instead of repeating the old pattern.
+
+## 2026-08-10 — Per-section edit drawers for Proposal / Notes / Aircraft; aircraft becomes a list
+**Context:** User specified that only Proposal, Notes and Aircraft carry an
+edit affordance, each opening its own state — and supplied reference screens
+showing a scoped drawer per section with Back / Save Changes, plus an Aircraft
+drawer supporting multiple aircraft ("Add Another Aircraft", delete per entry).
+**Choice:** (1) Replaced the earlier approach where every section's pencil
+reopened the shared `AddProjectDrawer` at a step (which exposed unrelated
+fields) with three dedicated drawers: `ProposalEditDrawer`, `NotesEditDrawer`,
+`AircraftEditDrawer`. Each holds only its own fields, prefilled, and saves a
+narrow `Partial<ProjectListRow>` patch. (2) These three cards use a dots (⋮)
+trigger via a new `variant="menu"` on the local `Card` helper; Dates and Scope
+keep the pencil and still use the shared wizard, since their fields are
+genuinely part of project creation. (3) **Data model change:** the three flat
+`aircraftModelName/Number/Manufacturer` fields became
+`aircraft: AircraftEntry[]` on `ProjectListRow`, and the Aircraft section was
+removed from the create/edit wizard's step 2 — aircraft is now managed only
+from its own drawer.
+**Rationale:** A project can apply to more than one aircraft type, which the
+flat fields could not express; the reference screens made that requirement
+explicit. Keeping Dates/Scope on the shared wizard avoids duplicating the
+validated creation form for fields that already live there.
+
+## 2026-08-10 — Project Detail header shows a back link, not a repeated title
+**Context:** The page title (`3200-00`) appeared both in the AppShell header
+and again in the detail card immediately below it.
+**Choice:** Added an optional `headerLeft` slot to `AppShell`; Project Detail
+passes "← Go back to all projects" instead of the default `<h1>{title}</h1>`,
+and the in-page back button was removed. `title` is still required and still
+the default, so every other screen is unchanged.
+**Rationale:** The card is the authoritative place for the project identity;
+repeating it wasted the header row, which is better spent on navigation.
+
+## 2026-08-10 — Project Detail sidebar rebuilt to match the reference card exactly
+**Context:** User flagged the top-left sidebar card as not matching the
+provided design screenshot: it should be one unified card (number + actions
+menu + title + company/type + priority/status pills + hours + due date +
+contract value + people-with-avatars), not a separate full-width header bar
+above a plainer sidebar.
+**Choice:** Removed the standalone header bar; merged the project number and
+`ActionsMenu` back into the top of the sidebar card itself (number stays on
+its own short row, so a long title still can't push the menu around — same
+goal as the original "move the menu" request, different layout). Priority is
+now a `Badge` pill in this card specifically (`PRIORITY_TONE` added to
+`lib/projectDisplay.ts`) — the list table's Priority column stays plain text
+per the earlier, separate decision; these are different screens. Due date now
+renders human-readable ("Jul 4, 2026" via a local `formatDate`) in this card
+only. Contact and Person responsible each get a small initials `Avatar`
+(local helper, `accent`/`success` subtle tokens — no new primitives).
+**Rationale:** The screenshot is the authoritative reference for this specific
+card; matching it took priority over the earlier header-bar approach, which
+solved the same "long title" concern differently. Scope stayed limited to the
+sidebar card, as asked — other date fields on the page (e.g. the Overview
+tab's Dates card) were left in ISO format.
+
 ## 2026-08-07 — Spacing token names collide with Tailwind's maxWidth scale
 **Context:** Our spacing scale reuses key names (`sm`, `lg`, `xl`, `2xl`,
 `3xl`...) that Tailwind's built-in `maxWidth` scale also uses (`max-w-sm` =

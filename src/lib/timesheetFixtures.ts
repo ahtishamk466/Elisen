@@ -1,0 +1,28 @@
+import type { TimesheetEntry } from '@/types/timesheet'
+
+/** The signed-in demo user for the self-service Timesheet screen. */
+export const CURRENT_EMPLOYEE = 'Lloyd Pedvis'
+
+/**
+ * Obviously-fake demo data. Only projects '1' and '2' have work packages in
+ * workPackageFixtures.ts, so entries are scoped to those two — inventing a
+ * "Default Work Package" for the others would misrepresent the WP model.
+ */
+export const TIMESHEET_ENTRIES: TimesheetEntry[] = [
+  { id: 'ts-1', employeeName: 'Lloyd Pedvis', projectId: '1', workPackageId: 'wp-2', activityId: 'struct-validation', task: 'Static strength analysis', deliverableRevisionId: '', workingDate: '2026-07-06', hoursRegular: 8, hoursOvertime: 0, bankHoursRegular: 0, comment: 'Stress run for seat rail loads.', validated: false, active: true },
+  { id: 'ts-2', employeeName: 'Lloyd Pedvis', projectId: '1', workPackageId: 'wp-2', activityId: 'struct-validation', task: 'Stress analysis report', deliverableRevisionId: 'rev-3', workingDate: '2026-07-07', hoursRegular: 6, hoursOvertime: 1, bankHoursRegular: 0, comment: 'Drafting compliance report section 4.', validated: true, active: true },
+  { id: 'ts-3', employeeName: 'Lloyd Pedvis', projectId: '2', workPackageId: 'wp-4', activityId: 'elec-design', task: '', deliverableRevisionId: '', workingDate: '2026-07-08', hoursRegular: 5, hoursOvertime: 0, bankHoursRegular: 0, comment: 'Map light wiring layout revisions.', validated: false, active: true },
+  { id: 'ts-4', employeeName: 'Sofia Reyes', projectId: '1', workPackageId: 'wp-2', activityId: 'mech-design', task: '', deliverableRevisionId: '', workingDate: '2026-07-01', hoursRegular: 8, hoursOvertime: 0, bankHoursRegular: 0, comment: 'Club seat bracket layout.', validated: true, active: true },
+  { id: 'ts-5', employeeName: 'Sofia Reyes', projectId: '1', workPackageId: 'wp-1', activityId: 'airworthiness', task: 'Compliance plan drafting', deliverableRevisionId: 'rev-1', workingDate: '2026-06-30', hoursRegular: 4, hoursOvertime: 0, bankHoursRegular: 0, comment: '', validated: true, active: true },
+  { id: 'ts-6', employeeName: 'Sofia Reyes', projectId: '1', workPackageId: 'wp-2', activityId: 'manuals', task: 'Maintenance manual update', deliverableRevisionId: 'rev-4', workingDate: '2026-07-09', hoursRegular: 3, hoursOvertime: 0, bankHoursRegular: 0, comment: 'MDL updates for new bracket part numbers.', validated: false, active: true },
+  { id: 'ts-7', employeeName: 'Kelly Osei', projectId: '1', workPackageId: 'wp-1', activityId: 'airworthiness', task: 'Continuing airworthiness (ICA)', deliverableRevisionId: '', workingDate: '2026-06-28', hoursRegular: 6, hoursOvertime: 0, bankHoursRegular: 0, comment: '', validated: false, active: true },
+  { id: 'ts-8', employeeName: 'Kelly Osei', projectId: '1', workPackageId: 'wp-2', activityId: 'manuals', task: 'Flight manual supplement', deliverableRevisionId: '', workingDate: '2026-07-02', hoursRegular: 7, hoursOvertime: 0, bankHoursRegular: 0, comment: 'FMS draft for club seat placard.', validated: false, active: true },
+  { id: 'ts-9', employeeName: 'Harris Bell', projectId: '1', workPackageId: 'wp-1', activityId: 'delegate', task: 'Document check & sign-off', deliverableRevisionId: 'rev-1', workingDate: '2026-06-29', hoursRegular: 2, hoursOvertime: 0, bankHoursRegular: 0, comment: 'Reviewed Certification Plan rev A.', validated: true, active: true },
+  { id: 'ts-10', employeeName: 'Harris Bell', projectId: '1', workPackageId: 'wp-1', activityId: 'delegate', task: 'Witness testing', deliverableRevisionId: '', workingDate: '2026-07-10', hoursRegular: 1, hoursOvertime: 0, bankHoursRegular: 0, comment: '', validated: false, active: false },
+  { id: 'ts-11', employeeName: 'Remi Rocheleau', projectId: '2', workPackageId: 'wp-4', activityId: 'elec-design', task: '', deliverableRevisionId: 'rev-6', workingDate: '2026-07-05', hoursRegular: 8, hoursOvertime: 0, bankHoursRegular: 0, comment: 'Flight test plan support drawings.', validated: false, active: true },
+  { id: 'ts-12', employeeName: 'Remi Rocheleau', projectId: '2', workPackageId: 'wp-4', activityId: 'elec-validation', task: 'Electrical load analysis', deliverableRevisionId: '', workingDate: '2026-07-11', hoursRegular: 4, hoursOvertime: 2, bankHoursRegular: 0, comment: 'Load analysis rerun after wiring change.', validated: false, active: true },
+  { id: 'ts-13', employeeName: 'Lloyd Pedvis', projectId: '1', workPackageId: 'wp-3', activityId: 'project-mgmt', task: '', deliverableRevisionId: '', workingDate: '2026-07-12', hoursRegular: 2, hoursOvertime: 0, bankHoursRegular: 0, comment: 'Coordination call re: weight & balance report.', validated: false, active: true },
+  { id: 'ts-14', employeeName: 'Sofia Reyes', projectId: '2', workPackageId: 'wp-4', activityId: 'customer-support', task: '', deliverableRevisionId: '', workingDate: '2026-06-25', hoursRegular: 3, hoursOvertime: 0, bankHoursRegular: 1, comment: 'Client call re: sign-off timeline.', validated: true, active: true },
+  { id: 'ts-15', employeeName: 'Lloyd Pedvis', projectId: '2', workPackageId: 'wp-4', activityId: 'elec-design', task: '', deliverableRevisionId: 'rev-5', workingDate: '2026-06-20', hoursRegular: 6, hoursOvertime: 0, bankHoursRegular: 0, comment: 'Certification plan review comments.', validated: false, active: true },
+  { id: 'ts-16', employeeName: 'Kelly Osei', projectId: '1', workPackageId: 'wp-3', activityId: 'general-cert', task: 'Design compliance report', deliverableRevisionId: 'rev-3', workingDate: '2026-07-13', hoursRegular: 5, hoursOvertime: 0, bankHoursRegular: 0, comment: '', validated: false, active: true },
+]

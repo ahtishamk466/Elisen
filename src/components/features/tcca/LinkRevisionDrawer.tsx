@@ -39,7 +39,7 @@ export function LinkRevisionDrawer({ open, tcca, onClose }: { open: boolean; tcc
 
   return (
     <Drawer open={open} onClose={onClose} title={`Link document to ${tcca.number}`}
-      footer={<><span /><Button variant="secondary" onClick={onClose}>Done</Button></>}>
+      footer={<><Button variant="secondary" onClick={onClose}>Done</Button></>}>
       <div>
         <label htmlFor="rev-search" className="sr-only">Search revisions</label>
         <Input id="rev-search" value={query} onChange={(e) => setQuery(e.target.value)}

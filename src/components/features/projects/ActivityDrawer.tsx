@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { ACTIVITY_CATALOG, ACTIVITY_TASKS, activityName } from '@/lib/activityCatalog'
 import { PEOPLE } from '@/lib/projectFixtures'
+import { useProjectLabel } from './useProjectLabel'
 import type { WorkPackage, WorkPackageActivity } from '@/types/workPackage'
 
 export interface ActivityDrawerProps {
@@ -21,6 +22,7 @@ export interface ActivityDrawerProps {
 
 export function ActivityDrawer({ mode, workPackage, usedActivityIds, initial, onClose, onSubmit }: ActivityDrawerProps) {
   const isEdit = mode === 'edit'
+  const label = useProjectLabel(workPackage.projectId)
   const [activityId, setActivityId] = useState(initial?.activityId ?? '')
   const [responsible, setResponsible] = useState(initial?.responsible ?? '')
   const [budgetHours, setBudgetHours] = useState(initial ? String(initial.budgetHours) : '')
@@ -52,10 +54,13 @@ export function ActivityDrawer({ mode, workPackage, usedActivityIds, initial, on
     <Drawer
       open
       onClose={onClose}
-      title={isEdit ? `Edit activity — ${activityName(initial!.activityId)}` : `Add activity to "${workPackage.title}"`}
+      title={
+        isEdit
+          ? `Edit Activity “${activityName(initial!.activityId)}” — ${workPackage.title} · ${label}`
+          : `Add Activity to “${workPackage.title}” — ${label}`
+      }
       footer={
         <>
-          <span />
           <div className="flex gap-sm">
             <Button variant="secondary" onClick={onClose}>Cancel</Button>
             <Button onClick={submit}>{isEdit ? 'Save Changes' : 'Add Activity'}</Button>

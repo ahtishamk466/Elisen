@@ -11,6 +11,7 @@ import type { DeliverableRevision, TccaDocLink, TccaDocState, TccaInvolvement } 
 /** Edit the government-interaction tracking for one linked revision. */
 export function DocTrackingDrawer({ link, revision, onClose }: { link: TccaDocLink; revision?: DeliverableRevision; onClose: () => void }) {
   const updateDocLink = useTccaStore((s) => s.updateDocLink)
+  const tccaNumber = useTccaStore((s) => s.tccaProjects.find((t) => t.id === link.tccaProjectId)?.number ?? '')
   const [involvement, setInvolvement] = useState<TccaInvolvement>(link.involvement)
   const [sentDate, setSentDate] = useState(link.sentDate)
   const [state, setState] = useState<TccaDocState>(link.state)
@@ -29,10 +30,9 @@ export function DocTrackingDrawer({ link, revision, onClose }: { link: TccaDocLi
     <Drawer
       open
       onClose={onClose}
-      title={revision ? `Tracking — ${revision.number} rev ${revision.rev}` : 'Tracking'}
+      title={`Edit Tracking${revision ? ` “${revision.number} rev ${revision.rev}”` : ''}${tccaNumber ? ` — TCCA ${tccaNumber}` : ''}`}
       footer={
         <>
-          <span />
           <div className="flex gap-sm">
             <Button variant="secondary" onClick={onClose}>Cancel</Button>
             <Button onClick={save}>Save Changes</Button>

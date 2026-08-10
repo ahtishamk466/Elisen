@@ -8,11 +8,13 @@ import { Input } from '@/components/ui/Input'
 import { useDocumentsStore } from '@/stores/documentsStore'
 import { KIND_LABEL, REVISION_STATUS_LABEL, REVISION_STATUS_TONE } from '@/lib/documentDisplay'
 import type { DocumentKind } from '@/types/documents'
+import { useProjectLabel } from './useProjectLabel'
 
 /** Reuse an existing revision on this project — "we did an iPad on another
     project, didn't we? Maybe I can use that same drawing." Searches the whole
     pool, including by aircraft type for drawings. */
 export function LinkExistingRevisionDrawer({ kind, projectId, onClose }: { kind: DocumentKind; projectId: string; onClose: () => void }) {
+  const label = useProjectLabel(projectId)
   const documents = useDocumentsStore((s) => s.documents)
   const revisions = useDocumentsStore((s) => s.revisions)
   const links = useDocumentsStore((s) => s.links)
@@ -35,8 +37,8 @@ export function LinkExistingRevisionDrawer({ kind, projectId, onClose }: { kind:
   }, [documents, revisions, links, kind, projectId, query]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <Drawer open onClose={onClose} title={`Link existing ${KIND_LABEL[kind].singular}`}
-      footer={<><span /><Button variant="secondary" onClick={onClose}>Done</Button></>}>
+    <Drawer open onClose={onClose} title={`Link existing ${KIND_LABEL[kind].singular} — ${label}`}
+      footer={<><Button variant="secondary" onClick={onClose}>Done</Button></>}>
       <div>
         <label htmlFor="pool-search" className="sr-only">Search the pool</label>
         <Input id="pool-search" value={query} onChange={(e) => setQuery(e.target.value)}

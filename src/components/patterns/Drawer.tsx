@@ -73,8 +73,10 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
         {/* Block flow, not grid: grid rows stretch to equal heights here and
             clip section content. */}
         <div className="flex-1 space-y-lg overflow-y-auto px-2xl pb-2xl">{children}</div>
+        {/* Actions group at the right, secondary immediately beside primary —
+            never pushed to opposite ends of the drawer. */}
         {footer && (
-          <footer className="flex items-center justify-between gap-sm border-t border-border-default bg-neutral-25 px-2xl py-lg">
+          <footer className="flex items-center justify-end gap-sm border-t border-border-default bg-neutral-25 px-2xl py-lg">
             {footer}
           </footer>
         )}

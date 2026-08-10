@@ -4,11 +4,8 @@ import { useProjectsStore } from '@/stores/projectsStore'
 import { useTccaStore } from '@/stores/tccaStore'
 import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore'
 import { downloadCompletionChecklist } from '@/lib/pccReport'
+import { PENDING_REPORTS } from '@/lib/pendingReports'
 import type { DeliverableRevision, TccaProject } from '@/types/tcca'
-
-/** Report set beyond the PCC is management-defined (Jalal) and still open —
-    those cards stay visible but disabled rather than faking output. */
-const PENDING_REPORTS = ['Deliverable Status — Burndown', 'Deliverable Status — Summary', 'Application, Cert Basis, MOC, LOI/LOS']
 
 export function TccaReportsTab({ tcca }: { tcca: TccaProject }) {
   const projects = useProjectsStore((s) => s.rows)

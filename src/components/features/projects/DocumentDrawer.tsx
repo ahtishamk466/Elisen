@@ -11,6 +11,7 @@ import { useTccaStore } from '@/stores/tccaStore'
 import { DOC_TYPES } from '@/lib/documentDisplay'
 import { PEOPLE } from '@/lib/projectFixtures'
 import type { DocumentKind, RevisionStatus } from '@/types/documents'
+import { useProjectLabel } from './useProjectLabel'
 
 export interface DocumentDrawerProps {
   kind: DocumentKind
@@ -24,6 +25,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 /** Create a document — which forces its first revision, exactly like the
     client's system ("it'll force me to put in information for a revision"). */
 export function DocumentDrawer({ kind, projectId, projectNumber, onClose }: DocumentDrawerProps) {
+  const label = useProjectLabel(projectId)
   const documents = useDocumentsStore((s) => s.documents)
   const addDocument = useDocumentsStore((s) => s.addDocument)
   const tccaProjects = useTccaStore((s) => s.tccaProjects)
@@ -89,10 +91,9 @@ export function DocumentDrawer({ kind, projectId, projectNumber, onClose }: Docu
       <Drawer
         open
         onClose={requestClose}
-        title={isDrawing ? 'Add drawing' : 'Add deliverable'}
+        title={`${isDrawing ? 'Add Drawing' : 'Add Deliverable'} “${label}”`}
         footer={
           <>
-            <span />
             <div className="flex gap-sm">
               <Button variant="secondary" onClick={requestClose}>Cancel</Button>
               <Button onClick={submit}>{isDrawing ? 'Create Drawing' : 'Create Deliverable'}</Button>

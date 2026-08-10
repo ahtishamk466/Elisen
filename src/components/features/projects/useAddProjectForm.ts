@@ -22,9 +22,6 @@ export interface AddProjectValues {
   dueDate: string
   aircraftInputDate: string
   closedDate: string
-  aircraftModelName: string
-  aircraftModelNumber: string
-  aircraftManufacturer: string
   proposalSubmitted: string
   proposalSubmittedDate: string
   proposalAccepted: string
@@ -46,7 +43,6 @@ export const INITIAL: AddProjectValues = {
   company: '', contact: '', personResponsible: '', scope: [],
   contractCurrency: 'USD', contractValue: '', tccaRequired: 'no',
   status: '', openedDate: today(), dueDate: '', aircraftInputDate: '', closedDate: '',
-  aircraftModelName: '', aircraftModelNumber: '', aircraftManufacturer: '',
   proposalSubmitted: 'no', proposalSubmittedDate: '', proposalAccepted: 'no', proposalAcceptedDate: '',
   nextAction: '', comments: '',
   tccaNumber: '', tccaDescription: '', checklist: [],
@@ -86,11 +82,11 @@ export function validateStep(step: number, v: AddProjectValues, isEdit = false):
   return e
 }
 
-export function useAddProjectForm(initialValues?: Partial<AddProjectValues>) {
+export function useAddProjectForm(initialValues?: Partial<AddProjectValues>, initialStep = 0) {
   const [base] = useState<AddProjectValues>(() => ({ ...INITIAL, ...initialValues }))
   const [values, setValues] = useState<AddProjectValues>(base)
   const [errors, setErrors] = useState<Errors>({})
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState(initialStep)
   const [dirty, setDirty] = useState(false)
 
   const steps = useMemo(
@@ -116,9 +112,9 @@ export function useAddProjectForm(initialValues?: Partial<AddProjectValues>) {
   const reset = useCallback(() => {
     setValues(base)
     setErrors({})
-    setStep(0)
+    setStep(initialStep)
     setDirty(false)
-  }, [base])
+  }, [base, initialStep])
 
   const isLastStep = step === steps.length - 1
 

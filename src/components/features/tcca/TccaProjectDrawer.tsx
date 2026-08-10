@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Alert } from '@/components/ui/Alert'
 import { useProjectsStore } from '@/stores/projectsStore'
+import { projectLabel } from '@/components/features/projects/useProjectLabel'
 import { useTccaStore } from '@/stores/tccaStore'
 import { getNextTccaNumber } from '@/lib/tccaFixtures'
 import { TCCA_CHECKLIST } from '@/lib/tccaChecklist'
@@ -33,6 +34,8 @@ export function TccaProjectDrawer({ open, mode, lockedProjectId, initial, onClos
   const existing = useTccaStore((s) => s.tccaProjects)
   const suggested = getNextTccaNumber(existing)
   const isEdit = mode === 'edit'
+  const lockedRow = lockedProjectId ? projects.find((p) => p.id === lockedProjectId) : undefined
+  const lockedLabel = lockedRow ? projectLabel(lockedRow) : ''
 
   const [number, setNumber] = useState(initial?.number ?? suggested)
   const [description, setDescription] = useState(initial?.description ?? '')
@@ -87,10 +90,15 @@ export function TccaProjectDrawer({ open, mode, lockedProjectId, initial, onClos
       <Drawer
         open={open}
         onClose={requestClose}
-        title={isEdit ? `Edit TCCA project ${initial?.number}` : 'Add TCCA project'}
+        title={
+          isEdit
+            ? `Edit TCCA Project ${initial?.number}${lockedLabel ? ` — ${lockedLabel}` : ''}`
+            : lockedLabel
+              ? `Add TCCA Project “${lockedLabel}”`
+              : 'Add TCCA Project'
+        }
         footer={
           <>
-            <span />
             <div className="flex gap-sm">
               <Button variant="secondary" onClick={requestClose}>Cancel</Button>
               <Button onClick={submit}>{isEdit ? 'Save Changes' : 'Create TCCA Project'}</Button>

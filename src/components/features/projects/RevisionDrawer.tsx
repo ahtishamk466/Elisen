@@ -11,6 +11,7 @@ import { useTccaStore } from '@/stores/tccaStore'
 import { nextRevLetter, REVISION_STATUS_LABEL, REVISION_STATUS_TONE } from '@/lib/documentDisplay'
 import { PEOPLE } from '@/lib/projectFixtures'
 import type { DocRevision, ProjectDocument, RevisionStatus } from '@/types/documents'
+import { useProjectLabel } from './useProjectLabel'
 
 export interface RevisionDrawerProps {
   document: ProjectDocument
@@ -26,6 +27,7 @@ const today = () => new Date().toISOString().slice(0, 10)
     visible — "you should be able to see that revisions already exist"), or
     edit one revision's tracking. */
 export function RevisionDrawer({ document, projectId, initial, onClose }: RevisionDrawerProps) {
+  const label = useProjectLabel(projectId)
   const revisions = useDocumentsStore((s) => s.revisions)
   const addRevision = useDocumentsStore((s) => s.addRevision)
   const updateRevision = useDocumentsStore((s) => s.updateRevision)
@@ -76,10 +78,9 @@ export function RevisionDrawer({ document, projectId, initial, onClose }: Revisi
     <Drawer
       open
       onClose={onClose}
-      title={isEdit ? `Edit ${document.number} rev ${initial.rev}` : `Add revision to ${document.number}`}
+      title={isEdit ? `Edit Revision ${document.number} rev ${initial.rev} — ${label}` : `Add Revision to ${document.number} — ${label}`}
       footer={
         <>
-          <span />
           <div className="flex gap-sm">
             <Button variant="secondary" onClick={onClose}>Cancel</Button>
             <Button onClick={submit}>{isEdit ? 'Save Changes' : 'Add Revision'}</Button>

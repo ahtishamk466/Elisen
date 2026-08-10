@@ -18,6 +18,8 @@ export interface AddProjectDrawerProps {
   /** Edit mode prefills the form and changes copy; pass the row's known fields. */
   mode?: 'create' | 'edit'
   initialValues?: Partial<AddProjectValues>
+  /** Jump straight to a step — used by Project Detail's per-section edit buttons. */
+  initialStep?: number
 }
 
 export function AddProjectDrawer({
@@ -27,9 +29,10 @@ export function AddProjectDrawer({
   canSeeFinancials = true,
   mode = 'create',
   initialValues,
+  initialStep = 0,
 }: AddProjectDrawerProps) {
   const isEdit = mode === 'edit'
-  const form = useAddProjectForm(initialValues)
+  const form = useAddProjectForm(initialValues, initialStep)
   const { values, errors, setErrors, step, steps, isLastStep, dirty, setField, next, back, reset } = form
   const [confirmClose, setConfirmClose] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -69,25 +72,21 @@ export function AddProjectDrawer({
         title={title}
         footer={
           <>
-            {step > 0 ? (
+            {step > 0 && (
               <Button variant="tertiary" onClick={back} leadingIcon={<ArrowLeft size={16} />}>
                 Back
               </Button>
-            ) : (
-              <span />
             )}
-            <div className="flex gap-sm">
-              <Button variant="secondary" onClick={requestClose}>
-                Cancel
+            <Button variant="secondary" onClick={requestClose}>
+              Cancel
+            </Button>
+            {isLastStep ? (
+              <Button onClick={handleSubmit} loading={submitting}>
+                {isEdit ? 'Save Changes' : 'Create Project'}
               </Button>
-              {isLastStep ? (
-                <Button onClick={handleSubmit} loading={submitting}>
-                  {isEdit ? 'Save Changes' : 'Create Project'}
-                </Button>
-              ) : (
-                <Button onClick={next}>Continue</Button>
-              )}
-            </div>
+            ) : (
+              <Button onClick={next}>Continue</Button>
+            )}
           </>
         }
       >

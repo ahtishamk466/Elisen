@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { useTccaStore } from '@/stores/tccaStore'
 import type { Approval, ApprovalAuthority, ApprovalType } from '@/types/documents'
+import { useProjectLabel } from './useProjectLabel'
 
 export interface ApprovalDrawerProps {
   projectId: string
@@ -17,6 +18,7 @@ export interface ApprovalDrawerProps {
 
 /** Record an issued certificate and tie it to this project. */
 export function ApprovalDrawer({ projectId, initial, onClose, onSubmit }: ApprovalDrawerProps) {
+  const label = useProjectLabel(projectId)
   const tccaProjects = useTccaStore((s) => s.tccaProjects)
   const linkedTcca = tccaProjects.filter((t) => t.projectIds.includes(projectId))
   const isEdit = !!initial
@@ -55,10 +57,9 @@ export function ApprovalDrawer({ projectId, initial, onClose, onSubmit }: Approv
     <Drawer
       open
       onClose={onClose}
-      title={isEdit ? `Edit approval ${initial.number}` : 'Add approval'}
+      title={isEdit ? `Edit Approval ${initial.number} — ${label}` : `Add Approval “${label}”`}
       footer={
         <>
-          <span />
           <div className="flex gap-sm">
             <Button variant="secondary" onClick={onClose}>Cancel</Button>
             <Button onClick={submit}>{isEdit ? 'Save Changes' : 'Add Approval'}</Button>
