@@ -2,6 +2,7 @@ import { Download, FileText } from 'lucide-react'
 import { Alert } from '@/components/ui/Alert'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useTccaStore } from '@/stores/tccaStore'
+import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore'
 import { downloadCompletionChecklist } from '@/lib/pccReport'
 import type { DeliverableRevision, TccaProject } from '@/types/tcca'
 
@@ -11,7 +12,9 @@ const PENDING_REPORTS = ['Deliverable Status — Burndown', 'Deliverable Status 
 
 export function TccaReportsTab({ tcca }: { tcca: TccaProject }) {
   const projects = useProjectsStore((s) => s.rows)
-  const revisions = useTccaStore((s) => s.revisions)
+  const documents = useDocumentsStore((s) => s.documents)
+  const docRevisions = useDocumentsStore((s) => s.revisions)
+  const revisions = deliverableSummaries(documents, docRevisions)
   const docLinks = useTccaStore((s) => s.docLinks)
 
   const generatePcc = () => {

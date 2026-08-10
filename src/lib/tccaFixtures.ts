@@ -1,16 +1,6 @@
-import type { DeliverableRevision, TccaDocLink, TccaProject } from '@/types/tcca'
+import type { TccaDocLink, TccaProject } from '@/types/tcca'
 
 /** Obviously-fake demo data, matching the project fixtures' ids. */
-
-export const REVISION_POOL: DeliverableRevision[] = [
-  { id: 'rev-1', number: 'COM-3200', rev: 'A', title: 'Certification Plan — Cabin Interior Mod', projectId: '1', releasedDate: '2026-05-04' },
-  { id: 'rev-2', number: 'ELA-3200', rev: 'B', title: 'Electrical Load Analysis', projectId: '1', releasedDate: '2026-06-11' },
-  { id: 'rev-3', number: 'DCR-3200', rev: 'A', title: 'Design Compliance Report', projectId: '1', releasedDate: '' },
-  { id: 'rev-4', number: 'MDL-3200', rev: 'A', title: 'Master Data List', projectId: '1', releasedDate: '2026-06-28' },
-  { id: 'rev-5', number: 'COM-3201', rev: 'A', title: 'Certification Plan — Map Light Addition', projectId: '2', releasedDate: '2026-03-19' },
-  { id: 'rev-6', number: 'FTP-3201', rev: 'C', title: 'Flight Test Plan', projectId: '2', releasedDate: '' },
-  { id: 'rev-7', number: 'WBR-3203', rev: 'A', title: 'Weight & Balance Report', projectId: '4', releasedDate: '' },
-]
 
 export const TCCA_PROJECTS: TccaProject[] = [
   {

@@ -43,6 +43,31 @@ FormControls) were deliberately left untouched — those document the
 client's originally-approved style guide reference, not derived output, so
 they shouldn't drift just because a real-component color choice changed.
 
+## 2026-08-07 — Deliverables, Design Data and Approvals tabs; unified document store
+**Context:** Last three Project Detail tabs, from the transcripts plus the
+user's Opt-2 reference tables.
+**Choice:** (1) Strict two-level model — Document (number/title/type/owner
+only) forces its first Revision; revisions carry all dates, a *person* as
+next action (feeds their to-do list — the reference's date field was a
+mistake), status (WIP → In Review → Signature Cycle → Accepted /
+Superseded) and URL. (2) One generic ProjectDocumentsTab serves both
+Deliverables and Design Data; drawings add aircraft + ATA columns and are
+excluded from anything TCCA. (3) "Link existing" reuses any pool revision
+on another project (searchable by aircraft for drawings), with a reuse
+marker when a revision came from a different project. (4) Deliverable
+revisions can optionally name a TCCA project at creation, which
+auto-creates the TCCA tracking link — the transcript's only mechanism for
+docs entering a TCCA project. (5) The old tccaStore revision pool was
+replaced by a single documentsStore shared by the Deliverables tab and
+the TCCA Documents tab, so both surfaces show the same records.
+(6) Approvals = registry of issued certificates (number, authority
+TCCA/FAA/EASA, type, aircraft, issue date, producing TCCA project);
+projects tie to their own approvals or to earlier ones they modify.
+**Rationale:** Every rule is transcript-traceable: forced first revision,
+revision-level tracking "by law", drawings never crossing to TCCA,
+revision reuse across projects, and change-projects referencing original
+certificates.
+
 ## 2026-08-07 — Work Packages tab built per the transcript hierarchy
 **Context:** User asked for the Work Packages flow on Project Detail,
 grounded in the meeting transcripts.

@@ -12,6 +12,8 @@ import { PRIORITY_LABEL, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/pro
 import { AddProjectDrawer } from './AddProjectDrawer'
 import { ProjectTccaTab } from '@/components/features/tcca/ProjectTccaTab'
 import { ProjectWorkPackagesTab } from './ProjectWorkPackagesTab'
+import { ProjectDocumentsTab } from './ProjectDocumentsTab'
+import { ProjectApprovalsTab } from './ProjectApprovalsTab'
 import type { ProjectListRow } from '@/types/project'
 import type { AddProjectValues } from './useAddProjectForm'
 
@@ -172,12 +174,14 @@ export function ProjectDetailPage() {
               </div>
             ) : tab === 'Work Packages' ? (
               <ProjectWorkPackagesTab projectId={row.id} />
-            ) : tab === 'TCCA' ? (
-              <ProjectTccaTab projectId={row.id} />
+            ) : tab === 'Deliverables' ? (
+              <ProjectDocumentsTab kind="deliverable" projectId={row.id} projectNumber={row.number} />
+            ) : tab === 'Design Data' ? (
+              <ProjectDocumentsTab kind="drawing" projectId={row.id} projectNumber={row.number} />
+            ) : tab === 'Approvals' ? (
+              <ProjectApprovalsTab projectId={row.id} />
             ) : (
-              <div className="rounded-sm border border-border-default bg-neutral-25">
-                <EmptyState title={`${tab} isn't built yet`} description="This section is planned for a future pass." />
-              </div>
+              <ProjectTccaTab projectId={row.id} />
             )}
           </div>
         </div>

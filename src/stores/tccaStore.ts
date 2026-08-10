@@ -1,11 +1,12 @@
 import { create } from 'zustand'
-import { REVISION_POOL, TCCA_DOC_LINKS, TCCA_PROJECTS } from '@/lib/tccaFixtures'
-import type { DeliverableRevision, TccaDocLink, TccaProject } from '@/types/tcca'
+import { TCCA_DOC_LINKS, TCCA_PROJECTS } from '@/lib/tccaFixtures'
+import type { TccaDocLink, TccaProject } from '@/types/tcca'
 
+// The document revision pool itself lives in documentsStore (single source
+// of truth shared with the Deliverables tab); this store only keeps the
+// TCCA-side linking records.
 interface TccaState {
   tccaProjects: TccaProject[]
-  /** Elisen-side document revisions pool (documents only, never drawings). */
-  revisions: DeliverableRevision[]
   docLinks: TccaDocLink[]
   addTcca: (t: TccaProject) => void
   updateTcca: (id: string, patch: Partial<TccaProject>) => void
@@ -19,7 +20,6 @@ interface TccaState {
 
 export const useTccaStore = create<TccaState>((set) => ({
   tccaProjects: TCCA_PROJECTS,
-  revisions: REVISION_POOL,
   docLinks: TCCA_DOC_LINKS,
 
   addTcca: (t) => set((s) => ({ tccaProjects: [t, ...s.tccaProjects] })),

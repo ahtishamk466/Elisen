@@ -8,6 +8,7 @@ import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useTccaStore } from '@/stores/tccaStore'
+import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore'
 import { DOC_STATE_LABEL, DOC_STATE_TONE, INVOLVEMENT_LABEL } from '@/lib/tccaDisplay'
 import { LinkRevisionDrawer } from './LinkRevisionDrawer'
 import { DocTrackingDrawer } from './DocTrackingDrawer'
@@ -17,7 +18,9 @@ const HEADERS = ['Number / Rev', 'Title', 'From Project', 'Involvement', 'Sent',
 
 export function TccaDocumentsTab({ tcca }: { tcca: TccaProject }) {
   const projects = useProjectsStore((s) => s.rows)
-  const revisions = useTccaStore((s) => s.revisions)
+  const documents = useDocumentsStore((s) => s.documents)
+  const docRevisions = useDocumentsStore((s) => s.revisions)
+  const revisions = deliverableSummaries(documents, docRevisions)
   const docLinks = useTccaStore((s) => s.docLinks)
   const unlinkDoc = useTccaStore((s) => s.unlinkDoc)
 

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useTccaStore } from '@/stores/tccaStore'
+import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore'
 import type { TccaProject } from '@/types/tcca'
 
 /** Pick a deliverable revision from the Elisen-side pool and link it to this
@@ -13,7 +14,9 @@ import type { TccaProject } from '@/types/tcca'
     can be reused on another (client-confirmed behavior). */
 export function LinkRevisionDrawer({ open, tcca, onClose }: { open: boolean; tcca: TccaProject; onClose: () => void }) {
   const projects = useProjectsStore((s) => s.rows)
-  const revisions = useTccaStore((s) => s.revisions)
+  const documents = useDocumentsStore((s) => s.documents)
+  const docRevisions = useDocumentsStore((s) => s.revisions)
+  const revisions = deliverableSummaries(documents, docRevisions)
   const docLinks = useTccaStore((s) => s.docLinks)
   const linkRevision = useTccaStore((s) => s.linkRevision)
   const [query, setQuery] = useState('')
