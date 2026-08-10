@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Pencil, Copy, Trash2, Users, CalendarDays, DollarSign, Clock, Check, Minus, MoreVertical } from 'lucide-react'
+import { ArrowLeft, Pencil, Copy, Trash2, Users, CalendarDays, DollarSign, Clock, Check, Minus } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
@@ -37,9 +37,8 @@ const SCOPES: { key: ScopeKey; label: string }[] = [
   { key: 'aircraft-mod', label: 'Aircraft mod' },
 ]
 
-/** Step in the edit drawer that owns each section's fields. */
+/** The project-level actions menu opens the full edit wizard at step 1. */
 const STEP_BASIC = 0
-const STEP_DETAILS = 1
 
 function rowToInitialValues(row: ProjectListRow): Partial<AddProjectValues> {
   return {
@@ -254,7 +253,7 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
 
             {tab === 'Overview' ? (
               <div className="grid gap-lg">
-                <Card title="Dates" onEdit={() => setEditStep(STEP_DETAILS)}>
+                <Card title="Dates">
                   <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
                     <Field label="Project opened date">{row.openedDate || '—'}</Field>
                     <Field label="Due date">{row.dueDate || '—'}</Field>
@@ -264,7 +263,7 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
                   </div>
                 </Card>
 
-                <Card title="Scope" onEdit={() => setEditStep(STEP_BASIC)}>
+                <Card title="Scope">
                   <div className="flex flex-wrap gap-sm">
                     {SCOPES.map((s) => {
                       const on = row.scope.includes(s.key)
@@ -282,7 +281,7 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
                   </div>
                 </Card>
 
-                <Card title="Proposal" variant="menu" onEdit={() => setActiveDrawer('proposal')}>
+                <Card title="Proposal" onEdit={() => setActiveDrawer('proposal')}>
                   <div className="grid grid-cols-2 gap-lg">
                     <Field label="Proposal Submitted">{row.proposalSubmitted === 'yes' ? 'Yes' : 'No'}</Field>
                     <Field label="Submitted Date">{row.proposalSubmittedDate || '—'}</Field>
@@ -291,14 +290,14 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
                   </div>
                 </Card>
 
-                <Card title="Notes" variant="menu" onEdit={() => setActiveDrawer('notes')}>
+                <Card title="Notes" onEdit={() => setActiveDrawer('notes')}>
                   <div className="grid gap-lg">
                     <Field label="Next Action">{row.nextAction || '—'}</Field>
                     <Field label="Comments">{row.comments || '—'}</Field>
                   </div>
                 </Card>
 
-                <Card title="Aircraft" variant="menu" onEdit={() => setActiveDrawer('aircraft')}>
+                <Card title="Aircraft" onEdit={() => setActiveDrawer('aircraft')}>
                   {row.aircraft.length === 0 ? (
                     <p className="text-sm text-text-muted">No aircraft added yet.</p>
                   ) : (
@@ -415,12 +414,12 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
   )
 }
 
-/** `variant="menu"` swaps the pencil for a dots trigger — used by
-    Proposal/Notes/Aircraft, which now open their own focused edit drawer
-    instead of the shared multi-field step. */
+/** Only Proposal, Notes and Aircraft pass `onEdit` — those three sections own
+    a focused edit drawer. Dates and Scope are edited from the project-level
+    actions menu instead, so they render without an affordance. */
 function Card({
-  title, onEdit, variant = 'pencil', children,
-}: { title: string; onEdit?: () => void; variant?: 'pencil' | 'menu'; children: React.ReactNode }) {
+  title, onEdit, children,
+}: { title: string; onEdit?: () => void; children: React.ReactNode }) {
   return (
     <section className="rounded-sm border border-border-default bg-neutral-25 p-lg">
       <div className="flex items-start justify-between gap-lg">
@@ -432,7 +431,7 @@ function Card({
             aria-label={`Edit ${title.toLowerCase()}`}
             className="rounded-sm p-xs text-text-secondary transition-colors duration-fast hover:bg-neutral-100 hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
           >
-            {variant === 'menu' ? <MoreVertical size={18} aria-hidden /> : <Pencil size={16} aria-hidden />}
+            <Pencil size={16} aria-hidden />
           </button>
         )}
       </div>
