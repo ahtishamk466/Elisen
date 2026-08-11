@@ -665,3 +665,223 @@ Audited the codebase for the same antipattern (`disabled={isView}` or
 equivalent) — the only other `mode: 'view'` drawer, `TimesheetEntryDrawer`,
 already used `TimesheetEntryView`'s Card/Field correctly. No other fix
 needed.
+
+## Pagination merged into its table's card, not a second box below it
+
+User correction, with a reference screenshot: the table and its pager must
+share one bordered/rounded container, pagination sitting flush as the
+table's own footer bar — not two separate cards with a gap between them.
+
+`Pagination` no longer has its own `border`/`rounded`/`bg` — just a
+`border-t` separator, so it's inert outside a parent card and must always
+be composed inside one. Every table wrapper changed from
+`overflow-x-auto rounded-sm border ... bg-neutral-25` (one div, scrolling
+and the border on the same element) to two nested divs: an outer
+`overflow-hidden rounded-sm border ... bg-neutral-25` holding both the
+table and the `<Pagination>`, and an inner `overflow-x-auto` around just
+the `<table>` — so a wide table scrolls horizontally without dragging the
+page-size selector and jump buttons along with it, and `overflow-hidden`
+keeps the merged card's bottom corners visually rounded regardless of the
+table's own edges.
+
+`ProjectsTable` and `TimesheetTable` (shared components used by two pages
+each) gained a `pagination?: ReactNode` prop rendered as the last child
+inside that same card, so the caller still owns the page/pageSize state
+and passes its `<Pagination>` in rather than the table needing to know
+about paging itself. `CompaniesPage`, `AircraftPage`, `TccaProjectsListPage`,
+`UsersAccessPage` and `RolesTab` render their tables inline, so they got
+the same two-div restructure directly.
+
+Storybook's `PaginationExample` rebuilt to show a real merged table+pager
+card (one sample row + the pagination bar) rather than the bar in
+isolation, since "no border of its own" only makes sense in context.
+
+## Truncate: 2-line clamp + tooltip, global standard for table cell text
+
+User-reported bug, with a screenshot: `AircraftPage`'s Model Name column
+("Israel Aircraft Astra SPX / Gulfsream 100") wrapped to 5 lines and
+stretched that entire row — and every other row in the table inherits a
+shared row height in most layouts, so one long cell distorts the whole
+grid. Root cause: `<td>` text had no width constraint, so it either grows
+the column to fit on one line or wraps freely with no cap.
+
+Fix, applied as a new standard: `patterns/Truncate.tsx` wraps text in
+`line-clamp-2` (Tailwind v4 core utility, no plugin needed) with a native
+`title` attribute carrying the untruncated string — hovering shows the
+full text as a browser tooltip, so nothing is actually lost, just not
+stretching the row. Pair it with a `maxWidth` style on the `<td>` — line-
+clamp does nothing without a width to wrap against; the browser will keep
+growing the column instead. No custom Tooltip component built for this —
+`title` is zero-JS, keyboard/AT already understand it, and building a
+hover-positioned tooltip component would be solving a problem the platform
+already solves.
+
+Applied to every long-free-text column across every table in the app:
+model/company/project/document/approval titles, descriptions, comments,
+manufacturer names. Short bounded values (dates, counts, codes, city/
+country/phone) were left alone — clamping a value that never wraps is a
+no-op, not a fix, so it wasn't applied blindly everywhere.
+
+Also shortened "Registration No" → "Reg. No" in the Aircraft table and
+`AircraftModelDrawer` (which mirrors the table's columns) — a few saved
+pixels per header, so the columns after it have more room before needing
+to truncate at all.
+
+Added `Patterns/Overview → Truncated Table Text` to Storybook as the
+reference example.
+
+## Aircraft View: one merged card, table field order, not two sections
+
+User correction: splitting View into an "Aircraft" DetailCard and a
+separate "Serial Numbers" card was wrong — Serial No isn't a distinct
+section, it's just the first two columns of the same record. Rebuilt as
+one `DetailCard`, containing a `DetailField` grid per serial (Serial No,
+Reg. No, Model Number, Model Name, Manufacture, TCCA TC, FAA TC, EASA TC,
+Drawing Prefix, Comment, Active — the exact order of the Aircraft list's
+columns), separated by a divider between entries when there's more than
+one serial — the same "repeated child rows, divider between them, never
+nested boxes" convention used for contacts in `CompanyDrawer`. A model
+with zero serials still renders one entry with blank Serial No/Reg No/
+Comment, matching the list table's own zero-serial row.
+`Truncate` kept on Model Name and Comment inside the grid, since both can
+still hold long free text even in this merged layout.
+
+## Short codes never wrap or clamp — new global rule
+
+User correction, with a screenshot: a registration like "M-AFAC" was
+wrapping to two lines in the Aircraft table (`M-` / `AFAC`), stretching
+that row taller than its neighbors — the same row-height problem
+`Truncate` fixed for long free text, but the wrong tool for this case.
+
+**The rule going forward: Serial No, Reg. No, Model No (and any short code
+or ID) must render on exactly one line, always — never wrapped and never
+clamped/truncated.** `Truncate` is for long free text where clipping to 2
+lines and offering the rest via tooltip is an acceptable trade. A code is
+different — a person needs to read the *whole* code at a glance, not hover
+to reveal half of it, and a wrapped code looks like broken layout, not
+intentional design.
+
+Implementation: `AircraftPage`'s Serial No / Reg. No / Model Number `<td>`s
+got plain `whitespace-nowrap`, matching every other short-value column in
+the app (dates, counts, prefixes). `DetailField` (`patterns/DetailView.tsx`)
+gained an optional `nowrap` prop for the same reason in read-only views —
+applied to Serial No/Reg. No/Model Number in `AircraftModelDrawer`'s View
+mode. Storybook's `Read Only Detail` and `Truncated Table Text` stories
+both updated to show real codes with `nowrap`/`whitespace-nowrap` next to
+the long-text `Truncate` example, so the contrast (and which to use when)
+is visible in one place. Keep this in mind for every future screen: codes
+never wrap, long text clamps at 2 lines with a tooltip.
+
+## Companies table: real columns, split phone field, View wired up
+
+Four user requests landed together:
+
+1. **Dropped the Telephone column** from the Companies & Contacts list —
+   it wasn't the field the client's screenshots emphasized, and there
+   wasn't room for it once the address columns below were added.
+2. **Address Line 1, Address Line 2, Province/State and Zip Code are now
+   real table columns** (they were already on the Add/Edit form, just
+   never surfaced in the list). City and Country merge into one column
+   ("Dorval, Canada") to save width — Address1/2 get `Truncate` (they can
+   run long), Province/State and Zip Code get `whitespace-nowrap` (short
+   codes, per the earlier no-wrap rule).
+3. **`Company.phone`/`CompanyContact.phone` split into `phoneCountryCode`
+   + `phoneNumber`**, relabeled "Phone No". New `ui/PhoneInput.tsx`: a
+   narrow country-code `Select` + a `tel` `Input` side by side — same
+   layout as the reference design, but built entirely from our own
+   Select/Input styling, no flag icons or pill shape. Added as a proper
+   `/components/ui` component with its own Storybook story
+   (`UI/PhoneInput → All States`) per the component-bookkeeping rule.
+   Used for both the company's own phone and each contact row's phone.
+4. **Added the missing View action** to Companies (previously only Edit/
+   Deactivate/Delete existed — View was never wired up here). Follows the
+   Aircraft precedent exactly: one `DetailCard`, company fields in a grid,
+   then a "Contacts" subsection in the *same* card with one divider-
+   separated field-group per contact — never a second bordered box.
+   Phone No renders as `"{code} {number}"` in one field, em dash if both
+   are empty.
+
+## Standing rule, restated after a repeat correction: every Edit screen is Cancel + Save Changes, one screen, no exceptions
+
+User flagged this for the third time: `AddProjectDrawer` reused its
+create-mode Stepper (Back/Continue/Create Project, one section per screen)
+for editing too, so "Edit project 3200-00" showed "Continue" as the
+primary action instead of "Save Changes" — the one drawer in the app that
+didn't match every other Edit screen's Cancel/Save Changes footer.
+
+**Restating as a standing rule, not just a fix for this one drawer: every
+Edit screen shows Cancel (secondary) + Save Changes (primary) as the only
+footer actions, with all fields on one screen — never a multi-step
+Continue flow, never different button copy.** The Stepper pattern is for
+*creating* a new record only, where progressive disclosure helps someone
+filling in data from scratch. An edit is never progressive — the data
+already exists, so there is nothing to "continue" toward.
+
+Fix: `AddProjectDrawer` branches on `isEdit`. Edit renders `StepBasicInfo`
++ `StepAdditionalDetails` + (`StepTccaSetup` only if `tccaRequired ===
+'yes'`) stacked in one scroll, no `<Stepper>`, footer is exactly Cancel +
+Save Changes. `useAddProjectForm.ts` gained `validateAll()`, merging all
+three steps' validation (respecting the same TCCA-conditional as the
+stepper) — Save Changes must check every section's required fields at
+once, not just whichever step a stepper cursor was sitting on. Create
+mode is untouched: still the Stepper with Back/Continue/Create Project.
+Confirmed the sidebar (`AppShell`) was not touched by this change — it
+was never the cause, and stays identical everywhere per standing
+instruction.
+
+## PhoneInput rebuilt: one merged field with a flag, not two boxes side by side
+
+User follow-up correction on `PhoneInput`, with a reference screenshot: it
+should be one field (single border, code segment | divider | number
+segment), with a flag next to the dial code so the selected country reads
+unambiguously (a bare "+1" doesn't say US vs. Canada), and it must stay
+narrow — a phone number never needs the full width of its row.
+
+Previous version composed the existing `Select` and `Input` components
+side by side, each keeping its own border — visually two fields, not the
+single-field look of the reference. Rebuilt as one atomic component: a
+single `h-11 rounded-sm border shadow-textfield` container (same tokens
+Input/Select already use) holding a native `<select>` (code + flag, fixed
+~88px, right border as the divider) and an `<input type="tel">` (flex-1),
+neither with its own separate box. Capped at `maxWidth: 220` so it never
+stretches to fill a wide form column, per the "keep it narrow" instruction.
+`COUNTRY_CODES` now carries a flag emoji per dial code (added 🇸🇬 +65 since
+the user's reference used it as the example).
+
+Storybook's `Filled` example switched to `+65` / `000-000-00` to mirror the
+reference screenshot exactly. `CompanyDrawer`'s contact-row Phone No column
+width trimmed from 250px to 220px to match the field's own new cap —
+verified live that both the top-level company field and the per-contact
+rows render as one narrow merged pill with the flag visible in the closed
+select.
+
+## Contacts adopt the AircraftEditDrawer entry pattern; PhoneInput goes full width
+
+Three follow-ups on the Edit Company screen, all pointing at the same
+thing — repeated-child lists should look the same everywhere:
+
+1. **PhoneInput now fills its container** instead of the ~220px cap added
+   in the previous pass. This reverses that earlier "keep it narrow"
+   instruction — flagging it explicitly rather than silently swapping.
+   Reason given: on a form, a short field breaks the shared right edge
+   every other field lines up on. Verified all six fields in the Company
+   section now measure identically (383px at a 1440px viewport).
+2. **Contacts render as collapsible entries with stacked FormFields**
+   (Full Name / Phone No / Status vertically), replacing the compact
+   horizontal row layout. This is a direct copy of `AircraftEditDrawer`'s
+   pattern: chevron + entry name as a toggle button, trash on the right,
+   divider between entries, `+ Add Another Contact` at the end. The
+   horizontal-row layout was the earlier "reads as the table it replaces"
+   decision — superseded, because matching one shared pattern across the
+   app matters more than each screen echoing its own legacy table.
+3. **Contact Active is now a Status `<Select>`** with explicit Active /
+   Inactive options rather than a bare checkbox — a checkbox communicates
+   its meaning only by being ticked, where the dropdown states both values.
+   The company-level Active stays a checkbox: its label already spells out
+   the consequence ("Active — available in pickers across the app"), which
+   a two-option dropdown would lose. View mode's contact label renamed
+   "Active" → "Status" to match the control it mirrors.
+
+Unchanged deliberately: the last contact can still be removed (a company
+with zero contacts is valid), unlike aircraft where one entry is always
+kept.

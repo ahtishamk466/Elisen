@@ -154,25 +154,23 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
             />
           </div>
         ) : (
-          <>
-            <TimesheetTable
-              rows={pageRows}
-              loading={loading}
-              showEmployee
-              canValidate
-              onView={(row) => setDrawer({ mode: 'view', row })}
-              onEdit={(row) => setDrawer({ mode: 'edit', row })}
-              onDuplicate={handleDuplicate}
-              onDelete={setDeletingRow}
-              onToggleValidated={handleToggleValidated}
-            />
-            {!loading && (
+          <TimesheetTable
+            rows={pageRows}
+            loading={loading}
+            showEmployee
+            canValidate
+            onView={(row) => setDrawer({ mode: 'view', row })}
+            onEdit={(row) => setDrawer({ mode: 'edit', row })}
+            onDuplicate={handleDuplicate}
+            onDelete={setDeletingRow}
+            onToggleValidated={handleToggleValidated}
+            pagination={!loading && (
               <Pagination
                 page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="entries"
                 onPageChange={setPage} onPageSizeChange={setPageSize}
               />
             )}
-          </>
+          />
         )}
       </div>
 

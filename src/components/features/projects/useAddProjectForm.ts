@@ -82,6 +82,17 @@ export function validateStep(step: number, v: AddProjectValues, isEdit = false):
   return e
 }
 
+/** Edit mode shows every section on one screen instead of stepping through
+    them, so Save Changes must validate all of them at once — not just
+    whichever step the stepper happened to be on. */
+export function validateAll(v: AddProjectValues, isEdit = false): Errors {
+  return {
+    ...validateStep(0, v, isEdit),
+    ...validateStep(1, v, isEdit),
+    ...(v.tccaRequired === 'yes' ? validateStep(2, v, isEdit) : {}),
+  }
+}
+
 export function useAddProjectForm(initialValues?: Partial<AddProjectValues>, initialStep = 0) {
   const [base] = useState<AddProjectValues>(() => ({ ...INITIAL, ...initialValues }))
   const [values, setValues] = useState<AddProjectValues>(base)

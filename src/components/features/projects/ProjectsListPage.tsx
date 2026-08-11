@@ -147,23 +147,21 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
             />
           </div>
         ) : (
-          <>
-            <ProjectsTable
-              rows={filtered.slice((page - 1) * pageSize, page * pageSize)}
-              loading={loading}
-              canSeeFinancials={canSeeFinancials}
-              onView={(row) => navigate(`/projects/${row.id}`)}
-              onEdit={setEditingRow}
-              onDuplicate={handleDuplicate}
-              onDelete={setDeletingRow}
-            />
-            {!loading && (
+          <ProjectsTable
+            rows={filtered.slice((page - 1) * pageSize, page * pageSize)}
+            loading={loading}
+            canSeeFinancials={canSeeFinancials}
+            onView={(row) => navigate(`/projects/${row.id}`)}
+            onEdit={setEditingRow}
+            onDuplicate={handleDuplicate}
+            onDelete={setDeletingRow}
+            pagination={!loading && (
               <Pagination
                 page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="projects"
                 onPageChange={setPage} onPageSizeChange={setPageSize}
               />
             )}
-          </>
+          />
         )}
       </div>
 

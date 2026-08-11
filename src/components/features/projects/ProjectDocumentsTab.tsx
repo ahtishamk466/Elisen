@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
+import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { useDocumentsStore } from '@/stores/documentsStore'
 import { KIND_LABEL, REVISION_STATUS_LABEL, REVISION_STATUS_TONE } from '@/lib/documentDisplay'
@@ -100,7 +101,7 @@ export function ProjectDocumentsTab({ kind, projectId, projectNumber }: ProjectD
                         <span className="ml-xs align-middle text-text-muted" title="Reused from another project"><ExternalLink size={12} aria-label="Reused from another project" /></span>
                       )}
                     </td>
-                    <td className="px-lg py-base text-sm text-text-primary">{doc.title}</td>
+                    <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 260 }}><Truncate>{doc.title}</Truncate></td>
                     <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{doc.type}</td>
                     {isDrawing ? (
                       <>

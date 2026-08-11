@@ -1,7 +1,9 @@
+import type { ReactNode } from 'react'
 import { Eye, Pencil, Copy, Trash2, CheckCircle2 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionsMenu, type ActionsMenuItem } from '@/components/patterns/ActionsMenu'
+import { Truncate } from '@/components/patterns/Truncate'
 import type { EnrichedTimesheetRow } from '@/lib/timesheetLookup'
 
 const BASE_HEADERS = [
@@ -22,11 +24,14 @@ export interface TimesheetTableProps {
   onDuplicate?: (row: EnrichedTimesheetRow) => void
   onDelete?: (row: EnrichedTimesheetRow) => void
   onToggleValidated?: (row: EnrichedTimesheetRow) => void
+  /** Rendered as the table's own footer bar — inside the same card, not a
+      second box below it. Typically a <Pagination>. */
+  pagination?: ReactNode
 }
 
 export function TimesheetTable({
   rows, loading = false, showEmployee = false, canValidate = false,
-  onView, onEdit, onDuplicate, onDelete, onToggleValidated,
+  onView, onEdit, onDuplicate, onDelete, onToggleValidated, pagination,
 }: TimesheetTableProps) {
   const headers = showEmployee ? ['Employee', ...BASE_HEADERS] : BASE_HEADERS
 
@@ -47,7 +52,8 @@ export function TimesheetTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
+    <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+      <div className="overflow-x-auto">
       <table className="w-full border-collapse text-left" style={{ minWidth: 1280 }}>
         <caption className="sr-only">Timesheet entries</caption>
         <thead>
@@ -82,16 +88,16 @@ export function TimesheetTable({
                       {row.projectLabel}
                     </button>
                   </td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary">{row.projectDescription}</td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary">{row.workPackageTitle}</td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary">{row.activityTitle}</td>
+                  <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 200 }}><Truncate>{row.projectDescription}</Truncate></td>
+                  <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 160 }}><Truncate>{row.workPackageTitle}</Truncate></td>
+                  <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 160 }}><Truncate>{row.activityTitle}</Truncate></td>
                   <td className="px-lg py-base align-top text-sm text-text-primary">{row.task || '—'}</td>
                   <td className="px-lg py-base align-top text-sm text-text-primary">{row.deliverableNumber || '—'}</td>
                   <td className="px-lg py-base align-top text-sm text-text-primary">{row.workingDate}</td>
                   <td className="px-lg py-base align-top text-sm text-text-primary">{row.hoursRegular.toFixed(2)}</td>
                   <td className="px-lg py-base align-top text-sm text-text-primary">{row.hoursOvertime.toFixed(2)}</td>
                   <td className="px-lg py-base align-top text-sm text-text-primary">{row.bankHoursRegular.toFixed(2)}</td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary">{row.comment || '—'}</td>
+                  <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 180 }}><Truncate>{row.comment || '—'}</Truncate></td>
                   <td className="px-lg py-base align-top">
                     <Badge tone={row.validated ? 'success' : 'neutral'} dot>{row.validated ? 'Yes' : 'No'}</Badge>
                   </td>
@@ -105,6 +111,8 @@ export function TimesheetTable({
               ))}
         </tbody>
       </table>
+      </div>
+      {pagination}
     </div>
   )
 }

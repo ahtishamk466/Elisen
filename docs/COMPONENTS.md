@@ -12,6 +12,7 @@ Updated as components are added or changed.
 | Input | default, focused, typed, error, disabled; optional leading/trailing icons | `ui/Input.tsx` | Single-line text, number and date entry |
 | Textarea | default, error, disabled | `ui/Textarea.tsx` | Multi-line text (descriptions, comments) |
 | Select | default, error, disabled, placeholder | `ui/Select.tsx` | Single-choice from a known list |
+| PhoneInput | default, filled, error, disabled | `ui/PhoneInput.tsx` | One merged field: flag + dial code (native select) \| number, our own Input/Select tokens (h-11, rounded-sm, shadow-textfield). Fills its container so it lines up with every other field. Use for every phone number field |
 | Checkbox | checked / unchecked × enabled / disabled, optional required marker | `ui/Checkbox.tsx` | Multi-select and applicability ticks |
 | RadioCard | selected / unselected / disabled | `ui/RadioCard.tsx` | Mutually exclusive choice with explanatory copy |
 | Badge | danger / warning / info / success / neutral × subtle / outline, optional dot | `ui/Badge.tsx` | Status and priority labels |
@@ -30,8 +31,9 @@ Updated as components are added or changed.
 | Stepper | n steps, done / active / upcoming | `patterns/Stepper.tsx` | Multi-step form progress |
 | StatCard | default, loading | `patterns/StatCard.tsx` | Single headline metric |
 | EmptyState | with/without action, custom icon | `patterns/EmptyState.tsx` | Zero-data and no-results states |
-| Pagination | first / middle / last page, empty | `patterns/Pagination.tsx` | Page-size select + "Showing X to Y of Z" + first/prev/page/next/last controls, bottom of every table |
-| DetailCard / DetailField | with/without edit icon; empty field | `patterns/DetailView.tsx` | THE standard read-only View: bordered card + muted-label/plain-value field grid. Never use a disabled form input to show read-only data — it dims real values to the same gray as an empty placeholder |
+| Pagination | first / middle / last page, empty | `patterns/Pagination.tsx` | Page-size select + "Showing X to Y of Z" + first/prev/page/next/last controls. No border/rounded/bg of its own — renders as the last child inside the same card as its table, separated by one top border, never a second box below it |
+| DetailCard / DetailField | with/without edit icon; empty field; `nowrap` | `patterns/DetailView.tsx` | THE standard read-only View: bordered card + muted-label/plain-value field grid. Never use a disabled form input to show read-only data — it dims real values to the same gray as an empty placeholder. Pass `nowrap` on short codes (Serial No, Reg. No, Model No, IDs) |
+| Truncate | 1 line / 2 lines | `patterns/Truncate.tsx` | THE standard for long free text in a table cell: `line-clamp`, full text on hover via native `title`. Pair with a `maxWidth` style on the `<td>` — without a width constraint the browser just grows the column instead of wrapping. Never use on short codes — see the `whitespace-nowrap` rule below |
 | AccordionSection | open / closed, optional meta | `patterns/AccordionSection.tsx` | Collapsible grouped content (checklist phases) |
 | AppShell | active nav item / child; optional headerLeft / headerActions | `patterns/AppShell.tsx` | Sidebar + header frame; heading left, page controls right |
 | SidebarProfile | menu closed / open; profile drawer; logout confirm | `patterns/SidebarProfile.tsx` | Signed-in identity at the foot of the sidebar, with Profile and Logout |
@@ -43,8 +45,8 @@ Updated as components are added or changed.
 | Component | Variants | Location | Purpose |
 |-----------|----------|----------|---------|
 | ProjectsListPage | ready / loading / empty / error × with/without financials | `features/projects/ProjectsListPage.tsx` | Projects list screen |
-| ProjectsTable | default, loading, financials hidden | `features/projects/ProjectsTable.tsx` | Project rows with status/priority badges |
-| AddProjectDrawer | 2-step (no TCCA) / 3-step (TCCA required) | `features/projects/AddProjectDrawer.tsx` | Create-project flow orchestrator |
+| ProjectsTable | default, loading, financials hidden | `features/projects/ProjectsTable.tsx` | Project rows with status/priority badges; `pagination` prop renders inside the same card as its table's footer |
+| AddProjectDrawer | create: 2-step (no TCCA) / 3-step (TCCA required); edit: single screen | `features/projects/AddProjectDrawer.tsx` | Create uses the Stepper (Cancel/Back/Continue/Create Project); edit shows every section at once with no stepper (Cancel + Save Changes only) — the standard Edit footer used everywhere else |
 | StepBasicInfo | with/without financial section | `features/projects/StepBasicInfo.tsx` | Step 1 — identification, company, scope, TCCA question |
 | StepAdditionalDetails | — | `features/projects/StepAdditionalDetails.tsx` | Step 2 — dates, aircraft, proposal, notes |
 | StepTccaSetup | — | `features/projects/StepTccaSetup.tsx` | Step 3 — TCCA project + checklist applicability |
@@ -72,7 +74,7 @@ Updated as components are added or changed.
 |-----------|----------|----------|---------|
 | TimesheetListPage | ready / loading / empty / error | `features/timesheet/TimesheetListPage.tsx` | Self-service timesheet list at `/timesheet`, scoped to the signed-in employee |
 | HoursWorkedPage | ready / loading / empty / error | `features/timesheet/HoursWorkedPage.tsx` | Admin, cross-employee list at `/hours-worked` over the same records |
-| TimesheetTable | self (locked once validated) / admin (`canValidate`, full control) | `features/timesheet/TimesheetTable.tsx` | Shared table; Validated/Active as Badge, 3-dot row actions |
+| TimesheetTable | self (locked once validated) / admin (`canValidate`, full control) | `features/timesheet/TimesheetTable.tsx` | Shared table; Validated/Active as Badge, 3-dot row actions; `pagination` prop renders inside the same card as its table's footer |
 | TimesheetEntryDrawer | create / edit / view; employee fixed / selectable | `features/timesheet/TimesheetEntryDrawer.tsx` | Orchestrator — form vs. read-only view, cascade state, submit |
 | TimesheetEntryFormFields | — | `features/timesheet/TimesheetEntryFormFields.tsx` | Add/Edit form body: Project → Work Package → Activity → Task → Deliverable cascade |
 | TimesheetEntryView | — | `features/timesheet/TimesheetEntryView.tsx` | Read-only label/value detail layout for View mode (no form controls) |
@@ -84,9 +86,9 @@ Updated as components are added or changed.
 | Component | Variants | Location | Purpose |
 |-----------|----------|----------|---------|
 | CompaniesPage | ready / loading / error; empty w/ clear | `features/lookups/CompaniesPage.tsx` | `/admin/companies` — old Companies + Contacts merged; search matches contact names |
-| CompanyDrawer | create / edit | `features/lookups/CompanyDrawer.tsx` | Address fields + inline contact list (divider rows, add/remove) |
+| CompanyDrawer | create / edit / view | `features/lookups/CompanyDrawer.tsx` | Address fields (incl. PhoneInput) + contacts as collapsible entries with stacked FormFields, matching AircraftEditDrawer. View: one DetailCard for company + contacts, divider-separated, not a second card |
 | AircraftPage | ready / loading / error; empty w/ clear | `features/lookups/AircraftPage.tsx` | `/admin/aircraft` — old Aircraft + Serial Numbers merged; search matches serial/registration |
-| AircraftModelDrawer | create / edit / view | `features/lookups/AircraftModelDrawer.tsx` | Edit/create: one editable table, same columns/order as the Aircraft list, one row per serial, model fields shared live across rows. View: DetailCard/DetailField, not the table |
+| AircraftModelDrawer | create / edit / view | `features/lookups/AircraftModelDrawer.tsx` | Edit/create: one editable table, same columns/order as the Aircraft list, one row per serial, model fields shared live across rows. View: one DetailCard, same field order as the list (Serial No, Reg. No, Model No, ...), repeated per serial with a divider between entries — not a separate Serial Numbers card |
 | AtaChaptersPage | ready / loading / error; search auto-expands | `features/lookups/AtaChaptersPage.tsx` | `/admin/ata-chapters` — chapters as expandable cards with sections inside (WP→Activity pattern) |
 | AtaChapterDrawer | create / edit (code locked on edit) | `features/lookups/AtaChapterDrawer.tsx` | Chapter code, title, definition, active |
 | AtaSubChapterDrawer | create / edit; parent named in title | `features/lookups/AtaSubChapterDrawer.tsx` | Section within a chapter |

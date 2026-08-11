@@ -5,7 +5,7 @@ import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Stepper } from '@/components/patterns/Stepper'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
-import { useAddProjectForm, validateStep, type AddProjectValues } from './useAddProjectForm'
+import { useAddProjectForm, validateStep, validateAll, type AddProjectValues } from './useAddProjectForm'
 import { StepBasicInfo } from './StepBasicInfo'
 import { StepAdditionalDetails } from './StepAdditionalDetails'
 import { StepTccaSetup } from './StepTccaSetup'
@@ -48,7 +48,7 @@ export function AddProjectDrawer({
   }
 
   const handleSubmit = async () => {
-    const e = validateStep(step, values, isEdit)
+    const e = isEdit ? validateAll(values, isEdit) : validateStep(step, values, isEdit)
     setErrors(e)
     if (Object.keys(e).length > 0) return
     setSubmitting(true)
@@ -71,36 +71,60 @@ export function AddProjectDrawer({
         onClose={requestClose}
         title={title}
         footer={
-          <>
-            {step > 0 && (
-              <Button variant="tertiary" onClick={back} leadingIcon={<ArrowLeft size={16} />}>
-                Back
+          isEdit ? (
+            <>
+              <Button variant="secondary" onClick={requestClose}>
+                Cancel
               </Button>
-            )}
-            <Button variant="secondary" onClick={requestClose}>
-              Cancel
-            </Button>
-            {isLastStep ? (
               <Button onClick={handleSubmit} loading={submitting}>
-                {isEdit ? 'Save Changes' : 'Create Project'}
+                Save Changes
               </Button>
-            ) : (
-              <Button onClick={next}>Continue</Button>
-            )}
-          </>
+            </>
+          ) : (
+            <>
+              {step > 0 && (
+                <Button variant="tertiary" onClick={back} leadingIcon={<ArrowLeft size={16} />}>
+                  Back
+                </Button>
+              )}
+              <Button variant="secondary" onClick={requestClose}>
+                Cancel
+              </Button>
+              {isLastStep ? (
+                <Button onClick={handleSubmit} loading={submitting}>
+                  Create Project
+                </Button>
+              ) : (
+                <Button onClick={next}>Continue</Button>
+              )}
+            </>
+          )
         }
       >
-        <Stepper steps={steps} current={step} />
+        {/* Edit shows every section on one screen, like every other Edit
+            drawer in the app (Cancel + Save Changes, no step navigation) —
+            the stepper is only for progressively collecting a new record. */}
+        {!isEdit && <Stepper steps={steps} current={step} />}
 
         {hasErrors && (
           <Alert title="Please complete the required fields">
-            Fill in all fields marked with an asterisk (*) before continuing.
+            Fill in all fields marked with an asterisk (*) before {isEdit ? 'saving' : 'continuing'}.
           </Alert>
         )}
 
-        {step === 0 && <StepBasicInfo {...stepProps} />}
-        {step === 1 && <StepAdditionalDetails {...stepProps} />}
-        {step === 2 && <StepTccaSetup {...stepProps} />}
+        {isEdit ? (
+          <>
+            <StepBasicInfo {...stepProps} />
+            <StepAdditionalDetails {...stepProps} />
+            {values.tccaRequired === 'yes' && <StepTccaSetup {...stepProps} />}
+          </>
+        ) : (
+          <>
+            {step === 0 && <StepBasicInfo {...stepProps} />}
+            {step === 1 && <StepAdditionalDetails {...stepProps} />}
+            {step === 2 && <StepTccaSetup {...stepProps} />}
+          </>
+        )}
       </Drawer>
 
       <ConfirmDialog

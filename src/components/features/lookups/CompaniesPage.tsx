@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Plus, Search, Building2, Pencil, Trash2, CircleCheck, CircleOff } from 'lucide-react'
+import { Plus, Search, Building2, Eye, Pencil, Trash2, CircleCheck, CircleOff } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { Pagination } from '@/components/patterns/Pagination'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
+import { Truncate } from '@/components/patterns/Truncate'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
@@ -14,7 +15,7 @@ import { CompanyDrawer } from './CompanyDrawer'
 import { useLookupStore } from '@/stores/lookupStore'
 import type { Company } from '@/types/lookup'
 
-const HEADERS = ['Name', 'City', 'Country', 'Telephone', 'Contacts', 'Active', 'Actions']
+const HEADERS = ['Name', 'City, Country', 'Address Line 1', 'Address Line 2', 'Province/State', 'Zip Code', 'Contacts', 'Active', 'Actions']
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -30,7 +31,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit'; company?: Company } | null>(null)
+  const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; company?: Company } | null>(null)
   const [deleting, setDeleting] = useState<Company | null>(null)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -42,7 +43,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
     const q = query.toLowerCase().trim()
     if (!q) return companies.map((c) => ({ company: c, matchedContact: undefined as string | undefined }))
     return companies.flatMap((c) => {
-      const inCompany = `${c.name} ${c.city} ${c.country} ${c.phone}`.toLowerCase().includes(q)
+      const inCompany = `${c.name} ${c.city} ${c.country} ${c.address1} ${c.address2} ${c.provState} ${c.postal} ${c.phoneNumber}`.toLowerCase().includes(q)
       const contactHit = contactsOf(c.id).find((ct) => ct.fullName.toLowerCase().includes(q))
       if (!inCompany && !contactHit) return []
       return [{ company: c, matchedContact: contactHit && !inCompany ? contactHit.fullName : undefined }]
@@ -92,9 +93,9 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
             />
           </div>
         ) : (
-          <>
-          <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
-            <table className="w-full border-collapse text-left" style={{ minWidth: 900 }}>
+          <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left" style={{ minWidth: 1240 }}>
               <caption className="sr-only">Companies and their contacts</caption>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
@@ -116,21 +117,25 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
                         onClick={() => setDrawer({ mode: 'edit', company: c })}
                         className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
                       >
-                        <td className="px-lg py-base align-top">
+                        <td className="px-lg py-base align-top" style={{ maxWidth: 220 }}>
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setDrawer({ mode: 'edit', company: c }) }}
-                            className="text-left text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+                            className="block w-full text-left text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
                           >
-                            {c.name}
+                            <Truncate lines={1}>{c.name}</Truncate>
                           </button>
                           {matchedContact && (
                             <span className="ml-sm"><Badge appearance="outline">contact: {matchedContact}</Badge></span>
                           )}
                         </td>
-                        <td className="px-lg py-base align-top text-sm text-text-primary">{c.city || '—'}</td>
-                        <td className="px-lg py-base align-top text-sm text-text-primary">{c.country || '—'}</td>
-                        <td className="px-lg py-base align-top text-sm text-text-primary">{c.phone || '—'}</td>
+                        <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
+                          {[c.city, c.country].filter(Boolean).join(', ') || '—'}
+                        </td>
+                        <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 180 }}><Truncate>{c.address1 || '—'}</Truncate></td>
+                        <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 180 }}><Truncate>{c.address2 || '—'}</Truncate></td>
+                        <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{c.provState || '—'}</td>
+                        <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{c.postal || '—'}</td>
                         <td className="px-lg py-base align-top text-sm text-text-primary">{contactsOf(c.id).length}</td>
                         <td className="px-lg py-base align-top">
                           <Badge tone={c.active ? 'success' : 'neutral'} dot>{c.active ? 'Active' : 'Inactive'}</Badge>
@@ -139,6 +144,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
                           <ActionsMenu
                             ariaLabel={`Actions for ${c.name}`}
                             items={[
+                              { label: 'View', icon: <Eye size={16} />, onSelect: () => setDrawer({ mode: 'view', company: c }) },
                               { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setDrawer({ mode: 'edit', company: c }) },
                               c.active
                                 ? { label: 'Deactivate', icon: <CircleOff size={16} />, onSelect: () => { updateCompany(c.id, { active: false }); setToast(`${c.name} deactivated — hidden from pickers.`) } }
@@ -158,13 +164,13 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
               onPageChange={setPage} onPageSizeChange={setPageSize}
             />
           )}
-          </>
+          </div>
         )}
       </div>
 
       {drawer && (
         <CompanyDrawer
-          key={drawer.company?.id ?? 'new'}
+          key={`${drawer.mode}-${drawer.company?.id ?? 'new'}`}
           mode={drawer.mode}
           initial={drawer.company}
           initialContacts={drawer.company ? contactsOf(drawer.company.id) : []}

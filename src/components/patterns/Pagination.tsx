@@ -26,9 +26,12 @@ export function Pagination({
   const atLast = page >= pageCount
 
   return (
+    // No border/rounded/bg of its own — sits as the footer bar inside the
+    // same card as the table it paginates, separated by one top border,
+    // never a second boxed container floating below it.
     <nav
       aria-label="Pagination"
-      className="flex flex-wrap items-center justify-between gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg py-base"
+      className="flex flex-wrap items-center justify-between gap-lg border-t border-border-default px-lg py-base"
     >
       <div className="flex items-center gap-sm">
         <label htmlFor="pagination-page-size" className="text-sm text-text-secondary">Page Size:</label>

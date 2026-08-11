@@ -11,9 +11,11 @@ import { AccordionSection } from './AccordionSection'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Drawer } from './Drawer'
 import { DetailCard, DetailField } from './DetailView'
+import { Truncate } from './Truncate'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Checkbox'
+import { Badge } from '@/components/ui/Badge'
 
 const meta: Meta = { title: 'Patterns/Overview' }
 export default meta
@@ -43,13 +45,17 @@ export const FormBuildingBlocks: Story = {
 /** The standard View (read-only) state: DetailCard + DetailField, plain
     label-over-value text, no input borders. Use this for every read-only
     screen — never a disabled form input standing in for a view. Empty
-    fields show an em dash, so blank is visibly distinct from a real value. */
+    fields show an em dash, so blank is visibly distinct from a real value.
+    Short codes (Serial No, Reg. No, Model No, IDs) always pass `nowrap` —
+    a wrapped code reads as broken, never truncate/clamp one. */
 export const ReadOnlyDetail: Story = {
   render: () => (
     <div className="grid gap-lg p-lg" style={{ maxWidth: 720 }}>
       <DetailCard title="Aircraft">
         <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
-          <DetailField label="Model Number">A320</DetailField>
+          <DetailField label="Serial No" nowrap>9033</DetailField>
+          <DetailField label="Reg. No" nowrap>M-YGJL</DetailField>
+          <DetailField label="Model Number" nowrap>A320</DetailField>
           <DetailField label="Model Name">Airbus A320</DetailField>
           <DetailField label="Manufacture">Airbus</DetailField>
           <DetailField label="TCCA TC" />
@@ -97,14 +103,51 @@ export const StatsAndEmpty: Story = {
   ),
 }
 
+const PAGINATION_ROW_HEADERS = ['No. / Type', 'Project', 'Company Name', 'Contact Name', 'Person Res.', 'Hours (Act/Bud)', 'Priority', 'Status', 'Actions']
+
+/** Pagination is a table's footer, not a second card below it — always
+    render it as the last child inside the same bordered wrapper as the
+    table, sharing one border/corner-radius. Never give it its own box. */
 function PaginationDemo() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   return (
-    <Pagination
-      page={page} pageSize={pageSize} totalItems={781} itemLabel="items"
-      onPageChange={setPage} onPageSizeChange={setPageSize}
-    />
+    <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-left" style={{ minWidth: 900 }}>
+          <thead>
+            <tr className="border-b border-border-default bg-neutral-50">
+              {PAGINATION_ROW_HEADERS.map((h) => (
+                <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-border-default last:border-b-0">
+              <td className="whitespace-nowrap px-lg py-base">
+                <p className="text-sm font-semibold text-text-primary">3200-00</p>
+                <p className="text-xs text-text-muted">Internal</p>
+              </td>
+              <td className="px-lg py-base text-sm text-text-primary">STC — Cabin Interior Modification, Cert Program</td>
+              <td className="whitespace-nowrap px-lg py-base">
+                <p className="text-sm text-text-primary">Northwind Aerospace</p>
+                <p className="text-xs text-text-muted">246</p>
+              </td>
+              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">Nathalie Gagnon</td>
+              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">Sofia Reyes</td>
+              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">44 / 80h</td>
+              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">2 – High</td>
+              <td className="whitespace-nowrap px-lg py-base"><Badge>On Hold</Badge></td>
+              <td className="px-lg py-base text-text-secondary">⋮</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <Pagination
+        page={page} pageSize={pageSize} totalItems={781} itemLabel="items"
+        onPageChange={setPage} onPageSizeChange={setPageSize}
+      />
+    </div>
   )
 }
 export const PaginationExample: Story = { render: () => <div className="p-lg"><PaginationDemo /></div> }
@@ -174,3 +217,37 @@ function OverlayDemo() {
   )
 }
 export const Overlays: Story = { render: () => <OverlayDemo /> }
+
+/** The standard for any table cell that can hold long free text (titles,
+    descriptions, comments, model names): clip at 2 lines instead of
+    stretching the whole row, full text on hover via the native title
+    tooltip. Never let one long cell blow out every row's height. */
+export const TruncatedTableText: Story = {
+  render: () => (
+    <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25" style={{ maxWidth: 900 }}>
+      <table className="w-full border-collapse text-left">
+        <thead>
+          <tr className="border-b border-border-default bg-neutral-50">
+            <th scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Serial No</th>
+            <th scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Reg. No</th>
+            <th scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Model Number</th>
+            <th scope="col" className="px-lg py-base text-sm font-semibold text-text-secondary">Model Name</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="border-b border-border-default last:border-b-0">
+            {/* Short codes: whitespace-nowrap, never truncate/clamp — a
+                wrapped serial or registration reads as broken data. */}
+            <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">9033</td>
+            <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">M-YGJL</td>
+            <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">Astra SPX</td>
+            {/* Long free text: line-clamp-2 + title tooltip via Truncate. */}
+            <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 260 }}>
+              <Truncate>Israel Aircraft Astra SPX / Gulfsream 100 — Long-Range Variant, Extended Cabin Configuration</Truncate>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  ),
+}

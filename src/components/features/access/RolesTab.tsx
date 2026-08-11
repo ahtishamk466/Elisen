@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { ActionsMenu, type ActionsMenuItem } from '@/components/patterns/ActionsMenu'
 import { Pagination } from '@/components/patterns/Pagination'
+import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { RoleDrawer } from './RoleDrawer'
 import { useAccessStore } from '@/stores/accessStore'
@@ -45,7 +46,8 @@ export function RolesTab({ onToast, adding, setAdding }: RolesTabProps) {
 
   return (
     <div className="grid gap-lg">
-      <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
+      <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+      <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left" style={{ minWidth: 760 }}>
           <caption className="sr-only">Roles</caption>
           <thead>
@@ -71,7 +73,7 @@ export function RolesTab({ onToast, adding, setAdding }: RolesTabProps) {
                     {role.name}
                   </button>
                 </td>
-                <td className="px-lg py-base align-top text-sm text-text-primary">{role.description}</td>
+                <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 240 }}><Truncate>{role.description}</Truncate></td>
                 <td className="px-lg py-base align-top text-sm text-text-primary">
                   {rules.find((r) => r.id === role.ruleId)?.name ?? '—'}
                 </td>
@@ -99,6 +101,7 @@ export function RolesTab({ onToast, adding, setAdding }: RolesTabProps) {
         page={page} pageSize={pageSize} totalItems={roles.length} itemLabel="roles"
         onPageChange={setPage} onPageSizeChange={setPageSize}
       />
+      </div>
 
       {adding && (
         <RoleDrawer

@@ -37,17 +37,21 @@ export function DetailCard({ title, onEdit, children }: DetailCardProps) {
 export interface DetailFieldProps {
   label: string
   children?: ReactNode
+  /** Short codes (serial no, reg no, model no, IDs) must never wrap —
+      a 2-line code reads as broken, not as data. Long free text (names,
+      descriptions, comments) should use <Truncate> instead, never this. */
+  nowrap?: boolean
 }
 
 /** Muted label above a plain-text value — an em dash when empty, so blank
     is visibly distinct from a real value (unlike a grayed-out input, where
     both look identical). */
-export function DetailField({ label, children }: DetailFieldProps) {
+export function DetailField({ label, children, nowrap = false }: DetailFieldProps) {
   const isEmpty = children === undefined || children === null || children === ''
   return (
     <div>
       <p className="text-xs text-text-muted">{label}</p>
-      <p className="mt-xxss text-sm text-text-primary">{isEmpty ? '—' : children}</p>
+      <p className={`mt-xxss text-sm text-text-primary ${nowrap ? 'whitespace-nowrap' : ''}`}>{isEmpty ? '—' : children}</p>
     </div>
   )
 }

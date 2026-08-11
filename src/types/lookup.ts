@@ -14,7 +14,10 @@ export interface Company {
   provState: string
   country: string
   postal: string
-  phone: string
+  /** Split so the UI can show a dedicated country-code select next to a
+      plain number field — see ui/PhoneInput.tsx. */
+  phoneCountryCode: string
+  phoneNumber: string
   active: boolean
 }
 
@@ -24,7 +27,8 @@ export interface CompanyContact {
   /** One field, not first/last — the rest of the app already treats a
       contact as a single display name (ProjectListRow.contactName). */
   fullName: string
-  phone: string
+  phoneCountryCode: string
+  phoneNumber: string
   active: boolean
 }
 

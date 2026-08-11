@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
+import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { useApprovalsStore } from '@/stores/approvalsStore'
 import { useTccaStore } from '@/stores/tccaStore'
@@ -74,7 +75,7 @@ export function ProjectApprovalsTab({ projectId }: { projectId: string }) {
                   return (
                     <tr key={a.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
                       <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">{a.number}</td>
-                      <td className="px-lg py-base text-sm text-text-primary">{a.title}</td>
+                      <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 260 }}><Truncate>{a.title}</Truncate></td>
                       <td className="whitespace-nowrap px-lg py-base"><Badge tone={a.authority === 'tcca' ? 'info' : 'neutral'}>{AUTHORITY_LABEL[a.authority]}</Badge></td>
                       <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{APPROVAL_TYPE_LABEL[a.type]}</td>
                       <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{a.aircraft || '—'}</td>

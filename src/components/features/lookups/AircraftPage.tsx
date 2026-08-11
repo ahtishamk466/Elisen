@@ -5,6 +5,7 @@ import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { Pagination } from '@/components/patterns/Pagination'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
+import { Truncate } from '@/components/patterns/Truncate'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
@@ -14,7 +15,7 @@ import { AircraftModelDrawer } from './AircraftModelDrawer'
 import { useLookupStore } from '@/stores/lookupStore'
 import type { AircraftModel, AircraftSerial } from '@/types/lookup'
 
-const HEADERS = ['Serial No', 'Registration No', 'Model Number', 'Model Name', 'Manufacture', 'TCCA TC', 'FAA TC', 'EASA TC', 'Prefix', 'Comment', 'Active', 'Actions']
+const HEADERS = ['Serial No', 'Reg. No', 'Model Number', 'Model Name', 'Manufacture', 'TCCA TC', 'FAA TC', 'EASA TC', 'Prefix', 'Comment', 'Active', 'Actions']
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -100,8 +101,8 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
             />
           </div>
         ) : (
-          <>
-          <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
+          <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+          <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left" style={{ minWidth: 1240 }}>
               <caption className="sr-only">Aircraft serial numbers and their model</caption>
               <thead>
@@ -124,9 +125,9 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
                         onClick={() => setDrawer({ mode: 'edit', model: a })}
                         className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
                       >
-                        <td className="px-lg py-base align-top text-sm text-text-primary">{s?.serial || '—'}</td>
-                        <td className="px-lg py-base align-top text-sm text-text-primary">{s?.registration || '—'}</td>
-                        <td className="px-lg py-base align-top">
+                        <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{s?.serial || '—'}</td>
+                        <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{s?.registration || '—'}</td>
+                        <td className="whitespace-nowrap px-lg py-base align-top">
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setDrawer({ mode: 'edit', model: a }) }}
@@ -135,13 +136,13 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
                             {a.modelNumber}
                           </button>
                         </td>
-                        <td className="px-lg py-base align-top text-sm text-text-primary">{a.modelName || '—'}</td>
-                        <td className="px-lg py-base align-top text-sm text-text-primary">{a.manufacturer || '—'}</td>
+                        <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 200 }}><Truncate>{a.modelName || '—'}</Truncate></td>
+                        <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 160 }}><Truncate>{a.manufacturer || '—'}</Truncate></td>
                         <td className="px-lg py-base align-top text-sm text-text-primary">{a.tccaTc || '—'}</td>
                         <td className="px-lg py-base align-top text-sm text-text-primary">{a.faaTc || '—'}</td>
                         <td className="px-lg py-base align-top text-sm text-text-primary">{a.easaTc || '—'}</td>
                         <td className="px-lg py-base align-top text-sm text-text-primary">{a.drawingPrefix || '—'}</td>
-                        <td className="px-lg py-base align-top text-sm text-text-primary">{s?.comment || '—'}</td>
+                        <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 180 }}><Truncate>{s?.comment || '—'}</Truncate></td>
                         <td className="px-lg py-base align-top">
                           <Badge tone={a.active ? 'success' : 'neutral'} dot>{a.active ? 'Active' : 'Inactive'}</Badge>
                         </td>
@@ -169,7 +170,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
               onPageChange={setPage} onPageSizeChange={setPageSize}
             />
           )}
-          </>
+          </div>
         )}
       </div>
 

@@ -5,6 +5,7 @@ import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { Pagination } from '@/components/patterns/Pagination'
+import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -85,8 +86,8 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
             />
           </div>
         ) : (
-          <>
-          <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
+          <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+          <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left" style={{ minWidth: 760 }}>
               <caption className="sr-only">TCCA projects</caption>
               <thead>
@@ -114,7 +115,7 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
                             {t.number}
                           </Link>
                         </td>
-                        <td className="px-lg py-base text-sm text-text-primary">{t.description}</td>
+                        <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 320 }}><Truncate>{t.description}</Truncate></td>
                         <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{projectLabel(t)}</td>
                         <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{t.openedDate}</td>
                         <td className="px-lg py-base"><Badge tone={TCCA_STATUS_TONE[t.status]}>{TCCA_STATUS_LABEL[t.status]}</Badge></td>
@@ -139,7 +140,7 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
               onPageChange={setPage} onPageSizeChange={setPageSize}
             />
           )}
-          </>
+          </div>
         )}
       </div>
 

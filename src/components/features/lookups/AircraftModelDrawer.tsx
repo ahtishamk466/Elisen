@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { Drawer } from '@/components/patterns/Drawer'
 import { FormSection } from '@/components/patterns/FormSection'
 import { DetailCard, DetailField } from '@/components/patterns/DetailView'
+import { Truncate } from '@/components/patterns/Truncate'
 import { Input } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Button } from '@/components/ui/Button'
@@ -20,7 +21,7 @@ export interface AircraftModelDrawerProps {
 // the model's own columns, in the same left-to-right order.
 const COLUMNS = [
   { key: 'serial', label: 'Serial No', width: 90 },
-  { key: 'registration', label: 'Registration No', width: 110 },
+  { key: 'registration', label: 'Reg. No', width: 110 },
   { key: 'modelNumber', label: 'Model Number', width: 100 },
   { key: 'modelName', label: 'Model Name', width: 160 },
   { key: 'manufacturer', label: 'Manufacture', width: 130 },
@@ -79,54 +80,33 @@ export function AircraftModelDrawer({ mode, initial, initialSerials = [], onClos
       }
     >
       {isView ? (
-        <>
-          {/* Read-only: a Field grid for the record, never a disabled input —
-              disabling an input dims real values to the same gray as an
-              empty placeholder, so a filled field and a blank one look
-              identical. This is the standard View layout for every screen. */}
-          <DetailCard title="Aircraft">
-            <div className="grid grid-cols-2 gap-lg tablet:grid-cols-4">
-              <DetailField label="Model Number">{m.modelNumber}</DetailField>
-              <DetailField label="Model Name">{m.modelName}</DetailField>
-              <DetailField label="Manufacture">{m.manufacturer}</DetailField>
-              <DetailField label="Active">{m.active ? 'Active' : 'Inactive'}</DetailField>
-              <DetailField label="TCCA TC">{m.tccaTc}</DetailField>
-              <DetailField label="FAA TC">{m.faaTc}</DetailField>
-              <DetailField label="EASA TC">{m.easaTc}</DetailField>
-              <DetailField label="Drawing Prefix">{m.drawingPrefix}</DetailField>
-            </div>
-          </DetailCard>
-
-          <DetailCard title="Serial Numbers">
-            {realSerials.length === 0 ? (
-              <p className="text-sm text-text-muted">No serial numbers yet.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-left">
-                  <caption className="sr-only">Serial numbers for {m.modelNumber}</caption>
-                  <thead>
-                    <tr className="border-b border-border-default">
-                      <th scope="col" className="whitespace-nowrap py-sm pr-lg text-xs font-semibold text-text-muted">Serial No</th>
-                      <th scope="col" className="whitespace-nowrap py-sm pr-lg text-xs font-semibold text-text-muted">Registration No</th>
-                      <th scope="col" className="whitespace-nowrap py-sm pr-lg text-xs font-semibold text-text-muted">Comment</th>
-                      <th scope="col" className="whitespace-nowrap py-sm pr-lg text-xs font-semibold text-text-muted">Active</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {realSerials.map((sn) => (
-                      <tr key={sn.id} className="border-b border-border-default last:border-b-0">
-                        <td className="whitespace-nowrap py-sm pr-lg text-sm text-text-primary">{sn.serial || '—'}</td>
-                        <td className="whitespace-nowrap py-sm pr-lg text-sm text-text-primary">{sn.registration || '—'}</td>
-                        <td className="py-sm pr-lg text-sm text-text-primary">{sn.comment || '—'}</td>
-                        <td className="whitespace-nowrap py-sm pr-lg text-sm text-text-primary">{sn.active ? 'Active' : 'Inactive'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        // Read-only: a single Field grid for the whole record, never a
+        // disabled input — disabling dims real values to the same gray as
+        // an empty placeholder. Serial No/Reg No aren't a separate section;
+        // they're the first two fields, same order as the Aircraft table
+        // (Serial No, Reg. No, Model No, Model Name, Manufacturer, ...),
+        // repeated per serial with a divider between entries.
+        <DetailCard title="Aircraft">
+          <div className="grid gap-lg">
+            {(realSerials.length ? realSerials : [undefined]).map((sn, i) => (
+              <div key={sn?.id ?? 'none'} className={i > 0 ? 'border-t border-border-default pt-lg' : ''}>
+                <div className="grid grid-cols-2 gap-lg tablet:grid-cols-4">
+                  <DetailField label="Serial No" nowrap>{sn?.serial}</DetailField>
+                  <DetailField label="Reg. No" nowrap>{sn?.registration}</DetailField>
+                  <DetailField label="Model Number" nowrap>{m.modelNumber}</DetailField>
+                  <DetailField label="Model Name">{m.modelName && <Truncate>{m.modelName}</Truncate>}</DetailField>
+                  <DetailField label="Manufacture">{m.manufacturer}</DetailField>
+                  <DetailField label="TCCA TC">{m.tccaTc}</DetailField>
+                  <DetailField label="FAA TC">{m.faaTc}</DetailField>
+                  <DetailField label="EASA TC">{m.easaTc}</DetailField>
+                  <DetailField label="Drawing Prefix">{m.drawingPrefix}</DetailField>
+                  <DetailField label="Comment">{sn?.comment && <Truncate>{sn.comment}</Truncate>}</DetailField>
+                  <DetailField label="Active">{m.active ? 'Active' : 'Inactive'}</DetailField>
+                </div>
               </div>
-            )}
-          </DetailCard>
-        </>
+            ))}
+          </div>
+        </DetailCard>
       ) : (
         <FormSection title="Aircraft" subtitle="Same columns, same order as the Aircraft table — one row per serial number.">
           <div className="overflow-x-auto">

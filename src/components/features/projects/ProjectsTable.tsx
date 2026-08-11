@@ -1,7 +1,9 @@
+import type { ReactNode } from 'react'
 import { Eye, Pencil, Copy, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
+import { Truncate } from '@/components/patterns/Truncate'
 import { PRIORITY_LABEL, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
 import type { ProjectListRow } from '@/types/project'
 
@@ -16,13 +18,17 @@ export interface ProjectsTableProps {
   onEdit?: (row: ProjectListRow) => void
   onDuplicate?: (row: ProjectListRow) => void
   onDelete?: (row: ProjectListRow) => void
+  /** Rendered as the table's own footer bar — inside the same card, not a
+      second box below it. Typically a <Pagination>. */
+  pagination?: ReactNode
 }
 
-export function ProjectsTable({ rows, loading = false, canSeeFinancials = true, onView, onEdit, onDuplicate, onDelete }: ProjectsTableProps) {
+export function ProjectsTable({ rows, loading = false, canSeeFinancials = true, onView, onEdit, onDuplicate, onDelete, pagination }: ProjectsTableProps) {
   const headers = canSeeFinancials ? HEADERS : HEADERS.filter((h) => h !== 'Hours (Act/Bud)')
 
   return (
-    <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
+    <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+      <div className="overflow-x-auto">
       <table className="w-full border-collapse text-left" style={{ minWidth: 900 }}>
         <caption className="sr-only">Projects</caption>
         <thead>
@@ -53,17 +59,17 @@ export function ProjectsTable({ rows, loading = false, canSeeFinancials = true, 
                     <span className="block text-sm text-text-primary">{row.number}-{row.subNumber}</span>
                     <span className="block text-xs text-text-muted">{TYPE_LABEL[row.type]}</span>
                   </td>
-                  <td className="px-lg py-base align-top">
+                  <td className="px-lg py-base align-top" style={{ maxWidth: 260 }}>
                     <button
                       type="button"
                       onClick={() => onView?.(row)}
-                      className="text-left text-sm text-text-primary underline-offset-2 hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+                      className="block w-full text-left text-sm text-text-primary underline-offset-2 hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
                     >
-                      {row.title}
+                      <Truncate>{row.title}</Truncate>
                     </button>
                   </td>
-                  <td className="px-lg py-base align-top">
-                    <span className="block text-sm text-text-primary">{row.companyName}</span>
+                  <td className="px-lg py-base align-top" style={{ maxWidth: 180 }}>
+                    <span className="block text-sm text-text-primary"><Truncate lines={1}>{row.companyName}</Truncate></span>
                     <span className="block text-xs text-text-muted">{row.companyNumber}</span>
                   </td>
                   <td className="px-lg py-base align-top text-sm text-text-primary">{row.contactName}</td>
@@ -96,6 +102,8 @@ export function ProjectsTable({ rows, loading = false, canSeeFinancials = true, 
               ))}
         </tbody>
       </table>
+      </div>
+      {pagination}
     </div>
   )
 }

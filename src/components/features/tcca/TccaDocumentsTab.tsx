@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
+import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useTccaStore } from '@/stores/tccaStore'
@@ -71,7 +72,7 @@ export function TccaDocumentsTab({ tcca }: { tcca: TccaProject }) {
                 return (
                   <tr key={link.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
                     <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{rev.number} <span className="text-text-muted">rev {rev.rev}</span></td>
-                    <td className="px-lg py-base text-sm text-text-primary">{rev.title}</td>
+                    <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 260 }}><Truncate>{rev.title}</Truncate></td>
                     <td className="whitespace-nowrap px-lg py-base text-sm">
                       {project ? (
                         <Link to={`/projects/${project.id}`} className="text-text-primary underline-offset-2 hover:text-accent hover:underline">

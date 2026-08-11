@@ -90,8 +90,8 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
             />
           </div>
         ) : (
-          <>
-          <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
+          <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+          <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left" style={{ minWidth: 960 }}>
               <caption className="sr-only">Users and their access</caption>
               <thead>
@@ -163,7 +163,7 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
               onPageChange={setPage} onPageSizeChange={setPageSize}
             />
           )}
-          </>
+          </div>
         )}
       </div>
 
