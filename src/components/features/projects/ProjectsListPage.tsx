@@ -48,6 +48,7 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
 
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [editingRow, setEditingRow] = useState<ProjectListRow | null>(null)
@@ -86,18 +87,11 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
   }
 
   return (
-    <AppShell title="Projects — List">
-      <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
-
-        <div className="grid gap-lg mobile:grid-cols-2 laptop:grid-cols-4">
-          {stats.map((s) => (
-            <StatCard key={s.label} value={s.value} label={s.label} loading={loading} />
-          ))}
-        </div>
-
-        <div className="grid gap-sm tablet:flex tablet:flex-wrap tablet:items-center">
-          <div className="min-w-0 tablet:flex-1" style={{ maxWidth: 380 }}>
+    <AppShell
+      title="Projects — List"
+      headerActions={
+        <>
+          <div className="min-w-0" style={{ width: 300 }}>
             <label htmlFor="project-search" className="sr-only">Search projects</label>
             <Input
               id="project-search"
@@ -107,19 +101,26 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
               leadingIcon={<Search size={16} />}
             />
           </div>
-          <div className="flex flex-wrap items-center gap-sm">
-            <Button variant="secondary" leadingIcon={<SlidersHorizontal size={16} />} aria-label="Filter projects">
-              Filter
-            </Button>
-            <ExportMenu
-              rows={filtered}
-              onUnavailableFormat={(format) => setToast(`${format} export isn't wired up yet — HTML, CSV and Text are ready now.`)}
-            />
-          </div>
-          <span className="hidden tablet:block tablet:flex-1" />
-          <Button leadingIcon={<Plus size={16} />} onClick={() => setDrawerOpen(true)}>
+          <Button variant="secondary" size="lg" leadingIcon={<SlidersHorizontal size={16} />} aria-label="Filter projects">
+            Filter
+          </Button>
+          <ExportMenu
+            rows={filtered}
+            onUnavailableFormat={(format) => setToast(`${format} export isn't wired up yet — HTML, CSV and Text are ready now.`)}
+          />
+          <Button size="lg" leadingIcon={<Plus size={16} />} onClick={() => setDrawerOpen(true)}>
             Add new project
           </Button>
+        </>
+      }
+    >
+      <div className="grid gap-lg">
+        {toast && <Alert tone="info" title={toast} />}
+
+        <div className="grid gap-lg mobile:grid-cols-2 laptop:grid-cols-4">
+          {stats.map((s) => (
+            <StatCard key={s.label} value={s.value} label={s.label} loading={loading} />
+          ))}
         </div>
 
         {state === 'error' ? (
@@ -148,7 +149,7 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
         ) : (
           <>
             <ProjectsTable
-              rows={filtered}
+              rows={filtered.slice((page - 1) * pageSize, page * pageSize)}
               loading={loading}
               canSeeFinancials={canSeeFinancials}
               onView={(row) => navigate(`/projects/${row.id}`)}
@@ -158,10 +159,8 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
             />
             {!loading && (
               <Pagination
-                page={page}
-                pageCount={3}
-                summary={`Showing 1 to ${filtered.length} of ${filtered.length} projects`}
-                onChange={setPage}
+                page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="projects"
+                onPageChange={setPage} onPageSizeChange={setPageSize}
               />
             )}
           </>

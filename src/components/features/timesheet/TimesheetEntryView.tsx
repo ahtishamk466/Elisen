@@ -1,29 +1,9 @@
-import type { ReactNode } from 'react'
 import type { ProjectListRow } from '@/types/project'
 import type { WorkPackage } from '@/types/workPackage'
 import type { DeliverableRevision } from '@/types/tcca'
 import { ACTIVITY_CATALOG } from '@/lib/activityCatalog'
+import { DetailCard as Card, DetailField as Field } from '@/components/patterns/DetailView'
 import type { TimesheetEntryValues } from './useTimesheetEntryForm'
-
-/** Matches ProjectDetailPage's Card/Field pattern — the shared "View" look
-    used everywhere a read-only detail card appears. */
-function Card({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="rounded-sm border border-border-default bg-neutral-25 p-lg">
-      <h2 className="text-lg font-bold text-text-primary">{title}</h2>
-      <div className="mt-lg">{children}</div>
-    </section>
-  )
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <p className="text-xs text-text-muted">{label}</p>
-      <p className="mt-xxss text-sm text-text-primary">{children || '—'}</p>
-    </div>
-  )
-}
 
 export interface TimesheetEntryViewProps {
   values: TimesheetEntryValues

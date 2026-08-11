@@ -67,9 +67,21 @@ export function TimesheetTable({
                 </tr>
               ))
             : rows.map((row) => (
-                <tr key={row.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
+                <tr
+                  key={row.id}
+                  onClick={() => onView?.(row)}
+                  className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
+                >
                   {showEmployee && <td className="px-lg py-base align-top text-sm text-text-primary">{row.employeeName}</td>}
-                  <td className="px-lg py-base align-top text-sm text-text-primary">{row.projectLabel}</td>
+                  <td className="px-lg py-base align-top">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onView?.(row) }}
+                      className="text-left text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+                    >
+                      {row.projectLabel}
+                    </button>
+                  </td>
                   <td className="px-lg py-base align-top text-sm text-text-primary">{row.projectDescription}</td>
                   <td className="px-lg py-base align-top text-sm text-text-primary">{row.workPackageTitle}</td>
                   <td className="px-lg py-base align-top text-sm text-text-primary">{row.activityTitle}</td>
@@ -86,7 +98,7 @@ export function TimesheetTable({
                   <td className="px-lg py-base align-top">
                     <Badge tone={row.active ? 'success' : 'danger'} dot>{row.active ? 'Active' : 'Inactive'}</Badge>
                   </td>
-                  <td className="px-lg py-base align-top">
+                  <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
                     <ActionsMenu ariaLabel={`Actions for timesheet entry on ${row.workingDate}`} items={actionsFor(row)} />
                   </td>
                 </tr>

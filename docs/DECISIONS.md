@@ -264,6 +264,156 @@ form) without forcing the admin's bulk/dense-table workflow into a
 single-entry drawer pattern, which would have been the main risk of a full
 3-way merge.
 
+## 2026-08-10 — Lookup Tables: 6 flat grids consolidated into 3 parent+child pages
+**Context:** The old Maintenance → Lookup Tables holds six flat grids —
+Companies (214), Contacts (256), Aircraft (128), Serial Numbers (49), ATA
+Chapter (116), ATA Sub Chapter (615). They're really three parent→child pairs
+split across disconnected pages, the same tables-not-tasks IA the RBAC module
+had. User asked for a simpler UX and specified that ATA Chapter → Sub Chapter
+should work like Work Package → Activity.
+**Choice:** Three pages under the Admin nav item (which previously had no
+children): (1) **Companies & Contacts** — contacts managed inside the company
+drawer as divider-separated rows; page search also matches contact names and
+shows a "contact: X" chip, preserving the one thing the flat Contacts page was
+good at. (2) **Aircraft & Serials** — serials managed inside the model drawer;
+search matches serial/registration. (3) **ATA Chapters** — the WP→Activity
+treatment: each chapter is a collapsed `AccordionSection` card
+(`05 — TIME LIMITS… · 4 sections`) whose sections live inside with per-row
+edit/delete and an "Add Section" action; search spans chapter + section text
+and auto-expands matching cards; ordering follows the Sort field.
+**Cross-cutting:** Deactivate is the primary lifecycle (inactive records are
+hidden from pickers but keep history); Delete stays but is guarded with the
+child count and nudges toward Deactivate — same shape as role deletion.
+**Integration:** `StepBasicInfo` Company/Contact selects now read the lookup
+store instead of the hardcoded `COMPANIES`/`CONTACTS` arrays (now removed from
+`projectFixtures.ts`): only active companies list, and Contact is disabled
+until a company is chosen, then scoped to that company's active contacts.
+**Contacts use one Full Name field** (user request): `CompanyContact.fullName`
+replaces first/last. It matches how the rest of the app already consumes a
+contact (`ProjectListRow.contactName` is a single string) and keeps the
+picker option, the search hint and the drawer input identical. Trade-off
+accepted: no sorting or "Lastname, First" formatting by surname — add a
+separate field later if the client needs it.
+**Child lists render as compact rows with column headers** (Full Name ·
+Telephone · Active for contacts; Serial · Registration · Comment · Active for
+serials) rather than stacked FormFields — they read as the tables they
+replace and stay short when a parent has several children. Inputs carry
+`aria-label`s since the visible headers aren't per-row labels.
+**Provenance:** Company/aircraft/chapter records are verbatim from the
+screenshots (business reference data, not personal data), plus the
+companies/contacts/aircraft the project fixtures already referenced so pickers
+stay consistent. Representative subset, not the full 214/615.
+**Follow-up (not this pass):** wiring aircraft and ATA pickers into project
+Aircraft and drawing classification — currently free text.
+
+## 2026-08-10 — Header toolbar controls standardised on Button size="lg"
+**Context:** In the header toolbar the search field and CTA rendered at
+different heights — `Input`/`Select` are `h-11` (44px) but `Button` defaults to
+`size="md"` (`h-9`, 36px), so the pair looked misaligned.
+**Choice:** Every control in a page's `headerActions` uses `size="lg"` (44px),
+matching the field height exactly — including the triggers inside `ExportMenu`
+and `TimesheetFilterMenu`. Applied on Projects, TCCA Projects, Timesheet,
+Hours Worked, Roles & Permissions and Reports.
+**Rationale:** The `lg` size already exists for exactly this case, so no new
+token, arbitrary height or wrapper CSS was needed. Buttons *inside* page
+content (empty-state actions, drawer footers) keep the `md` default — only the
+field-adjacent toolbar row is standardised.
+
+## 2026-08-10 — TCCA Project Detail header cleanup
+**Context:** Three corrections on the TCCA detail screen: the page title
+repeated the number already shown in the card below it; every Overview section
+carried its own pencil; and the actions menu sat tight against the number,
+where a long description could crowd it.
+**Choice:** (1) The AppShell header now uses `headerLeft` for just the back
+link ("Back to TCCA Projects"), matching Project Detail — the number lives in
+the card only. (2) Removed the per-section pencils from Details and Notes;
+`TccaOverviewTab` is read-only and no longer takes `onEdit`. Editing is the
+header actions menu, one obvious place. (3) Status badge and actions menu moved
+to a `shrink-0` group pinned to the card's right edge, so neither a long number
+nor a long description can shift them.
+**Rationale:** Same reasoning as the Project Detail pass — one edit entry point
+per record beats a pencil on every card, and pinning the trigger right keeps it
+in a fixed position regardless of content length.
+
+## 2026-08-10 — Global shell & list conventions: sidebar profile, header toolbar, row-click
+**Context:** Three cross-cutting requests — move the Admin User profile out of
+the header into the sidebar with working Profile/Logout; put each list page's
+heading, search and CTA on one line; make table rows open the View screen
+rather than hiding View in the 3-dot menu.
+**Choice:**
+1. **Profile moved to the sidebar foot.** New `patterns/SidebarProfile.tsx`
+   with a portaled menu (Profile · Logout). Profile opens a read-only drawer
+   showing the signed-in user's account, roles and effective access — pulled
+   live from the access store, so the header identity and User Access Control
+   agree. Logout confirms, then a new `stores/sessionStore.ts` flips
+   `signedIn`, and `app/SignedOutScreen.tsx` replaces the app until "Sign back
+   in". There is no auth backend — flagged per SECURITY.md rule 8 that real
+   session termination must be server-enforced.
+2. **`AppShell.headerActions`** renders page controls on the heading line,
+   right-aligned. Every list page moved its search / filter / CTA there:
+   Projects, TCCA Projects, Timesheet, Hours Worked, Users, Roles &
+   Permissions, Reports. Roles & Permissions lifted its per-tab search and
+   "Add" state up to the page so the header can host them per active tab.
+3. **Whole-row click opens View** on every table, with a `hover:bg-accent-subtle`
+   affordance and `cursor-pointer`. The Actions cell calls `stopPropagation`
+   so the 3-dot menu never double-fires. Each table keeps a real `<button>` or
+   `<Link>` in its first cell as the keyboard path — a clickable `<tr>` alone
+   is not reachable by keyboard or screen reader. "View" stays in the menu too
+   for discoverability.
+**Conflicts flagged (CLAUDE.md rule 11):**
+- The request specified **10px** spacing between the search field and CTA. The
+  spacing scale has no 10px step (`sm` 8px → `base` 12px), and rule 4 forbids
+  arbitrary values, so `gap-sm` (8px) was used — the same gap already pairing
+  buttons in drawer footers.
+- `SidebarProfile` imports the session and access stores from `patterns/`,
+  which no other pattern does. Accepted deliberately: AppShell already
+  hardcodes this app's nav, routes and logo, so the shell is app chrome rather
+  than a reusable primitive. Scoped to the shell only.
+**Bug fixed along the way:** `useDropdown` always positioned menus below the
+trigger, so the bottom-anchored profile menu opened off-screen. It now measures
+the rendered menu and flips above the trigger when it would overflow.
+
+## 2026-08-10 — Access fixtures: real screenshot data, with provenance recorded
+**Context:** The first Access build was mostly authored data — only the 9 role
+names were verbatim from the client's screens. When the user asked where the
+values came from, that was disclosed, and they directed: *"Don't keep dummy
+data. Use whatever data you can get from the screenshots. If something is
+missing, add relevant values based on the context, but keep the fields and
+actions aligned with the actual UI."*
+**Verbatim from the client's six User Access Control screens:**
+- 9 role names + descriptions (Roles grid).
+- 16 permission names/descriptions (Permissions grid), including the
+  non-kebab `Admin - RBAC` — kept exactly as spelled.
+- Route strings from both panes of the Routes shuttle: `/activity/*`,
+  `/activity-task/index_detail`, `/atachapter/view_modal`, `/actions/*`,
+  `/activities/*`, `/activity-tasks/*`, `/*`.
+- ~20 usernames, the union of the Users and Assignments grids (the latter
+  contributes Sysadmin, tony.francis, clement.neveux, paul.thomas).
+- **Rules: none.** The Rules grid returned no results and every Rule Name
+  cell on both Roles and Permissions was blank, so `ACCESS_RULES = []` and
+  the previously-invented `isOwner` rule was deleted.
+**Contextual fill (documented in `lib/accessFixtures.ts`):** role→permission
+grants, user→role assignments, permission→route mapping and the inheritance
+chain. None of these are visible in the screenshots — each lives behind a
+grid's eye icon that wasn't captured. Derived from the role-name ladder
+(Employee → Supervisor → Manager; Client-Employee → Client-Manager) and the
+meeting transcripts, now anchored to the real permission names. Two inactive
+users are also fill: the client's Users grid was filtered to Status = Active,
+so inactive accounts exist off-screen.
+**SECURITY.md rule 9 conflict (flagged per CLAUDE.md rule 11, resolution
+approved):** rule 9 forbids real-looking user data in the repo, but fidelity
+wanted the real employee list. Resolution — keep the real **usernames** so
+the screen matches what the client recognises, but write all emails on the
+reserved `@elisen.example` domain (the stray `aamiriqbal@mi6.global` test
+account became `lloyd@elisen.example`). Role, permission and route names are
+system configuration rather than personal data, so those stay 100% verbatim.
+**Field alignment:** the Roles grid gained a **Rule Name** column to match
+the client's, rendering `—` throughout since no rules exist. `AccessRole`
+gained an optional `ruleId`, and `RoleDrawer` now preserves it on edit.
+**Bug surfaced by real data:** `moduleOf()` did `id.split('-')[0]`, which
+turned `Admin - RBAC` into a stray `"Admin "` group. Now trimmed and
+lowercased, so it groups with `admin-user-*` correctly.
+
 ## 2026-08-10 — Reports: one grouped page instead of three pages or tabs
 **Context:** The old system has three separate report list pages — Project
 Management (7), Time Tracking (4), GCP (3) — each a grid with "Parameter
@@ -433,3 +583,85 @@ or an explicit arbitrary value instead when a max/min constraint is needed.
 **Rationale:** Plain `w-*`/`h-*`/`p-*`/`m-*`/`gap-*` derive from
 `theme('spacing')` intentionally and are safe — this collision is specific
 to `maxWidth`/`minWidth`, which Tailwind defines as a separate named scale.
+
+## Pagination redesigned; added to every table
+
+`patterns/Pagination.tsx` now matches the client's reference (Page Size
+select · "Showing X to Y of Z {items}" · first/prev/Page N of M/next/last),
+replacing the old numbered-page-button footer. Props changed from
+`page/pageCount/summary/onChange` to `page/pageSize/totalItems/itemLabel/
+onPageChange/onPageSizeChange` — the component now computes the range and
+page count itself instead of the caller pre-formatting a summary string.
+Every list-page table now paginates: Projects, TCCA Projects, Timesheet,
+Hours Worked, Companies & Contacts, Aircraft & Serials, Users, Roles.
+Scoped to top-level list pages, not small embedded tables inside detail
+views (work package activities, project approvals/documents) — those stay
+unpaginated as deliberately short, contextual lists, not browsable grids.
+Fixed a latent bug in Projects — List: its pager was a non-functional stub
+(`pageCount={3}`, un-sliced rows); it now actually paginates.
+
+## Aircraft page renamed; edit drawer rebuilt as one table matching the list
+
+Renamed "Aircraft & Serials" to "Aircraft" (nav item, page title, route stays
+`/admin/aircraft`) per user request — shorter and the page already reads as
+one thing since the serial-per-row redesign.
+
+`AircraftModelDrawer` no longer splits "Aircraft" fields and "Serial
+Numbers" into two FormSection cards. It's now one table with the exact same
+column order as the Aircraft list (Serial No, Registration No, Model
+Number, Model Name, Manufacture, TCCA TC, FAA TC, EASA TC, Prefix, Comment,
+Active) — one row per serial. Model fields are one record shared by every
+row, so only the first row is editable; the rest mirror its value live and
+update the instant row 1 changes, matching how the flattened list table
+already repeats model data across serial rows. A blank row is always kept
+in state (never fewer than one) so the model fields have somewhere to
+render even before a real serial exists; the last row can't be removed for
+the same reason. Per-serial Active dropped from the UI — the list table's
+Active column is model-level only, and matching the list exactly took
+priority over an already-unused per-serial flag (no filter/picker reads
+`AircraftSerial.active`); the field stays in the type/store, just not
+editable from this drawer.
+
+Filled in the 3 remaining serial/registration pairs from the original flat
+Serial Number List screenshot (199/C-FTLH, 9033/M-YGJL, 5412/M-AFAC) that
+weren't yet in `lookupFixtures.ts` — that crop didn't show which aircraft
+model they belonged to, so they're linked to the three business-jet-type
+models that had zero serials (Astra SPX, BE350, Alpha Jet) rather than
+omitted from the table. Flagged as an assumption in a code comment.
+
+## Standard View/Edit pattern: DetailCard/DetailField, never a disabled input
+
+User correction: `AircraftModelDrawer`'s View mode rendered the same table
+as Edit but with every input `disabled`. That's wrong — a disabled `Input`
+applies `opacity-40` to the whole field, which dims a *real* value to the
+exact same gray as an empty placeholder. A filled field and a blank one
+became visually indistinguishable, and disabled inputs read as "broken
+form," not "read-only data."
+
+The correct standard, now enforced everywhere:
+- **View** is never a form. Use `DetailCard` + `DetailField` (new,
+  `patterns/DetailView.tsx`) — bordered card, bold title, optional edit
+  pencil; muted label above a plain-text value, em dash when empty. This
+  was already the pattern in `ProjectDetailPage`, `TimesheetEntryView` and
+  `TccaOverviewTab`, each with its own copy-pasted local `Card`/`Field`.
+  Extracted to one shared component and pointed all three at it, so it's
+  a real standard instead of three coincidentally-identical duplicates.
+  Added to Storybook as `Patterns/Overview → Read Only Detail`.
+- **Edit** always shows existing data inside a real, enabled input in
+  normal (non-muted) text — never a disabled field standing in for a
+  filled one. Added a filled-value example to `Patterns/Overview → Form
+  Building Blocks` (`Patterns.stories.tsx`) as the reference.
+
+`AircraftModelDrawer` rebuilt accordingly: View is `DetailCard`s (an
+Aircraft field grid + a plain read-only `<table>` of serials, no inputs
+anywhere). Edit/Create's compact table was simplified too — every row's
+model-column cells are now real, always-editable inputs bound to the same
+shared state (typing in any row updates every row, since it's one field);
+removed the earlier "only row 1 is editable, the rest are muted text"
+special-casing, which was itself heading toward the same disabled-look
+problem.
+
+Audited the codebase for the same antipattern (`disabled={isView}` or
+equivalent) — the only other `mode: 'view'` drawer, `TimesheetEntryDrawer`,
+already used `TimesheetEntryView`'s Card/Field correctly. No other fix
+needed.

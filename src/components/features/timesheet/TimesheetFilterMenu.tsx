@@ -45,6 +45,7 @@ export function TimesheetFilterMenu({ projects, employees, filters, onApply }: T
       <Button
         ref={triggerRef}
         variant="secondary"
+        size="lg"
         leadingIcon={<FilterIcon size={16} />}
         aria-haspopup="menu"
         aria-expanded={open}

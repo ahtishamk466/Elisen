@@ -30,11 +30,13 @@ Updated as components are added or changed.
 | Stepper | n steps, done / active / upcoming | `patterns/Stepper.tsx` | Multi-step form progress |
 | StatCard | default, loading | `patterns/StatCard.tsx` | Single headline metric |
 | EmptyState | with/without action, custom icon | `patterns/EmptyState.tsx` | Zero-data and no-results states |
-| Pagination | first / middle / last page | `patterns/Pagination.tsx` | Paged table navigation |
+| Pagination | first / middle / last page, empty | `patterns/Pagination.tsx` | Page-size select + "Showing X to Y of Z" + first/prev/page/next/last controls, bottom of every table |
+| DetailCard / DetailField | with/without edit icon; empty field | `patterns/DetailView.tsx` | THE standard read-only View: bordered card + muted-label/plain-value field grid. Never use a disabled form input to show read-only data — it dims real values to the same gray as an empty placeholder |
 | AccordionSection | open / closed, optional meta | `patterns/AccordionSection.tsx` | Collapsible grouped content (checklist phases) |
-| AppShell | active nav item / child | `patterns/AppShell.tsx` | Sidebar + header page frame |
+| AppShell | active nav item / child; optional headerLeft / headerActions | `patterns/AppShell.tsx` | Sidebar + header frame; heading left, page controls right |
+| SidebarProfile | menu closed / open; profile drawer; logout confirm | `patterns/SidebarProfile.tsx` | Signed-in identity at the foot of the sidebar, with Profile and Logout |
 | ActionsMenu | n items, default / danger tone | `patterns/ActionsMenu.tsx` | Row-level "⋮" menu, portaled to avoid table clipping |
-| useDropdown | — (hook) | `patterns/useDropdown.ts` | Shared open/position/outside-click logic for portaled menus |
+| useDropdown | — (hook) | `patterns/useDropdown.ts` | Shared open/position/outside-click logic for portaled menus; flips above the trigger when it would overflow the viewport |
 
 ## /components/features/projects — feature-specific
 
@@ -77,6 +79,18 @@ Updated as components are added or changed.
 | useTimesheetEntryForm | — | `features/timesheet/useTimesheetEntryForm.ts` | Form state + validation for the entry drawer |
 | TimesheetFilterMenu | with/without Employee filter | `features/timesheet/TimesheetFilterMenu.tsx` | Portaled filter popover: project, validated, active, date range |
 
+## /components/features/lookups — feature-specific (Lookup Tables)
+
+| Component | Variants | Location | Purpose |
+|-----------|----------|----------|---------|
+| CompaniesPage | ready / loading / error; empty w/ clear | `features/lookups/CompaniesPage.tsx` | `/admin/companies` — old Companies + Contacts merged; search matches contact names |
+| CompanyDrawer | create / edit | `features/lookups/CompanyDrawer.tsx` | Address fields + inline contact list (divider rows, add/remove) |
+| AircraftPage | ready / loading / error; empty w/ clear | `features/lookups/AircraftPage.tsx` | `/admin/aircraft` — old Aircraft + Serial Numbers merged; search matches serial/registration |
+| AircraftModelDrawer | create / edit / view | `features/lookups/AircraftModelDrawer.tsx` | Edit/create: one editable table, same columns/order as the Aircraft list, one row per serial, model fields shared live across rows. View: DetailCard/DetailField, not the table |
+| AtaChaptersPage | ready / loading / error; search auto-expands | `features/lookups/AtaChaptersPage.tsx` | `/admin/ata-chapters` — chapters as expandable cards with sections inside (WP→Activity pattern) |
+| AtaChapterDrawer | create / edit (code locked on edit) | `features/lookups/AtaChapterDrawer.tsx` | Chapter code, title, definition, active |
+| AtaSubChapterDrawer | create / edit; parent named in title | `features/lookups/AtaSubChapterDrawer.tsx` | Section within a chapter |
+
 ## /components/features/reports — feature-specific
 
 | Component | Variants | Location | Purpose |
@@ -104,7 +118,7 @@ Updated as components are added or changed.
 | TccaProjectsListPage | ready / loading / error, empty + no-results | `features/tcca/TccaProjectsListPage.tsx` | Standalone TCCA list at `/tcca-projects` |
 | TccaProjectDetailPage | tabs: Overview / Documents / Checklist / Reports / GCP(deferred) | `features/tcca/TccaProjectDetailPage.tsx` | One TCCA project at `/tcca-projects/:id` |
 | TccaProjectDrawer | create (with checklist applicability) / edit | `features/tcca/TccaProjectDrawer.tsx` | Add/edit a TCCA project; project link lockable |
-| TccaOverviewTab | — | `features/tcca/TccaOverviewTab.tsx` | Details, notes, linked Elisen projects (add/remove) |
+| TccaOverviewTab | read-only (edit via header menu) | `features/tcca/TccaOverviewTab.tsx` | Details, notes, linked Elisen projects (add/remove) |
 | TccaDocumentsTab | empty / populated | `features/tcca/TccaDocumentsTab.tsx` | Merged doc list + TCCA tracking (involvement/sent/state) |
 | LinkRevisionDrawer | — | `features/tcca/LinkRevisionDrawer.tsx` | Pick a deliverable revision from the pool to link |
 | DocTrackingDrawer | — | `features/tcca/DocTrackingDrawer.tsx` | Edit involvement / sent date / status for one link |

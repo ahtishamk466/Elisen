@@ -44,7 +44,11 @@ export function ProjectsTable({ rows, loading = false, canSeeFinancials = true, 
                 </tr>
               ))
             : rows.map((row) => (
-                <tr key={row.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
+                <tr
+                  key={row.id}
+                  onClick={() => onView?.(row)}
+                  className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
+                >
                   <td className="px-lg py-base align-top">
                     <span className="block text-sm text-text-primary">{row.number}-{row.subNumber}</span>
                     <span className="block text-xs text-text-muted">{TYPE_LABEL[row.type]}</span>
@@ -76,7 +80,8 @@ export function ProjectsTable({ rows, loading = false, canSeeFinancials = true, 
                   <td className="px-lg py-base align-top">
                     <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>
                   </td>
-                  <td className="px-lg py-base align-top">
+                  {/* Row opens View; the menu must not trigger it too. */}
+                  <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
                     <ActionsMenu
                       ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
                       items={[

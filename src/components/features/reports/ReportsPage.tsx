@@ -79,12 +79,12 @@ export function ReportsPage({ state = 'ready' }: { state?: PageState }) {
   }
 
   return (
-    <AppShell title="Reports" activeItem="Reports">
-      <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
-
-        <div className="grid gap-sm tablet:flex tablet:items-center">
-          <div className="min-w-0 tablet:flex-1" style={{ maxWidth: 380 }}>
+    <AppShell
+      title="Reports"
+      activeItem="Reports"
+      headerActions={
+        <>
+          <div className="min-w-0" style={{ width: 300 }}>
             <label htmlFor="report-search" className="sr-only">Search reports</label>
             <Input
               id="report-search" value={query} onChange={(e) => setQuery(e.target.value)}
@@ -94,14 +94,18 @@ export function ReportsPage({ state = 'ready' }: { state?: PageState }) {
           <div>
             <label htmlFor="report-category" className="sr-only">Filter by category</label>
             <Select
-              id="report-category" value={category} className="tablet:w-56"
+              id="report-category" value={category} className="w-56"
               onChange={(e) => setCategory(e.target.value as '' | ReportCategory)}
             >
               <option value="">All categories</option>
               {CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
             </Select>
           </div>
-        </div>
+        </>
+      }
+    >
+      <div className="grid gap-lg">
+        {toast && <Alert tone="info" title={toast} />}
 
         {state === 'loading' ? (
           <div className="grid gap-lg rounded-sm border border-border-default bg-neutral-25 p-lg">

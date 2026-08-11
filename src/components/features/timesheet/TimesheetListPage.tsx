@@ -20,8 +20,6 @@ import { CURRENT_EMPLOYEE } from '@/lib/timesheetFixtures'
 import type { TimesheetEntry } from '@/types/timesheet'
 import type { TimesheetEntryValues } from './useTimesheetEntryForm'
 
-const PAGE_SIZE = 10
-
 export type PageState = 'ready' | 'loading' | 'empty' | 'error'
 
 export interface TimesheetListPageProps {
@@ -51,6 +49,7 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<TimesheetFilters>(EMPTY_FILTERS)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; row?: TimesheetEntry } | null>(null)
   const [deletingRow, setDeletingRow] = useState<TimesheetEntry | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -78,8 +77,7 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
   }, [enriched, query, filters])
 
   const totalHours = filtered.reduce((sum, r) => sum + r.hoursRegular, 0)
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize)
 
   const loading = state === 'loading'
   const showEmpty = state === 'empty' || (state === 'ready' && filtered.length === 0)
@@ -100,17 +98,13 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
   }
 
   return (
-    <AppShell title="Timesheet — List" activeItem="Time Entry" activeChild="Timesheet">
-      <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
-
-        <div className="grid gap-lg mobile:grid-cols-2">
-          <StatCard value={filtered.length} label="Entries" loading={loading} />
-          <StatCard value={totalHours.toFixed(2)} label="Total regular hours" loading={loading} />
-        </div>
-
-        <div className="grid gap-sm tablet:flex tablet:flex-wrap tablet:items-center">
-          <div className="min-w-0 tablet:flex-1" style={{ maxWidth: 380 }}>
+    <AppShell
+      title="Timesheet — List"
+      activeItem="Time Entry"
+      activeChild="Timesheet"
+      headerActions={
+        <>
+          <div className="min-w-0" style={{ width: 300 }}>
             <label htmlFor="timesheet-search" className="sr-only">Search entries</label>
             <Input
               id="timesheet-search" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }}
@@ -118,10 +112,18 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
             />
           </div>
           <TimesheetFilterMenu projects={projects} filters={filters} onApply={(f) => { setFilters(f); setPage(1) }} />
-          <span className="hidden tablet:block tablet:flex-1" />
-          <Button leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>
+          <Button size="lg" leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>
             Add Entry
           </Button>
+        </>
+      }
+    >
+      <div className="grid gap-lg">
+        {toast && <Alert tone="info" title={toast} />}
+
+        <div className="grid gap-lg mobile:grid-cols-2">
+          <StatCard value={filtered.length} label="Entries" loading={loading} />
+          <StatCard value={totalHours.toFixed(2)} label="Total regular hours" loading={loading} />
         </div>
 
         {state === 'error' ? (
@@ -160,10 +162,8 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
             />
             {!loading && (
               <Pagination
-                page={page}
-                pageCount={pageCount}
-                summary={`Showing ${pageRows.length ? (page - 1) * PAGE_SIZE + 1 : 0} to ${(page - 1) * PAGE_SIZE + pageRows.length} of ${filtered.length} entries`}
-                onChange={setPage}
+                page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="entries"
+                onPageChange={setPage} onPageSizeChange={setPageSize}
               />
             )}
           </>

@@ -25,6 +25,20 @@ export function useDropdown<Trigger extends HTMLElement>(menuWidth: number) {
     setPosition({ top: rect.bottom + 4, left: Math.max(8, rect.right - menuWidth) })
   }, [open, menuWidth])
 
+  // Second pass once the menu has real height: flip above the trigger when it
+  // would run off the bottom. Needed for bottom-anchored triggers such as the
+  // sidebar profile menu.
+  useLayoutEffect(() => {
+    if (!open || !menuRef.current || !triggerRef.current) return
+    const menu = menuRef.current.getBoundingClientRect()
+    const trigger = triggerRef.current.getBoundingClientRect()
+    const overflowsBottom = trigger.bottom + 4 + menu.height > window.innerHeight
+    const fitsAbove = trigger.top - 4 - menu.height >= 0
+    if (overflowsBottom && fitsAbove) {
+      setPosition((prev) => (prev ? { ...prev, top: trigger.top - 4 - menu.height } : prev))
+    }
+  }, [open, position?.top])
+
   useEffect(() => {
     if (!open) return
     function onDocMouseDown(e: MouseEvent) {

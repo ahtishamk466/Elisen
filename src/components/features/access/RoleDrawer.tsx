@@ -48,6 +48,7 @@ export function RoleDrawer({ mode, initial, onClose, onSubmit }: RoleDrawerProps
       description: description.trim(),
       permissionIds,
       childRoleIds,
+      ruleId: initial?.ruleId,
     })
     onClose()
   }

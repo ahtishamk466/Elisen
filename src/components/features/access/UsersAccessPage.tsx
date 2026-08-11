@@ -4,6 +4,7 @@ import { AppShell } from '@/components/patterns/AppShell'
 import { StatCard } from '@/components/patterns/StatCard'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
+import { Pagination } from '@/components/patterns/Pagination'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { Badge } from '@/components/ui/Badge'
@@ -25,6 +26,8 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
   const updateUser = useAccessStore((s) => s.updateUser)
 
   const [query, setQuery] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [editing, setEditing] = useState<AccessUser | null>(null)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -51,7 +54,20 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
   }
 
   return (
-    <AppShell title="Users — Access" activeItem="User Access Control" activeChild="Users">
+    <AppShell
+      title="Users — Access"
+      activeItem="User Access Control"
+      activeChild="Users"
+      headerActions={
+        <div className="min-w-0" style={{ width: 300 }}>
+          <label htmlFor="access-user-search" className="sr-only">Search users</label>
+          <Input
+            id="access-user-search" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }}
+            placeholder="Search by username, email or role..." leadingIcon={<Search size={16} />}
+          />
+        </div>
+      }
+    >
       <div className="grid gap-lg">
         {toast && <Alert tone="info" title={toast} />}
 
@@ -59,14 +75,6 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
           <StatCard value={users.length} label="Total users" loading={loading} />
           <StatCard value={users.filter((u) => u.status === 'active').length} label="Active" loading={loading} />
           <StatCard value={users.filter((u) => u.directPermissionIds.length > 0).length} label="With direct grants" loading={loading} />
-        </div>
-
-        <div className="min-w-0" style={{ maxWidth: 380 }}>
-          <label htmlFor="access-user-search" className="sr-only">Search users</label>
-          <Input
-            id="access-user-search" value={query} onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by username, email or role..." leadingIcon={<Search size={16} />}
-          />
         </div>
 
         {state === 'error' ? (
@@ -82,6 +90,7 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
             />
           </div>
         ) : (
+          <>
           <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
             <table className="w-full border-collapse text-left" style={{ minWidth: 960 }}>
               <caption className="sr-only">Users and their access</caption>
@@ -99,9 +108,21 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
                         {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                       </tr>
                     ))
-                  : filtered.map((u) => (
-                      <tr key={u.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
-                        <td className="px-lg py-base align-top text-sm font-semibold text-text-primary">{u.username}</td>
+                  : filtered.slice((page - 1) * pageSize, page * pageSize).map((u) => (
+                      <tr
+                        key={u.id}
+                        onClick={() => setEditing(u)}
+                        className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
+                      >
+                        <td className="px-lg py-base align-top">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setEditing(u) }}
+                            className="text-left text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+                          >
+                            {u.username}
+                          </button>
+                        </td>
                         <td className="px-lg py-base align-top text-sm text-text-primary">{u.email}</td>
                         <td className="px-lg py-base align-top">
                           <Badge tone={u.status === 'active' ? 'success' : 'neutral'} dot>{u.status === 'active' ? 'Active' : 'Inactive'}</Badge>
@@ -120,7 +141,7 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
                             ? <Badge tone="warning">{u.directPermissionIds.length}</Badge>
                             : <span className="text-sm text-text-muted">—</span>}
                         </td>
-                        <td className="px-lg py-base align-top">
+                        <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
                           <ActionsMenu
                             ariaLabel={`Actions for ${u.username}`}
                             items={[
@@ -136,6 +157,13 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
               </tbody>
             </table>
           </div>
+          {!loading && (
+            <Pagination
+              page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="users"
+              onPageChange={setPage} onPageSizeChange={setPageSize}
+            />
+          )}
+          </>
         )}
       </div>
 

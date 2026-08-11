@@ -5,7 +5,8 @@ import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { RadioCard } from '@/components/ui/RadioCard'
-import { COMPANIES, CONTACTS, PEOPLE, NEXT_AVAILABLE_NUMBER } from '@/lib/projectFixtures'
+import { PEOPLE, NEXT_AVAILABLE_NUMBER } from '@/lib/projectFixtures'
+import { useLookupStore } from '@/stores/lookupStore'
 import type { ScopeKey } from '@/types/project'
 import type { AddProjectValues, Errors } from './useAddProjectForm'
 
@@ -26,6 +27,17 @@ export interface StepProps {
 }
 
 export function StepBasicInfo({ values, errors, setField, canSeeFinancials = true }: StepProps) {
+  // Company/Contact options come from the Lookup Tables (Admin), not
+  // hardcoded lists — inactive records are hidden, contacts follow the
+  // chosen company.
+  const companies = useLookupStore((s) => s.companies)
+  const lookupContacts = useLookupStore((s) => s.contacts)
+  const activeCompanies = [...companies.filter((c) => c.active)].sort((a, b) => a.name.localeCompare(b.name))
+  const selectedCompany = companies.find((c) => c.name === values.company)
+  const companyContacts = selectedCompany
+    ? lookupContacts.filter((ct) => ct.companyId === selectedCompany.id && ct.active)
+    : []
+
   const toggleScope = (key: ScopeKey) =>
     setField('scope', values.scope.includes(key) ? values.scope.filter((s) => s !== key) : [...values.scope, key])
 
@@ -73,14 +85,23 @@ export function StepBasicInfo({ values, errors, setField, canSeeFinancials = tru
       </FormSection>
 
       <FormSection title="Company & Profile" subtitle="Who this project is for, and who owns it internally.">
-        <FormField label="Company" htmlFor="company" required error={errors.company}>
-          <Select id="company" value={values.company} error={!!errors.company} placeholder="Select a company..." onChange={(e) => setField('company', e.target.value)}>
-            {COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        <FormField label="Company" htmlFor="company" required error={errors.company} help="Managed under Admin → Companies & Contacts.">
+          <Select
+            id="company" value={values.company} error={!!errors.company} placeholder="Select a company..."
+            onChange={(e) => { setField('company', e.target.value); setField('contact', '') }}
+          >
+            {activeCompanies.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
           </Select>
         </FormField>
-        <FormField label="Contact" htmlFor="contact">
-          <Select id="contact" value={values.contact} placeholder="Select a contact..." onChange={(e) => setField('contact', e.target.value)}>
-            {CONTACTS.map((c) => <option key={c} value={c}>{c}</option>)}
+        <FormField
+          label="Contact" htmlFor="contact"
+          help={!values.company ? 'Select a company first.' : companyContacts.length === 0 ? 'This company has no active contacts yet.' : undefined}
+        >
+          <Select
+            id="contact" value={values.contact} disabled={!values.company || companyContacts.length === 0}
+            placeholder="Select a contact..." onChange={(e) => setField('contact', e.target.value)}
+          >
+            {companyContacts.map((ct) => <option key={ct.id} value={ct.fullName}>{ct.fullName}</option>)}
           </Select>
         </FormField>
         <FormField label="Person Responsible" htmlFor="personResponsible" required error={errors.personResponsible}>

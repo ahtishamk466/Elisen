@@ -10,6 +10,7 @@ import { Pagination } from './Pagination'
 import { AccordionSection } from './AccordionSection'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Drawer } from './Drawer'
+import { DetailCard, DetailField } from './DetailView'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Checkbox'
@@ -18,10 +19,16 @@ const meta: Meta = { title: 'Patterns/Overview' }
 export default meta
 type Story = StoryObj
 
+/** The standard Edit state: existing data always renders inside a real
+    input/textarea, in normal (non-muted) text — never a disabled field,
+    which dims real values to the same gray as an empty placeholder. */
 export const FormBuildingBlocks: Story = {
   render: () => (
     <div className="grid gap-lg p-lg" style={{ maxWidth: 720 }}>
       <FormSection title="Identification" subtitle="Basic details that identify this project.">
+        <FormField label="Project Number" htmlFor="pn-filled" required help="Editing an existing record — the value is real, not a placeholder.">
+          <Input id="pn-filled" defaultValue="3200" />
+        </FormField>
         <FormField label="Project Number" htmlFor="pn" required help="Next available is 3206.">
           <Input id="pn" placeholder="e.g. 3206" />
         </FormField>
@@ -29,6 +36,32 @@ export const FormBuildingBlocks: Story = {
           <Input id="t" error placeholder="Enter title" />
         </FormField>
       </FormSection>
+    </div>
+  ),
+}
+
+/** The standard View (read-only) state: DetailCard + DetailField, plain
+    label-over-value text, no input borders. Use this for every read-only
+    screen — never a disabled form input standing in for a view. Empty
+    fields show an em dash, so blank is visibly distinct from a real value. */
+export const ReadOnlyDetail: Story = {
+  render: () => (
+    <div className="grid gap-lg p-lg" style={{ maxWidth: 720 }}>
+      <DetailCard title="Aircraft">
+        <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+          <DetailField label="Model Number">A320</DetailField>
+          <DetailField label="Model Name">Airbus A320</DetailField>
+          <DetailField label="Manufacture">Airbus</DetailField>
+          <DetailField label="TCCA TC" />
+          <DetailField label="Active">Active</DetailField>
+        </div>
+      </DetailCard>
+      <DetailCard title="Editable via header action" onEdit={() => {}}>
+        <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+          <DetailField label="Company">Air Canada</DetailField>
+          <DetailField label="Contact">Remi Rocheleau</DetailField>
+        </div>
+      </DetailCard>
     </div>
   ),
 }
@@ -66,7 +99,13 @@ export const StatsAndEmpty: Story = {
 
 function PaginationDemo() {
   const [page, setPage] = useState(1)
-  return <Pagination page={page} pageCount={3} summary="Showing 1 to 11 of 781 projects" onChange={setPage} />
+  const [pageSize, setPageSize] = useState(10)
+  return (
+    <Pagination
+      page={page} pageSize={pageSize} totalItems={781} itemLabel="items"
+      onPageChange={setPage} onPageSizeChange={setPageSize}
+    />
+  )
 }
 export const PaginationExample: Story = { render: () => <div className="p-lg"><PaginationDemo /></div> }
 

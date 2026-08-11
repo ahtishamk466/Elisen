@@ -1,23 +1,32 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { ActionsMenu, type ActionsMenuItem } from '@/components/patterns/ActionsMenu'
+import { Pagination } from '@/components/patterns/Pagination'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
-import { Button } from '@/components/ui/Button'
 import { RoleDrawer } from './RoleDrawer'
 import { useAccessStore } from '@/stores/accessStore'
 import { roleMembers, rolePermissionClosure } from '@/lib/accessDisplay'
 import type { AccessRole } from '@/types/access'
 
-const HEADERS = ['Role', 'Description', 'Inherits', 'Permissions', 'Members', 'Actions']
+const HEADERS = ['Role', 'Description', 'Rule Name', 'Inherits', 'Permissions', 'Members', 'Actions']
 
-export function RolesTab({ onToast }: { onToast: (msg: string) => void }) {
+export interface RolesTabProps {
+  onToast: (msg: string) => void
+  /** Lifted so the page can host the CTA in the shared header row. */
+  adding: boolean
+  setAdding: (v: boolean) => void
+}
+
+export function RolesTab({ onToast, adding, setAdding }: RolesTabProps) {
   const roles = useAccessStore((s) => s.roles)
+  const rules = useAccessStore((s) => s.rules)
   const users = useAccessStore((s) => s.users)
   const addRole = useAccessStore((s) => s.addRole)
   const updateRole = useAccessStore((s) => s.updateRole)
   const removeRole = useAccessStore((s) => s.removeRole)
 
-  const [adding, setAdding] = useState(false)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [editing, setEditing] = useState<AccessRole | null>(null)
   const [deleting, setDeleting] = useState<AccessRole | null>(null)
 
@@ -36,10 +45,6 @@ export function RolesTab({ onToast }: { onToast: (msg: string) => void }) {
 
   return (
     <div className="grid gap-lg">
-      <div className="flex justify-end">
-        <Button leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>Add Role</Button>
-      </div>
-
       <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
         <table className="w-full border-collapse text-left" style={{ minWidth: 760 }}>
           <caption className="sr-only">Roles</caption>
@@ -51,10 +56,25 @@ export function RolesTab({ onToast }: { onToast: (msg: string) => void }) {
             </tr>
           </thead>
           <tbody>
-            {roles.map((role) => (
-              <tr key={role.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
-                <td className="px-lg py-base align-top text-sm font-semibold text-text-primary">{role.name}</td>
+            {roles.slice((page - 1) * pageSize, page * pageSize).map((role) => (
+              <tr
+                key={role.id}
+                onClick={() => setEditing(role)}
+                className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
+              >
+                <td className="px-lg py-base align-top">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setEditing(role) }}
+                    className="text-left text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+                  >
+                    {role.name}
+                  </button>
+                </td>
                 <td className="px-lg py-base align-top text-sm text-text-primary">{role.description}</td>
+                <td className="px-lg py-base align-top text-sm text-text-primary">
+                  {rules.find((r) => r.id === role.ruleId)?.name ?? '—'}
+                </td>
                 <td className="px-lg py-base align-top text-sm text-text-primary">
                   {role.childRoleIds.length === 0
                     ? '—'
@@ -67,7 +87,7 @@ export function RolesTab({ onToast }: { onToast: (msg: string) => void }) {
                   )}
                 </td>
                 <td className="px-lg py-base align-top text-sm text-text-primary">{roleMembers(role.id, users).length}</td>
-                <td className="px-lg py-base align-top">
+                <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
                   <ActionsMenu ariaLabel={`Actions for role ${role.name}`} items={itemsFor(role)} />
                 </td>
               </tr>
@@ -75,6 +95,10 @@ export function RolesTab({ onToast }: { onToast: (msg: string) => void }) {
           </tbody>
         </table>
       </div>
+      <Pagination
+        page={page} pageSize={pageSize} totalItems={roles.length} itemLabel="roles"
+        onPageChange={setPage} onPageSizeChange={setPageSize}
+      />
 
       {adding && (
         <RoleDrawer

@@ -1,24 +1,28 @@
 import { useMemo, useState } from 'react'
-import { Plus, Search, Pencil } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { AccordionSection } from '@/components/patterns/AccordionSection'
 import { EmptyState } from '@/components/patterns/EmptyState'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { PermissionDrawer } from './PermissionDrawer'
 import { useAccessStore } from '@/stores/accessStore'
 import { groupByModule, moduleLabel, rolesGranting, usersReachedByPermission } from '@/lib/accessDisplay'
 import type { AccessPermission } from '@/types/access'
 
-export function PermissionsTab({ onToast }: { onToast: (msg: string) => void }) {
+export interface PermissionsTabProps {
+  onToast: (msg: string) => void
+  /** Lifted so the page can host search + CTA in the shared header row. */
+  query: string
+  adding: boolean
+  setAdding: (v: boolean) => void
+}
+
+export function PermissionsTab({ onToast, query, adding, setAdding }: PermissionsTabProps) {
   const permissions = useAccessStore((s) => s.permissions)
   const roles = useAccessStore((s) => s.roles)
   const users = useAccessStore((s) => s.users)
   const addPermission = useAccessStore((s) => s.addPermission)
   const updatePermission = useAccessStore((s) => s.updatePermission)
 
-  const [query, setQuery] = useState('')
-  const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<AccessPermission | null>(null)
 
   const filtered = useMemo(() => {
@@ -31,18 +35,6 @@ export function PermissionsTab({ onToast }: { onToast: (msg: string) => void }) 
 
   return (
     <div className="grid gap-lg">
-      <div className="grid gap-sm tablet:flex tablet:items-center">
-        <div className="min-w-0 tablet:flex-1" style={{ maxWidth: 380 }}>
-          <label htmlFor="perm-search" className="sr-only">Search permissions</label>
-          <Input
-            id="perm-search" value={query} onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name or description..." leadingIcon={<Search size={16} />}
-          />
-        </div>
-        <span className="hidden tablet:block tablet:flex-1" />
-        <Button leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>Add Permission</Button>
-      </div>
-
       {grouped.length === 0 ? (
         <div className="rounded-sm border border-border-default bg-neutral-25">
           <EmptyState title="No permissions match your search" description="Try a different name or description." />

@@ -26,6 +26,9 @@ export interface AccessRole {
   /** Inherited roles — this role also grants everything they grant
       (recursively). Cycles are prevented in the UI. */
   childRoleIds: string[]
+  /** Optional condition, matching the client's "Rule Name" column. Rules are
+      code-defined classes; the client currently defines none. */
+  ruleId?: string
 }
 
 export interface AccessPermission {

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { LayoutDashboard, FolderOpen, Clock, ListChecks, ShieldCheck, Users, Settings, ChevronDown, ChevronRight, User, KeyRound } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, Clock, ListChecks, ShieldCheck, Users, Settings, ChevronDown, ChevronRight, KeyRound } from 'lucide-react'
+import { SidebarProfile } from './SidebarProfile'
 
 /** Top-level items without children that have a real screen — rendered as
     router Links; the rest stay inert until their screens exist. */
@@ -18,6 +19,9 @@ const CHILD_ROUTES: Record<string, string> = {
   'Users': '/admin/users',
   'Roles & Permissions': '/admin/roles',
   'System': '/admin/system',
+  'Companies & Contacts': '/admin/companies',
+  'Aircraft': '/admin/aircraft',
+  'ATA Chapters': '/admin/ata-chapters',
 }
 
 interface NavItem {
@@ -33,7 +37,7 @@ const NAV: NavItem[] = [
   { label: 'Reports', icon: <ListChecks size={18} /> },
   { label: 'GCP', icon: <ShieldCheck size={18} />, children: [] },
   { label: 'User Access Control', icon: <KeyRound size={18} />, children: ['Users', 'Roles & Permissions', 'System'] },
-  { label: 'Admin', icon: <Users size={18} />, children: [] },
+  { label: 'Admin', icon: <Users size={18} />, children: ['Companies & Contacts', 'Aircraft', 'ATA Chapters'] },
   { label: 'Settings', icon: <Settings size={18} /> },
 ]
 
@@ -45,10 +49,13 @@ export interface AppShellProps {
       instead of repeating a title already shown on the page (Project Detail,
       TCCA Project Detail). */
   headerLeft?: ReactNode
+  /** Page-level controls (search, filters, primary CTA) rendered on the same
+      line as the heading, aligned right. Keeps every list page identical. */
+  headerActions?: ReactNode
   children: ReactNode
 }
 
-export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List', title, headerLeft, children }: AppShellProps) {
+export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List', title, headerLeft, headerActions, children }: AppShellProps) {
   // Expansion is independent of the current route — otherwise a parent
   // section (e.g. Time Entry) can only ever open on pages already inside it,
   // making it look unclickable everywhere else. Defaults to whichever
@@ -58,17 +65,20 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
 
   return (
     <div className="flex min-h-screen bg-neutral-50">
-      <aside className="hidden w-56 shrink-0 bg-primary-700 laptop:block">
+      {/* Sticky + fixed to the viewport height (not the page's, which can be
+          taller) so the profile footer stays above the fold at any scroll
+          position; the nav list scrolls internally if it ever overflows. */}
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-primary-700 laptop:flex">
         <div className="px-lg py-xl">
           <img src="/logo-elisen.svg" alt="Elisen" width={600} height={104} className="h-6 w-auto brightness-0 invert" />
         </div>
-        <nav aria-label="Main">
+        <nav aria-label="Main" className="min-h-0 flex-1 overflow-y-auto">
           <ul className="grid gap-xxss px-base">
             {NAV.map((item) => {
               const active = item.label === activeItem
               const hasChildren = !!item.children && item.children.length > 0
               const isExpanded = item.label === expanded
-              const itemClass = `flex w-full items-center gap-sm rounded-sm px-base py-sm text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-25
+              const itemClass = `flex h-4xl w-full items-center gap-sm rounded-sm px-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-25
                       ${active ? 'bg-primary-600 font-semibold text-text-inverse' : 'text-primary-100 hover:bg-primary-600 hover:text-text-inverse'}`
               return (
                 <li key={item.label}>
@@ -98,9 +108,12 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
                     </a>
                   )}
                   {isExpanded && item.children && item.children.length > 0 && (
-                    <ul className="grid gap-xxss py-xxss">
+                    <ul className="relative grid gap-xxss py-xxss">
+                      {/* Ties the expanded options back to their parent — same
+                          x as the parent's icon center, spanning every child. */}
+                      <span aria-hidden className="absolute top-0 bottom-0 w-px bg-primary-500" style={{ left: 21 }} />
                       {item.children.map((child) => {
-                        const childClass = `block rounded-sm py-sm pl-4xl pr-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-25
+                        const childClass = `flex h-4xl items-center rounded-sm pl-4xl pr-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-25
                               ${child === activeChild ? 'text-text-inverse' : 'text-primary-100 hover:text-text-inverse'}`
                         const route = CHILD_ROUTES[child]
                         return (
@@ -124,19 +137,17 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
             })}
           </ul>
         </nav>
+
+        {/* Signed-in identity sits at the foot of the nav, not the header. */}
+        <div className="shrink-0 border-t border-primary-600 px-base py-base">
+          <SidebarProfile />
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-lg px-lg py-lg tablet:px-2xl">
+        <header className="flex flex-wrap items-center justify-between gap-lg px-lg py-lg tablet:px-2xl">
           {headerLeft ?? <h1 className="text-2xl font-bold text-text-primary">{title}</h1>}
-          <button
-            type="button"
-            className="inline-flex items-center gap-sm rounded-sm px-base py-sm text-sm text-text-primary transition-colors duration-fast hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
-          >
-            <User size={18} aria-hidden />
-            Admin User
-            <ChevronDown size={16} aria-hidden />
-          </button>
+          {headerActions && <div className="flex flex-wrap items-center gap-sm">{headerActions}</div>}
         </header>
         <main className="min-w-0 flex-1 px-lg pb-2xl tablet:px-2xl">{children}</main>
       </div>

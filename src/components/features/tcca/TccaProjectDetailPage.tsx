@@ -46,31 +46,35 @@ export function TccaProjectDetailPage() {
   }
 
   return (
-    <AppShell activeChild="TCCA Projects" title={tcca.number}>
-      <div className="grid gap-lg">
+    <AppShell
+      activeChild="TCCA Projects"
+      title={tcca.number}
+      headerLeft={
         <button type="button" onClick={() => navigate('/tcca-projects')}
-          className="inline-flex w-fit items-center gap-xs text-sm text-text-secondary hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary">
-          <ArrowLeft size={16} aria-hidden />
+          className="inline-flex items-center gap-sm rounded-sm text-sm text-text-secondary transition-colors duration-fast hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary">
+          <ArrowLeft size={18} aria-hidden />
           Back to TCCA Projects
         </button>
-
-        <div className="flex flex-wrap items-center justify-between gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg py-base">
-          <div className="flex min-w-0 items-center gap-sm">
-            <div className="min-w-0">
-              <div className="flex items-center gap-xs">
-                <p className="text-2xl font-bold text-text-primary">{tcca.number}</p>
-                <ActionsMenu
-                  ariaLabel={`Actions for TCCA project ${tcca.number}`}
-                  items={[
-                    { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditing(true) },
-                    { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(true), tone: 'danger' },
-                  ]}
-                />
-              </div>
-              <p className="truncate text-sm text-text-secondary">{tcca.description}</p>
-            </div>
+      }
+    >
+      <div className="grid gap-lg">
+        {/* Status + actions pinned right so a long description never shifts
+            them; the number keeps its own line. */}
+        <div className="flex items-start justify-between gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg py-base">
+          <div className="min-w-0">
+            <p className="text-2xl font-bold text-text-primary">{tcca.number}</p>
+            <p className="mt-xxss text-sm text-text-secondary">{tcca.description}</p>
           </div>
-          <Badge tone={TCCA_STATUS_TONE[tcca.status]}>{TCCA_STATUS_LABEL[tcca.status]}</Badge>
+          <div className="flex shrink-0 items-center gap-sm">
+            <Badge tone={TCCA_STATUS_TONE[tcca.status]}>{TCCA_STATUS_LABEL[tcca.status]}</Badge>
+            <ActionsMenu
+              ariaLabel={`Actions for TCCA project ${tcca.number}`}
+              items={[
+                { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditing(true) },
+                { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(true), tone: 'danger' },
+              ]}
+            />
+          </div>
         </div>
 
         <nav className="flex gap-lg overflow-x-auto rounded-sm border border-border-default bg-neutral-25 px-lg" aria-label="TCCA sections">
@@ -83,7 +87,7 @@ export function TccaProjectDetailPage() {
           ))}
         </nav>
 
-        {tab === 'Overview' && <TccaOverviewTab tcca={tcca} onEdit={() => setEditing(true)} />}
+        {tab === 'Overview' && <TccaOverviewTab tcca={tcca} />}
         {tab === 'Documents' && <TccaDocumentsTab tcca={tcca} />}
         {tab === 'Checklist' && <TccaChecklistTab tcca={tcca} />}
         {tab === 'Reports' && <TccaReportsTab tcca={tcca} />}

@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { ReportCard } from '@/components/patterns/ReportCard'
+import { DetailCard as Card, DetailField as Field } from '@/components/patterns/DetailView'
 import { Badge } from '@/components/ui/Badge'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useTccaStore } from '@/stores/tccaStore'
@@ -417,38 +418,6 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
 /** Only Proposal, Notes and Aircraft pass `onEdit` — those three sections own
     a focused edit drawer. Dates and Scope are edited from the project-level
     actions menu instead, so they render without an affordance. */
-function Card({
-  title, onEdit, children,
-}: { title: string; onEdit?: () => void; children: React.ReactNode }) {
-  return (
-    <section className="rounded-sm border border-border-default bg-neutral-25 p-lg">
-      <div className="flex items-start justify-between gap-lg">
-        <h2 className="text-lg font-bold text-text-primary">{title}</h2>
-        {onEdit && (
-          <button
-            type="button"
-            onClick={onEdit}
-            aria-label={`Edit ${title.toLowerCase()}`}
-            className="rounded-sm p-xs text-text-secondary transition-colors duration-fast hover:bg-neutral-100 hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
-          >
-            <Pencil size={16} aria-hidden />
-          </button>
-        )}
-      </div>
-      <div className="mt-lg">{children}</div>
-    </section>
-  )
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="text-xs text-text-muted">{label}</p>
-      <p className="mt-xxss text-sm text-text-primary">{children}</p>
-    </div>
-  )
-}
-
 const AVATAR_TONE = {
   accent: 'bg-accent-subtle text-accent',
   success: 'bg-success-subtle text-success',

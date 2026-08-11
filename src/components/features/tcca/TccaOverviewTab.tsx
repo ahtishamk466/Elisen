@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Pencil, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
+import { DetailField as Field } from '@/components/patterns/DetailView'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useTccaStore } from '@/stores/tccaStore'
 import { TCCA_STATUS_LABEL, TCCA_STATUS_TONE } from '@/lib/tccaDisplay'
@@ -11,10 +12,11 @@ import type { TccaProject } from '@/types/tcca'
 
 export interface TccaOverviewTabProps {
   tcca: TccaProject
-  onEdit: () => void
 }
 
-export function TccaOverviewTab({ tcca, onEdit }: TccaOverviewTabProps) {
+/** Read-only overview — editing happens through the header's actions menu,
+    not a pencil on every section. */
+export function TccaOverviewTab({ tcca }: TccaOverviewTabProps) {
   const projects = useProjectsStore((s) => s.rows)
   const updateTcca = useTccaStore((s) => s.updateTcca)
   const [linkChoice, setLinkChoice] = useState('')
@@ -35,13 +37,7 @@ export function TccaOverviewTab({ tcca, onEdit }: TccaOverviewTabProps) {
   return (
     <div className="grid gap-lg">
       <section className="rounded-sm border border-border-default bg-neutral-25 p-lg">
-        <div className="flex items-start justify-between gap-lg">
-          <h2 className="text-sm font-semibold text-text-primary">Details</h2>
-          <button type="button" onClick={onEdit} aria-label="Edit TCCA project"
-            className="rounded-sm p-xs text-text-secondary transition-colors duration-fast hover:bg-neutral-100 hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary">
-            <Pencil size={16} aria-hidden />
-          </button>
-        </div>
+        <h2 className="text-sm font-semibold text-text-primary">Details</h2>
         <div className="mt-lg grid grid-cols-2 gap-lg tablet:grid-cols-4">
           <Field label="Number">{tcca.number}</Field>
           <Field label="Status"><Badge tone={TCCA_STATUS_TONE[tcca.status]}>{TCCA_STATUS_LABEL[tcca.status]}</Badge></Field>
@@ -54,13 +50,7 @@ export function TccaOverviewTab({ tcca, onEdit }: TccaOverviewTabProps) {
       </section>
 
       <section className="rounded-sm border border-border-default bg-neutral-25 p-lg">
-        <div className="flex items-start justify-between gap-lg">
-          <h2 className="text-sm font-semibold text-text-primary">Notes</h2>
-          <button type="button" onClick={onEdit} aria-label="Edit notes"
-            className="rounded-sm p-xs text-text-secondary transition-colors duration-fast hover:bg-neutral-100 hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary">
-            <Pencil size={16} aria-hidden />
-          </button>
-        </div>
+        <h2 className="text-sm font-semibold text-text-primary">Notes</h2>
         <div className="mt-lg grid gap-lg">
           <Field label="Next Action">{tcca.nextAction || '—'}</Field>
           <Field label="Comments">{tcca.comments || '—'}</Field>
@@ -104,15 +94,6 @@ export function TccaOverviewTab({ tcca, onEdit }: TccaOverviewTabProps) {
           </div>
         )}
       </section>
-    </div>
-  )
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="text-xs text-text-muted">{label}</p>
-      <p className="mt-xxss text-sm text-text-primary">{children}</p>
     </div>
   )
 }

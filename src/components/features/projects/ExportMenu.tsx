@@ -29,6 +29,7 @@ export function ExportMenu({ rows, onUnavailableFormat }: ExportMenuProps) {
       <Button
         ref={triggerRef}
         variant="secondary"
+        size="lg"
         trailingIcon={<ChevronDown size={16} />}
         aria-haspopup="menu"
         aria-expanded={open}

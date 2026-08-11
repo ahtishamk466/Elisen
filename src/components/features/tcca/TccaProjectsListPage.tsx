@@ -4,6 +4,7 @@ import { Plus, Search, Eye, Pencil, Trash2, ShieldCheck } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
+import { Pagination } from '@/components/patterns/Pagination'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -31,6 +32,8 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
   const removeTcca = useTccaStore((s) => s.removeTcca)
 
   const [query, setQuery] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<TccaProject | null>(null)
   const [deleting, setDeleting] = useState<TccaProject | null>(null)
@@ -51,18 +54,21 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
   const loading = state === 'loading'
 
   return (
-    <AppShell activeChild="TCCA Projects" title="TCCA Projects">
-      <div className="grid gap-lg">
-        <div className="grid gap-sm tablet:flex tablet:flex-wrap tablet:items-center">
-          <div className="min-w-0 tablet:flex-1" style={{ maxWidth: 380 }}>
+    <AppShell
+      activeChild="TCCA Projects"
+      title="TCCA Projects"
+      headerActions={
+        <>
+          <div className="min-w-0" style={{ width: 300 }}>
             <label htmlFor="tcca-search" className="sr-only">Search TCCA projects</label>
-            <Input id="tcca-search" value={query} onChange={(e) => setQuery(e.target.value)}
+            <Input id="tcca-search" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }}
               placeholder="Search by number or description..." leadingIcon={<Search size={16} />} />
           </div>
-          <span className="hidden tablet:block tablet:flex-1" />
-          <Button leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>Add TCCA project</Button>
-        </div>
-
+          <Button size="lg" leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>Add TCCA project</Button>
+        </>
+      }
+    >
+      <div className="grid gap-lg">
         {state === 'error' ? (
           <Alert title="We couldn't load TCCA projects">
             Something went wrong fetching the list. Refresh the page, and if it keeps happening, contact your administrator.
@@ -79,6 +85,7 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
             />
           </div>
         ) : (
+          <>
           <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
             <table className="w-full border-collapse text-left" style={{ minWidth: 760 }}>
               <caption className="sr-only">TCCA projects</caption>
@@ -96,8 +103,12 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
                         {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                       </tr>
                     ))
-                  : filtered.map((t) => (
-                      <tr key={t.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
+                  : filtered.slice((page - 1) * pageSize, page * pageSize).map((t) => (
+                      <tr
+                        key={t.id}
+                        onClick={() => navigate(`/tcca-projects/${t.id}`)}
+                        className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
+                      >
                         <td className="whitespace-nowrap px-lg py-base">
                           <Link to={`/tcca-projects/${t.id}`} className="text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline">
                             {t.number}
@@ -107,7 +118,7 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
                         <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{projectLabel(t)}</td>
                         <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{t.openedDate}</td>
                         <td className="px-lg py-base"><Badge tone={TCCA_STATUS_TONE[t.status]}>{TCCA_STATUS_LABEL[t.status]}</Badge></td>
-                        <td className="px-lg py-base">
+                        <td className="px-lg py-base" onClick={(e) => e.stopPropagation()}>
                           <ActionsMenu
                             ariaLabel={`Actions for ${t.number}`}
                             items={[
@@ -122,6 +133,13 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
               </tbody>
             </table>
           </div>
+          {!loading && (
+            <Pagination
+              page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="TCCA projects"
+              onPageChange={setPage} onPageSizeChange={setPageSize}
+            />
+          )}
+          </>
         )}
       </div>
 

@@ -87,8 +87,7 @@ export const PROJECT_ROWS: ProjectListRow[] = [
   },
 ]
 
-export const COMPANIES = ['Northwind Aerospace', 'Duncan Aviation', 'Top Aces', 'Abu Dhabi Aviation', 'Meridian Charter', 'Elisen']
-export const CONTACTS = ['Nathalie Gagnon', 'Priya Raman', 'Marc Lefebvre', 'Yusuf Haddad', 'Jane Doe']
+// COMPANIES/CONTACTS moved to the Lookup Tables store (lib/lookupFixtures.ts).
 export const PEOPLE = ['Sofia Reyes', 'Lloyd Pedvis', 'Remi Rocheleau', 'Kelly Osei', 'Harris Bell']
 
 /** Numbers already used — drives the duplicate-number validation. */

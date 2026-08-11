@@ -20,8 +20,6 @@ import { PEOPLE } from '@/lib/projectFixtures'
 import type { TimesheetEntry } from '@/types/timesheet'
 import type { TimesheetEntryValues } from './useTimesheetEntryForm'
 
-const PAGE_SIZE = 10
-
 export type PageState = 'ready' | 'loading' | 'empty' | 'error'
 
 export interface HoursWorkedPageProps {
@@ -53,6 +51,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<TimesheetFilters>(EMPTY_FILTERS)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; row?: TimesheetEntry } | null>(null)
   const [deletingRow, setDeletingRow] = useState<TimesheetEntry | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -82,8 +81,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
   const totalHours = filtered.reduce((sum, r) => sum + r.hoursRegular, 0)
   const pendingValidation = filtered.filter((r) => !r.validated).length
   const uniqueEmployees = new Set(filtered.map((r) => r.employeeName)).size
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize)
 
   const loading = state === 'loading'
   const showEmpty = state === 'empty' || (state === 'ready' && filtered.length === 0)
@@ -104,7 +102,26 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
   }
 
   return (
-    <AppShell title="Hours Worked — Admin — List" activeItem="Time Entry" activeChild="Hours Worked">
+    <AppShell
+      title="Hours Worked — Admin — List"
+      activeItem="Time Entry"
+      activeChild="Hours Worked"
+      headerActions={
+        <>
+          <div className="min-w-0" style={{ width: 300 }}>
+            <label htmlFor="hours-worked-search" className="sr-only">Search entries</label>
+            <Input
+              id="hours-worked-search" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }}
+              placeholder="Search by employee, project, activity or comment..." leadingIcon={<Search size={16} />}
+            />
+          </div>
+          <TimesheetFilterMenu projects={projects} employees={PEOPLE} filters={filters} onApply={(f) => { setFilters(f); setPage(1) }} />
+          <Button size="lg" leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>
+            Add Entry
+          </Button>
+        </>
+      }
+    >
       <div className="grid gap-lg">
         {toast && <Alert tone="info" title={toast} />}
 
@@ -113,21 +130,6 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
           <StatCard value={totalHours.toFixed(2)} label="Total regular hours" loading={loading} />
           <StatCard value={pendingValidation} label="Pending validation" loading={loading} />
           <StatCard value={uniqueEmployees} label="Employees" loading={loading} />
-        </div>
-
-        <div className="grid gap-sm tablet:flex tablet:flex-wrap tablet:items-center">
-          <div className="min-w-0 tablet:flex-1" style={{ maxWidth: 380 }}>
-            <label htmlFor="hours-worked-search" className="sr-only">Search entries</label>
-            <Input
-              id="hours-worked-search" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }}
-              placeholder="Search by employee, project, activity or comment..." leadingIcon={<Search size={16} />}
-            />
-          </div>
-          <TimesheetFilterMenu projects={projects} employees={PEOPLE} filters={filters} onApply={(f) => { setFilters(f); setPage(1) }} />
-          <span className="hidden tablet:block tablet:flex-1" />
-          <Button leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>
-            Add Entry
-          </Button>
         </div>
 
         {state === 'error' ? (
@@ -166,10 +168,8 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
             />
             {!loading && (
               <Pagination
-                page={page}
-                pageCount={pageCount}
-                summary={`Showing ${pageRows.length ? (page - 1) * PAGE_SIZE + 1 : 0} to ${(page - 1) * PAGE_SIZE + pageRows.length} of ${filtered.length} entries`}
-                onChange={setPage}
+                page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="entries"
+                onPageChange={setPage} onPageSizeChange={setPageSize}
               />
             )}
           </>

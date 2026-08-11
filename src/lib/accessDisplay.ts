@@ -1,8 +1,10 @@
 import type { AccessRole, AccessUser } from '@/types/access'
 
 /** Module a permission belongs to — the first segment of its kebab name
-    ('activity-task-create' → 'activity'). Drives grouping at 300+ scale. */
-export const moduleOf = (permissionId: string) => permissionId.split('-')[0]
+    ('activity-task-create' → 'activity'). Drives grouping at 300+ scale.
+    Trimmed and lowercased because the client's real data isn't uniformly
+    kebab-case ('Admin - RBAC' must still group under Admin). */
+export const moduleOf = (permissionId: string) => permissionId.split('-')[0].trim().toLowerCase()
 
 export const moduleLabel = (module: string) => module.charAt(0).toUpperCase() + module.slice(1)
 
