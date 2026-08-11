@@ -77,6 +77,26 @@ Updated as components are added or changed.
 | useTimesheetEntryForm | — | `features/timesheet/useTimesheetEntryForm.ts` | Form state + validation for the entry drawer |
 | TimesheetFilterMenu | with/without Employee filter | `features/timesheet/TimesheetFilterMenu.tsx` | Portaled filter popover: project, validated, active, date range |
 
+## /components/features/reports — feature-specific
+
+| Component | Variants | Location | Purpose |
+|-----------|----------|----------|---------|
+| ReportsPage | ready / loading / error; empty w/ clear action | `features/reports/ReportsPage.tsx` | `/reports` — all 14 reports in three sections; global search + category dropdown (All default); pending cards carry reasons |
+| RunReportDrawer | date / select params; range validation | `features/reports/RunReportDrawer.tsx` | Collects a report's parameters, then Generate Report |
+
+## /components/features/access — feature-specific (User Access Control)
+
+| Component | Variants | Location | Purpose |
+|-----------|----------|----------|---------|
+| UsersAccessPage | ready / loading / error; empty on no results | `features/access/UsersAccessPage.tsx` | `/admin/users` — old Users + Assignments merged; role pills in-row, direct-grant flags |
+| UserAccessDrawer | sysadmin-locked checkbox state | `features/access/UserAccessDrawer.tsx` | Account info, role assignment, distinct direct grants, effective-access rollup |
+| RolesPermissionsPage | tabs: Roles / Permissions; ready / loading / error | `features/access/RolesPermissionsPage.tsx` | `/admin/roles` — what access means, in one place |
+| RolesTab | Sysadmin undeletable; guarded delete w/ member count | `features/access/RolesTab.tsx` | Role list with permission + member counts |
+| RoleDrawer | create / edit (impact alert); inheritance w/ cycle guard | `features/access/RoleDrawer.tsx` | Name/description, inherits-roles picker, module-grouped permissions (inherited = locked) |
+| PermissionsTab | module accordions, orphan badge, usage counts | `features/access/PermissionsTab.tsx` | Permission list grouped by module prefix |
+| PermissionDrawer | create / edit (name locked, impact banner) | `features/access/PermissionDrawer.tsx` | Description, read-only rule, searchable route attachment |
+| SystemAccessPage | ready / loading / error | `features/access/SystemAccessPage.tsx` | `/admin/system` — route registry (+ register) and code-defined rules, demoted as advanced |
+
 ## /components/features/tcca — feature-specific
 
 | Component | Variants | Location | Purpose |

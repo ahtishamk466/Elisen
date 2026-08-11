@@ -264,6 +264,82 @@ form) without forcing the admin's bulk/dense-table workflow into a
 single-entry drawer pattern, which would have been the main risk of a full
 3-way merge.
 
+## 2026-08-10 — Reports: one grouped page instead of three pages or tabs
+**Context:** The old system has three separate report list pages — Project
+Management (7), Time Tracking (4), GCP (3) — each a grid with "Parameter
+1/2/3" columns and a run icon. User asked: three pages (their Option 1) or
+one page with three tabs (Option 2)?
+**Choice:** Neither literally — one `/reports` page with three labeled
+sections of `ReportCard` tiles and a single search box that filters across
+all categories; empty categories disappear while searching. Parameters moved
+out of the list entirely: a ready report with parameters opens
+`RunReportDrawer` (`Run Report "Hours Worked"`, date/select fields, start ≤
+end validation, Cancel + Generate Report); a ready report with no parameters
+downloads immediately, like the PCC card. Reports whose data model doesn't
+exist render as the established `pending` card variant with the reason
+(Open Queries & Quotations ×2 — not tracked here yet; the three GCP
+reports — module deferred). Ready reports generate real HTML downloads from
+the live stores via `lib/reportGenerators.ts` (same document style as
+`pccReport.ts`): Approvals, Project Status, TCCA Projects, TCCA Priority
+(open TCCAs ranked by linked-project priority), Open Deliverables — Action-On
+(open revisions on one person's desk), Detailed Time, Hours Worked
+(+Individual), Hours Worked — Summary (per-employee totals; the old
+payroll-group parameter is dropped because this app doesn't model payroll
+groups). Sidebar "Reports" became a leaf link — AppShell gained `TOP_ROUTES`
+so childless top-level items can navigate.
+**Rationale:** 14 reports total don't justify three near-empty pages (three
+nav slots + category-guessing) or tabs (hide two-thirds of a catalog that
+fits one screen). Category-per-page was the old system's module structure,
+not a user need. "Parameter 1/2/3" columns describe definitions, not the run
+task — a form at run time is the honest shape of that interaction. If the
+catalog grows, sections convert to per-category pages without redesign.
+**Addendum (user suggestion, same day):** a category dropdown (All default ·
+Project · Time Tracking · GCP) sits beside the search box — a zero-typing
+jump to one category that composes with search (both apply together). The
+combined empty state names the active category ("Nothing in GCP Reports
+matches your search") and offers one "Clear search & filter" reset.
+
+## 2026-08-10 — User Access Control: 6 RBAC pages consolidated into 3, grouped by job
+**Context:** The client's existing Yii2-RBAC admin exposes six sibling pages
+(Users, Routes, Permissions, Rules, Roles, Assignments) — one per storage
+table. Real tasks span 2–4 of them with no cross-links; the user asked for a
+senior-UX consolidation and approved the analysis before this build.
+**Choice:** Three pages under the Admin nav item, grouped by job & frequency:
+(1) **Users** (`/admin/users`) merges Users + Assignments — role pills
+in-row, Manage Access drawer with role checkboxes, distinct direct grants
+(warning-toned, kept visible so access can't hide) and a read-only
+effective-access rollup grouped by module. (2) **Roles & Permissions**
+(`/admin/roles`) merges Roles + Permissions + per-permission route mapping —
+roles table shows member reverse-lookup counts; edit shows an impact alert
+naming affected members; permissions grouped by kebab-prefix module with
+orphan ("No routes") and usage ("N roles · M users") badges; routes attach
+inside the permission drawer, replacing the global dual-listbox shuttle.
+(3) **System** (`/admin/system`) holds the route registry and code-defined
+rules, explicitly labeled advanced/developer territory — rules are listed
+read-only since they're classes, not data.
+**Guards built in:** the last active Sysadmin can't lose the role or be
+deactivated; the Sysadmin role offers no Delete action; deleting a role
+names its members and warns access is removed immediately; permission names
+are immutable in edit (roles reference them); new-route input validates the
+`/module/action` / `/module/*` shape.
+**Rationale:** Grouping follows the three real jobs — manage people's access
+(daily), define what access means (occasional), wire the engine (rare) — so
+each page answers its own question completely instead of mirroring the
+database schema. Full analysis in the 2026-08-10 plan of record.
+**Addendum (same day):** (a) The three pages moved from the generic "Admin"
+nav item to a dedicated **User Access Control** sidebar item (KeyRound icon),
+per explicit request — Admin stays as a placeholder for other maintenance
+areas. (b) **Role inheritance** added: `AccessRole.childRoleIds`, resolved
+recursively (cycle-safe) by `rolePermissionClosure()` in
+`lib/accessDisplay.ts`. Fixture chain mirrors the org: Manager ⊃ Supervisor ⊃
+Employee, Client-Manager ⊃ Client-Employee. The roles table shows an
+Inherits column and "N (+M inherited)" counts; the role drawer has an
+"Inherits roles" section whose selections render the inherited permissions
+as locked-checked "· inherited" checkboxes, and roles that already inherit
+the edited role are disabled with a loop explanation. Usage/impact counts
+(permission "used by N roles · M users") resolve through the closure, so
+inherited grants are never undercounted.
+
 ## 2026-08-10 — Drawer conventions: named records, grouped actions, no nested boxes
 **Context:** Reviewing the Aircraft edit drawer, the user raised three issues
 that applied well beyond that one screen.

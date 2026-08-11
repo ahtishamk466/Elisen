@@ -1,6 +1,12 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { LayoutDashboard, FolderOpen, Clock, ListChecks, ShieldCheck, Users, Settings, ChevronDown, ChevronRight, User } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, Clock, ListChecks, ShieldCheck, Users, Settings, ChevronDown, ChevronRight, User, KeyRound } from 'lucide-react'
+
+/** Top-level items without children that have a real screen — rendered as
+    router Links; the rest stay inert until their screens exist. */
+const TOP_ROUTES: Record<string, string> = {
+  'Reports': '/reports',
+}
 
 /** Children with real routes render as router Links; the rest stay inert
     until their screens exist. */
@@ -9,6 +15,9 @@ const CHILD_ROUTES: Record<string, string> = {
   'TCCA Projects': '/tcca-projects',
   'Timesheet': '/timesheet',
   'Hours Worked': '/hours-worked',
+  'Users': '/admin/users',
+  'Roles & Permissions': '/admin/roles',
+  'System': '/admin/system',
 }
 
 interface NavItem {
@@ -21,8 +30,9 @@ const NAV: NavItem[] = [
   { label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
   { label: 'Projects', icon: <FolderOpen size={18} />, children: ['Projects List', 'TCCA Projects'] },
   { label: 'Time Entry', icon: <Clock size={18} />, children: ['Hours Worked', 'Timesheet'] },
-  { label: 'Reports', icon: <ListChecks size={18} />, children: [] },
+  { label: 'Reports', icon: <ListChecks size={18} /> },
   { label: 'GCP', icon: <ShieldCheck size={18} />, children: [] },
+  { label: 'User Access Control', icon: <KeyRound size={18} />, children: ['Users', 'Roles & Permissions', 'System'] },
   { label: 'Admin', icon: <Users size={18} />, children: [] },
   { label: 'Settings', icon: <Settings size={18} /> },
 ]
@@ -76,6 +86,11 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
                         {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                       </span>
                     </button>
+                  ) : TOP_ROUTES[item.label] ? (
+                    <Link to={TOP_ROUTES[item.label]} aria-current={active ? 'page' : undefined} className={itemClass}>
+                      <span aria-hidden>{item.icon}</span>
+                      <span className="flex-1">{item.label}</span>
+                    </Link>
                   ) : (
                     <a href="#" aria-current={active ? 'page' : undefined} className={itemClass}>
                       <span aria-hidden>{item.icon}</span>

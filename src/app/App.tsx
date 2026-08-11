@@ -5,6 +5,10 @@ import { TccaProjectsListPage } from '@/components/features/tcca/TccaProjectsLis
 import { TccaProjectDetailPage } from '@/components/features/tcca/TccaProjectDetailPage'
 import { TimesheetListPage } from '@/components/features/timesheet/TimesheetListPage'
 import { HoursWorkedPage } from '@/components/features/timesheet/HoursWorkedPage'
+import { ReportsPage } from '@/components/features/reports/ReportsPage'
+import { UsersAccessPage } from '@/components/features/access/UsersAccessPage'
+import { RolesPermissionsPage } from '@/components/features/access/RolesPermissionsPage'
+import { SystemAccessPage } from '@/components/features/access/SystemAccessPage'
 
 export default function App() {
   return (
@@ -17,6 +21,10 @@ export default function App() {
         <Route path="/tcca-projects/:id" element={<TccaProjectDetailPage />} />
         <Route path="/timesheet" element={<TimesheetListPage />} />
         <Route path="/hours-worked" element={<HoursWorkedPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/admin/users" element={<UsersAccessPage />} />
+        <Route path="/admin/roles" element={<RolesPermissionsPage />} />
+        <Route path="/admin/system" element={<SystemAccessPage />} />
       </Routes>
     </BrowserRouter>
   )
