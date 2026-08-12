@@ -1289,3 +1289,50 @@ inherit an icon color.
 **Rationale:** "Do not add or remove anything" applies to imagery as much as
 data — an approximation, however close, isn't the same as the actual
 provided asset.
+
+## 2026-08-12 — Audit Control ("Audit Module") rebuilt as Panel/Clean tabs; new BarChart pattern
+**Context:** The client's nav showed "Audit Control" expanding to two children,
+Panel and Clean, and supplied one screenshot: an "Audit Module" panel with an
+Entries chart and four small dependent charts (Trails, Mails, Javascripts,
+Errors), each a pseudo-3D bar chart with sparse, sometimes-broken gridlines
+(0/2000/4000/6000 on Entries; a −1.0…1.0 axis on the all-zero Mails/
+Javascripts charts). No "Clean" screenshot was supplied — the user asked me
+to analyze the module and design it myself.
+**Analysis:** This is the Yii audit extension. An Entry is one served HTTP
+request; Trails/Mails/Javascripts/Errors all attach to an entry (data
+changes, sent mail copies, client JS errors, server errors/exceptions). Panel
+is read-only reporting; Clean is the matching retention tool every audit-log
+feature needs — old entries accumulate forever otherwise. Chart data itself
+isn't recoverable exactly from the screenshot (no data labels, only sparse
+gridlines), so `lib/auditFixtures.ts` documents the values as read off the
+bar shapes to the nearest readable step, not exact figures, and says so in
+comments — swap in the real data whenever it's available.
+**Choice:**
+- `/system/audit`, Panel/Clean as page tabs — the same pattern already used
+  by `RolesPermissionsPage`, not a third sidebar level, since the sidebar's
+  structure is a standing constraint in this project (see nav-IA decisions
+  above) and the client's own screenshot showed these as two views of one
+  module, not two destinations.
+- **Panel:** Entries full-width, the four dependents as small multiples below
+  it. Each chart carries its own axis/scale — Errors and Trails differ by
+  orders of magnitude, so a shared scale would flatten Trails to nothing —
+  and a 7-day total beside its heading plus a one-line description of what
+  it counts, since the legacy panel labelled the charts but never explained
+  them. All-zero series (Mails, Javascripts) show "No mails in the last 7
+  days" instead of drawing an empty −1..1 axis.
+- **Clean:** age Select (7/30/90/180/365 days) driving a per-type
+  stored/purgeable table, a guarded `ConfirmDialog` naming exact per-type
+  counts before deleting, and an `Alert` up front that this is permanent —
+  audit data can't be regenerated once purged.
+- New `patterns/BarChart.tsx`: no chart library existed in the app and one
+  series doesn't warrant adding one. Built from tokens, HTML bars (not SVG,
+  so labels don't rescale with a viewBox). The axis is built from a round
+  *step*, not a round max, so gridlines read 0/2,000/4,000/6,000 rather than
+  0/12.5/25/37.5/50. `tone="danger"` reserved for series that are themselves
+  a fault count (Errors), never used decoratively. Carries an `sr-only` data
+  table so values never depend on reading a bar height. Ran the dataviz
+  skill's palette validator on accent/danger — all six checks pass.
+**Rationale:** Panel answers "what happened"; Clean answers "what do I keep."
+Splitting the module that way, with each chart self-documenting its scale
+and meaning, turns an unlabelled internal panel into something a non-
+developer admin can actually read.

@@ -15,6 +15,7 @@ import { AircraftPage } from '@/components/features/lookups/AircraftPage'
 import { AtaChaptersPage } from '@/components/features/lookups/AtaChaptersPage'
 import { DatabaseBackupsPage } from '@/components/features/system/DatabaseBackupsPage'
 import { SoftwareSettingsPage } from '@/components/features/system/SoftwareSettingsPage'
+import { AuditControlPage } from '@/components/features/system/AuditControlPage'
 import { SignedOutScreen } from './SignedOutScreen'
 import { useSessionStore } from '@/stores/sessionStore'
 
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/admin/aircraft" element={<AircraftPage />} />
         <Route path="/admin/ata-chapters" element={<AtaChaptersPage />} />
         <Route path="/system/settings" element={<SoftwareSettingsPage />} />
+        <Route path="/system/audit" element={<AuditControlPage />} />
         <Route path="/system/database" element={<DatabaseBackupsPage />} />
       </Routes>
     </BrowserRouter>

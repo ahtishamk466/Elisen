@@ -26,6 +26,7 @@ const CHILD_ROUTES: Record<string, string> = {
   'Aircraft': '/admin/aircraft',
   'ATA Chapters': '/admin/ata-chapters',
   'Software Settings': '/system/settings',
+  'Audit Control': '/system/audit',
   'Database Management': '/system/database',
 }
 

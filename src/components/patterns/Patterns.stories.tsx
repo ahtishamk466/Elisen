@@ -9,6 +9,7 @@ import { EmptyState } from './EmptyState'
 import { Pagination } from './Pagination'
 import { TableTabs } from './TableTabs'
 import { FileDropzone } from './FileDropzone'
+import { BarChart } from './BarChart'
 import { AccordionSection } from './AccordionSection'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Drawer } from './Drawer'
@@ -230,6 +231,42 @@ function FileDropzoneDemo() {
   )
 }
 export const FileDropzoneExample: Story = { render: () => <div className="p-lg"><FileDropzoneDemo /></div> }
+
+/** One series per chart, always. A second measure means a second scale, so it
+    goes in its own chart beside this one — never a second y-axis. The axis is
+    built from a round step (0/2,000/4,000/6,000), bars are thin with a 2px
+    gap and a 4px rounded top anchored to the baseline, gridlines stay
+    recessive, and an all-zero series says so instead of drawing an empty
+    plot. `tone="danger"` is only for series that *are* a fault count, so the
+    color repeats what the title already said. Every chart carries an
+    sr-only data table — values never depend on reading a bar height. */
+export const BarChartExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg">
+      <BarChart
+        caption="Entries per day"
+        data={[
+          { label: 'Thu, Aug 06', value: 820 }, { label: 'Fri, Aug 07', value: 1450 },
+          { label: 'Sat, Aug 08', value: 2380 }, { label: 'Sun, Aug 09', value: 5210 },
+          { label: 'Mon, Aug 10', value: 3140 }, { label: 'Tue, Aug 11', value: 260 },
+          { label: 'Wed, Aug 12', value: 180 },
+        ]}
+        format={(v) => v.toLocaleString('en-CA')}
+      />
+      <BarChart
+        caption="Errors per day"
+        tone="danger"
+        height={140}
+        data={[
+          { label: 'Mon', value: 2100 }, { label: 'Tue', value: 1500 }, { label: 'Wed', value: 9500 },
+          { label: 'Thu', value: 3400 }, { label: 'Fri', value: 800 },
+        ]}
+        format={(v) => v.toLocaleString('en-CA')}
+      />
+      <BarChart caption="Mails per day" height={140} data={[{ label: 'Mon', value: 0 }, { label: 'Tue', value: 0 }]} emptyLabel="No mails in the last 7 days" />
+    </div>
+  ),
+}
 
 export const Accordion: Story = {
   render: () => (
