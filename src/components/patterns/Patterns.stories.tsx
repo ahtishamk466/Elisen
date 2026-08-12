@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { FolderOpen, Plus } from 'lucide-react'
+import { ChevronDown, FolderOpen, Plus, Trash2 } from 'lucide-react'
 import { FormField } from './FormField'
 import { FormSection } from './FormSection'
 import { Stepper } from './Stepper'
 import { StatCard } from './StatCard'
 import { EmptyState } from './EmptyState'
 import { Pagination } from './Pagination'
+import { TableTabs } from './TableTabs'
+import { FileDropzone } from './FileDropzone'
 import { AccordionSection } from './AccordionSection'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Drawer } from './Drawer'
@@ -16,6 +18,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Badge } from '@/components/ui/Badge'
+import { Select } from '@/components/ui/Select'
+import { PhoneInput } from '@/components/ui/PhoneInput'
 
 const meta: Meta = { title: 'Patterns/Overview' }
 export default meta
@@ -152,6 +156,81 @@ function PaginationDemo() {
 }
 export const PaginationExample: Story = { render: () => <div className="p-lg"><PaginationDemo /></div> }
 
+/** Tabs belong to the table, not above it: they render as the first child of
+    the same bordered card, and the active tab's accent underline sits on the
+    card's dividing line so the selection joins the rows below. Counts stay
+    beside each label. Never render them as standalone pills floating over
+    the table. Arrow keys move between tabs (real ARIA tabs); the strip
+    scrolls when the tabs outgrow a narrow viewport. */
+function TableTabsDemo() {
+  const [active, setActive] = useState('priorities')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  return (
+    <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+      <TableTabs
+        ariaLabel="Review presets"
+        activeKey={active}
+        onChange={setActive}
+        tabs={[
+          { key: 'all', label: 'All', count: 45 },
+          { key: 'priorities', label: 'Priorities', count: 26 },
+          { key: 'outstanding', label: 'Outstanding RFQs', count: 6 },
+          { key: 'completed', label: 'Completed RFQs', count: 12 },
+          { key: 'internal', label: 'Internal', count: 6 },
+        ]}
+      />
+      <div className="overflow-x-auto" role="tabpanel" aria-labelledby={`tab-${active}`} tabIndex={0}>
+        <table className="w-full border-collapse text-left" style={{ minWidth: 700 }}>
+          <thead>
+            <tr className="border-b border-border-default bg-neutral-50">
+              {['Number', 'Company Name', 'Priority', 'Status'].map((h) => (
+                <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-border-default last:border-b-0">
+              <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">3292-00</td>
+              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">A.I.M.S.</td>
+              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">1 – Fire</td>
+              <td className="whitespace-nowrap px-lg py-base"><Badge tone="warning">In Progress</Badge></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <Pagination
+        page={page} pageSize={pageSize} totalItems={26} itemLabel="projects"
+        onPageChange={setPage} onPageSizeChange={setPageSize}
+      />
+    </div>
+  )
+}
+export const TableTabsExample: Story = { render: () => <div className="p-lg"><TableTabsDemo /></div> }
+
+/** THE file picker for the whole app — every upload uses this, never a bare
+    `<input type="file">` and never a FormField/FormSection wrapper around it.
+    It carries its own label, hint, selected-file row and error message, so
+    drop it straight into a drawer or page. The "Upload File" button inside
+    the zone is the real keyboard-reachable control; dropping a file, or
+    clicking anywhere in the zone, are conveniences on top of it. */
+function FileDropzoneDemo() {
+  const [file, setFile] = useState<File | null>(null)
+  return (
+    <div className="grid gap-3xl">
+      <FileDropzone
+        label="Upload File" required accept=".sql" hint="SQL backup files only (.sql)"
+        file={file} onSelect={setFile}
+      />
+      <FileDropzone
+        label="Upload File" required accept=".sql" hint="SQL backup files only (.sql)"
+        file={null} onSelect={() => {}} error="Choose a .sql backup file to upload."
+      />
+    </div>
+  )
+}
+export const FileDropzoneExample: Story = { render: () => <div className="p-lg"><FileDropzoneDemo /></div> }
+
 export const Accordion: Story = {
   render: () => (
     <div className="grid gap-lg p-lg" style={{ maxWidth: 720 }}>
@@ -248,6 +327,90 @@ export const TruncatedTableText: Story = {
           </tr>
         </tbody>
       </table>
+    </div>
+  ),
+}
+
+const EDIT_ENTRIES = [
+  { id: 'e1', name: 'Remi Rocheleau' },
+  { id: 'e2', name: 'Louise Flornoy' },
+]
+
+/**
+ * THE standard Edit screen. Every edit drawer in the app looks like this —
+ * Companies, Aircraft, Projects, Work Packages, all of them:
+ *
+ *  - Fields are ALWAYS stacked `FormField` rows (label left, control right),
+ *    never a horizontal table of bare inputs with column headers.
+ *  - Repeated children (contacts, serials, aircraft) are collapsible entries
+ *    inside their own `FormSection`: chevron + entry name as the toggle,
+ *    trash on the right, divider between entries, "+ Add Another X" last.
+ *  - Footer is exactly Cancel (secondary) + Save Changes (primary).
+ *  - Every control is full width so the whole form shares one right edge.
+ *
+ * A multi-step Stepper is for CREATING a record only — never for editing.
+ */
+export const StandardEditScreen: Story = {
+  render: () => (
+    <div className="grid gap-lg p-lg" style={{ maxWidth: 720 }}>
+      <FormSection title="Company" subtitle="The record's own fields, one stacked FormField each.">
+        <FormField label="Name" htmlFor="std-name" required>
+          <Input id="std-name" defaultValue="Air Canada" />
+        </FormField>
+        <FormField label="City" htmlFor="std-city">
+          <Input id="std-city" defaultValue="Dorval" />
+        </FormField>
+        <FormField label="Phone No" htmlFor="std-phone">
+          <PhoneInput id="std-phone" countryCode="+1" onCountryCodeChange={() => {}} number="514-555-0142" onNumberChange={() => {}} />
+        </FormField>
+        <Checkbox label="Active — available in pickers across the app" defaultChecked />
+      </FormSection>
+
+      <FormSection title="Contacts" subtitle="Repeated children: collapsible entries, never a horizontal row of bare inputs.">
+        {EDIT_ENTRIES.map((e, i) => (
+          <div key={e.id} className={i > 0 ? 'border-t border-border-default pt-lg' : ''}>
+            <div className="flex items-center justify-between gap-lg">
+              <button
+                type="button"
+                aria-expanded
+                className="flex items-center gap-xs rounded-sm text-sm font-semibold text-text-primary transition-colors duration-fast hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+              >
+                <span aria-hidden className="text-text-muted"><ChevronDown size={16} /></span>
+                {e.name}
+              </button>
+              <button
+                type="button"
+                aria-label={`Remove ${e.name}`}
+                className="rounded-sm p-xs text-text-secondary transition-colors duration-fast hover:bg-neutral-100 hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+              >
+                <Trash2 size={16} aria-hidden />
+              </button>
+            </div>
+            <div className="mt-lg grid gap-lg">
+              <FormField label="Full Name" htmlFor={`std-ct-${e.id}`}>
+                <Input id={`std-ct-${e.id}`} defaultValue={e.name} />
+              </FormField>
+              <FormField label="Status" htmlFor={`std-st-${e.id}`}>
+                <Select id={`std-st-${e.id}`} defaultValue="active">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </Select>
+              </FormField>
+            </div>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="flex w-fit items-center gap-xs rounded-sm text-sm font-semibold text-text-primary transition-colors duration-fast hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+        >
+          <Plus size={16} aria-hidden /> Add Another Contact
+        </button>
+      </FormSection>
+
+      <div className="flex justify-end gap-sm border-t border-border-default pt-lg">
+        <Button variant="secondary">Cancel</Button>
+        <Button>Save Changes</Button>
+      </div>
     </div>
   ),
 }

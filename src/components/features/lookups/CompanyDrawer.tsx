@@ -7,7 +7,6 @@ import { DetailCard, DetailField } from '@/components/patterns/DetailView'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { Checkbox } from '@/components/ui/Checkbox'
 import { PhoneInput } from '@/components/ui/PhoneInput'
 import type { Company, CompanyContact } from '@/types/lookup'
 
@@ -26,8 +25,7 @@ export function CompanyDrawer({ mode, initial, initialContacts = [], onClose, on
   const isEdit = mode === 'edit'
   const companyId = initial?.id ?? crypto.randomUUID()
   const [c, setC] = useState<Company>(initial ?? {
-    id: companyId, name: '', address1: '', address2: '', city: '', provState: '', country: '', postal: '',
-    phoneCountryCode: '', phoneNumber: '', active: true,
+    id: companyId, name: '', address: '', city: '', country: '', postal: '', active: true,
   })
   const [contacts, setContacts] = useState<CompanyContact[]>(initialContacts)
   const [collapsed, setCollapsed] = useState<string[]>([])
@@ -77,11 +75,8 @@ export function CompanyDrawer({ mode, initial, initialContacts = [], onClose, on
             <DetailField label="Name">{c.name}</DetailField>
             <DetailField label="City">{c.city}</DetailField>
             <DetailField label="Country">{c.country}</DetailField>
-            <DetailField label="Address Line 1">{c.address1}</DetailField>
-            <DetailField label="Address Line 2">{c.address2}</DetailField>
-            <DetailField label="Province/State">{c.provState}</DetailField>
+            <DetailField label="Address">{c.address}</DetailField>
             <DetailField label="Zip Code" nowrap>{c.postal}</DetailField>
-            <DetailField label="Phone No" nowrap>{phoneLabel(c.phoneCountryCode, c.phoneNumber)}</DetailField>
             <DetailField label="Active">{c.active ? 'Active' : 'Inactive'}</DetailField>
           </div>
 
@@ -110,17 +105,11 @@ export function CompanyDrawer({ mode, initial, initialContacts = [], onClose, on
             <FormField label="Name" htmlFor="co-name" required error={error}>
               <Input id="co-name" value={c.name} error={!!error} placeholder="e.g. Air Canada" onChange={(e) => { setField('name', e.target.value); setError('') }} />
             </FormField>
-            <FormField label="Address Line 1" htmlFor="co-a1">
-              <Input id="co-a1" value={c.address1} onChange={(e) => setField('address1', e.target.value)} />
-            </FormField>
-            <FormField label="Address Line 2" htmlFor="co-a2">
-              <Input id="co-a2" value={c.address2} onChange={(e) => setField('address2', e.target.value)} />
+            <FormField label="Address" htmlFor="co-address">
+              <Input id="co-address" value={c.address} placeholder="Street, unit, province/state" onChange={(e) => setField('address', e.target.value)} />
             </FormField>
             <FormField label="City" htmlFor="co-city">
               <Input id="co-city" value={c.city} onChange={(e) => setField('city', e.target.value)} />
-            </FormField>
-            <FormField label="Prov / State" htmlFor="co-prov">
-              <Input id="co-prov" value={c.provState} onChange={(e) => setField('provState', e.target.value)} />
             </FormField>
             <FormField label="Country" htmlFor="co-country">
               <Input id="co-country" value={c.country} onChange={(e) => setField('country', e.target.value)} />
@@ -128,14 +117,12 @@ export function CompanyDrawer({ mode, initial, initialContacts = [], onClose, on
             <FormField label="Postal / Zipcode" htmlFor="co-postal">
               <Input id="co-postal" value={c.postal} onChange={(e) => setField('postal', e.target.value)} />
             </FormField>
-            <FormField label="Phone No" htmlFor="co-phone">
-              <PhoneInput
-                id="co-phone"
-                countryCode={c.phoneCountryCode} onCountryCodeChange={(v) => setField('phoneCountryCode', v)}
-                number={c.phoneNumber} onNumberChange={(v) => setField('phoneNumber', v)}
-              />
+            <FormField label="Status" htmlFor="co-status" help="Inactive companies keep their history but are hidden from pickers.">
+              <Select id="co-status" value={c.active ? 'active' : 'inactive'} onChange={(e) => setField('active', e.target.value === 'active')}>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </Select>
             </FormField>
-            <Checkbox label="Active — available in pickers across the app" checked={c.active} onChange={() => setField('active', !c.active)} />
           </FormSection>
 
           {/* Collapsible entry per contact with stacked FormFields — the same

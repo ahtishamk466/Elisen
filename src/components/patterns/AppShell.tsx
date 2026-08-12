@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { LayoutDashboard, FolderOpen, Clock, ListChecks, ShieldCheck, Users, Settings, ChevronDown, ChevronRight, KeyRound } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, Clock, ListChecks, ShieldCheck, Database, Settings, ChevronDown, ChevronRight, KeyRound } from 'lucide-react'
 import { SidebarProfile } from './SidebarProfile'
 
 /** Top-level items without children that have a real screen — rendered as
@@ -13,15 +13,20 @@ const TOP_ROUTES: Record<string, string> = {
     until their screens exist. */
 const CHILD_ROUTES: Record<string, string> = {
   'Projects List': '/projects',
+  'Projects Review': '/projects/review',
   'TCCA Projects': '/tcca-projects',
   'Timesheet': '/timesheet',
   'Hours Worked': '/hours-worked',
   'Users': '/admin/users',
   'Roles & Permissions': '/admin/roles',
-  'System': '/admin/system',
-  'Companies & Contacts': '/admin/companies',
+  // The route registry + rules page — named "Routes" now that "System" is a
+  // top-level section of its own.
+  'Routes': '/admin/system',
+  'Companies': '/admin/companies',
   'Aircraft': '/admin/aircraft',
   'ATA Chapters': '/admin/ata-chapters',
+  'Software Settings': '/system/settings',
+  'Database Management': '/system/database',
 }
 
 interface NavItem {
@@ -32,13 +37,17 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
-  { label: 'Projects', icon: <FolderOpen size={18} />, children: ['Projects List', 'TCCA Projects'] },
+  { label: 'Projects', icon: <FolderOpen size={18} />, children: ['Projects List', 'Projects Review', 'TCCA Projects'] },
   { label: 'Time Entry', icon: <Clock size={18} />, children: ['Hours Worked', 'Timesheet'] },
   { label: 'Reports', icon: <ListChecks size={18} /> },
   { label: 'GCP', icon: <ShieldCheck size={18} />, children: [] },
-  { label: 'User Access Control', icon: <KeyRound size={18} />, children: ['Users', 'Roles & Permissions', 'System'] },
-  { label: 'Admin', icon: <Users size={18} />, children: ['Companies & Contacts', 'Aircraft', 'ATA Chapters'] },
-  { label: 'Settings', icon: <Settings size={18} /> },
+  // Three administrative sections split by *what* they hold, not by who is
+  // senior enough to see them: business data staff maintain, access
+  // management, and machine-side tooling. Ordered most-used first, and each
+  // gated as a whole rather than child-by-child.
+  { label: 'Reference Data', icon: <Database size={18} />, children: ['Companies', 'Aircraft', 'ATA Chapters'] },
+  { label: 'User Access', icon: <KeyRound size={18} />, children: ['Users', 'Roles & Permissions', 'Routes'] },
+  { label: 'System', icon: <Settings size={18} />, children: ['Software Settings', 'Audit Control', 'Database Management'] },
 ]
 
 export interface AppShellProps {

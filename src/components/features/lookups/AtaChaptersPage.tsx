@@ -55,7 +55,7 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
 
   if (state === 'error') {
     return (
-      <AppShell title="ATA Chapters" activeItem="Admin" activeChild="ATA Chapters">
+      <AppShell title="ATA Chapters" activeItem="Reference Data" activeChild="ATA Chapters">
         <Alert title="We couldn't load ATA chapters">Refresh the page, and if it keeps happening, contact your administrator.</Alert>
       </AppShell>
     )
@@ -64,7 +64,7 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
   return (
     <AppShell
       title="ATA Chapters"
-      activeItem="Admin"
+      activeItem="Reference Data"
       activeChild="ATA Chapters"
       headerActions={
         <>

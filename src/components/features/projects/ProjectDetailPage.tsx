@@ -7,6 +7,7 @@ import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { ReportCard } from '@/components/patterns/ReportCard'
 import { DetailCard as Card, DetailField as Field } from '@/components/patterns/DetailView'
+import { Avatar } from '@/components/patterns/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useTccaStore } from '@/stores/tccaStore'
@@ -282,6 +283,10 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
                   </div>
                 </Card>
 
+                {/* Only Proposal, Notes and Aircraft pass `onEdit` — those three
+                    sections own a focused edit drawer. Dates and Scope are
+                    edited from the project-level actions menu instead, so
+                    they render without an affordance. */}
                 <Card title="Proposal" onEdit={() => setActiveDrawer('proposal')}>
                   <div className="grid grid-cols-2 gap-lg">
                     <Field label="Proposal Submitted">{row.proposalSubmitted === 'yes' ? 'Yes' : 'No'}</Field>
@@ -412,29 +417,6 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
         onCancel={() => setDeleting(false)}
       />
     </AppShell>
-  )
-}
-
-/** Only Proposal, Notes and Aircraft pass `onEdit` — those three sections own
-    a focused edit drawer. Dates and Scope are edited from the project-level
-    actions menu instead, so they render without an affordance. */
-const AVATAR_TONE = {
-  accent: 'bg-accent-subtle text-accent',
-  success: 'bg-success-subtle text-success',
-} as const
-
-function initials(name: string) {
-  return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
-}
-
-function Avatar({ name, tone }: { name: string; tone: keyof typeof AVATAR_TONE }) {
-  return (
-    <span
-      aria-hidden
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${AVATAR_TONE[tone]}`}
-    >
-      {initials(name)}
-    </span>
   )
 }
 

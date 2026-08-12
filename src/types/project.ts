@@ -1,6 +1,14 @@
-export type ProjectType = 'internal' | 'preferred-duncan' | 'preferred-topaces' | 'external'
-export type ProjectStatus = 'quoted' | 'active' | 'on-hold' | 'complete' | 'cancelled'
-export type ProjectPriority = '1-fire' | '2-high' | '3-med' | '4-low'
+/** `preferred` (generic) and `other` exist so every project has a home —
+    the legacy Review screen filtered on four of six types, leaving those
+    two invisible on that screen entirely. */
+export type ProjectType =
+  | 'internal' | 'preferred' | 'preferred-duncan' | 'preferred-topaces' | 'external' | 'other'
+/** `query` (quote requested, not yet sent) and `quoted` (quote sent,
+    awaiting outcome) are the two RFQ stages; `tentative` is won-but-not-
+    started. Together they reproduce the legacy Review lifecycle. */
+export type ProjectStatus =
+  | 'query' | 'quoted' | 'tentative' | 'active' | 'on-hold' | 'complete' | 'cancelled'
+export type ProjectPriority = '1-fire' | '2-high' | '3-med' | '4-low' | '5-lowest'
 
 /** Scope of work Elisen was hired for — drives which deliverables apply. */
 export type ScopeKey = 'design' | 'validation' | 'certification' | 'parts-kit' | 'aircraft-mod'
@@ -29,6 +37,8 @@ export interface ProjectListRow {
   budgetHours: number
   priority: ProjectPriority
   status: ProjectStatus
+  /** Lifecycle flag, as on the legacy Review screen's Active column. */
+  active: boolean
 
   // Detail-only fields — collected on the create/edit form, shown and
   // editable per-section on Project Detail > Overview.

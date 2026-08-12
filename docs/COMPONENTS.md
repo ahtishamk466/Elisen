@@ -32,9 +32,12 @@ Updated as components are added or changed.
 | StatCard | default, loading | `patterns/StatCard.tsx` | Single headline metric |
 | EmptyState | with/without action, custom icon | `patterns/EmptyState.tsx` | Zero-data and no-results states |
 | Pagination | first / middle / last page, empty | `patterns/Pagination.tsx` | Page-size select + "Showing X to Y of Z" + first/prev/page/next/last controls. No border/rounded/bg of its own — renders as the last child inside the same card as its table, separated by one top border, never a second box below it |
+| FileDropzone | empty / dragging / file selected / error | `patterns/FileDropzone.tsx` | **THE** file picker for the whole app — every upload uses this, never a bare `<input type="file">`. Self-contained: renders its own `label`/`required`, the stacked-files illustration (`/public/illustrations/upload-files.svg`, the client's own asset — static, not recolored, since it carries its own drop-shadow filters and layered opacities), "Drag & drop a file here, or browse" + `hint`, a primary "Upload File" button, the selected-file row with Remove, and the `error` message. Do **not** wrap it in `FormField` or `FormSection` — it needs no container. The inner button is the real keyboard-reachable control; dropping a file or clicking the zone are conveniences on top of it. Storybook: `Patterns/Overview` → FileDropzoneExample |
+| TableTabs | active / inactive, with/without counts, overflowing | `patterns/TableTabs.tsx` | THE standard for slicing one table several ways. The mirror of Pagination: no border/bg of its own, renders as the **first** child inside the same card as its table so it reads as the table's header. Active tab = accent underline sitting on the card's dividing line (`-mb-px`), count in a pill beside the label. Real ARIA tabs (arrow keys, roving tabindex, active tab scrolled into view); the table is the `tabpanel`. Never render these as standalone pills/chips floating above the table |
 | DetailCard / DetailField | with/without edit icon; empty field; `nowrap` | `patterns/DetailView.tsx` | THE standard read-only View: bordered card + muted-label/plain-value field grid. Never use a disabled form input to show read-only data — it dims real values to the same gray as an empty placeholder. Pass `nowrap` on short codes (Serial No, Reg. No, Model No, IDs) |
 | Truncate | 1 line / 2 lines | `patterns/Truncate.tsx` | THE standard for long free text in a table cell: `line-clamp`, full text on hover via native `title`. Pair with a `maxWidth` style on the `<td>` — without a width constraint the browser just grows the column instead of wrapping. Never use on short codes — see the `whitespace-nowrap` rule below |
 | AccordionSection | open / closed, optional meta | `patterns/AccordionSection.tsx` | Collapsible grouped content (checklist phases) |
+| Avatar | tone: accent / success | `patterns/Avatar.tsx` | Initials circle from a full name — Project Detail's People section |
 | AppShell | active nav item / child; optional headerLeft / headerActions | `patterns/AppShell.tsx` | Sidebar + header frame; heading left, page controls right |
 | SidebarProfile | menu closed / open; profile drawer; logout confirm | `patterns/SidebarProfile.tsx` | Signed-in identity at the foot of the sidebar, with Profile and Logout |
 | ActionsMenu | n items, default / danger tone | `patterns/ActionsMenu.tsx` | Row-level "⋮" menu, portaled to avoid table clipping |
@@ -45,6 +48,9 @@ Updated as components are added or changed.
 | Component | Variants | Location | Purpose |
 |-----------|----------|----------|---------|
 | ProjectsListPage | ready / loading / empty / error × with/without financials | `features/projects/ProjectsListPage.tsx` | Projects list screen |
+| ProjectReviewPage | ready / loading / error / empty × 8 presets | `features/projects/ProjectReviewPage.tsx` | Projects Review — the legacy 7 tabs as one filterable list; preset chips + Filters menu combine |
+| ProjectReviewTable | default, loading, financials hidden | `features/projects/ProjectReviewTable.tsx` | Superset column set (Aging, Comments, Next Action, Bdg/Actl Hrs, Due Date); irrelevant columns show an em dash rather than disappearing |
+| ProjectReviewFilterMenu | 0-6 active filters | `features/projects/ProjectReviewFilterMenu.tsx` | Company / Person / Priority / Status / Type / Active — narrows *within* the selected preset chip |
 | ProjectsTable | default, loading, financials hidden | `features/projects/ProjectsTable.tsx` | Project rows with status/priority badges; `pagination` prop renders inside the same card as its table's footer |
 | AddProjectDrawer | create: 2-step (no TCCA) / 3-step (TCCA required); edit: single screen | `features/projects/AddProjectDrawer.tsx` | Create uses the Stepper (Cancel/Back/Continue/Create Project); edit shows every section at once with no stepper (Cancel + Save Changes only) — the standard Edit footer used everywhere else |
 | StepBasicInfo | with/without financial section | `features/projects/StepBasicInfo.tsx` | Step 1 — identification, company, scope, TCCA question |
@@ -86,9 +92,9 @@ Updated as components are added or changed.
 | Component | Variants | Location | Purpose |
 |-----------|----------|----------|---------|
 | CompaniesPage | ready / loading / error; empty w/ clear | `features/lookups/CompaniesPage.tsx` | `/admin/companies` — old Companies + Contacts merged; search matches contact names |
-| CompanyDrawer | create / edit / view | `features/lookups/CompanyDrawer.tsx` | Address fields (incl. PhoneInput) + contacts as collapsible entries with stacked FormFields, matching AircraftEditDrawer. View: one DetailCard for company + contacts, divider-separated, not a second card |
+| CompanyDrawer | create / edit / view | `features/lookups/CompanyDrawer.tsx` | Single free-text Address field (no Address Line 1/2 split), PhoneInput, Status as an Active/Inactive Select (no checkbox) + contacts as collapsible entries with stacked FormFields. View: one DetailCard for company + contacts, divider-separated, not a second card |
 | AircraftPage | ready / loading / error; empty w/ clear | `features/lookups/AircraftPage.tsx` | `/admin/aircraft` — old Aircraft + Serial Numbers merged; search matches serial/registration |
-| AircraftModelDrawer | create / edit / view | `features/lookups/AircraftModelDrawer.tsx` | Edit/create: one editable table, same columns/order as the Aircraft list, one row per serial, model fields shared live across rows. View: one DetailCard, same field order as the list (Serial No, Reg. No, Model No, ...), repeated per serial with a divider between entries — not a separate Serial Numbers card |
+| AircraftModelDrawer | create / edit / view | `features/lookups/AircraftModelDrawer.tsx` | One row = one aircraft (model + a single serial), flat form — no nested/collapsible serial section. Field order matches the list table: Serial No, Reg. No, Model Number, Model Name, Manufacture, TCCA/FAA/EASA TC, Drawing Prefix, Comment, Status (Select, not a checkbox). A model with several tail numbers (e.g. Lear 35A) gets one row per serial, each edited independently — editing one never touches its siblings. View: one DetailCard, same field order, no per-entry loop |
 | AtaChaptersPage | ready / loading / error; search auto-expands | `features/lookups/AtaChaptersPage.tsx` | `/admin/ata-chapters` — chapters as expandable cards with sections inside (WP→Activity pattern) |
 | AtaChapterDrawer | create / edit (code locked on edit) | `features/lookups/AtaChapterDrawer.tsx` | Chapter code, title, definition, active |
 | AtaSubChapterDrawer | create / edit; parent named in title | `features/lookups/AtaSubChapterDrawer.tsx` | Section within a chapter |
@@ -112,6 +118,16 @@ Updated as components are added or changed.
 | PermissionsTab | module accordions, orphan badge, usage counts | `features/access/PermissionsTab.tsx` | Permission list grouped by module prefix |
 | PermissionDrawer | create / edit (name locked, impact banner) | `features/access/PermissionDrawer.tsx` | Description, read-only rule, searchable route attachment |
 | SystemAccessPage | ready / loading / error | `features/access/SystemAccessPage.tsx` | `/admin/system` — route registry (+ register) and code-defined rules, demoted as advanced |
+
+## /components/features/system — feature-specific (System)
+
+| Component | Variants | Location | Purpose |
+|-----------|----------|----------|---------|
+| DatabaseBackupsPage | ready / loading / error; empty | `features/system/DatabaseBackupsPage.tsx` | `/system/database` — backup .sql files; Create Backup / Upload Backup File; Restore DB + Delete file behind one Actions menu, both guarded |
+| UploadBackupDrawer | empty / error | `features/system/UploadBackupDrawer.tsx` | Heading + `FileDropzone`, nothing else — no section or field wrapper |
+| SoftwareSettingsPage | ready / loading / error; empty (no data vs no matches) | `features/system/SoftwareSettingsPage.tsx` | `/system/settings` — key/value config; `#` column keeps each row's real position under filters; Edit / Activate-Deactivate / Delete in the Actions menu |
+| SoftwareSettingsFilterMenu | 0–6 active, count on trigger | `features/system/SoftwareSettingsFilterMenu.tsx` | The legacy in-header filter row as one menu: Type, Section, Key, Value, Status, Description + Clear/Apply |
+| SettingDrawer | create / edit; per-type Value control | `features/system/SettingDrawer.tsx` | Value control follows Type — boolean → true/false Select, null → read-only, integer/float → validated number |
 
 ## /components/features/tcca — feature-specific
 

@@ -33,7 +33,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; model?: AircraftModel } | null>(null)
+  const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; model?: AircraftModel; serial?: AircraftSerial } | null>(null)
   const [deleting, setDeleting] = useState<AircraftModel | null>(null)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -62,7 +62,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
 
   if (state === 'error') {
     return (
-      <AppShell title="Aircraft" activeItem="Admin" activeChild="Aircraft">
+      <AppShell title="Aircraft" activeItem="Reference Data" activeChild="Aircraft">
         <Alert title="We couldn't load aircraft">Refresh the page, and if it keeps happening, contact your administrator.</Alert>
       </AppShell>
     )
@@ -71,7 +71,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
   return (
     <AppShell
       title="Aircraft"
-      activeItem="Admin"
+      activeItem="Reference Data"
       activeChild="Aircraft"
       headerActions={
         <>
@@ -122,7 +122,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
                   : filtered.slice((page - 1) * pageSize, page * pageSize).map(({ model: a, serial: s }) => (
                       <tr
                         key={`${a.id}-${s?.id ?? 'none'}`}
-                        onClick={() => setDrawer({ mode: 'edit', model: a })}
+                        onClick={() => setDrawer({ mode: 'edit', model: a, serial: s })}
                         className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
                       >
                         <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{s?.serial || '—'}</td>
@@ -130,7 +130,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
                         <td className="whitespace-nowrap px-lg py-base align-top">
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); setDrawer({ mode: 'edit', model: a }) }}
+                            onClick={(e) => { e.stopPropagation(); setDrawer({ mode: 'edit', model: a, serial: s }) }}
                             className="text-left text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
                           >
                             {a.modelNumber}
@@ -150,8 +150,8 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
                           <ActionsMenu
                             ariaLabel={`Actions for ${a.modelNumber}${s?.serial ? ` serial ${s.serial}` : ''}`}
                             items={[
-                              { label: 'View', icon: <Eye size={16} />, onSelect: () => setDrawer({ mode: 'view', model: a }) },
-                              { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setDrawer({ mode: 'edit', model: a }) },
+                              { label: 'View', icon: <Eye size={16} />, onSelect: () => setDrawer({ mode: 'view', model: a, serial: s }) },
+                              { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setDrawer({ mode: 'edit', model: a, serial: s }) },
                               a.active
                                 ? { label: 'Deactivate', icon: <CircleOff size={16} />, onSelect: () => { updateAircraft(a.id, { active: false }); setToast(`${a.modelNumber} deactivated — hidden from pickers.`) } }
                                 : { label: 'Activate', icon: <CircleCheck size={16} />, onSelect: () => { updateAircraft(a.id, { active: true }); setToast(`${a.modelNumber} activated.`) } },
@@ -176,12 +176,12 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
 
       {drawer && (
         <AircraftModelDrawer
-          key={`${drawer.mode}-${drawer.model?.id ?? 'new'}`}
+          key={`${drawer.mode}-${drawer.model?.id ?? 'new'}-${drawer.serial?.id ?? 'none'}`}
           mode={drawer.mode}
           initial={drawer.model}
-          initialSerials={drawer.model ? serialsOf(drawer.model.id) : []}
+          initialSerial={drawer.serial}
           onClose={() => setDrawer(null)}
-          onSave={(model, sns) => { saveAircraft(model, sns); setToast(`Aircraft "${model.modelNumber}" saved.`) }}
+          onSave={(model, serial) => { saveAircraft(model, serial); setToast(`Aircraft "${model.modelNumber}" saved.`) }}
         />
       )}
 

@@ -66,9 +66,11 @@ export function StepBasicInfo({ values, errors, setField, canSeeFinancials = tru
         <FormField label="Type" htmlFor="type" required error={errors.type}>
           <Select id="type" value={values.type} error={!!errors.type} onChange={(e) => setField('type', e.target.value)}>
             <option value="internal">Internal</option>
+            <option value="preferred">Preferred</option>
             <option value="preferred-duncan">Preferred — Duncan Aviation</option>
             <option value="preferred-topaces">Preferred — Top Aces</option>
             <option value="external">External</option>
+            <option value="other">Other</option>
           </Select>
         </FormField>
         <FormField label="Priority" htmlFor="priority" required error={errors.priority}>
@@ -85,7 +87,7 @@ export function StepBasicInfo({ values, errors, setField, canSeeFinancials = tru
       </FormSection>
 
       <FormSection title="Company & Profile" subtitle="Who this project is for, and who owns it internally.">
-        <FormField label="Company" htmlFor="company" required error={errors.company} help="Managed under Admin → Companies & Contacts.">
+        <FormField label="Company" htmlFor="company" required error={errors.company} help="Managed under Admin → Companies.">
           <Select
             id="company" value={values.company} error={!!errors.company} placeholder="Select a company..."
             onChange={(e) => { setField('company', e.target.value); setField('contact', '') }}

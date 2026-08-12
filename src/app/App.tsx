@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ProjectsListPage } from '@/components/features/projects/ProjectsListPage'
+import { ProjectReviewPage } from '@/components/features/projects/ProjectReviewPage'
 import { ProjectDetailPage } from '@/components/features/projects/ProjectDetailPage'
 import { TccaProjectsListPage } from '@/components/features/tcca/TccaProjectsListPage'
 import { TccaProjectDetailPage } from '@/components/features/tcca/TccaProjectDetailPage'
@@ -12,6 +13,8 @@ import { SystemAccessPage } from '@/components/features/access/SystemAccessPage'
 import { CompaniesPage } from '@/components/features/lookups/CompaniesPage'
 import { AircraftPage } from '@/components/features/lookups/AircraftPage'
 import { AtaChaptersPage } from '@/components/features/lookups/AtaChaptersPage'
+import { DatabaseBackupsPage } from '@/components/features/system/DatabaseBackupsPage'
+import { SoftwareSettingsPage } from '@/components/features/system/SoftwareSettingsPage'
 import { SignedOutScreen } from './SignedOutScreen'
 import { useSessionStore } from '@/stores/sessionStore'
 
@@ -24,6 +27,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/projects" replace />} />
         <Route path="/projects" element={<ProjectsListPage />} />
+        <Route path="/projects/review" element={<ProjectReviewPage />} />
         <Route path="/projects/:id" element={<ProjectDetailPage />} />
         <Route path="/tcca-projects" element={<TccaProjectsListPage />} />
         <Route path="/tcca-projects/:id" element={<TccaProjectDetailPage />} />
@@ -36,6 +40,8 @@ export default function App() {
         <Route path="/admin/companies" element={<CompaniesPage />} />
         <Route path="/admin/aircraft" element={<AircraftPage />} />
         <Route path="/admin/ata-chapters" element={<AtaChaptersPage />} />
+        <Route path="/system/settings" element={<SoftwareSettingsPage />} />
+        <Route path="/system/database" element={<DatabaseBackupsPage />} />
       </Routes>
     </BrowserRouter>
   )

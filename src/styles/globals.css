@@ -9,3 +9,16 @@
     font-family: var(--font-family-sans);
   }
 }
+
+@layer components {
+  /* A horizontally scrollable strip whose scrollbar would otherwise cut
+     across the layout — used by TableTabs, where the bar sits on the card's
+     dividing line. Content stays reachable by keyboard (arrow keys move and
+     scroll the active tab into view) and by trackpad/shift-scroll. */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}

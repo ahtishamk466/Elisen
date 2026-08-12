@@ -8,16 +8,12 @@
 export interface Company {
   id: string
   name: string
-  address1: string
-  address2: string
+  /** One free-text field — street, unit, and state/province all together,
+      not three separate inputs the user has to decide how to split. */
+  address: string
   city: string
-  provState: string
   country: string
   postal: string
-  /** Split so the UI can show a dedicated country-code select next to a
-      plain number field — see ui/PhoneInput.tsx. */
-  phoneCountryCode: string
-  phoneNumber: string
   active: boolean
 }
 

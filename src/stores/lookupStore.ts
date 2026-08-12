@@ -19,7 +19,7 @@ interface LookupState {
   /** Also removes the company's contacts. */
   removeCompany: (id: string) => void
 
-  saveAircraft: (model: AircraftModel, serials: AircraftSerial[]) => void
+  saveAircraft: (model: AircraftModel, serial: AircraftSerial | null) => void
   updateAircraft: (id: string, patch: Partial<AircraftModel>) => void
   /** Also removes the model's serials. */
   removeAircraft: (id: string) => void
@@ -57,10 +57,12 @@ export const useLookupStore = create<LookupState>((set) => ({
       contacts: s.contacts.filter((c) => c.companyId !== id),
     })),
 
-  saveAircraft: (model, serials) =>
+  // One row = one model + one serial; only that serial is touched so a
+  // model's other serials (e.g. Lear 35A's other tail numbers) survive.
+  saveAircraft: (model, serial) =>
     set((s) => ({
       aircraft: upsert(s.aircraft, model),
-      serials: [...s.serials.filter((x) => x.aircraftId !== model.id), ...serials],
+      serials: serial ? upsert(s.serials, serial) : s.serials,
     })),
   updateAircraft: (id, patch) =>
     set((s) => ({ aircraft: s.aircraft.map((a) => (a.id === id ? { ...a, ...patch } : a)) })),

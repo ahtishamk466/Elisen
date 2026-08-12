@@ -13,9 +13,42 @@ import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { CompanyDrawer } from './CompanyDrawer'
 import { useLookupStore } from '@/stores/lookupStore'
-import type { Company } from '@/types/lookup'
+import type { Company, CompanyContact } from '@/types/lookup'
 
-const HEADERS = ['Name', 'City, Country', 'Address Line 1', 'Address Line 2', 'Province/State', 'Zip Code', 'Contacts', 'Active', 'Actions']
+/** Show at most this many contact chips inline; the rest collapse into a
+    "+N more" chip. Matches the Allowed Tasks chips on Work Package cards. */
+const CHIP_LIMIT = 2
+
+/** Contacts as chips rather than a bare count — two names are readable at a
+    glance, and the whole cell opens the company's View with the full list.
+    Never more than two lines: "+N more" sits inline beside the second chip,
+    not on a third row. */
+function ContactChips({ contacts, onOpen }: { contacts: CompanyContact[]; onOpen: () => void }) {
+  if (contacts.length === 0) return <span className="text-sm text-text-muted">—</span>
+  const shown = contacts.slice(0, CHIP_LIMIT)
+  const extra = contacts.length - shown.length
+  const chip = 'max-w-full truncate rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary'
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onOpen() }}
+      aria-label={`View all ${contacts.length} contact${contacts.length === 1 ? '' : 's'}`}
+      className="flex flex-col items-start gap-xs rounded-sm text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+    >
+      <span className={chip}>{shown[0].fullName}</span>
+      {shown[1] && (
+        <span className="flex items-center gap-sm">
+          <span className={chip}>{shown[1].fullName}</span>
+          {extra > 0 && (
+            <span className="whitespace-nowrap text-xs text-text-primary underline underline-offset-2">+{extra} more</span>
+          )}
+        </span>
+      )}
+    </button>
+  )
+}
+
+const HEADERS = ['Name', 'Contacts', 'Address', 'City', 'Zip Code', 'Actions']
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -43,7 +76,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
     const q = query.toLowerCase().trim()
     if (!q) return companies.map((c) => ({ company: c, matchedContact: undefined as string | undefined }))
     return companies.flatMap((c) => {
-      const inCompany = `${c.name} ${c.city} ${c.country} ${c.address1} ${c.address2} ${c.provState} ${c.postal} ${c.phoneNumber}`.toLowerCase().includes(q)
+      const inCompany = `${c.name} ${c.city} ${c.country} ${c.address} ${c.postal}`.toLowerCase().includes(q)
       const contactHit = contactsOf(c.id).find((ct) => ct.fullName.toLowerCase().includes(q))
       if (!inCompany && !contactHit) return []
       return [{ company: c, matchedContact: contactHit && !inCompany ? contactHit.fullName : undefined }]
@@ -54,7 +87,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
 
   if (state === 'error') {
     return (
-      <AppShell title="Companies & Contacts" activeItem="Admin" activeChild="Companies & Contacts">
+      <AppShell title="Companies" activeItem="Reference Data" activeChild="Companies">
         <Alert title="We couldn't load companies">Refresh the page, and if it keeps happening, contact your administrator.</Alert>
       </AppShell>
     )
@@ -62,9 +95,9 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
 
   return (
     <AppShell
-      title="Companies & Contacts"
-      activeItem="Admin"
-      activeChild="Companies & Contacts"
+      title="Companies"
+      activeItem="Reference Data"
+      activeChild="Companies"
       headerActions={
         <>
           <div className="min-w-0" style={{ width: 300 }}>
@@ -95,7 +128,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
         ) : (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left" style={{ minWidth: 1240 }}>
+            <table className="w-full border-collapse text-left" style={{ minWidth: 900 }}>
               <caption className="sr-only">Companies and their contacts</caption>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
@@ -129,17 +162,12 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
                             <span className="ml-sm"><Badge appearance="outline">contact: {matchedContact}</Badge></span>
                           )}
                         </td>
-                        <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
-                          {[c.city, c.country].filter(Boolean).join(', ') || '—'}
+                        <td className="px-lg py-base align-top" style={{ maxWidth: 180 }}>
+                          <ContactChips contacts={contactsOf(c.id)} onOpen={() => setDrawer({ mode: 'view', company: c })} />
                         </td>
-                        <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 180 }}><Truncate>{c.address1 || '—'}</Truncate></td>
-                        <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 180 }}><Truncate>{c.address2 || '—'}</Truncate></td>
-                        <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{c.provState || '—'}</td>
+                        <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 260 }}><Truncate>{c.address || '—'}</Truncate></td>
+                        <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{c.city || '—'}</td>
                         <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{c.postal || '—'}</td>
-                        <td className="px-lg py-base align-top text-sm text-text-primary">{contactsOf(c.id).length}</td>
-                        <td className="px-lg py-base align-top">
-                          <Badge tone={c.active ? 'success' : 'neutral'} dot>{c.active ? 'Active' : 'Inactive'}</Badge>
-                        </td>
                         <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
                           <ActionsMenu
                             ariaLabel={`Actions for ${c.name}`}

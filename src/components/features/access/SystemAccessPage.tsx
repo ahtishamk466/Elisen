@@ -40,14 +40,14 @@ export function SystemAccessPage({ state = 'ready' }: { state?: PageState }) {
 
   if (state === 'error') {
     return (
-      <AppShell title="System — Access Engine" activeItem="User Access Control" activeChild="System">
-        <Alert title="We couldn't load system data">Refresh the page, and if it keeps happening, contact your administrator.</Alert>
+      <AppShell title="Routes & Rules" activeItem="User Access" activeChild="Routes">
+        <Alert title="We couldn't load routes and rules">Refresh the page, and if it keeps happening, contact your administrator.</Alert>
       </AppShell>
     )
   }
 
   return (
-    <AppShell title="System — Access Engine" activeItem="User Access Control" activeChild="System">
+    <AppShell title="Routes & Rules" activeItem="User Access" activeChild="Routes">
       <div className="grid gap-lg">
         {toast && <Alert tone="info" title={toast} />}
         <Alert tone="info" title="Advanced — the wiring behind roles and permissions">

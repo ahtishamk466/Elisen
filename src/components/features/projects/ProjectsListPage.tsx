@@ -186,6 +186,7 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
             budgetHours: 0,
             priority: v.priority as ProjectListRow['priority'],
             status: (v.status as ProjectListRow['status']) || 'quoted',
+            active: true,
             openedDate: v.openedDate,
             dueDate: v.dueDate,
             aircraftInputDate: v.aircraftInputDate,

@@ -123,7 +123,7 @@ export function SidebarProfile() {
           <section className="rounded-sm border border-border-default bg-neutral-25 p-lg">
             <h2 className="text-lg font-bold text-text-primary">Your access</h2>
             <p className="mt-xxss text-xs text-text-muted">
-              Everything your roles grant, including inherited permissions. Managed under User Access Control.
+              Everything your roles grant, including inherited permissions. Managed under User Access.
             </p>
             <div className="mt-lg grid gap-base">
               {effective.length === 0 && <p className="text-sm text-text-muted">No permissions.</p>}

@@ -11,7 +11,9 @@ export function StepAdditionalDetails({ values, errors, setField }: StepProps) {
       <FormSection title="Status & Dates" subtitle="Where this project stands, and its key milestones.">
         <FormField label="Status" htmlFor="status">
           <Select id="status" value={values.status} placeholder="Select status..." onChange={(e) => setField('status', e.target.value)}>
+            <option value="query">Query</option>
             <option value="quoted">Quoted</option>
+            <option value="tentative">Tentative</option>
             <option value="active">Active</option>
             <option value="on-hold">On hold</option>
             <option value="complete">Complete</option>

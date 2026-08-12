@@ -885,3 +885,407 @@ thing — repeated-child lists should look the same everywhere:
 Unchanged deliberately: the last contact can still be removed (a company
 with zero contacts is valid), unlike aircraft where one entry is always
 kept.
+
+
+## Aircraft edit rebuilt to the standard layout; rules moved into Storybook
+
+Third repeat of the same correction, so the fix is both the bug and the
+process. `AircraftModelDrawer`'s edit/create mode was still the old
+horizontal table — bare `Input`s in a row under column-header spans — while
+Companies and Projects had already moved to stacked `FormField` rows. It is
+now the standard layout: an "Aircraft" `FormSection` of stacked FormFields
+(Model Number required, Model Name, Manufacture, TCCA/FAA/EASA TC, Drawing
+Prefix, Active), then a "Serial Numbers" `FormSection` of collapsible
+entries (chevron + serial as toggle, trash right, divider between, Serial
+No / Reg. No / Comment / Status stacked inside, "+ Add Another Serial
+Number" last) — the same shape as `AircraftEditDrawer` and `CompanyDrawer`.
+Per-serial Status returns as a Select (Active/Inactive), matching contacts.
+The `COLUMNS` table and the forced blank first row are gone: model fields
+now have their own section, so a model can legitimately have zero serials.
+
+Audited every other drawer for the same antipattern — none left. The
+remaining greps are false positives: `UserAccessDrawer`'s
+`text-xs font-semibold` is a permission-group label (its controls are
+properly-labelled Checkboxes), the residual `aria-label`s are on icon-only
+trash buttons where they're required, and `WorkPackageCard` /
+`TimesheetFilterMenu` aren't edit drawers.
+
+**Process fix:** rules were only living in this file, which is not where
+anyone looks while building a screen. Added `src/StyleGuide.stories.tsx` →
+Storybook **Guidelines → Rules & Style Guide**: all seven groups of standing
+instructions (edit screens, view screens, tables, navigation, fields,
+lifecycle, tokens/accessibility) with Do/Don't pairs, cross-linked to the
+live reference stories in Patterns/Overview. Storybook is the first stop
+before building, so the rules now sit where they get read.
+
+## Companies page: renamed, address merged, Active is a Status dropdown
+
+Three user requests on the Companies screen, applied to List, Edit and
+View alike:
+
+1. **"Companies & Contacts" → "Companies"** everywhere it's user-facing:
+   page title, sidebar nav item + route key, the error-state heading, and
+   `StepBasicInfo`'s "Managed under Admin → …" help text. Contacts didn't
+   disappear — they're still managed inside the company drawer — the name
+   just stopped listing both nouns.
+2. **`Company.address1`/`address2`/`provState` collapsed into one
+   `address: string`** field, labelled "Address" — one free-text field for
+   street, unit and state/province together, instead of three separate
+   inputs the user had to decide how to split. Fixture data merged the
+   same way (`"730 Cote Vertu West, Quebec"`, comma-joined, empty parts
+   dropped). The list table's three columns became one; `Truncate` added
+   since a full address is longer than a bare street line.
+3. **Active is a Status Select (Active/Inactive), never a checkbox** — the
+   company-level field was still a `Checkbox` even though contacts already
+   used the Select pattern from an earlier turn. Made consistent with
+   contacts' own Status field.
+
+Scoped to the Companies screen as asked. `AircraftModelDrawer`,
+`AtaChapterDrawer` and `AtaSubChapterDrawer` still use a Checkbox for
+Active — flagged to the user rather than changed silently, since it wasn't
+requested here.
+
+
+## Companies list: contacts as chips, not a count or a tooltip
+
+User first asked for a hover tooltip on the Contacts count, then — before
+it shipped — redirected to the chip treatment already used by Work
+Package → Allowed Tasks, which is a better fit: the names are readable
+without hovering, and hover-only affordances are invisible on touch and
+easy to miss.
+
+`ContactChips` renders up to `CHIP_LIMIT` (2) contact names as
+`bg-neutral-100` chips stacked vertically, with `+N more` inline *beside
+the second chip* — underlined, not another chip — so the cell is never
+more than two lines tall (the standing row-height rule; a third line for
+"+N more" would defeat the point of capping at two chips). The whole cell is one button that opens the company's
+**View** drawer, which already lists every contact in full — so "+1 more"
+has a real destination rather than being a dead label. Zero contacts render
+an em dash, matching every other empty cell.
+
+The `Tooltip` component built for the first approach was deleted rather
+than left in the codebase — nothing used it, and an unused `/components/ui`
+component with a story reads as available API. `Avatar` was extracted from
+`ProjectDetailPage` during that work and kept, since that page still uses
+it.
+
+Column structure set to **Name → Contacts → Address → City → Zip Code →
+Actions** per the user's explicit list. Two consequences worth noting:
+Country is no longer shown in the list (the merged "City, Country" column
+became plain "City" as instructed), and the **Active column is gone** —
+it wasn't in the specified list. Status is still visible and editable in
+View/Edit, but there's now no at-a-glance way to spot inactive companies
+in the table; flagged to the user rather than silently re-adding it.
+
+
+## Company-level phone removed
+
+The company record's own phone number is gone from Edit (user request) —
+and with it, from View, the search index, `Company` and the fixtures.
+Leaving it in View/type while un-editable would have been dead data: a
+field the UI shows but no screen can ever set. Contacts keep their own
+`phoneCountryCode`/`phoneNumber` — a person's number is the one anyone
+actually calls, and that's where `PhoneInput` still lives.
+
+
+## Projects Review: 7 legacy tabs consolidated into one filterable list
+
+**Context:** The legacy Yii2 app's Projects Review screen had 7 tabs —
+Priorities, Top Aces, Duncan, External, Internal, Outstanding RFQs,
+Completed RFQs. User asked for a senior UX review before any build.
+
+Reading the legacy source (`ProjectController::actionReview`,
+`views/project/_review_section{1,2,3,4,6,7,8}.php`) rather than inferring
+from screenshots: all 7 tabs run raw `SqlDataProvider` queries against the
+same `project` table, differing only in a hardcoded WHERE clause. They
+reduce to two axes plus a sort:
+- **Status:** `Query` = Outstanding RFQ, `Quoted` = Completed RFQ,
+  `In Progress`/`Tentative` = the four type tabs. An "RFQ" is not a
+  separate entity, just an early lifecycle stage of the same row.
+- **Type:** `5` = Top Aces, `6` = Duncan, `3` = External, `1` = Internal.
+- **Priorities** is not a third axis — it's `status = 'In Progress'`
+  sorted by priority, i.e. a re-sorted union of the four type tabs.
+
+Each tab also carried a slightly different column subset (Due Date only on
+Internal, Status only on Duncan, hours on 4 of 7), so the same project read
+differently depending which tab you happened to open. Every tab rendered a
+`ProjectSearch` filter row that was never wired to its data provider — the
+filter inputs did nothing.
+
+**Choice:** One page at `/projects/review`, under the Projects nav item.
+The 7 tabs become 8 preset chips (`All` added) over a single list —
+`lib/reviewPresets.ts` holds each preset as exactly the WHERE clause its
+tab used to run. A `ProjectReviewFilterMenu` (Company / Person Responsible
+/ Priority / Status / Type / Active) narrows *within* the selected chip,
+so "External projects that are also Priority 1" is one interaction —
+impossible in the legacy screen, which would have required manually
+cross-referencing two tabs. Chip counts are computed per preset alone, so
+a chip always states the truth about its own slice regardless of the
+search/filters currently applied. Landing preset is Priorities, matching
+the legacy default tab.
+
+`ProjectReviewTable` uses one superset column set; columns that only apply
+to part of the list (Aging pre-award, hours post-award) show an em dash
+rather than disappearing — a column set that changes shape under a merged
+table reads as broken, not simplified.
+
+**Model changes required to represent the data honestly:**
+- `ProjectStatus` gained `query` and `tentative` — without them the two
+  RFQ tabs collapse into one indistinguishable state.
+- `ProjectType` gained `preferred` (generic) and `other`. Legacy filtered
+  on four of its six type values, so `type = 2`/`4` projects appeared in
+  **zero** tabs — invisible on the screen entirely. The `All` chip now
+  surfaces them.
+- `ProjectPriority` gained `5-lowest`, which the legacy priority
+  dictionary has and the Internal tab uses throughout.
+- `ProjectListRow` gained `active`, which every legacy tab displayed as a
+  column but never filtered on.
+
+**Data:** `lib/reviewFixtures.ts` transcribes the client's real rows from
+the screenshots (39 projects), merged into `PROJECT_ROWS` so Review and
+Projects List share one store rather than duplicating project truth —
+which would have reproduced, one level up, exactly the duplication this
+change removes. `openedDate` on RFQ rows is back-calculated from the Aging
+value shown on the legacy screen, so Aging still reads correctly today
+(verified: 302/282/420/316/320/244 render exactly as screenshotted).
+
+**Flagged, not silently decided:** the legacy Duncan tab's "Priority"
+column shows 4 / 5.5 / 60 while the same project (3284-00) shows
+"2 - High" on the Priorities tab. Those are actual-hours values surfacing
+under a mislabeled column — the tab hides Bdg/Actl Hrs via jQuery
+(`td:nth-child(7)/(8)`) after render, shifting what the header row labels.
+Transcribed as actual hours accordingly.
+
+## Aircraft Edit: primary Serial No moved into the Aircraft section; Active checkbox → Status Select
+
+**Context:** User correction, same pattern as the earlier View-mode fix —
+Serial No was living in its own "Serial Numbers" section, separate from
+the "Aircraft" section holding Model Number and the rest. Asked for it
+inside the Aircraft container, before Model Number, required, with no
+duplicate Serial No field elsewhere.
+
+**Choice:** The Aircraft `FormSection` now opens with a required "Serial
+No" field (before Model Number), bound to the first serial entry —
+matching the Aircraft table's own column order (Serial No, Reg. No, Model
+Number, ...) and the View-mode fix from earlier. The "Serial Numbers"
+section below still exists for aircraft with more than one physical
+airframe, but its first entry no longer repeats a Serial No field (that
+would be the "separate field" the user explicitly ruled out) — only
+entries added via "Add Another Serial Number" get one. `serials` state
+always seeds with one entry so the required top field has something to
+bind to; the last remaining entry can't be deleted for the same reason.
+Save validates both Model Number and the primary Serial No, surfacing a
+field-level error on whichever is missing.
+
+Also converted Active from a `Checkbox` to a `Select` ("Status": Active/
+Inactive), aligning with the Style Guide's Section 5 rule ("Status is a
+Select with Active/Inactive options") that Contacts and per-serial rows
+already followed — the aircraft record's own Active field was the one
+place in this drawer still on the older checkbox pattern.
+
+Verified live: required-field error fires on empty Serial No; a
+multi-serial aircraft (Lear 35A) shows 593 in the top field with 649/653
+still editable as their own entries below, no duplicate; Status persists
+through Save Changes.
+
+## 2026-08-12 — Admin nav split into three sections: Reference Data / User Access / System
+**Context:** The sidebar's three administrative items were named badly. "Admin"
+held Companies/Aircraft/ATA Chapters — business reference data, not
+administration — while "User Access Control" held the actual admin screens and
+"Settings" was an empty placeholder. The user proposed a three-way split by
+*what each section holds*, after we considered and rejected folding everything
+under a single umbrella item.
+**Choice:**
+- `Reference Data` (Database icon) — Companies, Aircraft, ATA Chapters
+- `User Access` (KeyRound icon) — Users, Roles & Permissions, Routes
+- `System` (Settings icon) — Software Settings, Audit Control, Database Management
+
+Same eight top-level items as before, so nav depth is unchanged (Companies is
+still two clicks). The old `User Access Control > System` child is now
+`User Access > Routes` — same page, same `/admin/system` route — and its page
+title changed from "System — Access Engine" to "Routes & Rules" so it doesn't
+collide with the new top-level `System` section. Software Settings, Audit
+Control and Database Management are label-only for now (inert `#` links); the
+user will supply each section's content separately.
+**Rationale:** The single-umbrella option would have pushed Companies to three
+clicks and lumped a daily ops task in with quarterly IT chores. Splitting by
+content instead maps each section to a distinct audience — ops staff maintain
+reference data, a user-admin manages access, IT touches system tooling — which
+makes permission-gating a whole section trivial instead of child-by-child.
+"System" was chosen over "Settings" because Audit Control and Database
+Management are operations you *run*, not preferences you *save*; "User Access"
+over "Admin" because "Admin" is a catch-all that could equally describe all
+three sections.
+
+## 2026-08-12 — Aircraft Edit: removed the collapsible multi-serial section
+**Context:** The Edit Aircraft drawer had a required "Serial No" field in the
+Aircraft section plus a separate collapsible "Serial Numbers" section with
+"Add Another Serial Number" — letting one edit session add/manage every tail
+number of a model at once. The user pointed out there's no reason to add
+multiple serial numbers from a single form and asked for the whole section
+removed, not just cosmetically hidden.
+**Choice:** The drawer now edits exactly one row — one model + one serial —
+with Reg. No and Comment folded into the flat Aircraft section (order matches
+the list table's columns: Serial No, Reg. No, Model Number, ... Comment,
+Status). No collapsible sub-section, no add/remove-serial UI. The underlying
+one-model-to-many-serials data is unchanged and still correct (e.g. Lear 35A
+genuinely has 3 tail numbers: 593, 649, 653) — the Aircraft table already
+showed one row per serial with model fields repeated; now Edit/View on a row
+only ever touches that row's own serial, not its siblings.
+`lookupStore.saveAircraft` changed from replacing *all* of a model's serials
+on every save to upserting just the one being edited, so editing 649 no
+longer overwrites or resets 593/653.
+**Rationale:** The old form conflated "edit this aircraft" with "manage every
+airframe of this type," which is what made adding a second serial from
+inside an edit session feel senseless. Scoping the form to one row at a time
+removes that confusion while keeping the real multi-serial domain model
+intact — adding a new tail number for an existing model is just "Add
+Aircraft" again with the same Model Number, matching how the list already
+treats each serial as its own row.
+
+## 2026-08-12 — Projects Review presets moved from floating chips into the table's own tab bar
+**Context:** The 7-legacy-tabs-as-presets control shipped as a row of pill
+buttons above the table — a filled navy chip for the active preset, outlined
+chips for the rest. The user found it read as a separate widget sitting on top
+of the table rather than part of it, and asked for tabs integrated into the
+top of the table card (reference screenshot supplied for *layout only*, not
+colors).
+**Choice:** New `patterns/TableTabs.tsx`, rendered as the first child inside
+the table's bordered card — the exact mirror of how `Pagination` is the last
+child. Active tab is marked by a 2px accent underline pulled onto the card's
+dividing line with `-mb-px`, so the selected tab visually joins the rows
+below it; inactive tabs are plain `text-secondary` labels with no border or
+fill. Counts stay beside each label in a subtle pill (accent-subtle when
+active, neutral otherwise). Colors are all existing tokens — nothing was
+taken from the reference screenshot's palette.
+Implemented as real ARIA tabs (`tablist`/`tab`/`tabpanel`, roving tabindex,
+Left/Right/Home/End) since the tabs genuinely swap the panel's content; the
+table's scroll container is the labelled tabpanel and is itself a tab stop so
+it can be scrolled from the keyboard. The empty state keeps the tab bar in
+the same card so a user who lands on an empty slice can switch away.
+**Rationale:** Chips-above-a-table imply "filters applied to the thing below";
+tabs-as-table-header imply "this table has several views," which is what the
+presets actually are. Merging them into the one card also removes a second
+floating box from a screen that already has search, Filters and Export in the
+page header.
+**Known tradeoff:** the tab strip scrolls horizontally when all 8 tabs can't
+fit (below roughly 1280px), and its scrollbar is hidden (`.scrollbar-none` in
+globals.css) because a visible bar cut across the card's dividing line. All 8
+fit at laptop widths and up; below that, tabs are reachable by swipe,
+shift-scroll, and arrow keys, and the active tab always scrolls itself into
+view. If narrow-desktop use turns out to matter, the fix is a fade/scroll
+affordance on the strip's right edge, not un-hiding the bar.
+
+## 2026-08-12 — Database Maintenance ("Manage" + "Upload") rebuilt on our design system
+**Context:** The client's legacy Database Maintenance screen is two pages: a
+"Manage" list of backup .sql files (Name, Size, Create Time, Modified Time,
+plus icon-only Restore DB and Delete file columns, with Create Backup /
+Upload Backup File buttons in a panel header), and a separate "Upload" page
+with a jQuery-fileinput drag-and-drop zone and Browse / Upload / Remove /
+Save buttons. Brief: keep the exact data and functionality, redesign to fit
+our system.
+**Choice:** New `/system/database` under System → Database Management, using
+the standard list-page shape — page-header actions (Create Backup primary,
+Upload Backup File secondary), one bordered card with the table and
+`Pagination` as its footer, `EmptyState`, loading/error states. The two
+legacy timestamps are preserved exactly: Create Time absolute, Modified Time
+relative ("8 months ago") via `formatRelativeTime`, and sizes keep the old
+binary units ("2.784 kibibytes", "3.631 mebibytes") via `formatBackupSize`.
+Both fixture rows are verbatim from the screenshot.
+Two deviations from the legacy layout, both deliberate:
+1. **Restore DB and Delete file are one Actions menu, not two icon-only
+   columns** — matches every other list in the app, and gives each action a
+   real label instead of an unlabelled icon. Both are guarded by
+   `ConfirmDialog`; Restore's copy spells out that it replaces every table in
+   the live database, since it's the one irreversible action on the screen.
+2. **Upload is a Drawer, not a separate page** — same single job (pick a .sql
+   file, save it) without losing the list. The legacy page's separate
+   "Upload" and "Save" buttons are one **Save**: they were an artifact of the
+   fileinput plugin's ajax-then-submit flow, and in a one-step drawer they
+   would be two buttons for the same action.
+New `patterns/FileDropzone.tsx` for the drop zone — there was no file input
+in the system. Built as a real button (click/Enter/Space) with drag-and-drop
+as an enhancement, `.sql` enforced on both browse and drop.
+**Rationale:** Everything the old screen could do, it still does; what
+changed is that the actions are labelled, the destructive ones are guarded,
+and the screen reads like the rest of the app instead of a Bootstrap panel.
+
+## 2026-08-12 — FileDropzone is the standard upload control; no wrapper around it
+**Context:** The first Upload Backup File drawer put the drop zone inside a
+`FormSection` card and a `FormField` row — a section header and a label
+column wrapped around a single field. The user supplied a reference for the
+zone itself and asked for the heading plus the box, nothing else, and for the
+component to be the standard used by every future upload.
+**Choice:** `FileDropzone` is now self-contained and carries everything the
+old wrappers provided: its own `label`/`required`, the stacked-paper
+illustration, "Drag & drop a file here, or browse", the `hint` line, a
+primary "Upload File" button inside the zone, the selected-file row with
+Remove, and the `error` message. The drawer renders the title and the
+component — no `FormSection`, no `FormField`. Documented in COMPONENTS.md as
+the only sanctioned file input in the app, with a Storybook story
+(`Patterns/Overview` → FileDropzoneExample) covering the empty and error
+states.
+**Rationale:** A section card around one field is chrome with no information
+in it, and a `FormField` label column fights a full-width drop target. Since
+the zone is the whole field, it should own its label and message rather than
+depend on a wrapper that the next caller might forget.
+**Accessibility note:** the zone was previously one big `<button>`; it now has
+a real `<button>` *inside* it, so the outer element is a plain `div` — a
+button inside a button is invalid HTML and the nesting broke keyboard
+behaviour. The inner button is the accessible, keyboard-reachable control;
+the div's click handler is a redundant convenience, so it deliberately takes
+no `role` or tab stop rather than becoming a second duplicate control for
+screen-reader and keyboard users.
+
+## 2026-08-12 — Software Settings rebuilt; column filter row → one Filters menu
+**Context:** The client's Settings screen is a key/value config table (#, Type,
+Section, Key, Value, Status, Description, Actions) with a row of filter
+inputs wedged into the table header — two `<select>`s ("Select Type",
+"Select Section"), two text boxes (Key, Value), a Status select and a
+Description box — plus a Create Setting button and pencil/trash icons per
+row. Brief: same data and functionality, redesigned with proper functional
+filter states.
+**Choice:** New `/system/settings` under System → Software Settings. All 10
+rows are verbatim from the screenshot, and the Type dropdown keeps the exact
+option list the old screen offered: Select Type / String / Integer / Boolean
+/ Float / Null.
+- **Filters:** all six move into the standard `Filters` menu (the
+  `ProjectReviewFilterMenu` / `TimesheetFilterMenu` pattern) with Clear and
+  Apply, and a count on the trigger — `Filters (2)` — so applied state is
+  visible without opening it. A filter row inside `<thead>` fights the column
+  widths and gives no indication of what's active once it scrolls out of view.
+- **`#` column shows the setting's real position in the full list**, not
+  `1..n` of the filtered view. Filtering to one row shows `10`, not `1` — the
+  number is an identifier here, so renumbering it under a filter would be a
+  lie.
+- **Actions:** pencil/trash icons become the standard Actions menu with real
+  labels, and it gains Activate/Deactivate — the old screen's Status column
+  was a clickable link, so that toggle already existed; it now sits with the
+  other row actions instead of being hidden in a link that doesn't look like
+  a control. Delete is guarded and names `section.key`.
+- **`SettingDrawer`'s Value control follows Type:** boolean → true/false
+  Select, null → read-only (a null setting has no value), integer/float →
+  validated number, string → text. The old screen was a free-text box for
+  every type, so `boolean = "ture"` was accepted.
+**Rationale:** Everything the old screen did, it still does. What changed is
+that filter state is visible and combinable, the actions are labelled and the
+destructive one guarded, and the type system the `Type` column describes is
+now actually enforced when editing a value.
+
+## 2026-08-12 — FileDropzone uses the client's real illustration, not a hand-drawn stand-in
+**Context:** The first pass at `FileDropzone` used a small hand-drawn
+stacked-rectangles SVG as a placeholder illustration. The user pointed out it
+didn't match their reference and supplied the actual asset (a layered,
+drop-shadowed stack-of-files SVG) to use exactly.
+**Choice:** Saved the supplied SVG verbatim to
+`public/illustrations/upload-files.svg` and swapped the hand-drawn inline SVG
+for an `<img>` pointing at it, at its native aspect ratio (180×151, decorative
+— empty `alt`, `aria-hidden`). Kept as a static asset rather than inlined and
+recolored with `currentColor`/tokens: the source file carries its own
+drop-shadow `<filter>`s and multiple stacked opacity layers that a token-based
+recolor would flatten, and (unlike the icons in `/components/ui`) this is a
+one-off illustration supplied by the client, not a system icon that needs to
+inherit an icon color.
+**Rationale:** "Do not add or remove anything" applies to imagery as much as
+data — an approximation, however close, isn't the same as the actual
+provided asset.

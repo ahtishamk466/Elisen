@@ -26,7 +26,7 @@ export function RolesPermissionsPage({ state = 'ready' }: { state?: PageState })
   return (
     <AppShell
       title="Roles & Permissions"
-      activeItem="User Access Control"
+      activeItem="User Access"
       activeChild="Roles & Permissions"
       headerActions={
         tab === 'Roles' ? (

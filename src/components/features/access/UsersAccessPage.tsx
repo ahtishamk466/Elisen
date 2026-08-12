@@ -56,7 +56,7 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
   return (
     <AppShell
       title="Users — Access"
-      activeItem="User Access Control"
+      activeItem="User Access"
       activeChild="Users"
       headerActions={
         <div className="min-w-0" style={{ width: 300 }}>
