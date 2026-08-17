@@ -4,7 +4,8 @@ import { AppShell } from '@/components/patterns/AppShell'
 import { StatCard } from '@/components/patterns/StatCard'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
-import { Pagination } from '@/components/patterns/Pagination'
+import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { Badge } from '@/components/ui/Badge'
@@ -26,8 +27,6 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
   const updateUser = useAccessStore((s) => s.updateUser)
 
   const [query, setQuery] = useState('')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
   const [editing, setEditing] = useState<AccessUser | null>(null)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -39,6 +38,8 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
         .join(' ').toLowerCase().includes(q),
     )
   }, [users, roles, query])
+
+  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
 
   const loading = state === 'loading'
 
@@ -55,14 +56,14 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
 
   return (
     <AppShell
-      title="Users — Access"
+      title="Users"
       activeItem="User Access"
       activeChild="Users"
       headerActions={
-        <div className="min-w-0" style={{ width: 300 }}>
+        <div className="min-w-0" style={{ width: 400 }}>
           <label htmlFor="access-user-search" className="sr-only">Search users</label>
-          <Input
-            id="access-user-search" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }}
+          <Input size="sm"
+            id="access-user-search" value={query} onChange={(e) => { setQuery(e.target.value); resetVisible() }}
             placeholder="Search by username, email or role..." leadingIcon={<Search size={16} />}
           />
         </div>
@@ -108,7 +109,7 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
                         {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                       </tr>
                     ))
-                  : filtered.slice((page - 1) * pageSize, page * pageSize).map((u) => (
+                  : filtered.slice(0, visibleCount).map((u) => (
                       <tr
                         key={u.id}
                         onClick={() => setEditing(u)}
@@ -125,7 +126,7 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
                         </td>
                         <td className="px-lg py-base align-top text-sm text-text-primary">{u.email}</td>
                         <td className="px-lg py-base align-top">
-                          <Badge tone={u.status === 'active' ? 'success' : 'neutral'} dot>{u.status === 'active' ? 'Active' : 'Inactive'}</Badge>
+                          <Badge tone={u.status === 'active' ? 'success' : 'neutral'}>{u.status === 'active' ? 'Active' : 'Inactive'}</Badge>
                         </td>
                         <td className="px-lg py-base align-top">
                           <div className="flex flex-wrap gap-xs">
@@ -158,10 +159,7 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
             </table>
           </div>
           {!loading && (
-            <Pagination
-              page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="users"
-              onPageChange={setPage} onPageSizeChange={setPageSize}
-            />
+            <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="users" />
           )}
           </div>
         )}

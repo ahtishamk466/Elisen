@@ -2,7 +2,7 @@ import { downloadBlob } from './exportRows'
 import { enrichTimesheetRows, type EnrichedTimesheetRow } from './timesheetLookup'
 import { PRIORITY_LABEL, STATUS_LABEL, TYPE_LABEL } from './projectDisplay'
 import { TCCA_STATUS_LABEL } from './tccaDisplay'
-import { AUTHORITY_LABEL, APPROVAL_TYPE_LABEL, REVISION_STATUS_LABEL } from './documentDisplay'
+import { REVISION_STATUS_LABEL } from './documentDisplay'
 import type { ProjectListRow } from '@/types/project'
 import type { TccaProject } from '@/types/tcca'
 import type { Approval, DocRevision, ProjectDocument } from '@/types/documents'
@@ -47,10 +47,10 @@ export function runApprovals(approvals: Approval[], projects: ProjectListRow[]) 
   const rows = approvals.map((a) => {
     const linked = a.projectIds.map((id) => projects.find((p) => p.id === id)).filter(Boolean)
       .map((p) => `${p!.number}-${p!.subNumber}`).join(', ')
-    return `<tr><td>${esc(a.number)}</td><td>${esc(a.title)}</td><td>${AUTHORITY_LABEL[a.authority]}</td><td>${APPROVAL_TYPE_LABEL[a.type]}</td><td>${esc(a.aircraft)}</td><td>${a.issuedDate}</td><td>${linked || '—'}</td></tr>`
+    return `<tr><td>${esc(a.number)}</td><td>${esc(a.description)}</td><td>${a.primary ? 'Yes' : 'No'}</td><td>${esc(a.designApprovalHolder)}</td><td>${a.aircraftIds.length}</td><td>${a.serialIds.length}</td><td>${linked || '—'}</td></tr>`
   })
   downloadReport('Approvals', 'approvals.html', `${approvals.length} issued certificates`,
-    table(['Number', 'Title', 'Authority', 'Type', 'Aircraft', 'Issued', 'Projects'], rows))
+    table(['Number', 'Description', 'Primary', 'Design Approval Holder', 'Aircraft', 'Serials', 'Projects'], rows))
 }
 
 export function runTccaProjects(tccas: TccaProject[], projects: ProjectListRow[]) {
@@ -85,7 +85,7 @@ export function runOpenDeliverablesActionOn(
     const project = projects.find((p) => p.id === r.initialProjectId)
     return `<tr><td>${esc(doc?.number ?? '—')} rev ${esc(r.rev)}</td><td>${esc(doc?.title ?? '—')}</td><td>${project ? `${project.number}-${project.subNumber}` : '—'}</td><td>${REVISION_STATUS_LABEL[r.status]}</td><td>${r.dueDate || '—'}</td></tr>`
   })
-  downloadReport('Open Deliverables Summary — Action-On', `open-deliverables-${person.toLowerCase().replace(/\s+/g, '-')}.html`,
+  downloadReport('Open Deliverables Summary: Action-On', `open-deliverables-${person.toLowerCase().replace(/\s+/g, '-')}.html`,
     `Action on: ${person} · ${open.length} open deliverables`,
     table(['Document', 'Title', 'Project', 'Status', 'Due'], rows))
 }
@@ -120,7 +120,7 @@ export function runHoursWorked(entries: TimesheetEntry[], joins: TimeJoins, from
   const rows = timeRows(entries, joins, from, to).filter((r) => !employee || r.employeeName === employee)
   const html = rows.map((r) =>
     `<tr><td>${esc(r.employeeName)}</td><td>${r.workingDate}</td><td>${r.projectLabel}</td><td>${esc(r.activityTitle)}</td><td>${r.hoursRegular.toFixed(2)}</td><td>${r.hoursOvertime.toFixed(2)}</td></tr>`)
-  const title = employee ? `Hours Worked — ${employee}` : 'Hours Worked'
+  const title = employee ? `Hours Worked: ${employee}` : 'Hours Worked'
   downloadReport(title, employee ? `hours-worked-${employee.toLowerCase().replace(/\s+/g, '-')}.html` : 'hours-worked.html',
     `${range(from, to)} · ${rows.length} entries · ${sum(rows)} regular hours`,
     table(['Employee', 'Date', 'Project', 'Activity', 'Hrs RG', 'Hrs OT'], html))
@@ -137,6 +137,6 @@ export function runHoursWorkedSummary(entries: TimesheetEntry[], joins: TimeJoin
   }
   const html = [...byEmployee.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([name, t]) =>
     `<tr><td>${esc(name)}</td><td>${t.n}</td><td>${t.rg.toFixed(2)}</td><td>${t.ot.toFixed(2)}</td></tr>`)
-  downloadReport('Hours Worked — Summary', 'hours-worked-summary.html', `${range(from, to)} · ${byEmployee.size} employees · ${sum(rows)} regular hours`,
+  downloadReport('Hours Worked: Summary', 'hours-worked-summary.html', `${range(from, to)} · ${byEmployee.size} employees · ${sum(rows)} regular hours`,
     table(['Employee', 'Entries', 'Regular Hours', 'Overtime Hours'], html))
 }

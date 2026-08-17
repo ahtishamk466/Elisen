@@ -28,6 +28,13 @@ export interface AddProjectValues {
   proposalAcceptedDate: string
   nextAction: string
   comments: string
+  /** Records this project links to, all chosen from their global lists —
+      never typed here. Ids, not free text, so the links stay real. */
+  aircraftIds: string[]
+  approvalIds: string[]
+  deliverableRevisionIds: string[]
+  designDataRevisionIds: string[]
+  aircraftSpecifics: string
   // Step 3
   tccaNumber: string
   tccaDescription: string
@@ -45,6 +52,8 @@ export const INITIAL: AddProjectValues = {
   status: '', openedDate: today(), dueDate: '', aircraftInputDate: '', closedDate: '',
   proposalSubmitted: 'no', proposalSubmittedDate: '', proposalAccepted: 'no', proposalAcceptedDate: '',
   nextAction: '', comments: '',
+  aircraftIds: [], approvalIds: [], deliverableRevisionIds: [], designDataRevisionIds: [],
+  aircraftSpecifics: '',
   tccaNumber: '', tccaDescription: '', checklist: [],
 }
 

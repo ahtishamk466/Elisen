@@ -56,7 +56,7 @@ export function LinkRevisionDrawer({ open, tcca, onClose }: { open: boolean; tcc
                 <p className="truncate text-sm text-text-secondary">{r.title}</p>
                 <p className="text-xs text-text-muted">
                   Created for {projectLabel(r.projectId)}
-                  {!tcca.projectIds.includes(r.projectId) && ' — not a linked project'}
+                  {!tcca.projectIds.includes(r.projectId) && ', not a linked project'}
                 </p>
               </div>
               <Button variant="secondary" size="sm" onClick={() => linkRevision(tcca.id, r.id)}>Link</Button>

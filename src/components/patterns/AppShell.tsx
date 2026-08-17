@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { LayoutDashboard, FolderOpen, Clock, ListChecks, ShieldCheck, Database, Settings, ChevronDown, ChevronRight, KeyRound } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, Clock, ListChecks, ShieldCheck, Database, Settings, ChevronDown, ChevronRight, KeyRound, Award, FileText } from 'lucide-react'
 import { SidebarProfile } from './SidebarProfile'
 
 /** Top-level items without children that have a real screen — rendered as
@@ -15,6 +15,10 @@ const CHILD_ROUTES: Record<string, string> = {
   'Projects List': '/projects',
   'Projects Review': '/projects/review',
   'TCCA Projects': '/tcca-projects',
+  'Deliverables': '/documents/deliverables',
+  'Design Data': '/documents/design-data',
+  'Approvals List': '/approvals',
+  'Approval Revisions': '/approvals/revisions',
   'Timesheet': '/timesheet',
   'Hours Worked': '/hours-worked',
   'Users': '/admin/users',
@@ -39,6 +43,17 @@ interface NavItem {
 const NAV: NavItem[] = [
   { label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
   { label: 'Projects', icon: <FolderOpen size={18} />, children: ['Projects List', 'Projects Review', 'TCCA Projects'] },
+  // Approvals and Documents are global records that projects *link to* — a
+  // certificate or a drawing outlives any one project and is often shared
+  // across several, so they can't be owned by a project. They sit next to
+  // Projects because that's where they're used from.
+  // Two listings, because a Revision is a record in its own right with its own
+  // create screen in the legacy app — you raise one against an approval you
+  // pick, so it needs a home outside any single certificate. Aircraft and
+  // serial numbers stay *inside* the approval workspace: they are coverage of
+  // one certificate, not a list anyone browses on its own.
+  { label: 'Approvals', icon: <Award size={18} />, children: ['Approvals List', 'Approval Revisions'] },
+  { label: 'Documents', icon: <FileText size={18} />, children: ['Deliverables', 'Design Data'] },
   { label: 'Time Entry', icon: <Clock size={18} />, children: ['Hours Worked', 'Timesheet'] },
   { label: 'Reports', icon: <ListChecks size={18} /> },
   { label: 'GCP', icon: <ShieldCheck size={18} />, children: [] },

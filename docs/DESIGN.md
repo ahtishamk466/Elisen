@@ -154,7 +154,14 @@ Mobile 375 · Tablet 768 · Laptop 1280 · Desktop 1440
 
 ### Z-index
 
-`dropdown: 1000` · `sticky: 1100` · `modal: 1200` · `toast: 1300` · `tooltip: 1400`
+`sticky: 1000` · `modal: 1100` · `dropdown: 1200` · `dialog: 1300` · `toast: 1400` · `tooltip: 1500`
+
+Ordered by **what can spawn what**, not by importance. Dropdowns are portal-
+rendered and are usually opened from inside a drawer, so the dropdown layer sits
+above the modal layer — reverse them and the panel paints behind the drawer and
+the control looks dead. A `ConfirmDialog` opened from a row menu covers that
+menu; a toast can fire from inside the dialog. See docs/COMPONENTS.md →
+"Layering", and the `Patterns/Overview` → DropdownLayering regression story.
 
 ---
 

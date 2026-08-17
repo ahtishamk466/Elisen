@@ -1,5 +1,5 @@
 import type { BadgeTone } from '@/components/ui/Badge'
-import type { ApprovalAuthority, ApprovalType, DocumentKind, RevisionStatus } from '@/types/documents'
+import type { DocumentKind, RevisionStatus } from '@/types/documents'
 
 export const REVISION_STATUS_LABEL: Record<RevisionStatus, string> = {
   wip: 'Work in Progress',
@@ -26,16 +26,10 @@ export const KIND_LABEL: Record<DocumentKind, { singular: string; plural: string
   drawing: { singular: 'drawing', plural: 'Design Data' },
 }
 
-export const AUTHORITY_LABEL: Record<ApprovalAuthority, string> = {
-  tcca: 'TCCA',
-  faa: 'FAA',
-  easa: 'EASA',
-}
-
-export const APPROVAL_TYPE_LABEL: Record<ApprovalType, string> = {
-  stc: 'STC',
-  'stc-amendment': 'STC Amendment',
-  minor: 'Minor Approval',
+/** Next unused revision number for an approval — these are sequential
+    (1, 2, 3), unlike document revisions which are lettered. */
+export function nextRevisionNumber(existing: number[]): number {
+  return existing.reduce((m, n) => Math.max(m, n), 0) + 1
 }
 
 /** Next unused revision letter for a document (A, B, C...). */

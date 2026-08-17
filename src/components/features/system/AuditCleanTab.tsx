@@ -58,7 +58,7 @@ export function AuditCleanTab({ loading = false, onCleaned }: AuditCleanTabProps
   return (
     <div className="grid gap-lg">
       <Alert tone="info" title="Deleting audit records is permanent">
-        Audit data can't be regenerated — once a day's entries are gone, so is the record of what
+        Audit data can't be regenerated. Once a day's entries are gone, so is the record of what
         happened. Keep at least as much history as your retention policy requires.
       </Alert>
 

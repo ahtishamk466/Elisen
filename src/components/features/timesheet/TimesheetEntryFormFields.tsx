@@ -3,6 +3,7 @@ import { FormField } from '@/components/patterns/FormField'
 import { Alert } from '@/components/ui/Alert'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { PersonSelect } from '@/components/ui/PersonSelect'
 import { Textarea } from '@/components/ui/Textarea'
 import type { ProjectListRow } from '@/types/project'
 import type { WorkPackage } from '@/types/workPackage'
@@ -46,12 +47,11 @@ export function TimesheetEntryFormFields({
           {employeeMode === 'fixed' ? (
             <Input id="employeeName" value={values.employeeName} disabled />
           ) : (
-            <Select
+            <PersonSelect
               id="employeeName" value={values.employeeName} error={!!errors.employeeName}
-              placeholder="Select an employee..." onChange={(e) => setField('employeeName', e.target.value)}
-            >
-              {employeeOptions.map((p) => <option key={p} value={p}>{p}</option>)}
-            </Select>
+              placeholder="Select an employee..." people={employeeOptions}
+              onChange={(v) => setField('employeeName', v)}
+            />
           )}
         </FormField>
         <FormField label="Project Number" htmlFor="projectId" required error={errors.projectId}>

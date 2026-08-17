@@ -1,11 +1,31 @@
 import { FormSection } from '@/components/patterns/FormSection'
 import { FormField } from '@/components/patterns/FormField'
 import { Input } from '@/components/ui/Input'
+import { MultiSelect } from '@/components/ui/MultiSelect'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
+import { useLookupStore } from '@/stores/lookupStore'
+import { useApprovalsStore } from '@/stores/approvalsStore'
+import { useDocumentsStore } from '@/stores/documentsStore'
+import type { DocumentKind } from '@/types/documents'
 import type { StepProps } from './StepBasicInfo'
 
 export function StepAdditionalDetails({ values, errors, setField }: StepProps) {
+  const aircraft = useLookupStore((s) => s.aircraft)
+  const approvals = useApprovalsStore((s) => s.approvals)
+  const documents = useDocumentsStore((s) => s.documents)
+  const revisions = useDocumentsStore((s) => s.revisions)
+
+  /** One option per revision — a project links to a specific revision of a
+      document, not to the document as a whole. */
+  const revisionOptions = (kind: DocumentKind) =>
+    revisions.flatMap((rev) => {
+      const doc = documents.find((d) => d.id === rev.documentId)
+      return doc && doc.kind === kind
+        ? [{ value: rev.id, label: `${doc.number} · ${rev.rev}`, hint: doc.title }]
+        : []
+    })
+
   return (
     <>
       <FormSection title="Status & Dates" subtitle="Where this project stands, and its key milestones.">
@@ -34,7 +54,7 @@ export function StepAdditionalDetails({ values, errors, setField }: StepProps) {
         </FormField>
       </FormSection>
 
-      <FormSection title="Proposal" subtitle="Optional — fill in once a proposal is in motion.">
+      <FormSection title="Proposal" subtitle="Optional, fill in once a proposal is in motion.">
         <FormField label="Proposal Submitted" htmlFor="proposalSubmitted">
           <Select id="proposalSubmitted" value={values.proposalSubmitted} onChange={(e) => setField('proposalSubmitted', e.target.value)}>
             <option value="no">No</option>
@@ -52,6 +72,62 @@ export function StepAdditionalDetails({ values, errors, setField }: StepProps) {
         </FormField>
         <FormField label="Accepted Date" htmlFor="proposalAcceptedDate">
           <Input id="proposalAcceptedDate" type="date" value={values.proposalAcceptedDate} disabled={values.proposalAccepted !== 'yes'} onChange={(e) => setField('proposalAcceptedDate', e.target.value)} />
+        </FormField>
+      </FormSection>
+
+      {/* Everything here is chosen from a global list — the project links to
+          records, it never creates them. Anything not known yet can be linked
+          later from the project's own tabs, so nothing is required. */}
+      <FormSection
+        title="Linked Records"
+        subtitle="Select existing aircraft, certificates and documents to link to this project. All optional. You can link more at any time from the project's tabs."
+      >
+        <FormField label="Aircraft Model Number" htmlFor="link-aircraft" help="From Reference Data. Serial numbers are assigned later, per aircraft.">
+          <MultiSelect
+            id="link-aircraft"
+            value={values.aircraftIds}
+            onChange={(v) => setField('aircraftIds', v)}
+            placeholder="Select aircraft..."
+            emptyLabel="No aircraft in Reference Data yet."
+            options={aircraft.filter((a) => a.active).map((a) => ({
+              value: a.id,
+              label: a.modelName ? `${a.modelNumber}: ${a.modelName}` : a.modelNumber,
+              hint: a.manufacturer,
+            }))}
+          />
+        </FormField>
+        <FormField label="Approval Number" htmlFor="link-approvals" help="Certificates this project relates to. Its own, or one it amends.">
+          <MultiSelect
+            id="link-approvals"
+            value={values.approvalIds}
+            onChange={(v) => setField('approvalIds', v)}
+            placeholder="Select approvals..."
+            emptyLabel="No approvals recorded yet."
+            options={approvals.map((a) => ({ value: a.id, label: a.number, hint: a.description }))}
+          />
+        </FormField>
+        <FormField label="Deliverable Number" htmlFor="link-deliverables">
+          <MultiSelect
+            id="link-deliverables"
+            value={values.deliverableRevisionIds}
+            onChange={(v) => setField('deliverableRevisionIds', v)}
+            placeholder="Select deliverables..."
+            emptyLabel="No deliverables recorded yet."
+            options={revisionOptions('deliverable')}
+          />
+        </FormField>
+        <FormField label="Design Data Number" htmlFor="link-design-data">
+          <MultiSelect
+            id="link-design-data"
+            value={values.designDataRevisionIds}
+            onChange={(v) => setField('designDataRevisionIds', v)}
+            placeholder="Select design data..."
+            emptyLabel="No design data recorded yet."
+            options={revisionOptions('drawing')}
+          />
+        </FormField>
+        <FormField label="Aircraft Specifics" htmlFor="aircraftSpecifics" help="Configuration notes that apply to the airframes above.">
+          <Textarea id="aircraftSpecifics" rows={3} value={values.aircraftSpecifics} placeholder="Write here..." onChange={(e) => setField('aircraftSpecifics', e.target.value)} />
         </FormField>
       </FormSection>
 

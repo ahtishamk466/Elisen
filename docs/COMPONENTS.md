@@ -9,16 +9,286 @@ Updated as components are added or changed.
 | Component | Variants | Location | Purpose |
 |-----------|----------|----------|---------|
 | Button | primary / secondary / tertiary / danger × sm, md, lg, xl × default, hover, focus, active, loading, disabled | `ui/Button.tsx` | All actions; icon slots either side |
-| Input | default, focused, typed, error, disabled; optional leading/trailing icons | `ui/Input.tsx` | Single-line text, number and date entry |
+| Input | default, focused, typed, error, disabled; optional leading/trailing icons × `sm` (36px) / `md` (44px, default) | `ui/Input.tsx` | Single-line text, number and date entry. `size="sm"` for any field sitting in a **toolbar row** beside a button; `md` for stacked form fields — see "Control heights" below |
 | Textarea | default, error, disabled | `ui/Textarea.tsx` | Multi-line text (descriptions, comments) |
-| Select | default, error, disabled, placeholder | `ui/Select.tsx` | Single-choice from a known list |
-| PhoneInput | default, filled, error, disabled | `ui/PhoneInput.tsx` | One merged field: flag + dial code (native select) \| number, our own Input/Select tokens (h-11, rounded-sm, shadow-textfield). Fills its container so it lines up with every other field. Use for every phone number field |
+| Select | default, error, disabled, placeholder × `sm` / `md`; controlled or `defaultValue` | `ui/Select.tsx` | Single-choice from a known list. **A thin adapter over `SearchableSelect`** — it keeps the old `<Select><option/></Select>` API so all ~60 existing call sites get the standardized dropdown (radio markers, portal rendering, keyboard support, search once the list is long) without being rewritten. `onChange` stays event-shaped (`e.target.value`). For new code prefer `SearchableSelect` (options array) or `MultiSelect` |
+| PhoneInput | default, filled, error, disabled; code segment closed / open / searching | `ui/PhoneInput.tsx` | One merged field: flag + dial code \| number, our own Input/Select tokens (h-11, rounded-sm, shadow-textfield). The code segment is a `SearchableSelect variant="bare"` — same open panel as every other dropdown, with the country name as a searchable hint — so there is no native `<select>` left anywhere in the app. Fills its container so it lines up with every other field |
 | Checkbox | checked / unchecked × enabled / disabled, optional required marker | `ui/Checkbox.tsx` | Multi-select and applicability ticks |
 | RadioCard | selected / unselected / disabled | `ui/RadioCard.tsx` | Mutually exclusive choice with explanatory copy |
-| Badge | danger / warning / info / success / neutral × subtle / outline, optional dot | `ui/Badge.tsx` | Status and priority labels |
+| Badge | danger / warning / info / success / neutral × subtle / outline | `ui/Badge.tsx` | Status and priority labels |
 | Alert | danger / info | `ui/Alert.tsx` | Form-level errors and inline guidance |
 | Skeleton | — | `ui/Skeleton.tsx` | Loading placeholder blocks |
 | Spinner | sizes via prop | `ui/Spinner.tsx` | Indeterminate loading indicator |
+| PersonSelect | closed / open / searching / empty | `ui/PersonSelect.tsx` | **THE** control for every person field: person responsible, contact, owner, next action, employee, activity responsible. A thin `SearchableSelect` with `searchThreshold={0}`, so a name field is **always searchable however short the list**. Use this instead of a `Select` over `PEOPLE` so a new person field cannot ship without search |
+| SearchableSelect | closed / open / searching / no matches / empty catalog / option disabled × `sm` / `md` | `ui/SearchableSelect.tsx` | **THE** picker for every "attach an existing record" flow (Aircraft, Approvals, Deliverables, Design Data). Type to filter on label + hint; already-attached options are `disabled` with a `disabledReason` rather than hidden. Portal-rendered so drawers and `overflow` containers can't clip it. Full keyboard support (↑/↓ skip disabled rows, Enter picks, Esc closes). `searchThreshold` (default 8) hides the search box on short lists — a search field over four options is noise. `indicator="radio"` for a form field choosing one of a few alternatives, default `"check"` for catalog lookups. `variant="bare"` drops the border/shadow so it can be a segment inside an already-bordered control (the dial code in `PhoneInput`); `menuMinWidth` floors the panel width when the trigger is too narrow to read the options in |
+| MultiSelect | none / n selected (count + chips) / searching / option disabled / empty catalog × `sm` / `md` | `ui/MultiSelect.tsx` | The multi-choice half of the selection standard. Checkboxes in the list, `"n selected"` on the trigger, and chips underneath naming each pick with an × plus `Clear all`. The chips are required, not decoration: a count answers "how many" but never "which", which is the question a user has once the menu closes. Menu stays open while picking. Storybook: `Patterns/Overview` → SelectionStandard |
+
+### Two global rules for lists and filters
+
+**1. Stats describe what is on screen.** Every stat tile on a filterable list is
+computed from the *filtered* set, not the whole table, and reads 0 when nothing
+matches. The first tile is labelled "… shown", not "Total …", so the number never
+promises more than it counts. Tiles that disagreed with the rows beneath them
+were the bug; a "Total" that ignores the filters answers a question nobody asked.
+
+**2. Dropdowns over 5 options get a search box.** `searchThreshold` defaults to
+**5** on `SearchableSelect` and `MultiSelect`, so it applies to every dropdown in
+the app including the `Select` adapter. It is data-driven: a list grows past five
+and gains a search field on its own, with no per-screen decision.
+
+**Name fields are the exception: always searchable, however short.** Use
+`PersonSelect` for every person field, and `searchThreshold={0}` for other name
+lists such as Design Approval Holder. The threshold is right for *enums* — a
+status, a priority, yes/no — where you choose from a set you can see. A name is
+different: you already know who you want, so typing beats scanning, and five demo
+employees are dozens in a real deployment. Making it a component rather than a
+prop convention is the point: a new person field inherits search instead of
+relying on someone remembering.
+
+### Status tags carry no dot
+
+`Badge` has **no `dot` prop**. Every badge already states its meaning in words,
+so the coloured circle was pure decoration, and removing the prop rather than
+just the call sites means it cannot creep back. Colour still never carries
+meaning alone: the label does.
+
+Circles that remain are avatars, which are meant to be round.
+
+### Progress meters: one style, everywhere
+
+Non-negotiable, and it lives in `ProgressMeter` so every surface inherits it:
+
+- **Track is always `neutral-300`.** On a white card `neutral-100` read as empty
+  space, so the unfilled part, the bit that answers "how much is left", was
+  invisible.
+- **Fill runs 0-100% of budget**, capped. Only its colour changes with state:
+  green on track, amber near budget, red over.
+- **No rescaling and no budget notch.** Over 100% the bar is simply full and red.
+  The old over-budget mode was a second visual language that hid the track and
+  made an over-budget bar render *shorter* than an on-track one.
+
+**Figures stay black** (`text-text-primary`), including "120% used" and the
+Project Detail stat tiles. Colour does exactly one job: the bar. State is still
+never colour-only, because the percentage itself passes 100 and a status badge
+sits alongside. The one kept exception is a **negative Remaining** value in a
+table, which stays red behind its minus sign.
+
+**Work package header order:** `4.4h / 5h` → `88% used` → bar, with the bar
+against the actions menu. The hours stay in the short `x / y` form; the full
+breakdown is already in the row's Budget / Actual / Remaining columns and in the
+stat tiles above.
+
+`budgetSummary(health)` remains the shared long phrasing for the meter's own
+`showLabel` mode: "4.4h spent of 5h, 0.6h left".
+
+**Always "used", never "done".** The percentage is hours spent against hours
+budgeted, not work completed — nobody is 130% *done*, but you can certainly
+spend 130% of a budget. This is the same distinction behind renaming the
+Projects List column to "Budget used"; calling it "done" reintroduces exactly
+the 106% confusion the client flagged.
+
+### Counting things so nothing feels hidden
+
+Three levels of count on Project Detail, each answering a different question:
+
+1. **Tab-bar pills** — `Work Packages 3`, `Deliverables 4`, `TCCA 0`. The
+   project's shape before anything is clicked. Overview gets no pill: it is a
+   summary, not a collection. A genuinely empty tab still shows **0** rather
+   than dropping the pill, because a missing count reads as "not counted"
+   instead of "empty". Same pill styling as `TableTabs`, so a count looks the
+   same wherever it appears.
+2. **The structure strip** on the Work Packages tab — Work packages ·
+   Activities · Not started · In progress · Complete, as a `<dl>` in one short
+   bordered row. Deliberately *not* another band of `StatCard`s: the four budget
+   tiles above already own that visual weight, and this answers a smaller
+   question. Keep it one row.
+3. **A per-package activity chip** beside the status badge — the same neutral
+   chip the activity tasks use, so "count of things" reads one way everywhere.
+   Zero is shown, not hidden: an empty package is the one most worth noticing.
+
+All three derive from the same store selectors, so they move together —
+verified by adding an activity (chip 0 → 1, strip 5 → 6, package count
+unchanged) and a package (tab 3 → 4, Not started 1 → 2).
+
+### Approvals — a certificate, its revisions, and what it covers
+
+An Approval is a certificate. Its fields mirror the legacy `approval` table:
+**Number, Description, Primary Approval, Design Approval Holder, Comment,
+Active** — and deliberately *no date*, because a certificate has no single
+date. It is granted by its first **Issue** and re-issued whenever it changes.
+
+**Revisions** are an approval's changes. The legacy table is `approvalissue`
+and the call went both ways on the wording — "use the revision terminology as an
+issue, or keep it as Revision… Now its name is Revision, right?" — settling on
+**Revision**, which the UI says throughout. A revision records what changed,
+when, and the document carrying it (`Approval Revision`, `Change Description`,
+`Revision Date`, `Document`), and it is what authorises extending a certificate
+to further aircraft. Numbers are sequential *per approval*, the next unused one
+is suggested, blank means "use the suggestion", and duplicates are refused.
+
+**Coverage** is two separate assign lists, as the legacy join tables have them:
+`Approval ↔ Aircraft` (models) and `Approval ↔ Serial Numbers` (specific
+airframes). Serials are only offered for models the certificate covers, and
+removing a model removes its serials with it — otherwise the approval keeps
+tails for a model it no longer names.
+
+**Two listings in the sidebar**, because the legacy app has a create screen for
+each: **Approvals List** (`/approvals`) and **Approval Revisions**
+(`/approvals/revisions`). A revision is raised against a certificate you *pick*,
+so it needs a home outside any one approval — its create form leads with an
+Approval Number select, exactly as the legacy screen does.
+
+The Approvals list opens with **four count tiles over the whole registry**
+(Total · Primary certificates · Revised since granted · Not linked to a project),
+matching the Project List header. They are deliberately *not* recomputed against
+the filters: a "Total" that moved with the filter answers a different question
+than the one being asked. Filtering uses the standard menu + chips pattern, with
+**Projects** (attached to nothing) and **Revisions** (changed since granted) as
+the two filters worth having beyond the obvious ones. Aircraft and serial
+numbers get no sidebar tab: they are coverage of one certificate, not something
+anyone browses across all of them, and the requirement document's own target UX
+is "one workspace over many peer screens".
+
+`ApprovalDetailPage` (`/approvals/:id`) is the workspace the client asked for
+— "Approval itself should have a proper workspace, the way the project does".
+Five tabs: **Overview · Issues · Aircraft · Serial Numbers · Projects**, over
+four compact count tiles, matching `ProjectDetailPage`'s shell exactly.
+
+Controls follow the legacy screens field for field: Description and Comment are
+textareas, **Primary Approval is a checkbox** (the "booleans are Selects" rule
+covers Active/Status, which reads as a state — not a one-off attribute), and the
+labels are verbatim: *Aircraft Model Number*, *Serial Number*, *Approval Revision*.
+The table header shortens *Design Approval Holder* to **Approval Holder**; the
+full legal name stays on the form, where the space exists.
+The revision's **Document is a `FileDropzone`**, never a filename text box — the
+legacy screen has a real file picker and the requirement document asks for a PDF
+view.
+
+**Project links are bidirectional.** The approval's Projects tab and the
+project's Approvals tab call the same two store verbs (`linkToProject` /
+`unlinkFromProject`), so the two directions can never disagree — verified live
+in both.
+
+### Global records — create in the workspace, link in a project
+
+Aircraft, Approvals, Deliverables and Design Data are **global** records. Each
+outlives any one project and is routinely shared across several, so no project
+can own one. The requirement document splits it explicitly — §1.2 *Project
+Associations* gives a project **"List, assign"**, while §1.3–1.5 give the
+modules **"List, CRUD"**:
+
+- **The workspace creates, edits and deletes.** `ApprovalsPage`,
+  `DocumentsPage`, Reference Data → Aircraft.
+- **A project only links.** An inline link row — a 36px `SearchableSelect`
+  listing the whole pool with already-linked entries `disabled` +
+  `disabledReason`, and a **Link to project** button. No create path, no editing
+  of the record's own identity. Plus a `Manage in …` button to the workspace,
+  and **Unlink from project** in row actions.
+- **Exception, and the only one:** a project may edit *project-scoped tracking*
+  on something it links to — `Edit revision tracking` on a document revision,
+  because the next-action person drives someone's to-do list and that is the
+  project's own work. It may never edit the record's identity (a certificate's
+  number/authority, a document's number/title/owner). Approvals have no
+  project-scoped fields, so their project tab is link/unlink only.
+
+**Vocabulary — use "link", not "attach".** One verb across all four tabs:
+*Select a … to link* → **Link to project** → **Unlink from project** →
+"N … linked to this project". It is the requirement document's own word, its
+inverse is unambiguous, and "attach" is actively risky here: these records hold
+file URLs and the app has a file-upload pattern, so "attach a deliverable" can
+be misread as "upload a file".
+
+Say where creation happens, in the UI, not just in code: every link row carries
+a one-line hint ("Deliverables are created and managed in the Deliverables
+workspace. Here you choose which existing revisions apply to this project.")
+because the old screen let people create here and that was the wrong mental
+model.
+
+Reference implementations: `ProjectApprovalsTab` and `ProjectDocumentsTab` —
+deliberately the same shape. Copy one when a fifth record type appears.
+
+### Every popup places itself inside the viewport
+
+Two hooks own this, and no screen should ever position a panel itself:
+
+- **`usePanelPosition`** (`ui/`) for the select panels: `SearchableSelect`,
+  `MultiSelect`, and therefore `Select`.
+- **`useDropdown`** (`patterns/`) for the menus: `ActionsMenu`, `ExportMenu`,
+  `SidebarProfile` and every filter menu.
+
+Both return `{ left, width?, maxHeight, top | bottom }` and both:
+
+1. **Open upward** when there isn't room below, anchoring by `bottom` so the
+   panel's height never has to be measured first and can't flicker into place.
+2. **Cap `maxHeight` to the space that exists**, so a long list scrolls *inside*
+   the panel. Select panels are a flex column with the list on
+   `min-h-0 flex-1 overflow-y-auto`; menus carry `overflow-y-auto`.
+3. **Clamp horizontally**, so a wide panel never runs off the right edge.
+
+Why this is not optional: a panel pinned to `trigger.bottom` is
+`position: fixed` and re-anchors on scroll, so once it opens below the fold
+**scrolling can never bring it back** — the options are unreachable. That broke
+the link rows at the bottom of the project Deliverables, Design Data and
+Approvals tabs. Separately, a 606px filter menu on a 620px viewport was flipped
+to `top: -49`, putting its first field above the fold.
+
+### Nested dropdowns — `data-dropdown-panel`
+
+Every portalled select panel carries **`data-dropdown-panel`**, and
+`useDropdown`'s outside-click handler ignores any target inside one.
+
+This is not cosmetic. A `Select` inside a filter menu renders its panel through a
+portal on `<body>`, so by DOM containment its options are *outside* the menu —
+and `mousedown` on an option closed the whole filter menu before the user could
+reach Apply. Every filter menu in the app was broken by it.
+
+Two rules follow:
+- Any new portalled panel that can appear **inside** another dropdown must carry
+  `data-dropdown-panel`.
+- **Test menus with a real pointer sequence.** `element.click()` fires only
+  `click`; menus close on `mousedown`, so a `.click()`-based test passes against
+  a menu that is broken for every actual user. Dispatch
+  `mousedown → mouseup → click`.
+
+### Layering — a dropdown paints above whatever opened it
+
+Every menu and dropdown is portal-rendered to `document.body` so drawers and
+`overflow` containers can't clip it. That only works if the layers are ordered
+by **what can spawn what**, not by importance:
+
+| Token | Value | Used by |
+|---|---|---|
+| `--z-sticky` | 1000 | sticky headers |
+| `--z-modal` | 1100 | `Drawer` and its scrim |
+| `--z-dropdown` | 1200 | `SearchableSelect`, `MultiSelect`, `ActionsMenu`, `ExportMenu`, the filter menus, `SidebarProfile` |
+| `--z-dialog` | 1300 | `ConfirmDialog` |
+| `--z-toast` | 1400 | toasts |
+| `--z-tooltip` | 1500 | tooltips |
+
+Most dropdowns in this app are opened from **inside** a drawer, so the dropdown
+layer must sit above the modal layer. Get it backwards and the panel renders
+behind the drawer: no open state, no error, the control simply looks dead.
+A `ConfirmDialog` opened from a row menu must in turn cover that menu.
+
+Regression guard: `Patterns/Overview` → **DropdownLayering** opens a
+`SearchableSelect`, a `MultiSelect` and a `PhoneInput` inside a `Drawer`. If any
+panel is invisible there, the scale has regressed.
+
+### Control heights — 36px in a row, 44px stacked
+
+Two heights, and which one you use is decided by the *layout*, not the control:
+
+- **36px (`size="sm"` on fields, default `md` on Button)** — anything in a
+  horizontal row with a button: page-header search, the Filters trigger, the
+  Export menu, the primary CTA, and inline "pick a record → Attach" rows.
+  Buttons are 36px at their default size, so a 44px field beside one sits 4px
+  proud top and bottom, which reads as a rendering bug rather than a choice.
+- **44px (`size="md"`, the default)** — stacked form fields inside a form,
+  drawer or filter panel. Nothing sits beside them to disagree with, and the
+  extra height is the comfortable target for typing.
+
+Storybook: `Patterns/Overview` → **ToolbarRowStandard**, plus `UI/Input` →
+Sizes and `UI/Select` → Sizes.
 
 ## /components/patterns — compositions of ui primitives
 
@@ -31,11 +301,15 @@ Updated as components are added or changed.
 | Stepper | n steps, done / active / upcoming | `patterns/Stepper.tsx` | Multi-step form progress |
 | StatCard | default, loading | `patterns/StatCard.tsx` | Single headline metric |
 | EmptyState | with/without action, custom icon | `patterns/EmptyState.tsx` | Zero-data and no-results states |
-| Pagination | first / middle / last page, empty | `patterns/Pagination.tsx` | Page-size select + "Showing X to Y of Z" + first/prev/page/next/last controls. No border/rounded/bg of its own — renders as the last child inside the same card as its table, separated by one top border, never a second box below it |
+| AutoLoadFooter | loading / more to load / all loaded / empty | `patterns/AutoLoadFooter.tsx` | THE table footer — replaced `Pagination` everywhere (client wanted auto-loading, not page numbers). No border/rounded/bg of its own; renders as the last child inside the same card as its table, separated by one top border, never a second box below it. Scrolling it into view loads the next batch via IntersectionObserver (200px rootMargin, so the batch is ready before you reach it) |
+| useInfiniteReveal | — (hook) | `patterns/useInfiniteReveal.ts` | State behind `AutoLoadFooter`: `visibleCount` / `loadingMore` / `loadMore` / `reset`. Call `reset()` wherever the old code called `setPage(1)` — on every search, filter or sort change |
 | FileDropzone | empty / dragging / file selected / error | `patterns/FileDropzone.tsx` | **THE** file picker for the whole app — every upload uses this, never a bare `<input type="file">`. Self-contained: renders its own `label`/`required`, the stacked-files illustration (`/public/illustrations/upload-files.svg`, the client's own asset — static, not recolored, since it carries its own drop-shadow filters and layered opacities), "Drag & drop a file here, or browse" + `hint`, a primary "Upload File" button, the selected-file row with Remove, and the `error` message. Do **not** wrap it in `FormField` or `FormSection` — it needs no container. The inner button is the real keyboard-reachable control; dropping a file or clicking the zone are conveniences on top of it. Storybook: `Patterns/Overview` → FileDropzoneExample |
+| FilterChips | none applied (renders nothing) / n applied | `patterns/FilterChips.tsx` | THE applied-filters row, required on every screen with a Filters menu. Sits between the page header and the table. Each chip reads "Field: Value" with an × that removes only itself; `Clear filters (n)` removes all. Renders nothing when nothing is applied. Chips come from a `…FilterChips()` helper co-located with each filter menu's own type, so labels can't drift from the fields they describe. Storybook: `Patterns/Overview` → FilterChipsExample |
 | TableTabs | active / inactive, with/without counts, overflowing | `patterns/TableTabs.tsx` | THE standard for slicing one table several ways. The mirror of Pagination: no border/bg of its own, renders as the **first** child inside the same card as its table so it reads as the table's header. Active tab = accent underline sitting on the card's dividing line (`-mb-px`), count in a pill beside the label. Real ARIA tabs (arrow keys, roving tabindex, active tab scrolled into view); the table is the `tabpanel`. Never render these as standalone pills/chips floating above the table |
 | DetailCard / DetailField | with/without edit icon; empty field; `nowrap` | `patterns/DetailView.tsx` | THE standard read-only View: bordered card + muted-label/plain-value field grid. Never use a disabled form input to show read-only data — it dims real values to the same gray as an empty placeholder. Pass `nowrap` on short codes (Serial No, Reg. No, Model No, IDs) |
 | BarChart | populated / all-zero (`emptyLabel`) | `patterns/BarChart.tsx` | THE standard single-series bar chart — no chart library in the app, and one series doesn't warrant one. Built from tokens, HTML not SVG (labels stay real type size at any width). Axis is a round *step* (0/2,000/4,000/6,000), never a round max, so gridlines are numbers a reader can hold in their head. `tone="danger"` only for series that *are* a fault count. Carries an `sr-only` data table — values never depend on reading a bar height. One series per chart, always: a second measure means a second scale, so it gets its own chart, never a second y-axis |
+| ProgressMeter | on-track / near / over / complete / no-budget; sm & md | `patterns/ProgressMeter.tsx` | THE **budget-used** bar (hours consumed ÷ hours budgeted — not "progress", which would imply work completed and could never exceed 100%). Fill colour comes from the health state and is always paired with the percentage in text — state is never colour-alone. Over budget the track rescales to the overrun with a notch marking where the budget ran out, so the bar never contradicts the figure beside it. `role="progressbar"` with aria-valuetext |
+| HealthSummary | any health state | `patterns/HealthSummary.tsx` | The budget read-out: Budget hours / Actual hours / Remaining hours / Budget used as **four stat boxes with the exact StatCard metrics (`p-lg`, `text-3xl`)**, so every box is the same 98px height as the Projects List tiles. No meter inside — the percentage, the signed Remaining and the status chip carry the state. Remaining keeps one stable label and goes **signed** (−395.2h, in danger) when over rather than flipping to "Over by". Status chip sits beside the Budget used label; a thin `ProgressMeter` sits under the percentage. The sign + percentage + chip together explain an over-100% figure, so no explanatory sentence is needed inside the card |
 | Truncate | 1 line / 2 lines | `patterns/Truncate.tsx` | THE standard for long free text in a table cell: `line-clamp`, full text on hover via native `title`. Pair with a `maxWidth` style on the `<td>` — without a width constraint the browser just grows the column instead of wrapping. Never use on short codes — see the `whitespace-nowrap` rule below |
 | AccordionSection | open / closed, optional meta | `patterns/AccordionSection.tsx` | Collapsible grouped content (checklist phases) |
 | Avatar | tone: accent / success | `patterns/Avatar.tsx` | Initials circle from a full name — Project Detail's People section |
@@ -132,6 +406,14 @@ Updated as components are added or changed.
 | AuditControlPage | ready / loading / error | `features/system/AuditControlPage.tsx` | `/system/audit` — Panel/Clean as page tabs, same pattern as `RolesPermissionsPage` |
 | AuditPanelTab | loading | `features/system/AuditPanelTab.tsx` | Entries full-width + 4 dependents (Trails/Mails/Javascripts/Errors) as small multiples, each its own `BarChart`, own scale, 7-day total in the heading, one-line description of what it counts |
 | AuditCleanTab | loading | `features/system/AuditCleanTab.tsx` | Retention purge: age Select, per-type stored/purgeable table, guarded delete naming exact per-type counts |
+
+## /components/features/profile — feature-specific
+
+| Component | Variants | Location | Purpose |
+|-----------|----------|----------|---------|
+| ProfilePage | ready / loading / error | `features/profile/ProfilePage.tsx` | `/profile` — Profile/Change Password as page tabs, same pattern as `RolesPermissionsPage`. Not part of a nav section (`activeItem=""`); reached from `SidebarProfile`'s account menu |
+| ProfileDetailsTab | loading | `features/profile/ProfileDetailsTab.tsx` | Read-only Account (`DetailCard`) + Your access (grouped effective permissions) — the same content the old sidebar drawer showed, now on its own linkable page |
+| ChangePasswordTab | loading | `features/profile/ChangePasswordTab.tsx` | The legacy screen's exact 3 fields (Old/New/Retype Password), validated: required, 8-char minimum, new ≠ old, retype matches new. Cancel + Change Password footer |
 
 ## /components/features/tcca — feature-specific
 

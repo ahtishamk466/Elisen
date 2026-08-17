@@ -3,7 +3,7 @@ import type { ProjectListRow } from '@/types/project'
 
 /** `3200-00 — STC — Cabin Interior Modification`. */
 export function projectLabel(row: Pick<ProjectListRow, 'number' | 'subNumber' | 'title'>) {
-  return `${row.number}-${row.subNumber} — ${row.title}`
+  return `${row.number}-${row.subNumber}: ${row.title}`
 }
 
 /**

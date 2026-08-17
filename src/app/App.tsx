@@ -16,6 +16,11 @@ import { AtaChaptersPage } from '@/components/features/lookups/AtaChaptersPage'
 import { DatabaseBackupsPage } from '@/components/features/system/DatabaseBackupsPage'
 import { SoftwareSettingsPage } from '@/components/features/system/SoftwareSettingsPage'
 import { AuditControlPage } from '@/components/features/system/AuditControlPage'
+import { ProfilePage } from '@/components/features/profile/ProfilePage'
+import { ApprovalsPage } from '@/components/features/approvals/ApprovalsPage'
+import { ApprovalDetailPage } from '@/components/features/approvals/ApprovalDetailPage'
+import { ApprovalRevisionsPage } from '@/components/features/approvals/ApprovalRevisionsPage'
+import { DocumentsPage } from '@/components/features/documents/DocumentsPage'
 import { SignedOutScreen } from './SignedOutScreen'
 import { useSessionStore } from '@/stores/sessionStore'
 
@@ -30,6 +35,13 @@ export default function App() {
         <Route path="/projects" element={<ProjectsListPage />} />
         <Route path="/projects/review" element={<ProjectReviewPage />} />
         <Route path="/projects/:id" element={<ProjectDetailPage />} />
+        <Route path="/approvals" element={<ApprovalsPage />} />
+        {/* Before the :id route — otherwise "revisions" is read as an approval id. */}
+        <Route path="/approvals/revisions" element={<ApprovalRevisionsPage />} />
+        <Route path="/approvals/:id" element={<ApprovalDetailPage />} />
+        <Route path="/documents" element={<Navigate to="/documents/deliverables" replace />} />
+        <Route path="/documents/deliverables" element={<DocumentsPage kind="deliverable" />} />
+        <Route path="/documents/design-data" element={<DocumentsPage kind="drawing" />} />
         <Route path="/tcca-projects" element={<TccaProjectsListPage />} />
         <Route path="/tcca-projects/:id" element={<TccaProjectDetailPage />} />
         <Route path="/timesheet" element={<TimesheetListPage />} />
@@ -41,6 +53,7 @@ export default function App() {
         <Route path="/admin/companies" element={<CompaniesPage />} />
         <Route path="/admin/aircraft" element={<AircraftPage />} />
         <Route path="/admin/ata-chapters" element={<AtaChaptersPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/system/settings" element={<SoftwareSettingsPage />} />
         <Route path="/system/audit" element={<AuditControlPage />} />
         <Route path="/system/database" element={<DatabaseBackupsPage />} />

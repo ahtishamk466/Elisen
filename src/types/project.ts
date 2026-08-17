@@ -20,6 +20,14 @@ export interface AircraftEntry {
   modelName: string
   modelNumber: string
   manufacturer: string
+  /** The Reference Data aircraft this was attached from. Absent on legacy
+      rows that were typed in before the catalog became the source. */
+  aircraftId?: string
+  /** Optional tail number — often unknown when the project is created, and
+      filled in later once the specific airframe is assigned. */
+  serial?: string
+  /** The Reference Data serial record, when one was picked. */
+  serialId?: string
 }
 
 export interface ProjectListRow {

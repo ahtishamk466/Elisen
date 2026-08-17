@@ -60,11 +60,11 @@ export function TccaOverviewTab({ tcca }: TccaOverviewTabProps) {
       <section className="rounded-sm border border-border-default bg-neutral-25 p-lg">
         <h2 className="text-sm font-semibold text-text-primary">Linked Elisen Projects</h2>
         <p className="mt-xxss text-xs text-text-muted">
-          Reference links only — no data is shared between the two. Hours are charged to the linked project.
+          Reference links only. No data is shared between the two. Hours are charged to the linked project.
         </p>
         <ul className="mt-lg grid gap-sm">
           {linked.length === 0 && (
-            <li className="text-sm text-text-muted">No linked project — baseline / DAO organizational work.</li>
+            <li className="text-sm text-text-muted">No linked project, baseline / DAO organizational work.</li>
           )}
           {linked.map((p, i) => (
             <li key={p.id} className="flex items-center justify-between gap-lg rounded-sm border border-border-default px-base py-sm">

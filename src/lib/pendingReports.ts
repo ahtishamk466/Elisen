@@ -3,7 +3,7 @@
     rather than faking output. Shared by the TCCA Reports tab and the
     project-level Reports card. */
 export const PENDING_REPORTS = [
-  'Deliverable Status — Burndown',
-  'Deliverable Status — Summary',
+  'Deliverable Status: Burndown',
+  'Deliverable Status: Summary',
   'Application, Cert Basis, MOC, LOI/LOS',
 ]

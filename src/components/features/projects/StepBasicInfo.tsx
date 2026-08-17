@@ -2,6 +2,7 @@ import { FormSection } from '@/components/patterns/FormSection'
 import { FormField } from '@/components/patterns/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { PersonSelect } from '@/components/ui/PersonSelect'
 import { Textarea } from '@/components/ui/Textarea'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { RadioCard } from '@/components/ui/RadioCard'
@@ -67,18 +68,18 @@ export function StepBasicInfo({ values, errors, setField, canSeeFinancials = tru
           <Select id="type" value={values.type} error={!!errors.type} onChange={(e) => setField('type', e.target.value)}>
             <option value="internal">Internal</option>
             <option value="preferred">Preferred</option>
-            <option value="preferred-duncan">Preferred — Duncan Aviation</option>
-            <option value="preferred-topaces">Preferred — Top Aces</option>
+            <option value="preferred-duncan">Preferred: Duncan Aviation</option>
+            <option value="preferred-topaces">Preferred: Top Aces</option>
             <option value="external">External</option>
             <option value="other">Other</option>
           </Select>
         </FormField>
         <FormField label="Priority" htmlFor="priority" required error={errors.priority}>
           <Select id="priority" value={values.priority} error={!!errors.priority} onChange={(e) => setField('priority', e.target.value)}>
-            <option value="1-fire">1 — Fire</option>
-            <option value="2-high">2 — High</option>
-            <option value="3-med">3 — Med</option>
-            <option value="4-low">4 — Low</option>
+            <option value="1-fire">1: Fire</option>
+            <option value="2-high">2: High</option>
+            <option value="3-med">3: Med</option>
+            <option value="4-low">4: Low</option>
           </Select>
         </FormField>
         <FormField label="Description" htmlFor="description">
@@ -99,17 +100,16 @@ export function StepBasicInfo({ values, errors, setField, canSeeFinancials = tru
           label="Contact" htmlFor="contact"
           help={!values.company ? 'Select a company first.' : companyContacts.length === 0 ? 'This company has no active contacts yet.' : undefined}
         >
-          <Select
+          <PersonSelect
             id="contact" value={values.contact} disabled={!values.company || companyContacts.length === 0}
-            placeholder="Select a contact..." onChange={(e) => setField('contact', e.target.value)}
-          >
-            {companyContacts.map((ct) => <option key={ct.id} value={ct.fullName}>{ct.fullName}</option>)}
-          </Select>
+            placeholder="Select a contact..." emptyLabel="This company has no active contacts yet."
+            people={companyContacts.map((ct) => ct.fullName)}
+            onChange={(v) => setField('contact', v)}
+          />
         </FormField>
         <FormField label="Person Responsible" htmlFor="personResponsible" required error={errors.personResponsible}>
-          <Select id="personResponsible" value={values.personResponsible} error={!!errors.personResponsible} placeholder="Select a person..." onChange={(e) => setField('personResponsible', e.target.value)}>
-            {PEOPLE.map((p) => <option key={p} value={p}>{p}</option>)}
-          </Select>
+          <PersonSelect id="personResponsible" value={values.personResponsible} error={!!errors.personResponsible}
+            people={PEOPLE} onChange={(v) => setField('personResponsible', v)} />
         </FormField>
       </FormSection>
 
@@ -125,7 +125,7 @@ export function StepBasicInfo({ values, errors, setField, canSeeFinancials = tru
       </FormSection>
 
       {canSeeFinancials && (
-        <FormSection title="Financial" subtitle="Optional at quote stage — fill in once the contract value is known.">
+        <FormSection title="Financial" subtitle="Optional at quote stage, fill in once the contract value is known.">
           <FormField label="Contract Value" htmlFor="contractValue" error={errors.contractValue}>
             <div className="flex gap-sm">
               <Select aria-label="Currency" value={values.contractCurrency} className="w-24 shrink-0" onChange={(e) => setField('contractCurrency', e.target.value)}>

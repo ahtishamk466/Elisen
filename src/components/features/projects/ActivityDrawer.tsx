@@ -5,6 +5,7 @@ import { FormField } from '@/components/patterns/FormField'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { PersonSelect } from '@/components/ui/PersonSelect'
 import { ACTIVITY_CATALOG, ACTIVITY_TASKS, activityName } from '@/lib/activityCatalog'
 import { PEOPLE } from '@/lib/projectFixtures'
 import { useProjectLabel } from './useProjectLabel'
@@ -56,8 +57,8 @@ export function ActivityDrawer({ mode, workPackage, usedActivityIds, initial, on
       onClose={onClose}
       title={
         isEdit
-          ? `Edit Activity “${activityName(initial!.activityId)}” — ${workPackage.title} · ${label}`
-          : `Add Activity to “${workPackage.title}” — ${label}`
+          ? `Edit Activity “${activityName(initial!.activityId)}”: ${workPackage.title} · ${label}`
+          : `Add Activity to “${workPackage.title}”: ${label}`
       }
       footer={
         <>
@@ -70,7 +71,7 @@ export function ActivityDrawer({ mode, workPackage, usedActivityIds, initial, on
     >
       <FormSection
         title="Activity"
-        subtitle="Who performs this work. Activities come from the standard list — the package title carries the what."
+        subtitle="Who performs this work. Activities come from the standard list, the package title carries the what."
       >
         {isEdit ? (
           <FormField label="Activity" htmlFor="act-name">
@@ -85,10 +86,8 @@ export function ActivityDrawer({ mode, workPackage, usedActivityIds, initial, on
           </FormField>
         )}
         <FormField label="Responsible" htmlFor="act-resp" required error={errors.responsible}>
-          <Select id="act-resp" value={responsible} error={!!errors.responsible} placeholder="Select a person..."
-            onChange={(e) => { setResponsible(e.target.value); setErrors((p) => ({ ...p, responsible: undefined })) }}>
-            {PEOPLE.map((p) => <option key={p} value={p}>{p}</option>)}
-          </Select>
+          <PersonSelect id="act-resp" value={responsible} error={!!errors.responsible} people={PEOPLE}
+            onChange={(v) => { setResponsible(v); setErrors((p) => ({ ...p, responsible: undefined })) }} />
         </FormField>
         <FormField label="Budget Hours" htmlFor="act-budget" error={errors.budgetHours}
           help="Entered per activity, rolled up on the package. Whether budgeting stays here or moves to the package level is pending client confirmation.">

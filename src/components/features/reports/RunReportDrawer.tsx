@@ -4,7 +4,7 @@ import { FormSection } from '@/components/patterns/FormSection'
 import { FormField } from '@/components/patterns/FormField'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { PersonSelect } from '@/components/ui/PersonSelect'
 import { PEOPLE } from '@/lib/projectFixtures'
 import type { ReportDef } from '@/lib/reportCatalog'
 
@@ -61,12 +61,11 @@ export function RunReportDrawer({ report, onClose, onGenerate }: RunReportDrawer
                 onChange={(e) => setField(p.key, e.target.value)}
               />
             ) : (
-              <Select
+              <PersonSelect
                 id={`param-${p.key}`} value={values[p.key] ?? ''} error={!!errors[p.key]}
-                placeholder={`Select ${p.label.toLowerCase()}...`} onChange={(e) => setField(p.key, e.target.value)}
-              >
-                {PEOPLE.map((person) => <option key={person} value={person}>{person}</option>)}
-              </Select>
+                placeholder={`Select ${p.label.toLowerCase()}...`} people={PEOPLE}
+                onChange={(v) => setField(p.key, v)}
+              />
             )}
           </FormField>
         ))}

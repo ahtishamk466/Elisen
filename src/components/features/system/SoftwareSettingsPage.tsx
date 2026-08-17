@@ -3,7 +3,9 @@ import { CircleCheck, CircleOff, Pencil, Plus, Settings as SettingsIcon, Trash2 
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
-import { Pagination } from '@/components/patterns/Pagination'
+import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { FilterChips } from '@/components/patterns/FilterChips'
+import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Truncate } from '@/components/patterns/Truncate'
 import { Badge } from '@/components/ui/Badge'
@@ -11,7 +13,7 @@ import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { SettingDrawer } from './SettingDrawer'
-import { SoftwareSettingsFilterMenu, EMPTY_SETTING_FILTERS, type SettingFilters } from './SoftwareSettingsFilterMenu'
+import { SoftwareSettingsFilterMenu, EMPTY_SETTING_FILTERS, settingFilterChips, type SettingFilters } from './SoftwareSettingsFilterMenu'
 import { useSettingsStore } from '@/stores/settingsStore'
 import type { SoftwareSetting } from '@/types/setting'
 
@@ -32,8 +34,6 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
   const removeSetting = useSettingsStore((s) => s.removeSetting)
 
   const [filters, setFilters] = useState<SettingFilters>(EMPTY_SETTING_FILTERS)
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit'; setting?: SoftwareSetting } | null>(null)
   const [deleting, setDeleting] = useState<SoftwareSetting | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -58,6 +58,8 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
     })
   }, [numbered, filters])
 
+  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
+
   const loading = state === 'loading'
 
   if (state === 'error') {
@@ -79,9 +81,9 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
         <>
           <SoftwareSettingsFilterMenu
             sections={sections} filters={filters}
-            onApply={(f) => { setFilters(f); setPage(1) }}
+            onApply={(f) => { setFilters(f); resetVisible() }}
           />
-          <Button size="lg" leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>
+          <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>
             Create Setting
           </Button>
         </>
@@ -89,6 +91,11 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
     >
       <div className="grid gap-lg">
         {toast && <Alert tone="info" title={toast} />}
+
+        <FilterChips
+          chips={settingFilterChips(filters, (f) => { setFilters(f); resetVisible() })}
+          onClearAll={() => { setFilters(EMPTY_SETTING_FILTERS); resetVisible() }}
+        />
 
         {!loading && filtered.length === 0 ? (
           <div className="rounded-sm border border-border-default bg-neutral-25">
@@ -103,7 +110,7 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
               action={
                 settings.length === 0
                   ? <Button leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>Create Setting</Button>
-                  : <Button variant="secondary" onClick={() => { setFilters(EMPTY_SETTING_FILTERS); setPage(1) }}>Clear filters</Button>
+                  : <Button variant="secondary" onClick={() => { setFilters(EMPTY_SETTING_FILTERS); resetVisible() }}>Clear filters</Button>
               }
             />
           </div>
@@ -126,7 +133,7 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
                           {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                         </tr>
                       ))
-                    : filtered.slice((page - 1) * pageSize, page * pageSize).map(({ setting: s, number }) => (
+                    : filtered.slice(0, visibleCount).map(({ setting: s, number }) => (
                         <tr
                           key={s.id}
                           onClick={() => setDrawer({ mode: 'edit', setting: s })}
@@ -146,7 +153,7 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
                           </td>
                           <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{s.value || '—'}</td>
                           <td className="whitespace-nowrap px-lg py-base align-top">
-                            <Badge tone={s.active ? 'success' : 'neutral'} dot>{s.active ? 'Active' : 'Inactive'}</Badge>
+                            <Badge tone={s.active ? 'success' : 'neutral'}>{s.active ? 'Active' : 'Inactive'}</Badge>
                           </td>
                           <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 220 }}>
                             <Truncate>{s.description || '—'}</Truncate>
@@ -157,7 +164,7 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
                               items={[
                                 { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setDrawer({ mode: 'edit', setting: s }) },
                                 s.active
-                                  ? { label: 'Deactivate', icon: <CircleOff size={16} />, onSelect: () => { updateSetting(s.id, { active: false }); setToast(`"${s.key}" deactivated — the app will ignore it.`) } }
+                                  ? { label: 'Deactivate', icon: <CircleOff size={16} />, onSelect: () => { updateSetting(s.id, { active: false }); setToast(`"${s.key}" deactivated. The app will ignore it.`) } }
                                   : { label: 'Activate', icon: <CircleCheck size={16} />, onSelect: () => { updateSetting(s.id, { active: true }); setToast(`"${s.key}" activated.`) } },
                                 { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(s), tone: 'danger' },
                               ]}
@@ -169,10 +176,7 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
               </table>
             </div>
             {!loading && (
-              <Pagination
-                page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="items"
-                onPageChange={setPage} onPageSizeChange={setPageSize}
-              />
+              <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="items" />
             )}
           </div>
         )}

@@ -3,14 +3,16 @@ import { Plus, Search, CalendarClock } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { StatCard } from '@/components/patterns/StatCard'
 import { EmptyState } from '@/components/patterns/EmptyState'
-import { Pagination } from '@/components/patterns/Pagination'
+import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { FilterChips } from '@/components/patterns/FilterChips'
+import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { TimesheetTable } from './TimesheetTable'
 import { TimesheetEntryDrawer } from './TimesheetEntryDrawer'
-import { TimesheetFilterMenu, EMPTY_FILTERS, type TimesheetFilters } from './TimesheetFilterMenu'
+import { TimesheetFilterMenu, EMPTY_FILTERS, timesheetFilterChips, type TimesheetFilters } from './TimesheetFilterMenu'
 import { useTimesheetStore } from '@/stores/timesheetStore'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useWorkPackagesStore } from '@/stores/workPackagesStore'
@@ -48,8 +50,6 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
 
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<TimesheetFilters>(EMPTY_FILTERS)
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; row?: TimesheetEntry } | null>(null)
   const [deletingRow, setDeletingRow] = useState<TimesheetEntry | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -77,7 +77,8 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
   }, [enriched, query, filters])
 
   const totalHours = filtered.reduce((sum, r) => sum + r.hoursRegular, 0)
-  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize)
+  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
+  const pageRows = filtered.slice(0, visibleCount)
 
   const loading = state === 'loading'
   const showEmpty = state === 'empty' || (state === 'ready' && filtered.length === 0)
@@ -99,20 +100,20 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
 
   return (
     <AppShell
-      title="Timesheet — List"
+      title="Timesheet"
       activeItem="Time Entry"
       activeChild="Timesheet"
       headerActions={
         <>
-          <div className="min-w-0" style={{ width: 300 }}>
+          <div className="min-w-0" style={{ width: 400 }}>
             <label htmlFor="timesheet-search" className="sr-only">Search entries</label>
-            <Input
-              id="timesheet-search" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }}
+            <Input size="sm"
+              id="timesheet-search" value={query} onChange={(e) => { setQuery(e.target.value); resetVisible() }}
               placeholder="Search by project, activity, task or comment..." leadingIcon={<Search size={16} />}
             />
           </div>
-          <TimesheetFilterMenu projects={projects} filters={filters} onApply={(f) => { setFilters(f); setPage(1) }} />
-          <Button size="lg" leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>
+          <TimesheetFilterMenu projects={projects} filters={filters} onApply={(f) => { setFilters(f); resetVisible() }} />
+          <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>
             Add Entry
           </Button>
         </>
@@ -120,6 +121,11 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
     >
       <div className="grid gap-lg">
         {toast && <Alert tone="info" title={toast} />}
+
+        <FilterChips
+          chips={timesheetFilterChips(filters, projects, (f) => { setFilters(f); resetVisible() })}
+          onClearAll={() => { setFilters(EMPTY_FILTERS); resetVisible() }}
+        />
 
         <div className="grid gap-lg mobile:grid-cols-2">
           <StatCard value={filtered.length} label="Entries" loading={loading} />
@@ -159,10 +165,7 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
             onDelete={setDeletingRow}
             onToggleValidated={handleToggleValidated}
             pagination={!loading && (
-              <Pagination
-                page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="entries"
-                onPageChange={setPage} onPageSizeChange={setPageSize}
-              />
+              <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="entries" />
             )}
           />
         )}

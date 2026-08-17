@@ -3,7 +3,8 @@ import { Database, DatabaseBackup as RestoreIcon, Plus, Trash2, Upload } from 'l
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
-import { Pagination } from '@/components/patterns/Pagination'
+import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Truncate } from '@/components/patterns/Truncate'
 import { Button } from '@/components/ui/Button'
@@ -30,8 +31,7 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
   const uploadBackup = useBackupStore((s) => s.uploadBackup)
   const removeBackup = useBackupStore((s) => s.removeBackup)
 
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const { visibleCount, loadingMore, loadMore } = useInfiniteReveal(backups.length, 25)
   const [uploading, setUploading] = useState(false)
   const [restoring, setRestoring] = useState<DatabaseBackup | null>(null)
   const [deleting, setDeleting] = useState<DatabaseBackup | null>(null)
@@ -56,13 +56,13 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
       activeChild="Database Management"
       headerActions={
         <>
-          <Button size="lg" variant="secondary" leadingIcon={<Upload size={16} />} onClick={() => setUploading(true)}>
+          <Button size="md" variant="secondary" leadingIcon={<Upload size={16} />} onClick={() => setUploading(true)}>
             Upload Backup File
           </Button>
           <Button
-            size="lg"
+            size="md"
             leadingIcon={<Plus size={16} />}
-            onClick={() => { const b = createBackup(); setToast(`Backup created — ${b.name}`); setPage(1) }}
+            onClick={() => { const b = createBackup(); setToast(`Backup created: ${b.name}`) }}
           >
             Create Backup
           </Button>
@@ -79,7 +79,7 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
               title="No backup files yet"
               description="Create a backup of the live database, or upload an existing .sql file."
               action={
-                <Button leadingIcon={<Plus size={16} />} onClick={() => { const b = createBackup(); setToast(`Backup created — ${b.name}`) }}>
+                <Button leadingIcon={<Plus size={16} />} onClick={() => { const b = createBackup(); setToast(`Backup created: ${b.name}`) }}>
                   Create Backup
                 </Button>
               }
@@ -104,7 +104,7 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
                           {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                         </tr>
                       ))
-                    : backups.slice((page - 1) * pageSize, page * pageSize).map((b) => (
+                    : backups.slice(0, visibleCount).map((b) => (
                         <tr key={b.id} className="border-b border-border-default last:border-b-0">
                           {/* Filenames are long but meaningful — clamp with
                               the full name on hover rather than wrapping. */}
@@ -129,10 +129,7 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
               </table>
             </div>
             {!loading && (
-              <Pagination
-                page={page} pageSize={pageSize} totalItems={backups.length} itemLabel="items"
-                onPageChange={setPage} onPageSizeChange={setPageSize}
-              />
+              <AutoLoadFooter total={backups.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="items" />
             )}
           </div>
         )}
@@ -141,7 +138,7 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
       {uploading && (
         <UploadBackupDrawer
           onClose={() => setUploading(false)}
-          onSave={(file) => { uploadBackup(file.name, file.size); setToast(`Backup file uploaded — ${file.name}`); setPage(1) }}
+          onSave={(file) => { uploadBackup(file.name, file.size); setToast(`Backup file uploaded: ${file.name}`) }}
         />
       )}
 

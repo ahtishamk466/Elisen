@@ -36,7 +36,7 @@ export function ProjectTccaTab({ projectId }: { projectId: string }) {
         <>
           <div className="flex items-center justify-between gap-lg">
             <p className="text-sm text-text-secondary">
-              Transport Canada projects linked to this Elisen project. Reference links only — no data is copied.
+              Transport Canada projects linked to this Elisen project. Reference links only. No data is copied.
             </p>
             <Button variant="secondary" leadingIcon={<Plus size={16} />} onClick={openAdd}>
               Add TCCA project

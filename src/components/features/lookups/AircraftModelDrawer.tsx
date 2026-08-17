@@ -82,7 +82,7 @@ export function AircraftModelDrawer({ mode, initial, initialSerial, onClose, onS
           </div>
         </DetailCard>
       ) : (
-        <FormSection title="Aircraft" subtitle="One aircraft — a specific tail number of this model.">
+        <FormSection title="Aircraft" subtitle="One aircraft, a specific tail number of this model.">
           <FormField label="Serial No" htmlFor="am-serial" required error={serialError}>
             <Input
               id="am-serial" value={sn.serial} error={!!serialError} placeholder="e.g. 593"

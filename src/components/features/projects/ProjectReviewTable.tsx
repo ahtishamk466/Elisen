@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Eye, Pencil } from 'lucide-react'
+import { Eye, Pencil, Package } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
@@ -28,6 +28,8 @@ export interface ProjectReviewTableProps {
   /** Budget/actual hours are financial data — hidden below manager. */
   canSeeFinancials?: boolean
   onView: (row: ProjectListRow) => void
+  /** Straight to the project's Work Packages tab. */
+  onOpenWorkPackages?: (row: ProjectListRow) => void
   onEdit: (row: ProjectListRow) => void
   /** Preset tabs, rendered as the card's own header above the columns. */
   tabs?: ReactNode
@@ -37,7 +39,7 @@ export interface ProjectReviewTableProps {
 }
 
 export function ProjectReviewTable({
-  rows, loading = false, canSeeFinancials = true, onView, onEdit, tabs, activeTabKey, pagination,
+  rows, loading = false, canSeeFinancials = true, onView, onOpenWorkPackages, onEdit, tabs, activeTabKey, pagination,
 }: ProjectReviewTableProps) {
   const headers = canSeeFinancials ? HEADERS : HEADERS.filter((h) => h !== 'Bdg Hrs' && h !== 'Actl Hrs')
 
@@ -120,13 +122,14 @@ export function ProjectReviewTable({
                         </>
                       )}
                       <td className="whitespace-nowrap px-lg py-base align-top">
-                        <Badge tone={row.active ? 'success' : 'neutral'} dot>{row.active ? 'Active' : 'Inactive'}</Badge>
+                        <Badge tone={row.active ? 'success' : 'neutral'}>{row.active ? 'Active' : 'Inactive'}</Badge>
                       </td>
                       <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
                         <ActionsMenu
                           ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
                           items={[
                             { label: 'View', icon: <Eye size={16} />, onSelect: () => onView(row) },
+                            { label: 'Work Packages', icon: <Package size={16} />, onSelect: () => onOpenWorkPackages?.(row) },
                             { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => onEdit(row) },
                           ]}
                         />

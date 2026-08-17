@@ -82,7 +82,7 @@ export function RoleDrawer({ mode, initial, onClose, onSubmit }: RoleDrawerProps
 
       <FormSection
         title="Inherits roles"
-        subtitle="This role also grants everything the ticked roles grant — their permissions show below as locked."
+        subtitle="This role also grants everything the ticked roles grant. Their permissions show below as locked."
       >
         <div className="grid gap-sm">
           {otherRoles.map((r) => {
@@ -122,7 +122,7 @@ export function RoleDrawer({ mode, initial, onClose, onSubmit }: RoleDrawerProps
                 return (
                   <div key={id}>
                     <Checkbox
-                      label={`${id} — ${p.description}${isInherited ? ' · inherited' : ''}`}
+                      label={`${id}: ${p.description}${isInherited ? ' · inherited' : ''}`}
                       checked={permissionIds.includes(id) || isInherited}
                       disabled={isInherited}
                       onChange={() => togglePermission(id)}

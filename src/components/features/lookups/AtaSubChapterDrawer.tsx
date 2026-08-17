@@ -51,7 +51,7 @@ export function AtaSubChapterDrawer({ mode, chapter, initial, onClose, onSubmit 
       title={
         isEdit
           ? `Edit Section “${chapter.chapter}-${initial!.section} ${initial!.title}”`
-          : `Add Section to Chapter “${chapter.chapter} — ${chapter.title}”`
+          : `Add Section to Chapter “${chapter.chapter}: ${chapter.title}”`
       }
       footer={
         <>

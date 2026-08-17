@@ -39,8 +39,8 @@ export function ActionsMenu({ items, ariaLabel }: ActionsMenuProps) {
             ref={menuRef}
             role="menu"
             aria-label={ariaLabel}
-            className="fixed z-dropdown rounded-sm border border-border-default bg-neutral-25 py-xs shadow-lg"
-            style={{ top: position.top, left: position.left, width: MENU_WIDTH }}
+            className="fixed z-dropdown overflow-y-auto rounded-sm border border-border-default bg-neutral-25 py-xs shadow-lg"
+            style={{ ...position, width: MENU_WIDTH }}
           >
             {items.map((item) => (
               <button

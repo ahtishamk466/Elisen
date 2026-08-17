@@ -1,21 +1,22 @@
-import { ChevronDown } from 'lucide-react'
+import { SearchableSelect } from './SearchableSelect'
 
 /** Common business-context codes — the countries already in use across the
     app's company/contact fixtures, plus a few more frequent ones. Flag
     shown next to the code so the selected country is unambiguous at a
-    glance (a bare "+1" alone doesn't say US vs. Canada vs. the Caribbean). */
+    glance (a bare "+1" alone doesn't say US vs. Canada vs. the Caribbean),
+    and the country name rides along as the searchable hint. */
 export const COUNTRY_CODES = [
-  { code: '+1', flag: '🇺🇸' },
-  { code: '+44', flag: '🇬🇧' },
-  { code: '+33', flag: '🇫🇷' },
-  { code: '+49', flag: '🇩🇪' },
-  { code: '+65', flag: '🇸🇬' },
-  { code: '+61', flag: '🇦🇺' },
-  { code: '+971', flag: '🇦🇪' },
-  { code: '+356', flag: '🇲🇹' },
-  { code: '+675', flag: '🇵🇬' },
-  { code: '+81', flag: '🇯🇵' },
-  { code: '+91', flag: '🇮🇳' },
+  { code: '+1', flag: '🇺🇸', name: 'United States' },
+  { code: '+44', flag: '🇬🇧', name: 'United Kingdom' },
+  { code: '+33', flag: '🇫🇷', name: 'France' },
+  { code: '+49', flag: '🇩🇪', name: 'Germany' },
+  { code: '+65', flag: '🇸🇬', name: 'Singapore' },
+  { code: '+61', flag: '🇦🇺', name: 'Australia' },
+  { code: '+971', flag: '🇦🇪', name: 'United Arab Emirates' },
+  { code: '+356', flag: '🇲🇹', name: 'Malta' },
+  { code: '+675', flag: '🇵🇬', name: 'Papua New Guinea' },
+  { code: '+81', flag: '🇯🇵', name: 'Japan' },
+  { code: '+91', flag: '🇮🇳', name: 'India' },
 ]
 
 export interface PhoneInputProps {
@@ -28,13 +29,16 @@ export interface PhoneInputProps {
   placeholder?: string
   disabled?: boolean
   error?: boolean
-  countryCodeOptions?: { code: string; flag: string }[]
+  countryCodeOptions?: { code: string; flag: string; name?: string }[]
 }
 
 /** One field, not two — a fixed-width code+flag segment on the left, a
     divider, then the number. Same tokens as Input/Select (h-11, rounded-sm,
     border-border-default, shadow-textfield) merged into a single box, and
-    full-width like every other field so forms line up on one right edge. */
+    full-width like every other field so forms line up on one right edge.
+    The code segment is a `SearchableSelect variant="bare"`, so its open state
+    is the same panel as every other dropdown in the app — one design, and the
+    country name is searchable rather than requiring a scroll by dial code. */
 export function PhoneInput({
   countryCode, onCountryCodeChange, number, onNumberChange,
   id, placeholder = 'Phone number', disabled = false, error = false,
@@ -47,20 +51,24 @@ export function PhoneInput({
         ${error ? 'border-danger' : 'border-border-default focus-within:border-text-primary'}
         ${disabled ? 'opacity-40' : ''}`}
     >
-      <div className="relative flex h-full shrink-0 items-center border-r border-border-default" style={{ width: 88 }}>
-        <label htmlFor={codeId} className="sr-only">Country code</label>
-        <select
-          id={codeId}
+      <div className="flex h-full shrink-0 items-center border-r border-border-default" style={{ width: 96 }}>
+        <SearchableSelect
+          id={codeId ?? 'phone-country-code'}
+          variant="bare"
+          ariaLabel="Country code"
           value={countryCode}
+          onChange={onCountryCodeChange}
           disabled={disabled}
-          aria-invalid={error || undefined}
-          onChange={(e) => onCountryCodeChange(e.target.value)}
-          className="h-full w-full appearance-none bg-transparent py-0 pl-base pr-xl text-sm text-text-primary outline-none disabled:cursor-not-allowed"
-        >
-          <option value="" disabled>Code</option>
-          {countryCodeOptions.map((c) => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
-        </select>
-        <ChevronDown size={14} className="pointer-events-none absolute right-xs text-text-muted" aria-hidden />
+          error={error}
+          placeholder="Code"
+          indicator="radio"
+          menuMinWidth={260}
+          options={countryCodeOptions.map((c) => ({
+            value: c.code,
+            label: `${c.flag} ${c.code}`,
+            hint: c.name,
+          }))}
+        />
       </div>
       <input
         id={id}

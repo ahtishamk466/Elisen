@@ -68,14 +68,14 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
       activeChild="ATA Chapters"
       headerActions={
         <>
-          <div className="min-w-0" style={{ width: 300 }}>
+          <div className="min-w-0" style={{ width: 400 }}>
             <label htmlFor="ata-search" className="sr-only">Search chapters and sections</label>
-            <Input
+            <Input size="sm"
               id="ata-search" value={query} onChange={(e) => setQuery(e.target.value)}
               placeholder="Search chapters or sections..." leadingIcon={<Search size={16} />}
             />
           </div>
-          <Button size="lg" leadingIcon={<Plus size={16} />} onClick={() => setChapterDrawer({ mode: 'create' })}>Add Chapter</Button>
+          <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setChapterDrawer({ mode: 'create' })}>Add Chapter</Button>
         </>
       }
     >
@@ -103,14 +103,14 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
             return (
               <AccordionSection
                 key={`${c.id}-${query.trim() ? 'hit' : 'idle'}`}
-                title={`${c.chapter} — ${c.title}`}
+                title={`${c.chapter}: ${c.title}`}
                 meta={`${sections.length} section${sections.length === 1 ? '' : 's'}${c.active ? '' : ' · Inactive'}`}
                 defaultOpen={!!query.trim()}
               >
                 <div className="flex items-start justify-between gap-lg">
                   <p className="text-sm text-text-secondary">{c.definition || 'No definition.'}</p>
                   <div className="flex shrink-0 items-center gap-xs">
-                    {!c.active && <Badge tone="neutral" dot>Inactive</Badge>}
+                    {!c.active && <Badge tone="neutral">Inactive</Badge>}
                     <button type="button" onClick={() => setChapterDrawer({ mode: 'edit', chapter: c })} aria-label={`Edit chapter ${c.chapter}`} className={iconBtn}>
                       <Pencil size={16} aria-hidden />
                     </button>
@@ -188,7 +188,7 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
         title="Delete this chapter?"
         description={
           deletingChapter
-            ? `"${deletingChapter.chapter} — ${deletingChapter.title}" and its ${sectionsOf(deletingChapter.id).length} section${sectionsOf(deletingChapter.id).length === 1 ? '' : 's'} will be permanently removed. Prefer deactivating to keep history.`
+            ? `"${deletingChapter.chapter}: ${deletingChapter.title}" and its ${sectionsOf(deletingChapter.id).length} section${sectionsOf(deletingChapter.id).length === 1 ? '' : 's'} will be permanently removed. Prefer deactivating to keep history.`
             : ''
         }
         confirmLabel="Delete chapter"
@@ -199,7 +199,7 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
       <ConfirmDialog
         open={!!deletingSection}
         title="Delete this section?"
-        description={deletingSection ? `Section ${deletingSection.section} — "${deletingSection.title}" will be permanently removed.` : ''}
+        description={deletingSection ? `Section ${deletingSection.section}, "${deletingSection.title}" will be permanently removed.` : ''}
         confirmLabel="Delete section"
         tone="danger"
         onConfirm={() => { if (deletingSection) { removeSubChapter(deletingSection.id); setToast('Section deleted.') } setDeletingSection(null) }}

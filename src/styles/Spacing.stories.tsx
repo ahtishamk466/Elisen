@@ -15,8 +15,8 @@ const SPACING: { name: string; widthClass: string }[] = [
 ]
 
 const RADIUS: { name: string; radiusClass: string }[] = [
-  { name: 'radius-sm (4px) — all rectangular surfaces', radiusClass: 'rounded-sm' },
-  { name: 'radius-full — circular controls only', radiusClass: 'rounded-full' },
+  { name: 'radius-sm (4px), all rectangular surfaces', radiusClass: 'rounded-sm' },
+  { name: 'radius-full, circular controls only', radiusClass: 'rounded-full' },
 ]
 
 function SpacingSpecimen() {

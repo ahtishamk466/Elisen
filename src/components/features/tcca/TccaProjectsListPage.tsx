@@ -4,7 +4,8 @@ import { Plus, Search, Eye, Pencil, Trash2, ShieldCheck } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
-import { Pagination } from '@/components/patterns/Pagination'
+import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Button } from '@/components/ui/Button'
@@ -33,8 +34,6 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
   const removeTcca = useTccaStore((s) => s.removeTcca)
 
   const [query, setQuery] = useState('')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<TccaProject | null>(null)
   const [deleting, setDeleting] = useState<TccaProject | null>(null)
@@ -44,6 +43,8 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
     const q = query.toLowerCase()
     return tccaProjects.filter((t) => `${t.number} ${t.description}`.toLowerCase().includes(q))
   }, [tccaProjects, query])
+
+  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
 
   const projectLabel = (t: TccaProject) => {
     const p = projects.find((x) => x.id === t.projectIds[0])
@@ -60,12 +61,12 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
       title="TCCA Projects"
       headerActions={
         <>
-          <div className="min-w-0" style={{ width: 300 }}>
+          <div className="min-w-0" style={{ width: 400 }}>
             <label htmlFor="tcca-search" className="sr-only">Search TCCA projects</label>
-            <Input id="tcca-search" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }}
+            <Input size="sm" id="tcca-search" value={query} onChange={(e) => { setQuery(e.target.value); resetVisible() }}
               placeholder="Search by number or description..." leadingIcon={<Search size={16} />} />
           </div>
-          <Button size="lg" leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>Add TCCA project</Button>
+          <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>Add TCCA project</Button>
         </>
       }
     >
@@ -104,7 +105,7 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
                         {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                       </tr>
                     ))
-                  : filtered.slice((page - 1) * pageSize, page * pageSize).map((t) => (
+                  : filtered.slice(0, visibleCount).map((t) => (
                       <tr
                         key={t.id}
                         onClick={() => navigate(`/tcca-projects/${t.id}`)}
@@ -135,10 +136,7 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
             </table>
           </div>
           {!loading && (
-            <Pagination
-              page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="TCCA projects"
-              onPageChange={setPage} onPageSizeChange={setPageSize}
-            />
+            <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="TCCA projects" />
           )}
           </div>
         )}

@@ -32,3 +32,20 @@ export const AllStates: Story = {
     </div>
   ),
 }
+
+/** Same rule as `Input`: `sm` (36px) in toolbar rows, `md` (44px, default) for
+    stacked form fields. See UI/Input → Sizes for the reasoning. */
+export const Sizes: Story = {
+  render: () => (
+    <div className="grid max-w-96 gap-lg p-lg">
+      <div className="grid gap-xs">
+        <p className="text-xs font-semibold text-text-secondary">sm, 36px</p>
+        <Select size="sm" placeholder="Any type" defaultValue="">{options}</Select>
+      </div>
+      <div className="grid gap-xs">
+        <p className="text-xs font-semibold text-text-secondary">md, 44px (default)</p>
+        <Select placeholder="Any type" defaultValue="">{options}</Select>
+      </div>
+    </div>
+  ),
+}

@@ -92,7 +92,7 @@ export function TccaProjectDrawer({ open, mode, lockedProjectId, initial, onClos
         onClose={requestClose}
         title={
           isEdit
-            ? `Edit TCCA Project ${initial?.number}${lockedLabel ? ` — ${lockedLabel}` : ''}`
+            ? `Edit TCCA Project ${initial?.number}${lockedLabel ? `: ${lockedLabel}` : ''}`
             : lockedLabel
               ? `Add TCCA Project “${lockedLabel}”`
               : 'Add TCCA Project'

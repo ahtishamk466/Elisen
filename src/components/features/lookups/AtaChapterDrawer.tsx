@@ -44,7 +44,7 @@ export function AtaChapterDrawer({ mode, initial, onClose, onSubmit }: AtaChapte
     <Drawer
       open
       onClose={onClose}
-      title={isEdit ? `Edit ATA Chapter “${initial!.chapter} — ${initial!.title}”` : 'Add ATA Chapter'}
+      title={isEdit ? `Edit ATA Chapter “${initial!.chapter}: ${initial!.title}”` : 'Add ATA Chapter'}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
@@ -52,7 +52,7 @@ export function AtaChapterDrawer({ mode, initial, onClose, onSubmit }: AtaChapte
         </>
       }
     >
-      <FormSection title="Chapter" subtitle="An ATA specification chapter — sections are managed on its card.">
+      <FormSection title="Chapter" subtitle="An ATA specification chapter. Sections are managed on its card.">
         <FormField label="Chapter" htmlFor="ata-chapter" required error={errors.chapter}>
           <Input id="ata-chapter" value={chapter} error={!!errors.chapter} inputMode="numeric" maxLength={2} placeholder="e.g. 05" disabled={isEdit} onChange={(e) => { setChapter(e.target.value); setErrors((p) => ({ ...p, chapter: undefined })) }} />
         </FormField>
@@ -62,7 +62,7 @@ export function AtaChapterDrawer({ mode, initial, onClose, onSubmit }: AtaChapte
         <FormField label="Definition" htmlFor="ata-def">
           <Textarea id="ata-def" value={definition} placeholder="What this chapter covers..." onChange={(e) => setDefinition(e.target.value)} />
         </FormField>
-        <Checkbox label="Active — available in pickers across the app" checked={active} onChange={() => setActive((v) => !v)} />
+        <Checkbox label="Active, available in pickers across the app" checked={active} onChange={() => setActive((v) => !v)} />
       </FormSection>
     </Drawer>
   )

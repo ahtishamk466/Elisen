@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Filter as FilterIcon } from 'lucide-react'
 import { useDropdown } from '@/components/patterns/useDropdown'
+import type { FilterChip } from '@/components/patterns/FilterChips'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -19,6 +20,26 @@ export interface SettingFilters {
 
 export const EMPTY_SETTING_FILTERS: SettingFilters = {
   type: '', section: '', key: '', value: '', status: '', description: '',
+}
+
+/** Applied filters as removable chips. The free-text ones are quoted so a
+    chip reads as a search term rather than a chosen option. */
+export function settingFilterChips(
+  filters: SettingFilters,
+  onChange: (filters: SettingFilters) => void,
+): FilterChip[] {
+  const clear = (key: keyof SettingFilters) => () => onChange({ ...filters, [key]: '' })
+  const defs: { key: keyof SettingFilters; label: string; value: string }[] = [
+    { key: 'type', label: 'Type', value: filters.type ? SETTING_TYPE_LABEL[filters.type] : '' },
+    { key: 'section', label: 'Section', value: filters.section },
+    { key: 'status', label: 'Status', value: filters.status === 'active' ? 'Active' : filters.status === 'inactive' ? 'Inactive' : '' },
+    { key: 'key', label: 'Key', value: filters.key ? `"${filters.key}"` : '' },
+    { key: 'value', label: 'Value', value: filters.value ? `"${filters.value}"` : '' },
+    { key: 'description', label: 'Description', value: filters.description ? `"${filters.description}"` : '' },
+  ]
+  return defs
+    .filter((d) => d.value)
+    .map((d) => ({ key: d.key, label: d.label, value: d.value, onRemove: clear(d.key) }))
 }
 
 export interface SoftwareSettingsFilterMenuProps {
@@ -48,7 +69,7 @@ export function SoftwareSettingsFilterMenu({ sections, filters, onApply }: Softw
       <Button
         ref={triggerRef}
         variant="secondary"
-        size="lg"
+        size="md"
         leadingIcon={<FilterIcon size={16} />}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -62,8 +83,8 @@ export function SoftwareSettingsFilterMenu({ sections, filters, onApply }: Softw
             ref={menuRef}
             role="menu"
             aria-label="Filter settings"
-            className="fixed z-dropdown grid gap-base rounded-sm border border-border-default bg-neutral-25 p-lg shadow-lg"
-            style={{ top: position.top, left: position.left, width: MENU_WIDTH }}
+            className="fixed z-dropdown overflow-y-auto grid gap-base rounded-sm border border-border-default bg-neutral-25 p-lg shadow-lg"
+            style={{ ...position, width: MENU_WIDTH }}
           >
             <div className="grid gap-xs">
               <label htmlFor="st-filter-type" className="text-xs font-semibold text-text-secondary">Type</label>

@@ -61,20 +61,20 @@ export function PermissionDrawer({ mode, initial, onClose, onSubmit }: Permissio
       {isEdit && (
         <Alert tone="info" title={`Used by ${usedByRoles.length} role${usedByRoles.length === 1 ? '' : 's'} · reaches ${reached.length} user${reached.length === 1 ? '' : 's'}`}>
           {usedByRoles.length > 0
-            ? `${usedByRoles.map((r) => r.name).join(', ')} — route changes apply to everyone with those roles.`
-            : 'No role grants this yet — attach it to a role to put it to use.'}
+            ? `${usedByRoles.map((r) => r.name).join(', ')}, route changes apply to everyone with those roles.`
+            : 'No role grants this yet, attach it to a role to put it to use.'}
         </Alert>
       )}
 
       <FormSection title="Permission" subtitle="A named capability the app checks before allowing an action.">
-        <FormField label="Name" htmlFor="perm-name" required error={error} help={isEdit ? 'Names are stable — roles reference them.' : 'kebab-case, e.g. activity-assign.'}>
+        <FormField label="Name" htmlFor="perm-name" required error={error} help={isEdit ? 'Names are stable, roles reference them.' : 'kebab-case, e.g. activity-assign.'}>
           <Input id="perm-name" value={name} error={!!error} disabled={isEdit} placeholder="e.g. activity-assign" onChange={(e) => { setName(e.target.value); setError('') }} />
         </FormField>
         <FormField label="Description" htmlFor="perm-desc">
           <Input id="perm-desc" value={description} placeholder="e.g. Activity Assign" onChange={(e) => setDescription(e.target.value)} />
         </FormField>
         {rule && (
-          <FormField label="Rule" htmlFor="perm-rule" help="Rules are code-defined conditions — managed by developers under System.">
+          <FormField label="Rule" htmlFor="perm-rule" help="Rules are code-defined conditions, managed by developers under System.">
             <Input id="perm-rule" value={`${rule.name} (${rule.className})`} disabled />
           </FormField>
         )}
@@ -92,7 +92,7 @@ export function PermissionDrawer({ mode, initial, onClose, onSubmit }: Permissio
           onChange={(e) => setQuery(e.target.value)}
         />
         {routes.length === 0 && (
-          <p className="text-xs text-warning">No routes attached — this permission guards nothing yet.</p>
+          <p className="text-xs text-warning">No routes attached. This permission guards nothing yet.</p>
         )}
         <div className="grid max-h-72 gap-sm overflow-y-auto pr-xs">
           {shownRoutes.map((r) => (

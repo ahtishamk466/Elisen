@@ -3,7 +3,8 @@ import { Plus, Search, Plane, Eye, Pencil, Trash2, CircleCheck, CircleOff } from
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
-import { Pagination } from '@/components/patterns/Pagination'
+import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Truncate } from '@/components/patterns/Truncate'
 import { Button } from '@/components/ui/Button'
@@ -31,8 +32,6 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
   const removeAircraft = useLookupStore((s) => s.removeAircraft)
 
   const [query, setQuery] = useState('')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; model?: AircraftModel; serial?: AircraftSerial } | null>(null)
   const [deleting, setDeleting] = useState<AircraftModel | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -58,6 +57,8 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
     })
   }, [flatRows, query])
 
+  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
+
   const loading = state === 'loading'
 
   if (state === 'error') {
@@ -75,14 +76,14 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
       activeChild="Aircraft"
       headerActions={
         <>
-          <div className="min-w-0" style={{ width: 300 }}>
+          <div className="min-w-0" style={{ width: 400 }}>
             <label htmlFor="aircraft-search" className="sr-only">Search aircraft and serials</label>
-            <Input
-              id="aircraft-search" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }}
+            <Input size="sm"
+              id="aircraft-search" value={query} onChange={(e) => { setQuery(e.target.value); resetVisible() }}
               placeholder="Search by model, serial or registration..." leadingIcon={<Search size={16} />}
             />
           </div>
-          <Button size="lg" leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>Add Aircraft</Button>
+          <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>Add Aircraft</Button>
         </>
       }
     >
@@ -119,7 +120,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
                         {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                       </tr>
                     ))
-                  : filtered.slice((page - 1) * pageSize, page * pageSize).map(({ model: a, serial: s }) => (
+                  : filtered.slice(0, visibleCount).map(({ model: a, serial: s }) => (
                       <tr
                         key={`${a.id}-${s?.id ?? 'none'}`}
                         onClick={() => setDrawer({ mode: 'edit', model: a, serial: s })}
@@ -144,7 +145,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
                         <td className="px-lg py-base align-top text-sm text-text-primary">{a.drawingPrefix || '—'}</td>
                         <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 180 }}><Truncate>{s?.comment || '—'}</Truncate></td>
                         <td className="px-lg py-base align-top">
-                          <Badge tone={a.active ? 'success' : 'neutral'} dot>{a.active ? 'Active' : 'Inactive'}</Badge>
+                          <Badge tone={a.active ? 'success' : 'neutral'}>{a.active ? 'Active' : 'Inactive'}</Badge>
                         </td>
                         <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
                           <ActionsMenu
@@ -153,7 +154,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
                               { label: 'View', icon: <Eye size={16} />, onSelect: () => setDrawer({ mode: 'view', model: a, serial: s }) },
                               { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setDrawer({ mode: 'edit', model: a, serial: s }) },
                               a.active
-                                ? { label: 'Deactivate', icon: <CircleOff size={16} />, onSelect: () => { updateAircraft(a.id, { active: false }); setToast(`${a.modelNumber} deactivated — hidden from pickers.`) } }
+                                ? { label: 'Deactivate', icon: <CircleOff size={16} />, onSelect: () => { updateAircraft(a.id, { active: false }); setToast(`${a.modelNumber} deactivated, hidden from pickers.`) } }
                                 : { label: 'Activate', icon: <CircleCheck size={16} />, onSelect: () => { updateAircraft(a.id, { active: true }); setToast(`${a.modelNumber} activated.`) } },
                               { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(a), tone: 'danger' },
                             ]}
@@ -165,10 +166,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
             </table>
           </div>
           {!loading && (
-            <Pagination
-              page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="serial numbers"
-              onPageChange={setPage} onPageSizeChange={setPageSize}
-            />
+            <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="serial numbers" />
           )}
           </div>
         )}

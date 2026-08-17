@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { ActionsMenu, type ActionsMenuItem } from '@/components/patterns/ActionsMenu'
-import { Pagination } from '@/components/patterns/Pagination'
+import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { RoleDrawer } from './RoleDrawer'
@@ -26,8 +27,7 @@ export function RolesTab({ onToast, adding, setAdding }: RolesTabProps) {
   const updateRole = useAccessStore((s) => s.updateRole)
   const removeRole = useAccessStore((s) => s.removeRole)
 
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const { visibleCount, loadingMore, loadMore } = useInfiniteReveal(roles.length, 25)
   const [editing, setEditing] = useState<AccessRole | null>(null)
   const [deleting, setDeleting] = useState<AccessRole | null>(null)
 
@@ -58,7 +58,7 @@ export function RolesTab({ onToast, adding, setAdding }: RolesTabProps) {
             </tr>
           </thead>
           <tbody>
-            {roles.slice((page - 1) * pageSize, page * pageSize).map((role) => (
+            {roles.slice(0, visibleCount).map((role) => (
               <tr
                 key={role.id}
                 onClick={() => setEditing(role)}
@@ -97,10 +97,7 @@ export function RolesTab({ onToast, adding, setAdding }: RolesTabProps) {
           </tbody>
         </table>
       </div>
-      <Pagination
-        page={page} pageSize={pageSize} totalItems={roles.length} itemLabel="roles"
-        onPageChange={setPage} onPageSizeChange={setPageSize}
-      />
+      <AutoLoadFooter total={roles.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="roles" />
       </div>
 
       {adding && (
@@ -126,7 +123,7 @@ export function RolesTab({ onToast, adding, setAdding }: RolesTabProps) {
         description={
           deleting
             ? deletingMembers.length > 0
-              ? `"${deleting.name}" has ${deletingMembers.length} member${deletingMembers.length === 1 ? '' : 's'} (${deletingMembers.map((m) => m.username).join(', ')}). Deleting it removes the role from them immediately — they may lose access.`
+              ? `"${deleting.name}" has ${deletingMembers.length} member${deletingMembers.length === 1 ? '' : 's'} (${deletingMembers.map((m) => m.username).join(', ')}). Deleting it removes the role from them immediately. They may lose access.`
               : `"${deleting.name}" has no members and will be permanently removed.`
             : ''
         }

@@ -84,9 +84,9 @@ export function ReportsPage({ state = 'ready' }: { state?: PageState }) {
       activeItem="Reports"
       headerActions={
         <>
-          <div className="min-w-0" style={{ width: 300 }}>
+          <div className="min-w-0" style={{ width: 400 }}>
             <label htmlFor="report-search" className="sr-only">Search reports</label>
-            <Input
+            <Input size="sm"
               id="report-search" value={query} onChange={(e) => setQuery(e.target.value)}
               placeholder="Search all reports..." leadingIcon={<Search size={16} />}
             />
@@ -94,7 +94,7 @@ export function ReportsPage({ state = 'ready' }: { state?: PageState }) {
           <div>
             <label htmlFor="report-category" className="sr-only">Filter by category</label>
             <Select
-              id="report-category" value={category} className="w-56"
+              id="report-category" size="sm" value={category} className="w-56"
               onChange={(e) => setCategory(e.target.value as '' | ReportCategory)}
             >
               <option value="">All categories</option>
@@ -118,8 +118,8 @@ export function ReportsPage({ state = 'ready' }: { state?: PageState }) {
               title="No reports match your filters"
               description={
                 category
-                  ? `Nothing in ${CATEGORY_LABEL[category]} matches your search — clear it or switch back to all categories.`
-                  : 'Try a different report name — search covers all three categories.'
+                  ? `Nothing in ${CATEGORY_LABEL[category]} matches your search, clear it or switch back to all categories.`
+                  : 'Try a different report name, search covers all three categories.'
               }
               action={
                 <Button variant="secondary" onClick={() => { setQuery(''); setCategory('') }}>

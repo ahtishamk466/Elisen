@@ -38,7 +38,7 @@ export const REPORT_CATALOG: ReportDef[] = [
   // Project Management
   { id: 'approvals', name: 'Approvals', category: 'project', status: 'ready', params: [] },
   {
-    id: 'open-deliverables-action-on', name: 'Open Deliverables Summary — Action-On', category: 'project', status: 'ready',
+    id: 'open-deliverables-action-on', name: 'Open Deliverables Summary: Action-On', category: 'project', status: 'ready',
     params: [{ key: 'personResponsible', label: 'Person Responsible', kind: 'select', required: true }],
   },
   {
@@ -46,7 +46,7 @@ export const REPORT_CATALOG: ReportDef[] = [
     pendingReason: 'Queries & quotations aren’t tracked in this app yet', params: [],
   },
   {
-    id: 'open-queries-status', name: 'Open Queries and Quotations — Status', category: 'project', status: 'pending',
+    id: 'open-queries-status', name: 'Open Queries and Quotations: Status', category: 'project', status: 'pending',
     pendingReason: 'Queries & quotations aren’t tracked in this app yet', params: [],
   },
   { id: 'project-status', name: 'Project Status', category: 'project', status: 'ready', params: [] },
@@ -57,13 +57,13 @@ export const REPORT_CATALOG: ReportDef[] = [
   { id: 'detailed-time', name: 'Detailed Time Report', category: 'time', status: 'ready', params: [start, end] },
   { id: 'hours-worked', name: 'Hours Worked', category: 'time', status: 'ready', params: [start, end] },
   {
-    id: 'hours-worked-individual', name: 'Hours Worked — Individual Employee', category: 'time', status: 'ready',
+    id: 'hours-worked-individual', name: 'Hours Worked: Individual Employee', category: 'time', status: 'ready',
     params: [start, end, { key: 'employee', label: 'Employee', kind: 'select', required: true }],
   },
-  { id: 'hours-worked-summary', name: 'Hours Worked — Summary', category: 'time', status: 'ready', params: [start, end] },
+  { id: 'hours-worked-summary', name: 'Hours Worked: Summary', category: 'time', status: 'ready', params: [start, end] },
 
   // GCP — the whole module is deferred with the client
   { id: 'gcp-cert-plan', name: 'Certification Plan', category: 'gcp', status: 'pending', pendingReason: 'GCP module is deferred', params: [] },
   { id: 'gcp-cert-record', name: 'Certification Record', category: 'gcp', status: 'pending', pendingReason: 'GCP module is deferred', params: [] },
-  { id: 'gcp-req-matrix', name: 'Requirement Cross reference — Matrix', category: 'gcp', status: 'pending', pendingReason: 'GCP module is deferred', params: [] },
+  { id: 'gcp-req-matrix', name: 'Requirement Cross reference: Matrix', category: 'gcp', status: 'pending', pendingReason: 'GCP module is deferred', params: [] },
 ]

@@ -37,4 +37,10 @@ export const ACTIVITY_TASKS: Record<string, string[]> = {
   manuals: ['Flight manual supplement', 'Maintenance manual update'],
   'general-cert': ['Certification plan', 'Design compliance report'],
   'rfq-response': ['Prepare estimate sheet', 'Quote review'],
+  // Every catalog activity carries tasks — an activity with none reads as
+  // missing data on the work-package table rather than as "not applicable".
+  'mech-design': ['Layout & installation drawings', 'Bracket and fitting design'],
+  'elec-design': ['Wiring diagram', 'Load and bonding schedule'],
+  'project-mgmt': ['Schedule & progress tracking', 'Customer status reporting'],
+  'customer-support': ['Technical query response', 'On-site support visit'],
 }

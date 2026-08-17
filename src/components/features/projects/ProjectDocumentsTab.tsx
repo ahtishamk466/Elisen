@@ -1,53 +1,108 @@
-import { useState } from 'react'
-import { Plus, FileText, Link2, Pencil, FilePlus2, Unlink, ExternalLink } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { FileText, Link2, Pencil, Unlink, ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { useDocumentsStore } from '@/stores/documentsStore'
 import { KIND_LABEL, REVISION_STATUS_LABEL, REVISION_STATUS_TONE } from '@/lib/documentDisplay'
-import { DocumentDrawer } from './DocumentDrawer'
 import { RevisionDrawer } from './RevisionDrawer'
-import { LinkExistingRevisionDrawer } from './LinkExistingRevisionDrawer'
 import type { DocRevision, DocumentKind, ProjectDocument } from '@/types/documents'
 
 export interface ProjectDocumentsTabProps {
   kind: DocumentKind
   projectId: string
-  projectNumber: string
 }
 
-/** Deliverables and Design Data share this tab — the same two-level
-    document → revision model; drawings just add aircraft + ATA columns. */
-export function ProjectDocumentsTab({ kind, projectId, projectNumber }: ProjectDocumentsTabProps) {
+const WORKSPACE_PATH: Record<DocumentKind, string> = {
+  deliverable: '/documents/deliverables',
+  drawing: '/documents/design-data',
+}
+
+/**
+ * Documents applicable to this project — an *association*, nothing more.
+ *
+ * The requirement document is explicit about the split (§1.2 Project
+ * Associations vs §1.3/1.4): a project's actions on deliverables and design
+ * data are "List, assign", while "List, CRUD" belongs to the Deliverables and
+ * Design Data modules. So nothing is created here. You pick a revision that
+ * already exists and link it; creating and editing the records themselves
+ * happens in their workspace.
+ *
+ * That also matches why they are global: one drawing is reused across projects
+ * ("we did an iPad on another project, didn't we? Maybe I can use that same
+ * drawing"), so no project can own one.
+ *
+ * Same shape as ProjectApprovalsTab, deliberately: link, unlink, list.
+ */
+export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProps) {
+  const navigate = useNavigate()
   const documents = useDocumentsStore((s) => s.documents)
   const revisions = useDocumentsStore((s) => s.revisions)
   const links = useDocumentsStore((s) => s.links)
+  const linkRevisionToProject = useDocumentsStore((s) => s.linkRevisionToProject)
   const unlinkRevisionFromProject = useDocumentsStore((s) => s.unlinkRevisionFromProject)
 
-  const [adding, setAdding] = useState(false)
-  const [linking, setLinking] = useState(false)
-  const [revisionTarget, setRevisionTarget] = useState<ProjectDocument | null>(null)
   const [editing, setEditing] = useState<{ doc: ProjectDocument; rev: DocRevision } | null>(null)
   const [unlinking, setUnlinking] = useState<{ doc: ProjectDocument; rev: DocRevision } | null>(null)
+  const [choice, setChoice] = useState('')
 
   const isDrawing = kind === 'drawing'
-  const rows = links
-    .filter((l) => l.projectId === projectId)
-    .flatMap((l) => {
-      const rev = revisions.find((r) => r.id === l.revisionId)
-      const doc = rev && documents.find((d) => d.id === rev.documentId)
-      return rev && doc && doc.kind === kind ? [{ rev, doc }] : []
-    })
-    .sort((a, b) => a.doc.number.localeCompare(b.doc.number) || a.rev.rev.localeCompare(b.rev.rev))
+  const label = KIND_LABEL[kind]
+
+  const rows = useMemo(
+    () =>
+      links
+        .filter((l) => l.projectId === projectId)
+        .flatMap((l) => {
+          const rev = revisions.find((r) => r.id === l.revisionId)
+          const doc = rev && documents.find((d) => d.id === rev.documentId)
+          return rev && doc && doc.kind === kind ? [{ rev, doc }] : []
+        })
+        .sort((a, b) => a.doc.number.localeCompare(b.doc.number) || a.rev.rev.localeCompare(b.rev.rev)),
+    [links, revisions, documents, kind, projectId],
+  )
+
+  /** Every revision of this kind in the pool. Ones already linked stay in the
+      list but disabled with a reason, so "why isn't it there?" never comes up.
+      Aircraft and ATA ride in the hint because SearchableSelect searches hints
+      too — that is what keeps "find the drawing we did for a 737" working. */
+  const options = useMemo(() => {
+    const linked = new Set(links.filter((l) => l.projectId === projectId).map((l) => l.revisionId))
+    return revisions
+      .flatMap((rev) => {
+        const doc = documents.find((d) => d.id === rev.documentId)
+        return doc && doc.kind === kind ? [{ rev, doc }] : []
+      })
+      .sort((a, b) => a.doc.number.localeCompare(b.doc.number) || a.rev.rev.localeCompare(b.rev.rev))
+      .map(({ rev, doc }) => ({
+        value: rev.id,
+        label: `${doc.number} rev ${rev.rev}: ${doc.title}`,
+        hint: [
+          isDrawing ? doc.aircraft : doc.owner,
+          isDrawing && doc.ataChapter ? `ATA ${doc.ataChapter}` : '',
+          REVISION_STATUS_LABEL[rev.status],
+        ].filter(Boolean).join(' · '),
+        disabled: linked.has(rev.id),
+        disabledReason: 'Already linked to this project',
+      }))
+  }, [revisions, documents, links, kind, projectId, isDrawing])
+
+  const linkChosen = () => {
+    if (!choice) return
+    linkRevisionToProject(projectId, choice)
+    setChoice('')
+  }
 
   const headers = isDrawing
     ? ['Number / Rev', 'Title', 'Type', 'Aircraft', 'ATA', 'Next Action', 'Status', 'Actions']
     : ['Number / Rev', 'Title', 'Type', 'Owner', 'Due', 'Next Action', 'Status', 'Actions']
 
-  const label = KIND_LABEL[kind]
+  const openWorkspace = () => navigate(WORKSPACE_PATH[kind])
 
   return (
     <div className="grid gap-lg">
@@ -55,17 +110,18 @@ export function ProjectDocumentsTab({ kind, projectId, projectNumber }: ProjectD
         <div className="rounded-sm border border-border-default bg-neutral-25">
           <EmptyState
             icon={<FileText size={48} strokeWidth={1.5} />}
-            title={`No ${label.plural.toLowerCase()} yet`}
+            title={`No ${label.plural.toLowerCase()} linked to this project`}
             description={
-              isDrawing
-                ? 'Create a drawing for this project, or reuse one from an earlier project — searchable by aircraft type.'
-                : 'Create a document for this project, or link a revision that already exists in the pool.'
+              options.length === 0
+                ? `No ${label.plural.toLowerCase()} exist yet. They are created in the ${label.plural} workspace. Once one exists, you can link it to this project below.`
+                : isDrawing
+                  ? 'Choose a drawing revision below to link it to this project, including one from an earlier project, searchable by aircraft type.'
+                  : 'Choose a deliverable revision below to link it to this project.'
             }
             action={
-              <div className="flex flex-wrap justify-center gap-sm">
-                <Button leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>Add {label.singular}</Button>
-                <Button variant="secondary" leadingIcon={<Link2 size={16} />} onClick={() => setLinking(true)}>Link existing</Button>
-              </div>
+              <Button variant="secondary" leadingIcon={<ExternalLink size={16} />} onClick={openWorkspace}>
+                Open {label.plural} workspace
+              </Button>
             }
           />
         </div>
@@ -73,18 +129,17 @@ export function ProjectDocumentsTab({ kind, projectId, projectNumber }: ProjectD
         <>
           <div className="flex flex-wrap items-center justify-between gap-sm">
             <p className="text-sm text-text-secondary">
-              {rows.length} revision{rows.length === 1 ? '' : 's'} applicable to this project
-              {isDrawing && ' — drawings stay on the Elisen side, never tracked with TCCA'}
+              {rows.length} revision{rows.length === 1 ? '' : 's'} linked to this project
+              {isDrawing && ': drawings stay on the Elisen side, never tracked with TCCA'}
             </p>
-            <div className="flex gap-sm">
-              <Button variant="secondary" leadingIcon={<Link2 size={16} />} onClick={() => setLinking(true)}>Link existing</Button>
-              <Button leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>Add {label.singular}</Button>
-            </div>
+            <Button variant="secondary" leadingIcon={<ExternalLink size={16} />} onClick={openWorkspace}>
+              Manage in {label.plural}
+            </Button>
           </div>
 
           <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
             <table className="w-full border-collapse text-left" style={{ minWidth: 820 }}>
-              <caption className="sr-only">{label.plural} applicable to this project</caption>
+              <caption className="sr-only">{label.plural} linked to this project</caption>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
                   {headers.map((h) => (
@@ -117,11 +172,14 @@ export function ProjectDocumentsTab({ kind, projectId, projectNumber }: ProjectD
                     <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{rev.nextAction || '—'}</td>
                     <td className="px-lg py-base"><Badge tone={REVISION_STATUS_TONE[rev.status]}>{REVISION_STATUS_LABEL[rev.status]}</Badge></td>
                     <td className="px-lg py-base">
+                      {/* No "add revision" here: a new revision is a new record,
+                          and records are created in the workspace. What stays is
+                          updating this revision's tracking — the next-action
+                          person drives someone's to-do list — and unlinking. */}
                       <ActionsMenu
                         ariaLabel={`Actions for ${doc.number} rev ${rev.rev}`}
                         items={[
-                          { label: 'Edit revision', icon: <Pencil size={16} />, onSelect: () => setEditing({ doc, rev }) },
-                          { label: 'Add new revision', icon: <FilePlus2 size={16} />, onSelect: () => setRevisionTarget(doc) },
+                          { label: 'Edit revision tracking', icon: <Pencil size={16} />, onSelect: () => setEditing({ doc, rev }) },
                           { label: 'Unlink from project', icon: <Unlink size={16} />, onSelect: () => setUnlinking({ doc, rev }), tone: 'danger' },
                         ]}
                       />
@@ -134,20 +192,49 @@ export function ProjectDocumentsTab({ kind, projectId, projectNumber }: ProjectD
         </>
       )}
 
-      {adding && <DocumentDrawer kind={kind} projectId={projectId} projectNumber={projectNumber} onClose={() => setAdding(false)} />}
-      {linking && <LinkExistingRevisionDrawer kind={kind} projectId={projectId} onClose={() => setLinking(false)} />}
-      {revisionTarget && <RevisionDrawer document={revisionTarget} projectId={projectId} onClose={() => setRevisionTarget(null)} />}
-      {editing && <RevisionDrawer document={editing.doc} projectId={projectId} initial={editing.rev} onClose={() => setEditing(null)} />}
+      {/* Select and link — never create. The copy says so out loud, because the
+          old screen let people create here and it was the wrong mental model. */}
+      <div className="grid gap-sm rounded-sm border border-border-default bg-neutral-25 p-lg">
+        <div className="grid gap-xxss">
+          <label htmlFor={`link-${kind}`} className="text-sm font-semibold text-text-primary">
+            Select a {label.singular} revision to link
+          </label>
+          <p className="text-xs text-text-muted">
+            {label.plural} are created and managed in the {label.plural} workspace. Here you choose
+            which existing revisions apply to this project.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-sm">
+          <div className="min-w-0 flex-1" style={{ minWidth: 260 }}>
+            <SearchableSelect
+              id={`link-${kind}`}
+              size="sm"
+              value={choice}
+              onChange={setChoice}
+              placeholder={isDrawing
+                ? 'Search drawings by number, title or aircraft...'
+                : 'Search deliverables by number, title or owner...'}
+              emptyLabel={`No ${label.plural.toLowerCase()} exist yet, create one in the ${label.plural} workspace first.`}
+              options={options}
+            />
+          </div>
+          <Button leadingIcon={<Link2 size={16} />} onClick={linkChosen} disabled={!choice}>Link to project</Button>
+        </div>
+      </div>
+
+      {editing && (
+        <RevisionDrawer document={editing.doc} projectId={projectId} initial={editing.rev} onClose={() => setEditing(null)} />
+      )}
 
       <ConfirmDialog
         open={!!unlinking}
-        title={`Unlink this ${label.singular} revision?`}
+        title={`Unlink this ${label.singular} from the project?`}
         description={
           unlinking
-            ? `${unlinking.doc.number} rev ${unlinking.rev.rev} stays in the pool and on its other projects — only its link to this project is removed.`
+            ? `${unlinking.doc.number} rev ${unlinking.rev.rev} stays in the ${label.plural} workspace and on any other project it's linked to. Only its link to this project is removed, nothing is deleted.`
             : ''
         }
-        confirmLabel="Unlink"
+        confirmLabel="Unlink from project"
         tone="danger"
         onConfirm={() => {
           if (unlinking) unlinkRevisionFromProject(projectId, unlinking.rev.id)

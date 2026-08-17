@@ -1336,3 +1336,976 @@ comments — swap in the real data whenever it's available.
 Splitting the module that way, with each chart self-documenting its scale
 and meaning, turns an unlabelled internal panel into something a non-
 developer admin can actually read.
+
+## 2026-08-13 — Profile moved from a sidebar drawer to its own page; Change Password rebuilt
+**Context:** The client's legacy "Change Password" screen (`Home / Admin /
+Change Password`) is a standalone Bootstrap page with three fields — Old
+Password, New Password, Retype Password — and a single Change button. In
+this app, account info + effective access already existed as a `Drawer`
+opened from `SidebarProfile`'s "Profile" menu item, but Change Password had
+no equivalent screen yet. User asked for a redesign: admin info well
+organized, plus a Change Password section, in our system.
+**Choice:** New `/profile` route, `ProfilePage`, with two page tabs — the
+same Profile/Change Password pattern already used by `AuditControlPage`
+(Panel/Clean) and `RolesPermissionsPage` (Roles/Permissions):
+- **Profile tab** — the drawer's exact content (Account `DetailCard`:
+  Username, Email, Status, Roles; Your access: effective permissions grouped
+  by module), moved into a real page instead of an overlay. `SidebarProfile`
+  now navigates to `/profile` instead of opening the drawer, and the drawer
+  code was removed from it entirely.
+- **Change Password tab** — the legacy screen's exact 3 fields, same order,
+  same labels, nothing added or dropped. Validation the old plain HTML form
+  didn't have: all three required, 8-character minimum on New Password, New
+  ≠ Old, Retype must match New — checked in that order so one error surfaces
+  at a time instead of the user chasing two messages for one mistake.
+  Standard Edit-screen footer (Cancel + primary action), `type="password"`
+  inputs with `autoComplete="current-password"`/`"new-password"`.
+**Not part of the sidebar nav tree.** `activeItem=""` on this page — Profile
+belongs to the signed-in user, not to any of the app's functional sections,
+so nothing in the sidebar highlights while it's open (same reasoning as
+never adding a "My Account" nav item elsewhere in Asana/Jira-style tools).
+**Rationale:** A drawer works for a quick glance but doesn't scale to a
+second section, isn't linkable, and doesn't match the legacy app's own
+Change Password screen being a full page. Splitting into tabs on one page
+reuses a pattern already established twice in this codebase rather than
+inventing a third profile shape.
+
+## 2026-08-13 — Pagination replaced by auto-loading footer across every table
+**Context:** Client wants tables to load the next batch automatically on
+scroll rather than paging. Applies to every list in the app.
+**Choice:** New `patterns/AutoLoadFooter.tsx` + `patterns/useInfiniteReveal.ts`
+replace `patterns/Pagination.tsx`, which was **deleted** — leaving it around
+would have let a page keep page numbers by accident. Converted all 11 list
+pages (Projects List, Projects Review, Timesheet, Hours Worked, Users, Roles,
+Companies, Aircraft, TCCA Projects, Software Settings, Database Management)
+plus both Storybook demos. The footer keeps `Pagination`'s exact placement
+contract — last child inside the table's own card, one top border, never a
+second box — so nothing else about the table shifted.
+Batch size is 25 with a 500ms simulated fetch, so the loading state reads as
+real rather than instant. `IntersectionObserver` fires 200px before the
+footer is on screen; `reset()` is called wherever `setPage(1)` used to be.
+**Rationale:** Same information ("Showing 25 of 45 projects"), one less
+control to operate. The count line stays because an infinite list with no
+total gives no sense of scale.
+
+## 2026-08-13 — Project health: one roll-up, shown at every level
+**Context:** "The current UI shows the data, but it's not easy to understand
+the project's overall health at a glance." Hours existed only as a raw
+"44 / 80h" string on the list and an unlabelled bar on the detail page;
+work packages showed a bare total and activities showed budget/actual with no
+remaining, percentage or state.
+**Choice:** All budget maths moved into `lib/projectHealth.ts` and is computed
+identically at activity, work-package and project level, so a figure can't
+mean two things depending on the screen. Thresholds: **over budget** above
+100%, **near budget** at ≥ 90%, **on track** below that.
+- `no-budget` is a first-class state, not a rounding case. Many live projects
+  sit at 0/0h; rendering those as "0% used · on track" would be a lie, so they
+  read "No budget set" with em dashes and are excluded from the health counts.
+  This also fixed a contradiction the first pass shipped: a project with no
+  budget but booked hours showed "Over by 304.3h" beside "No budget set".
+- **A project's health rolls up from its activities**, not from the project
+  row's own `budgetHours`/`actualHours` — activities are where hours are
+  actually booked. The row fields are used only as a fallback when a project
+  has no work packages yet, so list rows without a breakdown still say
+  something honest.
+- New `patterns/ProgressMeter.tsx` and `patterns/HealthSummary.tsx`; the
+  detail page's hand-rolled bar was replaced by the shared meter.
+- **Projects List:** Budget / Actual / Remaining / Progress columns with a
+  meter, an over-budget badge beside Status, sortable numeric headers, row
+  selection with a bulk Export bar, and a Budget health filter. The four stat
+  tiles now count Total / On track / Near budget / Over budget instead of
+  Total / In progress / Completed / Priority-1 — "how many need attention"
+  is the question the old tiles couldn't answer. Below manager
+  (`canSeeFinancials=false`) the financial columns and the health tiles both
+  revert, per docs/SECURITY.md rule 8.
+- **Project Detail:** the Budget → Actual → Remaining → Progress → Status
+  strip sits above everything else, so "is this in trouble?" is answered
+  before any detail is read.
+- **Work packages & activities:** the package header carries its own roll-up
+  and meter while collapsed; each activity row gained Remaining, Progress and
+  Status.
+**Rationale:** Colour never carries state on its own — every meter is paired
+with the percentage in text and a labelled badge, and over-budget remaining
+figures also carry a minus sign. The bar caps at 100% rather than growing or
+rescaling, because both of those hide an overrun.
+**Known tradeoff:** the list table now needs ~1320px before it scrolls
+horizontally (four new columns; Contact Name was kept rather than dropped to
+make room). Sorting defaults to project number ascending, which changes the
+default row order from the previous fixture order.
+
+## 2026-08-13 — Applied-filter chips standardised across every filtered screen
+**Context:** Client feedback: when filters are applied, show the count on the
+trigger (`Filters (2)`), list each applied filter below as a removable chip,
+and offer a Clear filters CTA. Reference screenshot supplied for layout/UX
+only — our own tokens and components throughout.
+**Choice:** New `patterns/FilterChips.tsx`, wired into all five filtered
+screens: Projects List, Projects Review, Timesheet, Hours Worked and Software
+Settings. The count on the trigger already existed on every filter menu; the
+chip row is the new part, and it sits between the page header and the table
+on every screen so the position never has to be re-learned.
+Chips are produced by a `…FilterChips()` helper exported next to each filter
+menu's own `Filters` type — `projectFilterChips`, `timesheetFilterChips`,
+`settingFilterChips`. Keeping the label map beside the field definition is
+what stops a chip reading "Priority: 2-high" once someone renames a display
+label; the same `PRIORITY_LABEL` / `HEALTH_LABEL` maps the menu uses are the
+ones the chips read from.
+Details worth keeping: chips resolve ids to something human (a Timesheet
+project chip shows `3200-00`, never a uuid); free-text filters are quoted
+(`Key: "tab"`) so they read as a search term rather than a chosen option; and
+the row renders nothing at all when no filter is applied, so an unfiltered
+page keeps its full height.
+**Rationale:** The count alone says *how many* filters are on but not *which*
+— which is exactly the question someone asks when a list looks unexpectedly
+short. Chips answer it without reopening the menu, and make removing one
+filter a single click instead of a menu round-trip.
+
+## 2026-08-13 — "Progress" renamed to "Budget used"; over-100% made legible
+**Context:** Client challenged a `106%` value in the Progress column: is it
+meaningful, and if so how?
+**The answer:** the number was right, the label was wrong. The figure is hours
+consumed ÷ hours budgeted, which legitimately passes 100% — you can spend
+145% of a budget. But nobody can be *145% done*, so labelling it "Progress"
+made a valid number read as nonsense, and it also implied work-completion,
+a different question entirely.
+**Choice:**
+- Column and stat renamed **Budget used** everywhere (Projects List, work
+  packages, activities, the detail summary). No data changed; the label now
+  matches what is measured.
+- `HealthSummary` spells the figure out in words beneath the meter —
+  "6695.2h booked against a 6300h budget — 395.2h over." That is the
+  "properly explained" the client asked for, and it also covers the
+  no-budget case ("…with no budget set — set one to track this project").
+- `ProgressMeter` no longer caps the fill silently. Over budget, the track
+  rescales to the overrun and a notch marks where the budget ran out, so a
+  bar can't sit at 100% while the number beside it reads 145%.
+**Rationale:** Clamping the number to 100% would have hidden the single most
+important fact on the screen. Renaming costs nothing and removes the
+confusion at its source.
+
+## 2026-08-13 — Deliverables, Design Data, TCCA and Approvals filled per lifecycle
+**Context:** Client asked for relevant data in every tab. Only 4 of 45
+projects had documents; only 2 had TCCA links.
+**Choice:** Generated per lifecycle rather than for everything, because "no
+data" is the correct answer in several of these cases and filling it would be
+false:
+- **Deliverables / Design Data** — for the 25 active/complete projects that
+  had none. RFQ-stage projects (query/quoted) get none: nothing is produced
+  before award, so the empty state there is the honest answer.
+- **TCCA projects** — only where the project's scope includes certification
+  *and* work has started; a design-only job never goes to Transport Canada.
+  15 created, with checklist entries filled only up to the stage reached.
+- **Approvals** — only for TCCA projects that reached `approved`. A
+  certificate that hasn't been issued shouldn't appear.
+Revision statuses cycle across accepted / in-review / wip / signature so the
+Deliverables tab shows a real mix rather than one uniform state.
+
+## 2026-08-13 — Global workspaces for Approvals and Documents; projects attach, never create
+**Context:** Client review (meeting transcript) established that Aircraft,
+Approvals, Deliverables and Design Data are **not owned by a project**. A
+certificate or drawing outlives any one project and is routinely shared across
+several — Akhil's own example was a 777 galley STC later extended to more
+aircraft. Adding another aircraft to a project was asking the user to re-type
+the aircraft's details instead of picking from the catalog: *"in the original
+design we have already added aircraft in the backend and from here we select
+from them… it should have been a dropdown."*
+**Choice — sidebar:** two new top-level items, placed after Projects:
+- **Approvals** — its own workspace. Akhil explicitly rejected filing it under
+  Settings: *"keep Approval separate… Approval itself should have a proper
+  workspace, the way the project does."*
+- **Documents** — with `Deliverables` / `Design Data` as its two children.
+  These are **one entity** in the data model (`ProjectDocument.kind`, one
+  shared revision system), so giving them separate top-level items would
+  present one entity as two — the same mistake already corrected twice in this
+  project (RBAC 6→3, Lookup Tables 6→3).
+
+Aircraft needed no new section: it already lives in Reference Data. Only the
+project-side picker changed.
+
+**Choice — project side.** Every attach point is now select-existing:
+- `AircraftEditDrawer` rewritten: pick from the Reference Data catalog, attach
+  as many as the project covers, no free-text entry. **Serial No is optional
+  and separate**, per the transcript — a project often starts knowing only the
+  type, with the airframe assigned later. Picking a serial afterwards updates
+  the existing row rather than creating a second one. Serials are scoped to
+  the chosen aircraft.
+- `ProjectApprovalsTab`: attach is the primary action; "Create new" remains as
+  the fallback for a certificate not yet in the registry, and that create also
+  attaches. Removing reads "Remove from project" and only cuts the link.
+- Inactive catalog records can't be attached to anything new but stay visible
+  on projects that already use them.
+
+**New `ui/SearchableSelect`** — prerequisite for all of the above and for the
+client's separate ask that *"the dropdowns you people are making, make them
+searchable… make a custom component so that all dropdowns, everywhere, use
+that."* A plain `Select` stops working once its catalog passes a couple of
+dozen rows, which Approvals, Documents and Aircraft all already have.
+
+**Edge cases handled:** duplicate attach (option disabled with a reason, not
+hidden); unlink ≠ delete (delete is only offered in the workspace, and its
+confirm names how many projects would be detached); a global record with zero
+project links is valid and shows "Not attached"; two distinct empty states
+("no certificates exist yet" vs "none attached to this project").
+
+**Deliberately deferred** so this stayed reviewable: Approval **Issues/
+Revisions** as a child collection, Approval-side project linking, and the
+Documents create/edit flow moving out of the project. Also still open: whether
+to keep the client's legacy term "Issue" or our existing "Revision" — one word
+should win across the whole app.
+**Known gap:** project aircraft still store a snapshot of model name/number/
+manufacturer alongside the new `aircraftId`. New attaches copy from the
+catalog so they're accurate, but renaming a catalog aircraft won't retro-update
+older projects. Moving to a pure reference is a follow-up, not done here.
+
+## 2026-08-13 — One selection standard: SearchableSelect + MultiSelect
+**Context:** Client asked for standardized dropdown behaviour app-wide —
+radios for single choice, checkboxes for multi, and after choosing, a clear
+summary of how many *and which* items are selected — with a reference
+screenshot showing all three dropdown states.
+**Choice:** two components, one pattern, reused everywhere instead of
+per-screen dropdowns:
+- **`SearchableSelect`** for single choice, now with `indicator`:
+  `"radio"` when the field is picking one of a few alternatives (reads as
+  "one of these" before the list is even scanned), default `"check"` for
+  catalog lookups where a radio per row would imply a short fixed set.
+- **`MultiSelect`** for many: checkboxes matching the `Checkbox` primitive's
+  box, `"n selected"` on the trigger, and **chips underneath naming each
+  pick** with an × plus `Clear all`. The chips are the part that matters —
+  a bare count says how many, never which, and "which" is exactly the
+  question left once the menu closes. The menu deliberately stays open while
+  picking, since picking several is the point.
+Both search on label + hint, are portal-rendered so drawers can't clip them,
+**disable rather than hide** unavailable options (with a reason, so nothing
+appears to vanish), and share one keyboard model (↑/↓ skipping disabled rows,
+Enter, Esc). Documented together in Storybook as `SelectionStandard`.
+
+## 2026-08-13 — Project creation gained its Linked Records step
+**Context:** The client's legacy create form carries **Aircraft Model Number,
+Approval Number, Deliverable Number and Design Data Number** as multi-value
+token fields (see their screenshot), plus Aircraft Specifics. Our create flow
+had none of them.
+**Choice:** new "Linked Records" section on step 2, all four as `MultiSelect`
+over the **global** lists, plus Aircraft Specifics as free text. Consistent
+with the workspace decision: the form *links to* existing records and never
+creates them, so it stores ids rather than typed strings.
+Everything in the section is **optional** — a project is routinely opened at
+RFQ stage before its aircraft, certificates or documents are known, and all
+of them can be attached later from the project's own tabs. Making any of them
+required would block the most common create path.
+On save the chosen approvals and document revisions are linked through the
+existing many-to-many stores; aircraft are snapshotted from the catalog with
+`aircraftId` retained, so serials can be assigned per aircraft afterwards.
+**Verified end-to-end:** three aircraft + one approval chosen on create,
+then confirmed on the project as three aircraft ("Serial No — Not assigned
+yet") and "1 certificate attached to this project".
+
+## 2026-08-13 — Project Detail header compacted to four stat boxes
+**Context:** Client found Project Detail "unclear and too long", and pointed at
+their own performance dashboard as the better layout: Budgeted Hours / Actual
+Hours / Remaining Hours / Percent Used, with a status pill — small boxes, no
+prose.
+**Choice:**
+- `HealthSummary` reduced to four compact boxes (`px-lg py-base`), matching
+  the Projects List tiles so the two screens read identically.
+- **Remaining keeps one label and goes signed** — `−395.2h` in danger —
+  instead of flipping between "Remaining" and "Over by". One stable label with
+  a sign is less to parse than a label that changes meaning, and it matches
+  the client's reference (`-70.00`).
+- The explanatory sentence added earlier ("6695.2h booked against a 6300h
+  budget…") is **removed**. The signed negative, the percentage and the
+  "Over budget" chip already carry that meaning, and the sentence was the main
+  thing making the cards tall. The 106%-must-be-explained requirement is still
+  met — by the column name, the sign and the chip rather than by prose.
+- **Removed the duplicate "Hours used" block from the detail sidebar.** It
+  restated the same figures with a second meter directly below the header,
+  which was both redundant and a large part of the page length. Budget is now
+  read in exactly one place.
+**Known consequence:** every project now carries a real budget in the
+fixtures, so the `no-budget` state is no longer reachable in the running app.
+It remains implemented and covered by the `ProjectHealthExample` story,
+because the client's real data does contain 0-budget projects.
+
+## 2026-08-13 — Every dropdown in the app now renders the standardized design
+**Context:** Client found screens still showing the browser's native `<select>`
+(their screenshot: the Sub Number dropdown rendering as an OS menu) and asked
+for the standardized dropdown everywhere.
+**Choice — adapt the primitive, don't rewrite 62 call sites.** `ui/Select` was
+rebuilt as a thin adapter over `SearchableSelect`: it still takes
+`<option>` children and still calls `onChange` with an `{ target: { value } }`
+shape, so all ~60 existing usages across 22 files upgraded untouched. Hand-
+converting each one would have been 62 chances to introduce a regression for
+no benefit.
+Details:
+- `Select` renders with `indicator="radio"`, matching the client's reference
+  for single choice.
+- `Children.forEach` walks fragments and `.map()` output, so grouped and
+  generated options still register.
+- Added uncontrolled support (`defaultValue`) because a custom dropdown has no
+  native uncontrolled mode and some stories relied on it.
+- New `searchThreshold` (default 8) on both `SearchableSelect` and
+  `MultiSelect`: lists at or under it skip the search box, since a search
+  field over three options is noise. Verified live — Sub Number (3 options)
+  has no search box, Company (16) does. When the box is hidden the panel
+  itself takes focus so arrow keys and Enter still work.
+**Remaining exception, deliberate:** `PhoneInput`'s dial-code select is still
+native. It is an inline segment of a merged control with its own agreed
+design, not a standalone field, and its width/appearance has been corrected
+twice already. Converting it is a small follow-up if wanted — a searchable
+list would genuinely help there, since it holds every country.
+
+## 2026-08-13 — Progress bar removed from the Project Detail stat cards
+**Context:** Client asked for the bar under the stats to go, so all four boxes
+match the Projects List tiles in height.
+**Choice:** removed the meter from `HealthSummary` entirely rather than
+shrinking it. The percentage, the signed Remaining figure and the status chip
+already state the same thing three ways; a fourth restatement only added
+height. Card metrics now match `StatCard` exactly (`p-lg`, `mt-xs`,
+`text-3xl`) — measured at **98px, identical to the Projects List tiles**.
+`ProgressMeter` itself is untouched and still used in the Projects List's
+Budget used column and on work packages/activities, where a bar per row is the
+only compact way to compare many rows at a glance.
+
+## 2026-08-17 — One control height per row: 36px toolbars, 44px stacked fields
+**Context:** Client flagged Routes & Rules: the "Register Route" button is 36px
+and the field beside it is 44px, so the pair sits 4px out of alignment. The ask
+was to make "all CTA and search bar and filter height containers 36 on every
+page".
+**Finding:** the mismatch was structural, not a one-off. `Button` is `h-9`
+(36px) at its default `md`, while `Input`, `SearchableSelect` and `MultiSelect`
+had a single fixed `h-11` (44px). Any row containing both was misaligned, and
+16 pages were additionally using `size="lg"` (44px) buttons in their headers —
+which hid the problem in the header while leaving it visible everywhere a field
+sat next to a default button.
+**Choice:** a `size?: 'sm' | 'md'` prop on all four field primitives (`sm` =
+`h-9`/36px, `md` = `h-11`/44px, unchanged default), and a rule decided by
+layout rather than by control:
+
+- **Row containing a button → 36px.** Page-header search, Filters trigger,
+  Export menu, primary CTA, and inline "pick a record → Attach" rows.
+- **Stacked form field → 44px.** Forms, drawers, and the fields inside filter
+  dropdown panels. Nothing sits beside them to disagree with, and the height is
+  the comfortable target for typing.
+
+Shrinking *every* field to 36px was rejected: it would touch every form in the
+app, cost tap-target comfort on the screens where people actually type, and
+solve nothing — a lone stacked field has nothing to misalign against. The
+defect is about rows.
+**Applied:** 18 header/filter/export buttons `lg`→`md`; 13 page-header search
+inputs and one header category Select → `sm`; the two inline attach rows
+(project Approvals, Aircraft edit) and both Routes & Rules fields → `sm`.
+**Verified live**, not by inspection: walked all 17 list/admin routes plus
+every Project Detail tab in the browser and measured the rendered box of every
+input, combobox and button outside tables, menus and dialogs. Every one now
+measures exactly 36px. The only non-36 results left are content cards (ATA
+chapter rows, report cards) and the breadcrumb back *link*, none of which are
+toolbar controls.
+**Storybook:** `Patterns/Overview` → **ToolbarRowStandard** is the reference
+for the rule, with `UI/Input` → Sizes and `UI/Select` → Sizes for the primitive.
+
+## 2026-08-17 — Dropdowns had no visible open state inside drawers (z-scale fix)
+**Reported:** client screenshot of Add new project — Sub Number focused, but no
+panel. Same on every dropdown in that drawer.
+**Cause, not cosmetic:** `--z-dropdown` was **1000** and `--z-modal` was
+**1200**. Every dropdown is portal-rendered to `document.body` (so drawers and
+`overflow` containers can't clip it), which means the panel was painting
+*behind* the drawer. It was mounting, sized and focused correctly — measured
+169×226 with `aria-expanded="true"` — and simply invisible. Nothing was wrong
+with the dropdown design the client approved; it was never on screen inside a
+drawer.
+**Fix:** re-ordered the z-scale by **what can spawn what**, not by importance,
+since a dropdown is opened *by* a control that is itself often inside a drawer:
+
+| | before | after |
+|---|---|---|
+| sticky | 1100 | **1000** |
+| modal (Drawer) | 1200 | **1100** |
+| dropdown | 1000 | **1200** |
+| dialog | — | **1300** |
+| toast | 1300 | 1400 |
+| tooltip | 1400 | 1500 |
+
+Added `--z-dialog` so `ConfirmDialog` stops borrowing the toast layer — it needs
+to cover a row menu it was opened from, which the toast value happened to give
+it, by accident rather than by design.
+**Also fixed, found while verifying:** `Select`'s adapter read option labels
+with `String(props.children)`. JSX gives `<option>{n}-{sub} {title}</option>` an
+*array* of children, and `String(array)` comma-joins it, so the Timesheet
+project picker read **"3200,-,00, ,STC — Cabin Interior Modification"**. Replaced
+with a `textOf()` walker that flattens children the way a native `<option>`
+renders them. This affected six call sites (Timesheet, Revision, Document and
+Approval drawers, TCCA overview, audit retention — "7, days").
+**Last native `<select>` removed:** `PhoneInput`'s dial code is now
+`SearchableSelect variant="bare"` — new `bare` variant (no border/shadow, fills
+its container, identical panel) plus `menuMinWidth` so a 96px trigger can still
+show a 260px panel with country names. Country names are now searchable instead
+of requiring a scroll by dial code. There is no native dropdown left in the app.
+**Verified live** on every dropdown surface: Add new project steps 1 and 2
+(SearchableSelect + MultiSelect), a Select nested inside the Filters panel,
+Company drawer PhoneInput, Aircraft drawer, Timesheet entry drawer, row
+`ActionsMenu`, `ExportMenu`, `SidebarProfile`, and a `ConfirmDialog` opened from
+a row menu — all paint at the expected layer with the standard panel design.
+
+## 2026-08-17 — Deliverables & Design Data: create/manage in the workspace, attach in a project
+**Requirement (transcript 20:45):** "Deliverables, Approvals, and Design Data
+should be kept the same way, that they are added separately and only attached
+here." Approvals shipped that way; Documents had not, so the workspace was
+read-only and the project tab still *created* documents. This closes the gap —
+all three global record types now behave identically.
+**Workspace (`DocumentsPage`) gains full management:**
+- `Add Deliverable` / `Add Drawing` header CTA, label following the active tab
+- Row click opens the revision; Actions menu per row in house order —
+  `Open file` (when the revision has a URL) → `Edit deliverable/drawing` →
+  `Edit revision` → `Add new revision` → `Delete revision` → `Delete
+  deliverable/drawing`
+- Toast on every save and delete, matching `ApprovalsPage`
+- Empty state now offers the create CTA instead of dead-ending
+**Project tab (`ProjectDocumentsTab`) is attach-only**, a direct mirror of
+`ProjectApprovalsTab`: an inline "Attach an existing … revision" row
+(`SearchableSelect` 36px + `Attach` + a `Create new` tertiary escape hatch),
+`Manage in Deliverables/Design Data` linking to the workspace, and row actions
+reduced to `Edit revision` / `Add new revision` / `Remove from project`.
+**Deleted `LinkExistingRevisionDrawer`.** A bespoke drawer with its own search
+box and its own list rows existed only to reuse a revision — exactly what the
+standard attach control does. Reuse-by-aircraft survives because
+`SearchableSelect` searches hints as well as labels, so aircraft + ATA + status
+ride in the hint: verified live, "King Air" narrows the 40-revision pool to 4.
+**Drawers made context-optional rather than duplicated.** `DocumentDrawer` and
+`RevisionDrawer` now take `projectId?`. With a project (a project's tab) the
+project is fixed and hidden; without one (the workspace) a required Project
+`SearchableSelect` appears, because a revision is always created *for* a
+project — that is the data model, not a UI choice. `RevisionDrawer` prefills it
+from the document's existing revisions. `DocumentDrawer` also gained edit mode,
+scoped to document-level fields only: revisions are tracked individually by
+law, so each is opened and saved on its own.
+**Store gained the missing verbs** — `updateDocument`, `removeDocument`
+(cascades revisions + project links), `removeRevision`. Removing the *last*
+revision removes the document too, because "a document cannot be defined
+without its revision"; the confirm dialog says so explicitly rather than
+silently destroying more than the user asked for.
+**Data conflict found and handled, not papered over:** the fixtures hold three
+separate documents numbered `COM-0000` ("Certification Plan", one per project),
+while the create form enforces unique numbers. Editing any of them would have
+been blocked by a duplicate that predates the edit. The uniqueness check now
+only fires when the number actually *changes* into a collision — new duplicates
+are still prevented. **Open question for the client:** is a document number
+globally unique, or unique per project? The data says per project; the form's
+old copy ("add a revision to it instead") assumed global.
+**Verified live:** created `COM-9901` end-to-end (toast, row, project chip),
+edited a duplicate-numbered document without being blocked, read both delete
+confirmations, deleted the last revision and watched the document go with it,
+attached a revision on a project (2 → 3 rows, count text updated, attached
+options disabled with a reason), searched drawings by aircraft, and re-ran the
+36px control audit on both workspace tabs — no offenders, no console errors.
+
+## 2026-08-17 — Projects link records, they never create them (requirement §1.2)
+**Trigger:** user asked whether creating a document inside a Project is part of
+the intended flow. It is not, and the requirement document settles it — I had
+left a `Create new` escape hatch on the project tabs that should not exist.
+**Source, verbatim** (`tpms-business-modules-ui-ux.pdf`, §1.2 Project
+Associations vs §1.3–1.5):
+
+| Feature | Description | Screens / Actions |
+|---|---|---|
+| Project ↔ Aircraft | Assign aircraft to project | List, assign (dual-list) |
+| Project ↔ Approvals | Link approvals | **List, assign** |
+| Project ↔ Deliverable Revisions | Link deliverable revs | **List, assign** |
+| Project ↔ Design Data Revisions | Link design data revs | **List, assign** |
+| Deliverables / Deliverable Revisions | Master records / revision history | **List, CRUD**, modal |
+| Design Data / Design Data Revisions | Records / revision history | **List, CRUD**, modal |
+
+So CRUD belongs to the modules; a project gets list + assign. Matches the
+transcript ("added separately … and only attached here").
+**Removed from the project tabs:** `Create new` (both Documents and Approvals),
+`Add new revision` (a new revision is a new record), and `Edit` on Approvals — a
+certificate's number, authority and issue date are its own identity, and it is
+shared across projects, so editing it from inside one project would silently
+change it for all of them. `ApprovalDrawer` and `DocumentDrawer` lost their now
+-dead `projectId` branches instead of keeping unreachable code.
+**Kept, deliberately:** `Edit revision tracking` on a document revision. The
+rule is *a project may edit project-scoped tracking, never the record's
+identity* — dates, status and the next-action person are the project's own work
+and the client's to-do list depends on them being easy to update. Approvals have
+no project-scoped fields, so that tab is link/unlink only. **Flagging** in case
+the client wants even this routed to the workspace; it is a two-line change.
+**Vocabulary decided: "link", not "attach".** One verb across all four
+association tabs — *Select a … to link* → **Link to project** → **Unlink from
+project** → "N … linked to this project". Reasons, in order: it is the
+requirement document's own verb for these rows; "unlink" is an unambiguous
+inverse where "un-attach"/"detach"/"remove" all compete; and **"attach" is
+genuinely ambiguous in this domain** — these records carry file URLs and the app
+has a `FileDropzone` upload pattern, so "attach a deliverable" reads as "upload
+a file". Aircraft was aligned too, so the same gesture never has two names.
+Every link row now states where creation happens, in the UI.
+**Fixed while verifying:** two side effects of the migration.
+(1) `ApprovalDrawer`'s TCCA Project field was scoped to one project's TCCA
+projects, so in the workspace — which has no project — it never rendered at all.
+It now offers every TCCA project, correct for a global record.
+(2) The moved subtitle used `’` inside a **JSX attribute**, where escapes
+are not processed (it had been in a JS string literal), so the screen showed a
+literal `’`. Replaced with the real character; swept for others, none left.
+**Verified live:** all three project tabs have no create path and no identity
+edit (`hasCreate: false`); link works on Approvals (1 → 2 rows, count text
+updated, already-linked options disabled with "Already linked to this project");
+unlink confirm reads "…stays in the Approvals workspace … nothing is deleted";
+the emptied Deliverables tab shows the link-only empty state; all three
+workspaces keep their full CRUD menus and `Add …` CTAs; a new certificate starts
+"Not linked"; 36px audit clean; no console errors.
+
+## 2026-08-17 — Approvals rebuilt on the real model: fields, Issues, two-way project links
+**Trigger:** the three remaining Approval gaps. Re-read the transcript and
+checked it against the legacy schema, which turned out to be decisive.
+**The old shape was invented.** `Approval` carried `authority` (TCCA/FAA/EASA),
+`type` (STC/amendment/minor), `aircraft` (free text), `issuedDate` and
+`tccaProjectId`. **None of those columns exist.** The legacy `approval` table is
+`number`, `description`, `primary_approval`, `design_approval_holder`,
+`comment`, `active`. Which is exactly what the client said on the call — "In the
+approval form there was name, title, and there was Primary… This form is also
+wrong."
+**"Primary" resolved from the schema, not from a guess:** `primary_approval
+tinyint(1)` — a boolean on the certificate, not a primary *aircraft*. Rendered
+as a Select ("Yes — primary certificate" / "No — change against another
+approval"), matching the house rule that booleans are Selects.
+**No date on an approval.** Deliberate, and the single most clarifying change: a
+certificate has no one date. It is granted by issue 1 and re-issued as it
+changes, so dates live on issues. The list shows **Current Issue** instead of
+"Issued", and Overview derives First issued / Current issue / Current issue
+date. `issuedDate` was a fiction that made the galley case study unrepresentable.
+**Issues implemented** (`approvalissue`: `approval_issue`, `change_description`,
+`issue_date`, `approval_document`), and called **Issues** because that is the
+client's word — "in their existing project, that is what it is named". Full CRUD
+in the workspace, sequential numbering with the next unused number suggested and
+duplicates refused, and the history shown while raising a new one so nobody
+re-describes a change already on the record.
+**Coverage as two assign lists**, matching `approval_aircraft` and
+`approval_serialnumber` — both keyed to the approval alone, not to an issue.
+Worth noting because the call said "I can also add aircraft inside that issue":
+the issue is what *authorises* the addition, but the data lands on the approval.
+Serials are scoped to covered models, and removing a model cascades its serials
+rather than orphaning them.
+**Two-way project linking**, the third gap: "Or a project, we can link a project
+from there as well. We can link from here too." The approval's Projects tab and
+the project's Approvals tab call the same `linkToProject` / `unlinkFromProject`,
+so the directions cannot drift.
+**`ApprovalDetailPage`** at `/approvals/:id` — the workspace "the way the
+project does", reusing `ProjectDetailPage`'s shell (four count tiles, summary
+aside, underline tab nav) so it needs no new patterns. A local `AssignList`
+keeps its three assign tabs identical; deliberately not generalised.
+**Dropped `tccaProjectId`.** There is no FK — `tccaproject` references its
+result by `certificate` + `issue_number` instead, so the relationship belongs on
+the TCCA side. The TCCA Project column is gone from the approval surfaces rather
+than left unsettable. **Open item** if the client wants that wired up.
+**Fixtures** rebuilt on the real shape, including the client's own case study as
+`ap-galley` (STC SA13-047): galley certified on two airframes at issue 1 in 2013,
+extended to two more at issue 2 in December 2024. Built on the 767 pair because
+those exist in the client's aircraft catalogue — the call said 777, and inventing
+a model to match would mean inventing reference data. **Flagged** for them to
+confirm.
+**Verified live:** list columns and search on the new fields; workspace opens
+with 2 issues / 2 aircraft / 4 serials / 0 projects; linked a project from the
+approval side and confirmed the same link on the project's own tab; raised issue
+3 (duplicate "Issue 2 already exists — the next unused number is 3." refused
+first); removed an aircraft and watched its 2 serials go with it (4 → 2) while
+the other model's stayed; edit form shows exactly the client's field list; 36px
+audit clean on both surfaces; no console errors.
+
+## 2026-08-17 — Approvals: two listings, and forms matched to the legacy screens
+**Source:** four legacy screenshots — Approvals-Create, Approval Issue-Create,
+Approval Aircraft-Create, Approval Serial Number-Create — plus the client's ask
+for "2–3 tabs so users can see the relevant listings".
+**Sidebar: Approvals → Approvals List · Approval Issues.** Two, not four. The
+legacy app has a create screen per join table, but Approval Aircraft and Approval
+Serial Number are *coverage of one certificate* — nobody browses them across all
+approvals, and they already live as assign tabs inside the workspace. An Issue is
+different: it is raised against a certificate you pick (its legacy screen leads
+with an Approval Number select), so it earns a listing of its own. This also
+follows the requirement document's own target UX, "one workspace over many peer
+screens". **A third tab is available if wanted:** §1.5 lists an "Approval
+Dashboard — approval-centric status view", which nobody has specified yet, so I
+have not invented one.
+**`ApprovalIssuesPage`** — every issue across every certificate, newest issued
+first, which is the one question no single workspace can answer ("what has been
+re-issued lately"). Approval Number links through to the workspace.
+**Form corrections against the screenshots:**
+- Description → **Textarea** (was a single-line Input).
+- Primary Approval → **Checkbox** (was a Select). The house "booleans are
+  Selects" rule was set for Active/Status, which reads as a state; Primary is a
+  one-off attribute and the legacy screen ticks a box. The explanation moved to
+  help text under it, so nothing is lost.
+- Labels verbatim: **Aircraft Model Number**, **Serial Number**, **Approval
+  Issue** (was "Issue Number").
+- Issue **Document → `FileDropzone`**, not a text field. The legacy screen has a
+  Browse button and the requirement document asks for a PDF view, so this uses
+  the app's single upload pattern. Only the filename is stored — there is no
+  backend to upload to — and editing an issue shows the current document with
+  the zone relabelled "Replace document".
+- **Approval Issue is now optional**, matching the screenshot's lack of an
+  asterisk: blank resolves to the next unused number for the selected
+  certificate. Numbering is per approval, so choosing a different one re-derives
+  the suggestion and the history rather than carrying a stale number across.
+**Deliberate additions, flagged rather than hidden:** the create form keeps a
+**Status** field, which the legacy create screen does not show. `approval.active`
+exists and the list renders Active/Inactive, so without it an approval could
+never be deactivated. Say the word and it moves to edit-only.
+**Verified live:** sidebar shows both children; the Issues list renders 9 issues
+with the legacy column set; the global Raise Issue form shows Approval Number*,
+Approval Issue (no asterisk), Change Description*, Issue Date*, Document —
+matching the screenshot's required markers exactly; switching approval moved the
+suggestion 3 → 2; raising one with the number left blank correctly produced Issue
+2; from a workspace the Approval Number is read-only and prefilled; the Approval
+form shows textareas, a ticked Primary Approval checkbox and the legacy labels;
+36px audit clean; no console errors.
+
+## 2026-08-17 — "Issue" renamed to "Revision"; Approvals list gets stats + filters
+**Terminology.** Approval Issues are now **Approval Revisions**, everywhere. The
+transcript went both ways — "We should also use the revision terminology as an
+issue, or keep it as Revision… Now its name is Revision, right?" / "Yes" — and I
+had picked "Issue" off the earlier half of that exchange. The client has now
+settled it, and the later half of the same conversation agrees.
+Renamed through the stack, not just the labels: `ApprovalIssue` →
+`ApprovalRevision`, `issue` → `revision`, `issueDate` → `revisionDate`,
+`nextIssueNumber` → `nextRevisionNumber`, store `issues` → `revisions` (with
+`addRevision` / `updateRevision` / `removeRevision`), `ApprovalIssueDrawer` →
+`ApprovalRevisionDrawer`, `ApprovalIssuesPage` → `ApprovalRevisionsPage`, route
+`/approvals/issues` → `/approvals/revisions`, sidebar child "Approval Issues" →
+"Approval Revisions". The legacy column names (`approval_issue`, `issue_date`)
+are left in the type comments so the DB mapping stays findable, and the table
+badge reads **Rev 2** rather than "Issue 2".
+**Four count tiles on the Approvals list**, matching the Project List header:
+Total approvals · Primary certificates · Revised since granted · Not linked to a
+project. Deliberately computed over **every** approval, not the filtered set —
+tiles that move with the filter answer a different question than the one being
+asked, and the point of them is the high-level read of the whole registry.
+**Filter menu + chips**, the app's standard pattern: Type (primary/change),
+Status, Approval Holder, Aircraft, Projects, Revisions. Two of those earn their
+place beyond the obvious — **Projects** surfaces certificates attached to
+nothing (a data-hygiene signal), and **Revisions** separates the ones changed
+since they were granted from those still on revision 1. The Aircraft filter only
+offers models some certificate actually covers, so it can't return an empty list
+by construction.
+**Column header shortened:** *Design Approval Holder* → **Approval Holder** in
+the table. The full legal name stays on the form, where there is room for it.
+**Bug caught in verification:** the new filter block sat behind a leftover
+`if (!q) return approvals` from when the page only had search — so chips and the
+"Filters (2)" count appeared while the rows never changed. Removed; filters now
+compose with search.
+**Verified live:** sidebar shows Approvals List / Approval Revisions; tiles read
+7 / 5 / 2 / 1; "Not linked" + "Revised since granted" narrows 7 → 1 (SA13-047,
+the only certificate that is both); removing one chip widens correctly and drops
+the trigger to "Filters (1)"; Clear filters restores 7 while the tiles stay at
+the registry totals; "Change approval" alone returns the 2 non-primary
+certificates; the Revisions page and workspace tab both read Revision/Rev
+throughout; no console errors on a clean buffer.
+
+## 2026-08-17 — Project structure made visible: tab counts, a strip, activity chips
+**Ask:** see total work packages and activities on opening a project; show how
+many activities each package holds; "nothing feels hidden".
+**Three levels, each a different question** rather than the same number three
+times:
+- **Tab-bar pills** (`Work Packages 3`, `Deliverables 4`, `Design Data 1`,
+  `TCCA 0`, `Approvals 0`) — the project's shape before a click. Overview has no
+  pill: it is a summary, not a collection. Empty tabs show **0** instead of
+  dropping the pill, because an absent count reads as "not counted" rather than
+  "empty" — which is the opposite of the goal. Reuses `TableTabs`' pill styling
+  so a count looks the same everywhere in the app.
+- **A structure strip** on the Work Packages tab: Work packages · Activities ·
+  Not started · In progress · Complete, as a `<dl>` in one short bordered row
+  with the Add CTA on the right.
+- **A per-package activity chip** next to the status badge, in the same neutral
+  chip style as the activity tasks, so "count of things" has one visual language.
+**Why a strip and not four more StatCards.** The four budget tiles at the top of
+Project Detail already own that weight, and the client's earlier feedback on this
+exact screen was that it "feels unclear and too long" with a request to keep
+containers compact. Five compact label/value pairs in ~60px answer the structural
+question without competing with the financial one. `<dl>`/`<dt>`/`<dd>` because
+these genuinely are terms and values — screen readers get the pairing for free.
+**Zero is always shown**, at every level. A package with no activities is the one
+most worth noticing, and hiding its chip would bury exactly the case the user
+asked to surface.
+**Verified live:** counts agree across all three levels on several projects
+(3 packages / 6 activities with chips summing to 6; a 1-activity package reading
+"1 activity", singular; a package correctly reading "0 activities"); they stay in
+sync through mutation — adding an activity moved the chip 0 → 1 and the strip
+5 → 6 while the package count held at 3, and adding a package moved the tab pill
+3 → 4 and Not started 1 → 2; layout confirmed at 1680px with the strip and CTA on
+one line, wrapping cleanly when narrow; no console errors.
+
+## 2026-08-17 — Work package meter halved; budget states spread across packages
+**Meter length.** The work-package header meter was `flex-1` inside a 260px
+group, so it rendered ~200px. Now a fixed **100px**. It is a glanceable
+indicator sitting next to the numbers that carry the precision — at 200px it
+read as the main event when it isn't.
+**Every package was red, and the data was the reason.** The generator scaled
+each activity by the *project's* overall budget ratio, so every package
+inherited the project's state exactly: a 106% project produced 106% / 107% /
+105% packages. True to the total, useless as information — it can never tell you
+*which* package blew the budget.
+**Fix: spread the variance, keep the sums exact.** Per project, each package
+gets a multiplier from a fixed pattern around 1, normalised so the
+budget-weighted mean is exactly 1, then scaled by the project ratio. The project
+total is preserved to the decimal while packages land on different states. The
+spread half-width tightens (0.35 → 0.20) once a project is over budget, because
+with the mean pinned above 100% a wide spread would push some package to an
+absurd percentage. `0000-00` now reads **88% / 120% / 130%** instead of three
+identical 106%s, and its activities split **On track** / **Near budget**.
+Result across 109 packages: 78 on-track, 25 over-budget, 3 at-risk, 2 complete,
+1 no-budget.
+**Package status is now derived, not authored** — zero logged hours means Not
+Started, a complete project means Complete, otherwise In Progress. It used to be
+possible for a "Not Started" package to carry 12.8 logged hours.
+**Untouched packages only where they're plausible:** a project at or below 85% of
+budget gets its last package zeroed (nothing logged yet); one already at budget
+does not, because you cannot exceed a budget while leaving a package untouched.
+**Pre-existing bug found and fixed.** `rollUpProject` uses the activity sum
+whenever packages exist and ignores the project row's own fields — so two
+projects were showing one number in the UI and another in exports:
+`3200-00` rolled up to **87h/61h** against a row of 80h/44h, and `3201-00` to
+**16h/15h** against 280h/312h. Activity budgets are now scaled per project so
+the breakdown sums to the row exactly; both verified agreeing in list and detail.
+**Verified live:** 45 projects, **0 sum mismatches** on budget or actual;
+meters measured at exactly 100px; `0000-00` unchanged at 10h/10.6h up top while
+its packages vary; sampled seven projects showing 50/90/0, 76/137/0, 60/103/0,
+31/55/0 and genuine Not Started packages; no console errors.
+
+## 2026-08-17 — Filter menus were broken by nested portals; my tests couldn't see it
+**Symptom, reported:** filters don't select, and no chips / clear / × appear
+afterwards.
+**Cause:** `useDropdown` closes on any `mousedown` whose target is not inside
+`menuRef` or the trigger. A `Select` inside a filter panel renders its options
+through a portal on `<body>`, so those options are outside `menuRef` by DOM
+containment — **pressing one closed the entire filter menu** before Apply could
+be reached. Nothing was ever applied, so no chips appeared. This hit every filter
+menu: Projects List, Projects Review, Timesheet, Hours Worked, Software Settings
+and Approvals.
+**Fix:** portalled select panels carry `data-dropdown-panel`, and
+`useDropdown` treats any target inside one as inside itself. General rather than
+per-menu, so a future nested dropdown is covered by construction. The three real
+close paths are unaffected and were re-verified: background click, Escape, and
+toggling the trigger.
+**Why I did not catch this earlier — worth recording.** My verification drove
+menus with `element.click()`, which dispatches **only** a `click` event. The bug
+lives in `mousedown`. So every test I ran passed against a UI that was broken for
+every real user, and I reported those passes with confidence. Menus and anything
+with outside-click dismissal must be driven with a full
+`mousedown → mouseup → click` sequence; a `.click()`-only test is not evidence
+that a menu works.
+**Full re-audit with real pointer events.** All six filter menus: menu survives
+picking an option, Apply applies, the trigger shows `Filters (n)`, chips render
+with a working × per chip, and `Clear filters (n)` clears the set. Also verified
+row `ActionsMenu`, `ExportMenu`, `SidebarProfile`, column sorting (`aria-sort`
+flips, order changes), row selection (bulk bar reads "1 project selected" with
+Export + Clear selection), and chip-× narrowing/widening the result set.
+**Two non-bugs confirmed as correct data:** Software Settings filtered to
+Type = String returns 0 rows because the fixture has 9 `boolean` and 1 `integer`
+setting and no `string` one (Boolean correctly returns 9); and Priority 1-Fire +
+Over budget returns 0 because no project is both — the empty state offers
+"Clear search & filters".
+
+## 2026-08-17 — Meter to 40px, Work Packages row action, em dashes removed from copy
+**Meter width 100px → 40px.** Small enough to read as a status pip beside the
+numbers rather than a chart.
+**"Work Packages" added to the project row's 3-dot menu**, on both Projects List
+and Projects Review, ordered View → Work Packages → Edit → Duplicate → Delete.
+It is the part of a project people return to most, and reaching it via Overview
+was a detour.
+**The tab now lives in the URL** (`/projects/:id?tab=work-packages`), which is
+what makes the action possible and is worth having on its own: a refresh or a
+shared link lands on the same tab. `Overview` clears the param rather than
+writing `?tab=overview`, and tab switches use `replace` so flicking through tabs
+does not fill the back stack — Back returns to wherever the project was opened
+from. Verified: deep link opens Work Packages, switching to Deliverables updates
+the param, Overview clears it, Back returns to `/projects`.
+**Em dashes removed from user-facing copy — 224 nodes across 65 files.** They
+read as machine-authored, which is the client's objection.
+**Two failed attempts, worth recording so it isn't repeated.** A line-based
+regex first rewrote *code comments* as well, because it only detected comments
+that start a line. A second attempt matched string literals by quote characters,
+which apostrophes inside prose ("that's") break — it corrupted a doc comment.
+The working approach parses each file with the **TypeScript compiler** and
+rewrites only `StringLiteral`, template-literal spans and `JsxText` nodes, so
+comments are excluded by construction rather than by pattern.
+**Replacement is chosen by context, not blanket:** a following capital letter or
+interpolation is a title split and gets a colon ("Deliverable Status: Summary");
+an independent clause gets a full stop; anything else gets a comma; and a
+trailing list gets a colon so "installation, drawings, substantiation and
+manuals" does not become a comma pile-up. A follow-up pass converted 9 remaining
+comma splices into sentences ("Dates live on its revisions. An approval has no
+single date…").
+**Page headings done by hand** since they are the most visible: "Projects — List"
+→ **Projects List**, "Timesheet — List" → **Timesheet**, "Hours Worked — Admin —
+List" → **Hours Worked**, "Users — Access" → **Users**.
+**Two things deliberately kept, flagged rather than silently changed:**
+- The lone **`—` in an empty table cell or detail field**. It is the app's "no
+  value" convention and marks blank as distinct from unread; removing it leaves
+  cells looking broken. It is data, not prose.
+- **Hyphens inside words, codes and identifiers**: `non-chargeable`, `0000-00`,
+  `STC SA13-047`, `767-33A`, and the client's own priority labels `5 - Lowest`.
+  Those are domain vocabulary, not authorial style.
+**Verified:** every page heading dash-free; the only em dashes remaining on
+screen are empty-cell placeholders; all remaining `—` in source are in JSDoc,
+which never renders; meters measured at 40px; typecheck clean; no console errors
+on a fresh tab.
+
+## 2026-08-17 — Dots off tags, visible meter track, meaningful progress figures
+**Dots removed from every status tag.** The `dot` prop is gone from `Badge`
+itself, not just from the 17 call sites, so it cannot creep back. Safe for
+accessibility: every badge already states its meaning in words, so the circle
+was decoration and colour still never carries meaning alone. The only circles
+left in the UI are avatars, which are meant to be round.
+**Meter track `neutral-100` → `neutral-300`.** On a white card the lighter value
+read as empty space, so the unfilled portion, the part that answers "how much is
+left", was effectively invisible. Also moved the no-budget fill to
+`neutral-500` so it stays distinguishable from the new track.
+**Progress figures now carry meaning.** `4.4h / 5h` left the reader doing the
+arithmetic. New shared helper `budgetSummary(health)` gives one phrasing used by
+both the meter's label and the work-package header:
+`88% used · 4.4h spent of 5h, 0.6h left`, and over budget
+`130% used · 2.6h spent of 2h, 0.6h over`. Spent, budget, remaining and
+percentage, in one line.
+**Wording: "used", not "Done" — a deliberate deviation from the request, flagged
+rather than made silently.** The percentage is hours spent against hours
+budgeted, not work completed. There is no completion signal anywhere in the data
+to derive a real "% done" from. Labelling 130% as "130% Done" is nonsense and is
+precisely the confusion the client raised about the 106% tile, which is why the
+Projects List column is already "Budget used". If they want a true "% done" it
+needs a new per-activity completion field, which is a data-model change, not a
+label change.
+**Verified live:** package headers read "88% used 4.4h spent of 5h, 0.6h left"
+and "130% used 2.6h spent of 2h, 0.6h over"; measured track colour
+`rgb(203, 213, 225)` on both the work-package and Projects List meters with the
+fill still state-coloured; zero dots inside badges across both surfaces (the two
+remaining round elements are the sidebar and person avatars); typecheck clean; no
+console errors. Storybook gained a labelled-meter example under
+`Patterns/Overview` → ProjectHealthExample.
+
+## 2026-08-17 — Progress bar: one style, bar beside the menu, black figures
+Client rules, given as "store in global and remember always" and therefore
+implemented in `ProgressMeter` / `Badge` / `HealthSummary` rather than per screen,
+plus written to project memory so they survive future sessions.
+**Order reversed in the work-package header:** `4.4h / 5h` → `88% used` → bar, so
+the bar sits against the 3-dot menu.
+**Hours shortened back to `4.4h / 5h`.** This walks back part of yesterday's
+four-figure line at package level, at the client's request. Nothing is lost: the
+expanded row still shows Budget / Actual / Remaining as columns, and the stat
+tiles above carry the same four numbers. `budgetSummary()` keeps the long phrasing
+for `ProgressMeter`'s `showLabel` mode.
+**One bar style everywhere.** Track always `neutral-300`; fill 0-100% capped,
+coloured green / amber / red by state. **Removed the over-budget rescale and the
+budget notch** — that was a second visual language, it hid the track entirely, and
+because the track was rescaled to the overrun an over-budget bar rendered
+*shorter* than an on-track one, which is the opposite of the intended signal.
+**Figures are black.** `120% used`, the activity-row percentages, the Projects
+List column and the Project Detail stat tiles all use `text-text-primary`. Colour
+does one job now: the bar. Accessibility still holds without the red, because a
+percentage above 100 is itself a non-colour signal and a status badge sits beside
+it.
+**One exception kept deliberately, flagged:** a **negative Remaining** figure in a
+table stays danger-red. The minus sign is the non-colour cue, red-for-negative is
+the standard convention, and the client separately asked for a clear over-budget
+indication. Say the word and it goes black too.
+**Verified live:** right-hand group renders in the order
+`["4.4h / 5h", "88% used", BAR]` with the actions menu next; track measured
+`rgb(203, 213, 225)` on every bar; over-budget bars are `100%` wide, `rgb(220,
+38, 38)`, **zero notch elements**; all three `% used` labels measured
+`rgb(2, 6, 23)`; typecheck clean.
+
+## 2026-08-17 — Stats follow the filters; search on any dropdown over 5 options
+**Stats now describe the filtered set — this reverses my own earlier call.** I had
+deliberately computed the Projects List and Approvals tiles over the whole
+registry, reasoning that a "Total" which moves with the filter answers a different
+question. The client's position is clearer: tiles that say 45 while the table shows
+12 read as broken. Tiles are now derived from the filtered rows and go to 0 when
+nothing matches, and the first tile is relabelled **"Projects shown" /
+"Approvals shown"** so the number never promises more than it counts. The
+Timesheet and Hours Worked tiles already worked this way.
+**Search on any dropdown with more than 5 options.** `searchThreshold` default
+8 → **5** on both `SearchableSelect` and `MultiSelect`, which covers every
+dropdown in the app because `Select` is an adapter over the former. Data-driven by
+design: a list crosses five entries and gains a search field with no per-screen
+decision. Status went from no search to search (8 options); Person Responsible has
+exactly 5 in the current fixtures so it stays plain until real employee data
+arrives, which is the rule working, not an exception.
+**70 filter-coverage projects added (45 → 115).** Ten status/type/priority/active
+combinations crossed with seven companies, cycling person responsible and budget
+health, so realistic two- and three-filter selections return records instead of an
+empty table. Distribution now: every status 7-47 rows, every type 8-48, every
+priority 18-29, five people 21-24 each.
+**Their work packages are generated, not typed**, so the invariant holds by
+construction: activity budgets sum to the project's budget and actuals to its
+actual. Actuals use the same weighted-mean-of-1 spread as the existing data, so
+packages inside one project land on different budget states rather than all
+inheriting the project ratio.
+**Verified live:** unfiltered 115 shown / 52 on track / 19 near / 21 over;
+Company = Abu Dhabi Aviation gives **12 shown / 5 / 2 / 1** with "Showing 12 of
+12"; four filters narrow to **1 shown / 1 / 0 / 0**, so the empty buckets read 0.
+Company dropdown 21 options with search, Status 8 with search, Person 5 without.
+Six coverage projects opened and their detail tiles match their list rows exactly
+(320h/396.8h, 80h/75.2h, 120h/120h, no-budget/0h …), and their Work Packages tab
+is populated with three packages at 97% / 124% / 151%. No console errors.
+
+## 2026-08-17 — Popups now place themselves inside the viewport
+**Reported:** the link dropdown at the foot of a project's Deliverables tab
+couldn't be reached, and the same on the Approvals tab.
+**Cause, two variants of one mistake.** `SearchableSelect` and `MultiSelect`
+pinned their panel to `trigger.bottom + 4` unconditionally. The panel is
+`position: fixed` and re-anchors on scroll, so once the trigger sat low on a
+page the options rendered below the fold and **scrolling could never bring them
+back**. Every link row in the app sits at the bottom of its tab, which is why it
+showed up on Deliverables, Design Data and Approvals alike. Separately
+`useDropdown` did flip menus above the trigger but never capped their height, so
+a 606px filter panel on a 620px viewport landed at `top: -49` with its Company
+field above the fold.
+**Fix in the two hooks, not per screen.** New `ui/usePanelPosition` for select
+panels, and `patterns/useDropdown` reworked to match. Both now open upward when
+there is no room below, cap `maxHeight` to the space available so long lists
+scroll inside the panel, and clamp horizontally. Upward placement anchors by
+`bottom` rather than computing `top` from a measured height, so nothing has to
+render off-screen first and then jump.
+**Panels became flex columns** so the cap actually bites: search row `shrink-0`,
+list `min-h-0 flex-1 overflow-y-auto`, replacing the fixed `max-h-64` that
+ignored the viewport. Menus took `overflow-y-auto`.
+**Verified live at 900px and again at 620px viewport height.** With 41px below
+the trigger the deliverables panel flips upward to 219-539 and stays fully on
+screen with its 82 options scrolling; the project Approvals link row and the
+approval workspace's Projects tab behave identically, from the same primitive.
+All five filter menus fit (`maxHeight: 556px`, scrolling internally, first field
+reachable) where the Projects one previously rendered at -49. Last-row
+`ActionsMenu`, `ExportMenu` and the bottom-anchored `SidebarProfile` all sit on
+screen. Selects inside a tall drawer place correctly, and the nested-select
+behaviour from the earlier fix still holds: opening one no longer closes the
+filter menu, and Apply still produces `Filters (1)` plus a chip.
+**One thing to know for future edits:** changing the hook *sequence* inside
+`useDropdown` makes React throw "change in the order of Hooks" against
+already-mounted components. That is an HMR artifact, not a real violation, and a
+full reload clears it — confirmed clean on a fresh tab.
+
+## 2026-08-17 — Name fields are always searchable: new `PersonSelect`
+**Rule:** the ">5 options" threshold is right for enums, wrong for names. You
+already know which person you want, so typing beats scanning, and five demo
+employees become dozens in a real deployment. Every person field is therefore
+searchable regardless of list length.
+**Made structural, not a convention.** New `ui/PersonSelect` wraps
+`SearchableSelect` with `searchThreshold={0}`, radio indicators and the standard
+"Select a person..." placeholder. Screens pass `people: string[]` and get a plain
+`(value: string) => void`. Chosen over sprinkling `searchThreshold={0}` at each
+call site so a *new* person field inherits search instead of depending on someone
+remembering the rule.
+**Nine fields converted** off `Select` + `PEOPLE.map`: Person Responsible and
+Contact (project create/edit), Responsible (activity), Owner and Next Action
+(document), Next Action (revision), Employee (timesheet entry), and the Person /
+Employee filters on Projects List, Projects Review and Hours Worked, plus the
+person parameter on report runs. Contact is included deliberately even though a
+company may have only two contacts — it is a name.
+**Design Approval Holder changed from free text to a searchable select.** It was
+an `<Input>`, so it could not be searched at all. Options are Reference Data
+company names **unioned with holders already recorded on approvals**, which keeps
+existing values like "Elisen Inc." selectable even though they predate the
+company list — verified: searching "elis" returns both "Elisen" (company) and
+"Elisen Inc." (existing holder), and editing an approval still shows
+"Elisen Inc.". **Flagging the trade-off:** it is now a picked value rather than
+free text, which is better data hygiene and matches how Company behaves, but a
+brand-new holder has to exist as a company first. Say the word if it should stay
+free text with suggestions instead.
+**Verified live, each with its search box present:** personResponsible (5),
+contact (**2**), pf-filter-person (5), act-resp (5), filter-employee (5),
+employeeName (5), param-personResponsible (5), ap-holder (22). Typecheck clean;
+console clean on a fresh tab (the hook-order warning in a long-lived tab is the
+known HMR artifact from reworking `useDropdown`).

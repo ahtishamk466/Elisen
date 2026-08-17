@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { Search, ClipboardList } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
-import { Pagination } from '@/components/patterns/Pagination'
+import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { FilterChips } from '@/components/patterns/FilterChips'
+import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { TableTabs } from '@/components/patterns/TableTabs'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { ProjectReviewTable } from './ProjectReviewTable'
-import { ProjectReviewFilterMenu, EMPTY_REVIEW_FILTERS, type ReviewFilters } from './ProjectReviewFilterMenu'
+import { ProjectFilterMenu, EMPTY_PROJECT_FILTERS, projectFilterChips, type ProjectFilters } from './ProjectFilterMenu'
 import { ExportMenu } from './ExportMenu'
 import { AddProjectDrawer } from './AddProjectDrawer'
 import { useProjectsStore } from '@/stores/projectsStore'
@@ -45,9 +47,7 @@ export function ProjectReviewPage({ state = 'ready', canSeeFinancials = true }: 
   // Legacy landed on Priorities — "what needs attention now", no clicks.
   const [presetKey, setPresetKey] = useState('priorities')
   const [query, setQuery] = useState('')
-  const [filters, setFilters] = useState<ReviewFilters>(EMPTY_REVIEW_FILTERS)
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(25)
+  const [filters, setFilters] = useState<ProjectFilters>(EMPTY_PROJECT_FILTERS)
   const [editingRow, setEditingRow] = useState<ProjectListRow | null>(null)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -87,8 +87,10 @@ export function ProjectReviewPage({ state = 'ready', canSeeFinancials = true }: 
     return preset.sortByPriority ? [...list].sort(byPriority) : list
   }, [rows, preset, filters, query])
 
+  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
+
   const loading = state === 'loading'
-  const resetPage = () => setPage(1)
+  const resetPage = resetVisible
 
   /** The 7 legacy tabs, as presets over one list — rendered inside the
       table's card so they read as its header (see docs/DECISIONS.md). */
@@ -118,26 +120,32 @@ export function ProjectReviewPage({ state = 'ready', canSeeFinancials = true }: 
       activeChild="Projects Review"
       headerActions={
         <>
-          <div className="min-w-0" style={{ width: 300 }}>
+          <div className="min-w-0" style={{ width: 400 }}>
             <label htmlFor="review-search" className="sr-only">Search projects review</label>
-            <Input
+            <Input size="sm"
               id="review-search" value={query} onChange={(e) => { setQuery(e.target.value); resetPage() }}
               placeholder="Search number, project, company, comments..." leadingIcon={<Search size={16} />}
             />
           </div>
-          <ProjectReviewFilterMenu
+          <ProjectFilterMenu
+            ariaLabel="Filter projects review"
             companies={companies} people={people} filters={filters}
             onApply={(f) => { setFilters(f); resetPage() }}
           />
           <ExportMenu
             rows={filtered}
-            onUnavailableFormat={(format) => setToast(`${format} export isn't wired up yet — HTML, CSV and Text are ready now.`)}
+            onUnavailableFormat={(format) => setToast(`${format} export isn't wired up yet: HTML, CSV and Text are ready now.`)}
           />
         </>
       }
     >
       <div className="grid gap-lg">
         {toast && <Alert tone="info" title={toast} />}
+
+        <FilterChips
+          chips={projectFilterChips(filters, (f) => { setFilters(f); resetPage() })}
+          onClearAll={() => { setFilters(EMPTY_PROJECT_FILTERS); resetPage() }}
+        />
 
         {!loading && filtered.length === 0 ? (
           // The tabs stay put when a slice comes back empty, so the user can
@@ -151,7 +159,7 @@ export function ProjectReviewPage({ state = 'ready', canSeeFinancials = true }: 
               action={
                 <Button
                   variant="secondary"
-                  onClick={() => { setQuery(''); setFilters(EMPTY_REVIEW_FILTERS); setPresetKey('all'); resetPage() }}
+                  onClick={() => { setQuery(''); setFilters(EMPTY_PROJECT_FILTERS); setPresetKey('all'); resetPage() }}
                 >
                   Show all projects
                 </Button>
@@ -160,18 +168,16 @@ export function ProjectReviewPage({ state = 'ready', canSeeFinancials = true }: 
           </div>
         ) : (
           <ProjectReviewTable
-            rows={filtered.slice((page - 1) * pageSize, page * pageSize)}
+            rows={filtered.slice(0, visibleCount)}
             loading={loading}
             canSeeFinancials={canSeeFinancials}
             tabs={presetTabs}
             activeTabKey={preset.key}
             onView={(row) => navigate(`/projects/${row.id}`)}
+            onOpenWorkPackages={(row) => navigate(`/projects/${row.id}?tab=work-packages`)}
             onEdit={setEditingRow}
             pagination={!loading && (
-              <Pagination
-                page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="projects"
-                onPageChange={setPage} onPageSizeChange={setPageSize}
-              />
+              <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="projects" />
             )}
           />
         )}

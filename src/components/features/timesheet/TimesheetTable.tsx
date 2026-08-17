@@ -25,7 +25,7 @@ export interface TimesheetTableProps {
   onDelete?: (row: EnrichedTimesheetRow) => void
   onToggleValidated?: (row: EnrichedTimesheetRow) => void
   /** Rendered as the table's own footer bar — inside the same card, not a
-      second box below it. Typically a <Pagination>. */
+      second box below it. Typically an <AutoLoadFooter>. */
   pagination?: ReactNode
 }
 
@@ -99,10 +99,10 @@ export function TimesheetTable({
                   <td className="px-lg py-base align-top text-sm text-text-primary">{row.bankHoursRegular.toFixed(2)}</td>
                   <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 180 }}><Truncate>{row.comment || '—'}</Truncate></td>
                   <td className="px-lg py-base align-top">
-                    <Badge tone={row.validated ? 'success' : 'neutral'} dot>{row.validated ? 'Yes' : 'No'}</Badge>
+                    <Badge tone={row.validated ? 'success' : 'neutral'}>{row.validated ? 'Yes' : 'No'}</Badge>
                   </td>
                   <td className="px-lg py-base align-top">
-                    <Badge tone={row.active ? 'success' : 'danger'} dot>{row.active ? 'Active' : 'Inactive'}</Badge>
+                    <Badge tone={row.active ? 'success' : 'danger'}>{row.active ? 'Active' : 'Inactive'}</Badge>
                   </td>
                   <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
                     <ActionsMenu ariaLabel={`Actions for timesheet entry on ${row.workingDate}`} items={actionsFor(row)} />

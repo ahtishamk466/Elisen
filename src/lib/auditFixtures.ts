@@ -12,7 +12,7 @@ export const AUDIT_SERIES_LABEL: Record<AuditSeriesKey, string> = {
     charts but never said what any of them counted. */
 export const AUDIT_SERIES_DESCRIPTION: Record<AuditSeriesKey, string> = {
   entries: 'One per request the app served. Everything below attaches to an entry.',
-  trails: 'Data changes — which record and attribute changed, and by whom.',
+  trails: 'Data changes, which record and attribute changed, and by whom.',
   mails: 'Copies of mail the app sent.',
   javascripts: 'Client-side JavaScript errors reported back by the browser.',
   errors: 'Server-side errors and exceptions.',

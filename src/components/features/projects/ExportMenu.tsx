@@ -29,7 +29,7 @@ export function ExportMenu({ rows, onUnavailableFormat }: ExportMenuProps) {
       <Button
         ref={triggerRef}
         variant="secondary"
-        size="lg"
+        size="md"
         trailingIcon={<ChevronDown size={16} />}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -43,8 +43,8 @@ export function ExportMenu({ rows, onUnavailableFormat }: ExportMenuProps) {
             ref={menuRef}
             role="menu"
             aria-label="Export page data"
-            className="fixed z-dropdown rounded-sm border border-border-default bg-neutral-25 py-xs shadow-lg"
-            style={{ top: position.top, left: position.left, width: MENU_WIDTH }}
+            className="fixed z-dropdown overflow-y-auto rounded-sm border border-border-default bg-neutral-25 py-xs shadow-lg"
+            style={{ ...position, width: MENU_WIDTH }}
           >
             <p className="px-lg py-sm text-xs font-semibold text-text-muted">Export Page Data</p>
             {items.map((item) => (

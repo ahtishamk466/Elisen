@@ -33,7 +33,7 @@ export const TCCA_CHECKLIST: ChecklistPhase[] = [
     id: 'approval',
     title: 'Approval',
     items: [
-      { id: 'doc', label: 'DOC — Declaration of Conformity' },
+      { id: 'doc', label: 'DOC: Declaration of Conformity' },
       { id: 'und', label: 'UND' },
       { id: 'cert-readiness', label: 'Cert Readiness' },
       { id: 'approval-doc-content', label: 'Approval Doc Content' },

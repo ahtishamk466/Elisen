@@ -86,7 +86,7 @@ export function TimesheetEntryDrawer({
   // plus who and when, so the user always knows what they're changing.
   const entryProject = projects.find((p) => p.id === values.projectId)
   const entryContext = [
-    entryProject ? `${entryProject.number}-${entryProject.subNumber} — ${entryProject.title}` : '',
+    entryProject ? `${entryProject.number}-${entryProject.subNumber}: ${entryProject.title}` : '',
     values.employeeName,
     values.workingDate,
   ].filter(Boolean).join(' · ')
@@ -94,7 +94,7 @@ export function TimesheetEntryDrawer({
     ? `Timesheet Entry${entryContext ? ` “${entryContext}”` : ''}`
     : isEdit
       ? `Edit Timesheet Entry${entryContext ? ` “${entryContext}”` : ''}`
-      : `Add Timesheet Entry${employeeMode === 'fixed' ? ` — ${currentEmployee}` : ''}`
+      : `Add Timesheet Entry${employeeMode === 'fixed' ? `: ${currentEmployee}` : ''}`
 
   return (
     <>

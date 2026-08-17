@@ -1,8 +1,100 @@
+import { COVERAGE_ROWS } from './projectFixtures'
 import type { WorkPackage, WorkPackageActivity } from '@/types/workPackage'
 
 /** Obviously-fake demo data mirroring the client's own example: a
     "Certification Plan" package where Airworthiness creates the document
     and a Delegate checks it at fewer, pricier hours. */
+/**
+ * Work packages for the filter-coverage projects, generated rather than typed
+ * so the invariant holds by construction: activity budgets sum to the project's
+ * own budget and activity actuals to its actual, which is what keeps the list
+ * row, the detail tiles and the package roll-up from ever disagreeing.
+ *
+ * Actuals are spread with the same multiplier pattern used elsewhere, so the
+ * packages inside one project land on different budget states instead of all
+ * inheriting the project's ratio.
+ */
+const COVERAGE_SHAPES: { title: string; description: string; activities: [string, string][] }[] = [
+  {
+    title: 'Design Package',
+    description: 'Design drawings and supporting analysis for the modification.',
+    activities: [['mech-design', 'Sofia Reyes'], ['elec-design', 'Lloyd Pedvis']],
+  },
+  {
+    title: 'Validation & Analysis',
+    description: 'Structural and electrical substantiation of the design.',
+    activities: [['struct-validation', 'Remi Rocheleau'], ['elec-validation', 'Kelly Osei']],
+  },
+  {
+    title: 'Certification & Manuals',
+    description: 'Compliance documentation, approvals and manual supplements.',
+    activities: [['general-cert', 'Harris Bell'], ['manuals', 'Sofia Reyes']],
+  },
+]
+
+/** Weighted mean of 1, so scaling by the project ratio preserves its total. */
+const SPREAD = [0.78, 1.0, 1.22]
+
+function buildCoverage() {
+  const packages: WorkPackage[] = []
+  const activities: WorkPackageActivity[] = []
+
+  for (const row of COVERAGE_ROWS) {
+    const shapes = COVERAGE_SHAPES.slice(0, row.budgetHours === 0 ? 1 : 3)
+    const perPackageBudget = row.budgetHours / shapes.length
+    const ratio = row.budgetHours > 0 ? row.actualHours / row.budgetHours : 0
+    const norm = shapes.length / SPREAD.slice(0, shapes.length).reduce((a, b) => a + b, 0)
+
+    shapes.forEach((shape, si) => {
+      const wpId = `wp-cov-${row.id}-${si}`
+      const wpBudget = perPackageBudget
+      const wpActual = wpBudget * ratio * SPREAD[si] * norm
+      packages.push({
+        id: wpId,
+        projectId: row.id,
+        title: shape.title,
+        description: shape.description,
+        status: row.status === 'complete' ? 'complete' : wpActual > 0 ? 'in-progress' : 'not-started',
+      })
+      shape.activities.forEach(([activityId, responsible], ai) => {
+        activities.push({
+          id: `wpa-cov-${row.id}-${si}-${ai}`,
+          workPackageId: wpId,
+          activityId,
+          responsible,
+          budgetHours: round1(wpBudget / shape.activities.length),
+          actualHours: round1(wpActual / shape.activities.length),
+        })
+      })
+    })
+
+    // Rounding residuals land on the largest activity so the project totals
+    // stay exact to one decimal.
+    fixResidual(activities, row.id, 'budgetHours', row.budgetHours)
+    fixResidual(activities, row.id, 'actualHours', row.actualHours)
+  }
+  return { packages, activities }
+}
+
+const round1 = (n: number) => Math.round(n * 10) / 10
+
+function fixResidual(
+  all: WorkPackageActivity[],
+  projectId: string,
+  key: 'budgetHours' | 'actualHours',
+  target: number,
+) {
+  const mine = all.filter((a) => a.id.startsWith(`wpa-cov-${projectId}-`))
+  if (mine.length === 0) return
+  const sum = round1(mine.reduce((n, a) => n + a[key], 0))
+  const diff = round1(target - sum)
+  if (diff === 0) return
+  const biggest = mine.reduce((m, a) => (a[key] > m[key] ? a : m), mine[0])
+  biggest[key] = round1(biggest[key] + diff)
+}
+
+const COVERAGE = buildCoverage()
+
 export const WORK_PACKAGES: WorkPackage[] = [
   {
     id: 'wp-1', projectId: '1', title: 'Certification Plan',
@@ -11,7 +103,7 @@ export const WORK_PACKAGES: WorkPackage[] = [
   },
   {
     id: 'wp-2', projectId: '1', title: 'Seat Installation',
-    description: 'Forward club seat installation — drawings, substantiation and manuals.',
+    description: 'Forward club seat installation, drawings, substantiation and manuals.',
     status: 'in-progress',
   },
   {
@@ -22,15 +114,307 @@ export const WORK_PACKAGES: WorkPackage[] = [
   {
     id: 'wp-4', projectId: '2', title: 'Console Map Lights',
     description: 'Add map lights to the approved workstation console.',
-    status: 'complete',
+    status: 'in-progress',
   },
+
+  // Generated so every project has a breakdown to drill into. Activity
+  // hours sum to each project's own budget/actual, so the work-package
+  // roll-up and the project total can never disagree.
+  { id: 'wp-g0-0', projectId: '3', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g0-1', projectId: '3', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g0-2', projectId: '3', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g1-0', projectId: '4', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g1-1', projectId: '4', title: 'Scope Definition', description: 'Firming up deliverables and hours before work starts.', status: 'not-started' },
+  { id: 'wp-g2-0', projectId: '5', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'complete' },
+  { id: 'wp-g2-1', projectId: '5', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'complete' },
+  { id: 'wp-g3-0', projectId: '6', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g3-1', projectId: '6', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g3-2', projectId: '6', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'in-progress' },
+  { id: 'wp-g4-0', projectId: 'rv-764', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g5-0', projectId: 'rv-772', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g6-0', projectId: 'rv-743', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g7-0', projectId: 'rv-765', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g8-0', projectId: 'rv-773', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g9-0', projectId: 'rv-776', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g10-0', projectId: 'rv-721', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g10-1', projectId: 'rv-721', title: 'Scope Definition', description: 'Firming up deliverables and hours before work starts.', status: 'not-started' },
+  { id: 'wp-g11-0', projectId: 'rv-731', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g11-1', projectId: 'rv-731', title: 'Scope Definition', description: 'Firming up deliverables and hours before work starts.', status: 'not-started' },
+  { id: 'wp-g12-0', projectId: 'rv-738', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g12-1', projectId: 'rv-738', title: 'Scope Definition', description: 'Firming up deliverables and hours before work starts.', status: 'not-started' },
+  { id: 'wp-g13-0', projectId: 'rv-740', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g13-1', projectId: 'rv-740', title: 'Scope Definition', description: 'Firming up deliverables and hours before work starts.', status: 'not-started' },
+  { id: 'wp-g14-0', projectId: 'rv-744', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g14-1', projectId: 'rv-744', title: 'Scope Definition', description: 'Firming up deliverables and hours before work starts.', status: 'not-started' },
+  { id: 'wp-g15-0', projectId: 'rv-752', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g15-1', projectId: 'rv-752', title: 'Scope Definition', description: 'Firming up deliverables and hours before work starts.', status: 'not-started' },
+  { id: 'wp-g16-0', projectId: 'rv-756', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g16-1', projectId: 'rv-756', title: 'Scope Definition', description: 'Firming up deliverables and hours before work starts.', status: 'not-started' },
+  { id: 'wp-g17-0', projectId: 'rv-757', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g17-1', projectId: 'rv-757', title: 'Scope Definition', description: 'Firming up deliverables and hours before work starts.', status: 'not-started' },
+  { id: 'wp-g18-0', projectId: 'rv-769', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g18-1', projectId: 'rv-769', title: 'Scope Definition', description: 'Firming up deliverables and hours before work starts.', status: 'not-started' },
+  { id: 'wp-g19-0', projectId: 'rv-774', title: 'RFQ Response', description: 'Estimate and scope response for the customer request.', status: 'not-started' },
+  { id: 'wp-g19-1', projectId: 'rv-774', title: 'Scope Definition', description: 'Firming up deliverables and hours before work starts.', status: 'not-started' },
+  { id: 'wp-g20-0', projectId: 'rv-748', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g20-1', projectId: 'rv-748', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g20-2', projectId: 'rv-748', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g21-0', projectId: 'rv-770', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g21-1', projectId: 'rv-770', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g21-2', projectId: 'rv-770', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g22-0', projectId: 'rv-755', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g22-1', projectId: 'rv-755', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g22-2', projectId: 'rv-755', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'in-progress' },
+  { id: 'wp-g23-0', projectId: 'rv-777', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g23-1', projectId: 'rv-777', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g23-2', projectId: 'rv-777', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g24-0', projectId: 'rv-469', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g24-1', projectId: 'rv-469', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g24-2', projectId: 'rv-469', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'in-progress' },
+  { id: 'wp-g25-0', projectId: 'rv-479', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g25-1', projectId: 'rv-479', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g25-2', projectId: 'rv-479', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'in-progress' },
+  { id: 'wp-g26-0', projectId: 'rv-645', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g26-1', projectId: 'rv-645', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g26-2', projectId: 'rv-645', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'in-progress' },
+  { id: 'wp-g27-0', projectId: 'rv-779', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g27-1', projectId: 'rv-779', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g27-2', projectId: 'rv-779', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g28-0', projectId: 'rv-780', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g28-1', projectId: 'rv-780', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g28-2', projectId: 'rv-780', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g29-0', projectId: 'rv-781', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g29-1', projectId: 'rv-781', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g29-2', projectId: 'rv-781', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g30-0', projectId: 'rv-782', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g30-1', projectId: 'rv-782', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g30-2', projectId: 'rv-782', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g31-0', projectId: 'rv-730', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g31-1', projectId: 'rv-730', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g31-2', projectId: 'rv-730', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'in-progress' },
+  { id: 'wp-g32-0', projectId: 'rv-732', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g32-1', projectId: 'rv-732', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g32-2', projectId: 'rv-732', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g33-0', projectId: 'rv-766', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g33-1', projectId: 'rv-766', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g33-2', projectId: 'rv-766', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'in-progress' },
+  { id: 'wp-g34-0', projectId: 'rv-768', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g34-1', projectId: 'rv-768', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g34-2', projectId: 'rv-768', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g35-0', projectId: 'rv-746', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g35-1', projectId: 'rv-746', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g35-2', projectId: 'rv-746', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g36-0', projectId: 'rv-747', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g36-1', projectId: 'rv-747', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g36-2', projectId: 'rv-747', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'in-progress' },
+  { id: 'wp-g37-0', projectId: 'rv-775', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g37-1', projectId: 'rv-775', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g37-2', projectId: 'rv-775', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g38-0', projectId: 'rv-562', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g38-1', projectId: 'rv-562', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g38-2', projectId: 'rv-562', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'in-progress' },
+  { id: 'wp-g39-0', projectId: 'rv-570', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g39-1', projectId: 'rv-570', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g39-2', projectId: 'rv-570', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g40-0', projectId: 'rv-561', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g40-1', projectId: 'rv-561', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g40-2', projectId: 'rv-561', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g41-0', projectId: 'rv-347', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g41-1', projectId: 'rv-347', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g41-2', projectId: 'rv-347', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  { id: 'wp-g42-0', projectId: 'rv-569', title: 'Design Package', description: 'Design drawings and supporting analysis for the modification.', status: 'in-progress' },
+  { id: 'wp-g42-1', projectId: 'rv-569', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
+  { id: 'wp-g42-2', projectId: 'rv-569', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
+  ...COVERAGE.packages,
 ]
 
 export const WP_ACTIVITIES: WorkPackageActivity[] = [
-  { id: 'wpa-1', workPackageId: 'wp-1', activityId: 'airworthiness', responsible: 'Kelly Osei', budgetHours: 12, actualHours: 8 },
-  { id: 'wpa-2', workPackageId: 'wp-1', activityId: 'delegate', responsible: 'Harris Bell', budgetHours: 3, actualHours: 1 },
-  { id: 'wpa-3', workPackageId: 'wp-2', activityId: 'mech-design', responsible: 'Sofia Reyes', budgetHours: 40, actualHours: 22 },
-  { id: 'wpa-4', workPackageId: 'wp-2', activityId: 'struct-validation', responsible: 'Lloyd Pedvis', budgetHours: 24, actualHours: 30 },
-  { id: 'wpa-5', workPackageId: 'wp-2', activityId: 'manuals', responsible: 'Kelly Osei', budgetHours: 8, actualHours: 0 },
-  { id: 'wpa-6', workPackageId: 'wp-4', activityId: 'elec-design', responsible: 'Remi Rocheleau', budgetHours: 16, actualHours: 15 },
+  { id: 'wpa-1', workPackageId: 'wp-1', activityId: 'airworthiness', responsible: 'Kelly Osei', budgetHours: 11.03, actualHours: 3.6 },
+  { id: 'wpa-2', workPackageId: 'wp-1', activityId: 'delegate', responsible: 'Harris Bell', budgetHours: 2.76, actualHours: 0.9 },
+  { id: 'wpa-3', workPackageId: 'wp-2', activityId: 'mech-design', responsible: 'Sofia Reyes', budgetHours: 36.78, actualHours: 21.9 },
+  { id: 'wpa-4', workPackageId: 'wp-2', activityId: 'struct-validation', responsible: 'Lloyd Pedvis', budgetHours: 22.07, actualHours: 13.2 },
+  { id: 'wpa-5', workPackageId: 'wp-2', activityId: 'manuals', responsible: 'Kelly Osei', budgetHours: 7.36, actualHours: 4.4 },
+  { id: 'wpa-6', workPackageId: 'wp-4', activityId: 'elec-design', responsible: 'Remi Rocheleau', budgetHours: 280, actualHours: 312 },
+  { id: 'wpa-g0-0', workPackageId: 'wp-g0-0', activityId: 'mech-design', responsible: 'Sofia Reyes', budgetHours: 120, actualHours: 36.8 },
+  { id: 'wpa-g0-1', workPackageId: 'wp-g0-0', activityId: 'elec-design', responsible: 'Lloyd Pedvis', budgetHours: 80, actualHours: 24.6 },
+  { id: 'wpa-g0-2', workPackageId: 'wp-g0-1', activityId: 'struct-validation', responsible: 'Remi Rocheleau', budgetHours: 80, actualHours: 44.4 },
+  { id: 'wpa-g0-3', workPackageId: 'wp-g0-1', activityId: 'elec-validation', responsible: 'Kelly Osei', budgetHours: 40, actualHours: 22.2 },
+  { id: 'wpa-g0-4', workPackageId: 'wp-g0-2', activityId: 'general-cert', responsible: 'Harris Bell', budgetHours: 40, actualHours: 0 },
+  { id: 'wpa-g0-5', workPackageId: 'wp-g0-2', activityId: 'manuals', responsible: 'Sofia Reyes', budgetHours: 40, actualHours: 0 },
+  { id: 'wpa-g1-0', workPackageId: 'wp-g1-0', activityId: 'rfq-response', responsible: 'Lloyd Pedvis', budgetHours: 96, actualHours: 0 },
+  { id: 'wpa-g1-1', workPackageId: 'wp-g1-1', activityId: 'project-mgmt', responsible: 'Remi Rocheleau', budgetHours: 64, actualHours: 0 },
+  { id: 'wpa-g2-0', workPackageId: 'wp-g2-0', activityId: 'mech-design', responsible: 'Remi Rocheleau', budgetHours: 41, actualHours: 28 },
+  { id: 'wpa-g2-1', workPackageId: 'wp-g2-1', activityId: 'general-cert', responsible: 'Kelly Osei', budgetHours: 27, actualHours: 33.4 },
+  { id: 'wpa-g2-2', workPackageId: 'wp-g2-1', activityId: 'manuals', responsible: 'Harris Bell', budgetHours: 28, actualHours: 34.6 },
+  { id: 'wpa-g3-0', workPackageId: 'wp-g3-0', activityId: 'mech-design', responsible: 'Kelly Osei', budgetHours: 12, actualHours: 14.2 },
+  { id: 'wpa-g3-1', workPackageId: 'wp-g3-0', activityId: 'elec-design', responsible: 'Harris Bell', budgetHours: 8, actualHours: 9.6 },
+  { id: 'wpa-g3-2', workPackageId: 'wp-g3-1', activityId: 'struct-validation', responsible: 'Sofia Reyes', budgetHours: 8, actualHours: 13.2 },
+  { id: 'wpa-g3-3', workPackageId: 'wp-g3-1', activityId: 'elec-validation', responsible: 'Lloyd Pedvis', budgetHours: 4, actualHours: 6.6 },
+  { id: 'wpa-g3-4', workPackageId: 'wp-g3-2', activityId: 'general-cert', responsible: 'Remi Rocheleau', budgetHours: 4, actualHours: 7.2 },
+  { id: 'wpa-g3-5', workPackageId: 'wp-g3-2', activityId: 'manuals', responsible: 'Kelly Osei', budgetHours: 4, actualHours: 7.2 },
+  { id: 'wpa-g4-0', workPackageId: 'wp-g4-0', activityId: 'rfq-response', responsible: 'Harris Bell', budgetHours: 80, actualHours: 0 },
+  { id: 'wpa-g5-0', workPackageId: 'wp-g5-0', activityId: 'rfq-response', responsible: 'Sofia Reyes', budgetHours: 30, actualHours: 0 },
+  { id: 'wpa-g6-0', workPackageId: 'wp-g6-0', activityId: 'rfq-response', responsible: 'Lloyd Pedvis', budgetHours: 18, actualHours: 0 },
+  { id: 'wpa-g7-0', workPackageId: 'wp-g7-0', activityId: 'rfq-response', responsible: 'Remi Rocheleau', budgetHours: 30, actualHours: 0 },
+  { id: 'wpa-g8-0', workPackageId: 'wp-g8-0', activityId: 'rfq-response', responsible: 'Kelly Osei', budgetHours: 18, actualHours: 0 },
+  { id: 'wpa-g9-0', workPackageId: 'wp-g9-0', activityId: 'rfq-response', responsible: 'Harris Bell', budgetHours: 30, actualHours: 0 },
+  { id: 'wpa-g10-0', workPackageId: 'wp-g10-0', activityId: 'rfq-response', responsible: 'Sofia Reyes', budgetHours: 18, actualHours: 0 },
+  { id: 'wpa-g10-1', workPackageId: 'wp-g10-1', activityId: 'project-mgmt', responsible: 'Lloyd Pedvis', budgetHours: 12, actualHours: 0 },
+  { id: 'wpa-g11-0', workPackageId: 'wp-g11-0', activityId: 'rfq-response', responsible: 'Lloyd Pedvis', budgetHours: 48, actualHours: 0 },
+  { id: 'wpa-g11-1', workPackageId: 'wp-g11-1', activityId: 'project-mgmt', responsible: 'Remi Rocheleau', budgetHours: 32, actualHours: 0 },
+  { id: 'wpa-g12-0', workPackageId: 'wp-g12-0', activityId: 'rfq-response', responsible: 'Remi Rocheleau', budgetHours: 18, actualHours: 0 },
+  { id: 'wpa-g12-1', workPackageId: 'wp-g12-1', activityId: 'project-mgmt', responsible: 'Kelly Osei', budgetHours: 12, actualHours: 0 },
+  { id: 'wpa-g13-0', workPackageId: 'wp-g13-0', activityId: 'rfq-response', responsible: 'Kelly Osei', budgetHours: 11, actualHours: 0 },
+  { id: 'wpa-g13-1', workPackageId: 'wp-g13-1', activityId: 'project-mgmt', responsible: 'Harris Bell', budgetHours: 7, actualHours: 0 },
+  { id: 'wpa-g14-0', workPackageId: 'wp-g14-0', activityId: 'rfq-response', responsible: 'Harris Bell', budgetHours: 11, actualHours: 0 },
+  { id: 'wpa-g14-1', workPackageId: 'wp-g14-1', activityId: 'project-mgmt', responsible: 'Sofia Reyes', budgetHours: 7, actualHours: 0 },
+  { id: 'wpa-g15-0', workPackageId: 'wp-g15-0', activityId: 'rfq-response', responsible: 'Sofia Reyes', budgetHours: 30, actualHours: 0 },
+  { id: 'wpa-g15-1', workPackageId: 'wp-g15-1', activityId: 'project-mgmt', responsible: 'Lloyd Pedvis', budgetHours: 20, actualHours: 0 },
+  { id: 'wpa-g16-0', workPackageId: 'wp-g16-0', activityId: 'rfq-response', responsible: 'Lloyd Pedvis', budgetHours: 18, actualHours: 0 },
+  { id: 'wpa-g16-1', workPackageId: 'wp-g16-1', activityId: 'project-mgmt', responsible: 'Remi Rocheleau', budgetHours: 12, actualHours: 0 },
+  { id: 'wpa-g17-0', workPackageId: 'wp-g17-0', activityId: 'rfq-response', responsible: 'Remi Rocheleau', budgetHours: 18, actualHours: 0 },
+  { id: 'wpa-g17-1', workPackageId: 'wp-g17-1', activityId: 'project-mgmt', responsible: 'Kelly Osei', budgetHours: 12, actualHours: 0 },
+  { id: 'wpa-g18-0', workPackageId: 'wp-g18-0', activityId: 'rfq-response', responsible: 'Kelly Osei', budgetHours: 18, actualHours: 0 },
+  { id: 'wpa-g18-1', workPackageId: 'wp-g18-1', activityId: 'project-mgmt', responsible: 'Harris Bell', budgetHours: 12, actualHours: 0 },
+  { id: 'wpa-g19-0', workPackageId: 'wp-g19-0', activityId: 'rfq-response', responsible: 'Harris Bell', budgetHours: 30, actualHours: 0 },
+  { id: 'wpa-g19-1', workPackageId: 'wp-g19-1', activityId: 'project-mgmt', responsible: 'Sofia Reyes', budgetHours: 20, actualHours: 0 },
+  { id: 'wpa-g20-0', workPackageId: 'wp-g20-0', activityId: 'mech-design', responsible: 'Sofia Reyes', budgetHours: 6, actualHours: 1.2 },
+  { id: 'wpa-g20-1', workPackageId: 'wp-g20-0', activityId: 'elec-design', responsible: 'Lloyd Pedvis', budgetHours: 4, actualHours: 0.8 },
+  { id: 'wpa-g20-2', workPackageId: 'wp-g20-1', activityId: 'struct-validation', responsible: 'Remi Rocheleau', budgetHours: 4, actualHours: 1.3 },
+  { id: 'wpa-g20-3', workPackageId: 'wp-g20-1', activityId: 'elec-validation', responsible: 'Kelly Osei', budgetHours: 2, actualHours: 0.7 },
+  { id: 'wpa-g20-4', workPackageId: 'wp-g20-2', activityId: 'general-cert', responsible: 'Harris Bell', budgetHours: 2, actualHours: 0 },
+  { id: 'wpa-g20-5', workPackageId: 'wp-g20-2', activityId: 'manuals', responsible: 'Sofia Reyes', budgetHours: 2, actualHours: 0 },
+  { id: 'wpa-g21-0', workPackageId: 'wp-g21-0', activityId: 'mech-design', responsible: 'Lloyd Pedvis', budgetHours: 8, actualHours: 1.7 },
+  { id: 'wpa-g21-1', workPackageId: 'wp-g21-0', activityId: 'elec-design', responsible: 'Remi Rocheleau', budgetHours: 5, actualHours: 1.1 },
+  { id: 'wpa-g21-2', workPackageId: 'wp-g21-1', activityId: 'struct-validation', responsible: 'Kelly Osei', budgetHours: 5, actualHours: 1.9 },
+  { id: 'wpa-g21-3', workPackageId: 'wp-g21-1', activityId: 'elec-validation', responsible: 'Harris Bell', budgetHours: 2, actualHours: 0.8 },
+  { id: 'wpa-g21-4', workPackageId: 'wp-g21-2', activityId: 'general-cert', responsible: 'Sofia Reyes', budgetHours: 2, actualHours: 0 },
+  { id: 'wpa-g21-5', workPackageId: 'wp-g21-2', activityId: 'manuals', responsible: 'Lloyd Pedvis', budgetHours: 3, actualHours: 0 },
+  { id: 'wpa-g22-0', workPackageId: 'wp-g22-0', activityId: 'mech-design', responsible: 'Remi Rocheleau', budgetHours: 20, actualHours: 12.1 },
+  { id: 'wpa-g22-1', workPackageId: 'wp-g22-0', activityId: 'elec-design', responsible: 'Kelly Osei', budgetHours: 14, actualHours: 8.5 },
+  { id: 'wpa-g22-2', workPackageId: 'wp-g22-1', activityId: 'struct-validation', responsible: 'Harris Bell', budgetHours: 14, actualHours: 15.3 },
+  { id: 'wpa-g22-3', workPackageId: 'wp-g22-1', activityId: 'elec-validation', responsible: 'Sofia Reyes', budgetHours: 7, actualHours: 7.7 },
+  { id: 'wpa-g22-4', workPackageId: 'wp-g22-2', activityId: 'general-cert', responsible: 'Lloyd Pedvis', budgetHours: 7, actualHours: 8.8 },
+  { id: 'wpa-g22-5', workPackageId: 'wp-g22-2', activityId: 'manuals', responsible: 'Remi Rocheleau', budgetHours: 6, actualHours: 7.6 },
+  { id: 'wpa-g23-0', workPackageId: 'wp-g23-0', activityId: 'mech-design', responsible: 'Kelly Osei', budgetHours: 14, actualHours: 4.8 },
+  { id: 'wpa-g23-1', workPackageId: 'wp-g23-0', activityId: 'elec-design', responsible: 'Harris Bell', budgetHours: 9, actualHours: 3.1 },
+  { id: 'wpa-g23-2', workPackageId: 'wp-g23-1', activityId: 'struct-validation', responsible: 'Sofia Reyes', budgetHours: 9, actualHours: 5.6 },
+  { id: 'wpa-g23-3', workPackageId: 'wp-g23-1', activityId: 'elec-validation', responsible: 'Lloyd Pedvis', budgetHours: 4, actualHours: 2.5 },
+  { id: 'wpa-g23-4', workPackageId: 'wp-g23-2', activityId: 'general-cert', responsible: 'Remi Rocheleau', budgetHours: 4, actualHours: 0 },
+  { id: 'wpa-g23-5', workPackageId: 'wp-g23-2', activityId: 'manuals', responsible: 'Kelly Osei', budgetHours: 5, actualHours: 0 },
+  { id: 'wpa-g24-0', workPackageId: 'wp-g24-0', activityId: 'mech-design', responsible: 'Harris Bell', budgetHours: 78, actualHours: 75.35 },
+  { id: 'wpa-g24-1', workPackageId: 'wp-g24-0', activityId: 'elec-design', responsible: 'Sofia Reyes', budgetHours: 52, actualHours: 50.2 },
+  { id: 'wpa-g24-2', workPackageId: 'wp-g24-1', activityId: 'struct-validation', responsible: 'Lloyd Pedvis', budgetHours: 52, actualHours: 69 },
+  { id: 'wpa-g24-3', workPackageId: 'wp-g24-1', activityId: 'elec-validation', responsible: 'Remi Rocheleau', budgetHours: 26, actualHours: 34.5 },
+  { id: 'wpa-g24-4', workPackageId: 'wp-g24-2', activityId: 'general-cert', responsible: 'Kelly Osei', budgetHours: 26, actualHours: 37.6 },
+  { id: 'wpa-g24-5', workPackageId: 'wp-g24-2', activityId: 'manuals', responsible: 'Harris Bell', budgetHours: 26, actualHours: 37.6 },
+  { id: 'wpa-g25-0', workPackageId: 'wp-g25-0', activityId: 'mech-design', responsible: 'Sofia Reyes', budgetHours: 2340, actualHours: 1535.6 },
+  { id: 'wpa-g25-1', workPackageId: 'wp-g25-0', activityId: 'elec-design', responsible: 'Lloyd Pedvis', budgetHours: 1560, actualHours: 1023.7 },
+  { id: 'wpa-g25-2', workPackageId: 'wp-g25-1', activityId: 'struct-validation', responsible: 'Remi Rocheleau', budgetHours: 1560, actualHours: 1850.64 },
+  { id: 'wpa-g25-3', workPackageId: 'wp-g25-1', activityId: 'elec-validation', responsible: 'Kelly Osei', budgetHours: 780, actualHours: 925.3 },
+  { id: 'wpa-g25-4', workPackageId: 'wp-g25-2', activityId: 'general-cert', responsible: 'Harris Bell', budgetHours: 780, actualHours: 1063.1 },
+  { id: 'wpa-g25-5', workPackageId: 'wp-g25-2', activityId: 'manuals', responsible: 'Sofia Reyes', budgetHours: 780, actualHours: 1063.1 },
+  { id: 'wpa-g26-0', workPackageId: 'wp-g26-0', activityId: 'mech-design', responsible: 'Lloyd Pedvis', budgetHours: 1890, actualHours: 1656.45 },
+  { id: 'wpa-g26-1', workPackageId: 'wp-g26-0', activityId: 'elec-design', responsible: 'Remi Rocheleau', budgetHours: 1260, actualHours: 1104.4 },
+  { id: 'wpa-g26-2', workPackageId: 'wp-g26-1', activityId: 'struct-validation', responsible: 'Kelly Osei', budgetHours: 1260, actualHours: 1518.5 },
+  { id: 'wpa-g26-3', workPackageId: 'wp-g26-1', activityId: 'elec-validation', responsible: 'Harris Bell', budgetHours: 630, actualHours: 759.3 },
+  { id: 'wpa-g26-4', workPackageId: 'wp-g26-2', activityId: 'general-cert', responsible: 'Sofia Reyes', budgetHours: 630, actualHours: 828.3 },
+  { id: 'wpa-g26-5', workPackageId: 'wp-g26-2', activityId: 'manuals', responsible: 'Lloyd Pedvis', budgetHours: 630, actualHours: 828.3 },
+  { id: 'wpa-g27-0', workPackageId: 'wp-g27-0', activityId: 'mech-design', responsible: 'Remi Rocheleau', budgetHours: 24, actualHours: 4.1 },
+  { id: 'wpa-g27-1', workPackageId: 'wp-g27-0', activityId: 'elec-design', responsible: 'Kelly Osei', budgetHours: 16, actualHours: 2.8 },
+  { id: 'wpa-g27-2', workPackageId: 'wp-g27-1', activityId: 'struct-validation', responsible: 'Harris Bell', budgetHours: 16, actualHours: 5 },
+  { id: 'wpa-g27-3', workPackageId: 'wp-g27-1', activityId: 'elec-validation', responsible: 'Sofia Reyes', budgetHours: 8, actualHours: 2.5 },
+  { id: 'wpa-g27-4', workPackageId: 'wp-g27-2', activityId: 'general-cert', responsible: 'Lloyd Pedvis', budgetHours: 8, actualHours: 0 },
+  { id: 'wpa-g27-5', workPackageId: 'wp-g27-2', activityId: 'manuals', responsible: 'Remi Rocheleau', budgetHours: 8, actualHours: 0 },
+  { id: 'wpa-g28-0', workPackageId: 'wp-g28-0', activityId: 'mech-design', responsible: 'Kelly Osei', budgetHours: 24, actualHours: 10.6 },
+  { id: 'wpa-g28-1', workPackageId: 'wp-g28-0', activityId: 'elec-design', responsible: 'Harris Bell', budgetHours: 16, actualHours: 7.1 },
+  { id: 'wpa-g28-2', workPackageId: 'wp-g28-1', activityId: 'struct-validation', responsible: 'Sofia Reyes', budgetHours: 16, actualHours: 12.7 },
+  { id: 'wpa-g28-3', workPackageId: 'wp-g28-1', activityId: 'elec-validation', responsible: 'Lloyd Pedvis', budgetHours: 8, actualHours: 6.4 },
+  { id: 'wpa-g28-4', workPackageId: 'wp-g28-2', activityId: 'general-cert', responsible: 'Remi Rocheleau', budgetHours: 8, actualHours: 0 },
+  { id: 'wpa-g28-5', workPackageId: 'wp-g28-2', activityId: 'manuals', responsible: 'Kelly Osei', budgetHours: 8, actualHours: 0 },
+  { id: 'wpa-g29-0', workPackageId: 'wp-g29-0', activityId: 'mech-design', responsible: 'Harris Bell', budgetHours: 24, actualHours: 16.6 },
+  { id: 'wpa-g29-1', workPackageId: 'wp-g29-0', activityId: 'elec-design', responsible: 'Sofia Reyes', budgetHours: 16, actualHours: 11.1 },
+  { id: 'wpa-g29-2', workPackageId: 'wp-g29-1', activityId: 'struct-validation', responsible: 'Lloyd Pedvis', budgetHours: 16, actualHours: 19.9 },
+  { id: 'wpa-g29-3', workPackageId: 'wp-g29-1', activityId: 'elec-validation', responsible: 'Remi Rocheleau', budgetHours: 8, actualHours: 10 },
+  { id: 'wpa-g29-4', workPackageId: 'wp-g29-2', activityId: 'general-cert', responsible: 'Kelly Osei', budgetHours: 8, actualHours: 0 },
+  { id: 'wpa-g29-5', workPackageId: 'wp-g29-2', activityId: 'manuals', responsible: 'Harris Bell', budgetHours: 8, actualHours: 0 },
+  { id: 'wpa-g30-0', workPackageId: 'wp-g30-0', activityId: 'mech-design', responsible: 'Sofia Reyes', budgetHours: 24, actualHours: 7.1 },
+  { id: 'wpa-g30-1', workPackageId: 'wp-g30-0', activityId: 'elec-design', responsible: 'Lloyd Pedvis', budgetHours: 16, actualHours: 4.8 },
+  { id: 'wpa-g30-2', workPackageId: 'wp-g30-1', activityId: 'struct-validation', responsible: 'Remi Rocheleau', budgetHours: 16, actualHours: 8.6 },
+  { id: 'wpa-g30-3', workPackageId: 'wp-g30-1', activityId: 'elec-validation', responsible: 'Kelly Osei', budgetHours: 8, actualHours: 4.3 },
+  { id: 'wpa-g30-4', workPackageId: 'wp-g30-2', activityId: 'general-cert', responsible: 'Harris Bell', budgetHours: 8, actualHours: 0 },
+  { id: 'wpa-g30-5', workPackageId: 'wp-g30-2', activityId: 'manuals', responsible: 'Sofia Reyes', budgetHours: 8, actualHours: 0 },
+  { id: 'wpa-g31-0', workPackageId: 'wp-g31-0', activityId: 'mech-design', responsible: 'Lloyd Pedvis', budgetHours: 15, actualHours: 9.7 },
+  { id: 'wpa-g31-1', workPackageId: 'wp-g31-0', activityId: 'elec-design', responsible: 'Remi Rocheleau', budgetHours: 10, actualHours: 6.4 },
+  { id: 'wpa-g31-2', workPackageId: 'wp-g31-1', activityId: 'struct-validation', responsible: 'Kelly Osei', budgetHours: 10, actualHours: 11.7 },
+  { id: 'wpa-g31-3', workPackageId: 'wp-g31-1', activityId: 'elec-validation', responsible: 'Harris Bell', budgetHours: 5, actualHours: 5.8 },
+  { id: 'wpa-g31-4', workPackageId: 'wp-g31-2', activityId: 'general-cert', responsible: 'Sofia Reyes', budgetHours: 5, actualHours: 6.7 },
+  { id: 'wpa-g31-5', workPackageId: 'wp-g31-2', activityId: 'manuals', responsible: 'Lloyd Pedvis', budgetHours: 5, actualHours: 6.7 },
+  { id: 'wpa-g32-0', workPackageId: 'wp-g32-0', activityId: 'mech-design', responsible: 'Remi Rocheleau', budgetHours: 15, actualHours: 8.3 },
+  { id: 'wpa-g32-1', workPackageId: 'wp-g32-0', activityId: 'elec-design', responsible: 'Kelly Osei', budgetHours: 10, actualHours: 5.6 },
+  { id: 'wpa-g32-2', workPackageId: 'wp-g32-1', activityId: 'struct-validation', responsible: 'Harris Bell', budgetHours: 10, actualHours: 10.1 },
+  { id: 'wpa-g32-3', workPackageId: 'wp-g32-1', activityId: 'elec-validation', responsible: 'Sofia Reyes', budgetHours: 5, actualHours: 5 },
+  { id: 'wpa-g32-4', workPackageId: 'wp-g32-2', activityId: 'general-cert', responsible: 'Lloyd Pedvis', budgetHours: 5, actualHours: 0 },
+  { id: 'wpa-g32-5', workPackageId: 'wp-g32-2', activityId: 'manuals', responsible: 'Remi Rocheleau', budgetHours: 5, actualHours: 0 },
+  { id: 'wpa-g33-0', workPackageId: 'wp-g33-0', activityId: 'mech-design', responsible: 'Kelly Osei', budgetHours: 15, actualHours: 14 },
+  { id: 'wpa-g33-1', workPackageId: 'wp-g33-0', activityId: 'elec-design', responsible: 'Harris Bell', budgetHours: 10, actualHours: 9.4 },
+  { id: 'wpa-g33-2', workPackageId: 'wp-g33-1', activityId: 'struct-validation', responsible: 'Sofia Reyes', budgetHours: 10, actualHours: 12.9 },
+  { id: 'wpa-g33-3', workPackageId: 'wp-g33-1', activityId: 'elec-validation', responsible: 'Lloyd Pedvis', budgetHours: 5, actualHours: 6.5 },
+  { id: 'wpa-g33-4', workPackageId: 'wp-g33-2', activityId: 'general-cert', responsible: 'Remi Rocheleau', budgetHours: 5, actualHours: 7.1 },
+  { id: 'wpa-g33-5', workPackageId: 'wp-g33-2', activityId: 'manuals', responsible: 'Kelly Osei', budgetHours: 5, actualHours: 7.1 },
+  { id: 'wpa-g34-0', workPackageId: 'wp-g34-0', activityId: 'mech-design', responsible: 'Harris Bell', budgetHours: 15, actualHours: 3.6 },
+  { id: 'wpa-g34-1', workPackageId: 'wp-g34-0', activityId: 'elec-design', responsible: 'Sofia Reyes', budgetHours: 10, actualHours: 2.4 },
+  { id: 'wpa-g34-2', workPackageId: 'wp-g34-1', activityId: 'struct-validation', responsible: 'Lloyd Pedvis', budgetHours: 10, actualHours: 4.3 },
+  { id: 'wpa-g34-3', workPackageId: 'wp-g34-1', activityId: 'elec-validation', responsible: 'Remi Rocheleau', budgetHours: 5, actualHours: 2.2 },
+  { id: 'wpa-g34-4', workPackageId: 'wp-g34-2', activityId: 'general-cert', responsible: 'Kelly Osei', budgetHours: 5, actualHours: 0 },
+  { id: 'wpa-g34-5', workPackageId: 'wp-g34-2', activityId: 'manuals', responsible: 'Harris Bell', budgetHours: 5, actualHours: 0 },
+  { id: 'wpa-g35-0', workPackageId: 'wp-g35-0', activityId: 'mech-design', responsible: 'Sofia Reyes', budgetHours: 15, actualHours: 9.6 },
+  { id: 'wpa-g35-1', workPackageId: 'wp-g35-0', activityId: 'elec-design', responsible: 'Lloyd Pedvis', budgetHours: 10, actualHours: 6.4 },
+  { id: 'wpa-g35-2', workPackageId: 'wp-g35-1', activityId: 'struct-validation', responsible: 'Remi Rocheleau', budgetHours: 10, actualHours: 11.7 },
+  { id: 'wpa-g35-3', workPackageId: 'wp-g35-1', activityId: 'elec-validation', responsible: 'Kelly Osei', budgetHours: 5, actualHours: 5.8 },
+  { id: 'wpa-g35-4', workPackageId: 'wp-g35-2', activityId: 'general-cert', responsible: 'Harris Bell', budgetHours: 5, actualHours: 0 },
+  { id: 'wpa-g35-5', workPackageId: 'wp-g35-2', activityId: 'manuals', responsible: 'Sofia Reyes', budgetHours: 5, actualHours: 0 },
+  { id: 'wpa-g36-0', workPackageId: 'wp-g36-0', activityId: 'mech-design', responsible: 'Lloyd Pedvis', budgetHours: 15, actualHours: 9.1 },
+  { id: 'wpa-g36-1', workPackageId: 'wp-g36-0', activityId: 'elec-design', responsible: 'Remi Rocheleau', budgetHours: 10, actualHours: 6 },
+  { id: 'wpa-g36-2', workPackageId: 'wp-g36-1', activityId: 'struct-validation', responsible: 'Kelly Osei', budgetHours: 10, actualHours: 10.8 },
+  { id: 'wpa-g36-3', workPackageId: 'wp-g36-1', activityId: 'elec-validation', responsible: 'Harris Bell', budgetHours: 5, actualHours: 5.5 },
+  { id: 'wpa-g36-4', workPackageId: 'wp-g36-2', activityId: 'general-cert', responsible: 'Sofia Reyes', budgetHours: 5, actualHours: 6.3 },
+  { id: 'wpa-g36-5', workPackageId: 'wp-g36-2', activityId: 'manuals', responsible: 'Lloyd Pedvis', budgetHours: 5, actualHours: 6.3 },
+  { id: 'wpa-g37-0', workPackageId: 'wp-g37-0', activityId: 'mech-design', responsible: 'Remi Rocheleau', budgetHours: 15, actualHours: 5.9 },
+  { id: 'wpa-g37-1', workPackageId: 'wp-g37-0', activityId: 'elec-design', responsible: 'Kelly Osei', budgetHours: 10, actualHours: 3.9 },
+  { id: 'wpa-g37-2', workPackageId: 'wp-g37-1', activityId: 'struct-validation', responsible: 'Harris Bell', budgetHours: 10, actualHours: 7.1 },
+  { id: 'wpa-g37-3', workPackageId: 'wp-g37-1', activityId: 'elec-validation', responsible: 'Sofia Reyes', budgetHours: 5, actualHours: 3.6 },
+  { id: 'wpa-g37-4', workPackageId: 'wp-g37-2', activityId: 'general-cert', responsible: 'Lloyd Pedvis', budgetHours: 5, actualHours: 0 },
+  { id: 'wpa-g37-5', workPackageId: 'wp-g37-2', activityId: 'manuals', responsible: 'Remi Rocheleau', budgetHours: 5, actualHours: 0 },
+  { id: 'wpa-g38-0', workPackageId: 'wp-g38-0', activityId: 'mech-design', responsible: 'Kelly Osei', budgetHours: 3, actualHours: 2.7 },
+  { id: 'wpa-g38-1', workPackageId: 'wp-g38-0', activityId: 'elec-design', responsible: 'Harris Bell', budgetHours: 2, actualHours: 1.7 },
+  { id: 'wpa-g38-2', workPackageId: 'wp-g38-1', activityId: 'struct-validation', responsible: 'Sofia Reyes', budgetHours: 2, actualHours: 2.4 },
+  { id: 'wpa-g38-3', workPackageId: 'wp-g38-1', activityId: 'elec-validation', responsible: 'Lloyd Pedvis', budgetHours: 1, actualHours: 1.2 },
+  { id: 'wpa-g38-4', workPackageId: 'wp-g38-2', activityId: 'general-cert', responsible: 'Remi Rocheleau', budgetHours: 1, actualHours: 1.3 },
+  { id: 'wpa-g38-5', workPackageId: 'wp-g38-2', activityId: 'manuals', responsible: 'Kelly Osei', budgetHours: 1, actualHours: 1.3 },
+  { id: 'wpa-g39-0', workPackageId: 'wp-g39-0', activityId: 'mech-design', responsible: 'Harris Bell', budgetHours: 15, actualHours: 7.5 },
+  { id: 'wpa-g39-1', workPackageId: 'wp-g39-0', activityId: 'elec-design', responsible: 'Sofia Reyes', budgetHours: 10, actualHours: 5 },
+  { id: 'wpa-g39-2', workPackageId: 'wp-g39-1', activityId: 'struct-validation', responsible: 'Lloyd Pedvis', budgetHours: 10, actualHours: 9 },
+  { id: 'wpa-g39-3', workPackageId: 'wp-g39-1', activityId: 'elec-validation', responsible: 'Remi Rocheleau', budgetHours: 5, actualHours: 4.5 },
+  { id: 'wpa-g39-4', workPackageId: 'wp-g39-2', activityId: 'general-cert', responsible: 'Kelly Osei', budgetHours: 5, actualHours: 0 },
+  { id: 'wpa-g39-5', workPackageId: 'wp-g39-2', activityId: 'manuals', responsible: 'Harris Bell', budgetHours: 5, actualHours: 0 },
+  { id: 'wpa-g40-0', workPackageId: 'wp-g40-0', activityId: 'mech-design', responsible: 'Sofia Reyes', budgetHours: 3, actualHours: 2.3 },
+  { id: 'wpa-g40-1', workPackageId: 'wp-g40-0', activityId: 'elec-design', responsible: 'Lloyd Pedvis', budgetHours: 2, actualHours: 1.5 },
+  { id: 'wpa-g40-2', workPackageId: 'wp-g40-1', activityId: 'struct-validation', responsible: 'Remi Rocheleau', budgetHours: 2, actualHours: 2.7 },
+  { id: 'wpa-g40-3', workPackageId: 'wp-g40-1', activityId: 'elec-validation', responsible: 'Kelly Osei', budgetHours: 1, actualHours: 1.4 },
+  { id: 'wpa-g40-4', workPackageId: 'wp-g40-2', activityId: 'general-cert', responsible: 'Harris Bell', budgetHours: 1, actualHours: 0 },
+  { id: 'wpa-g40-5', workPackageId: 'wp-g40-2', activityId: 'manuals', responsible: 'Sofia Reyes', budgetHours: 1, actualHours: 0 },
+  { id: 'wpa-g41-0', workPackageId: 'wp-g41-0', activityId: 'mech-design', responsible: 'Lloyd Pedvis', budgetHours: 3, actualHours: 1 },
+  { id: 'wpa-g41-1', workPackageId: 'wp-g41-0', activityId: 'elec-design', responsible: 'Remi Rocheleau', budgetHours: 2, actualHours: 0.7 },
+  { id: 'wpa-g41-2', workPackageId: 'wp-g41-1', activityId: 'struct-validation', responsible: 'Kelly Osei', budgetHours: 2, actualHours: 1.1 },
+  { id: 'wpa-g41-3', workPackageId: 'wp-g41-1', activityId: 'elec-validation', responsible: 'Harris Bell', budgetHours: 1, actualHours: 0.6 },
+  { id: 'wpa-g41-4', workPackageId: 'wp-g41-2', activityId: 'general-cert', responsible: 'Sofia Reyes', budgetHours: 1, actualHours: 0 },
+  { id: 'wpa-g41-5', workPackageId: 'wp-g41-2', activityId: 'manuals', responsible: 'Lloyd Pedvis', budgetHours: 1, actualHours: 0 },
+  { id: 'wpa-g42-0', workPackageId: 'wp-g42-0', activityId: 'mech-design', responsible: 'Remi Rocheleau', budgetHours: 3, actualHours: 1.8 },
+  { id: 'wpa-g42-1', workPackageId: 'wp-g42-0', activityId: 'elec-design', responsible: 'Kelly Osei', budgetHours: 2, actualHours: 1.2 },
+  { id: 'wpa-g42-2', workPackageId: 'wp-g42-1', activityId: 'struct-validation', responsible: 'Harris Bell', budgetHours: 2, actualHours: 2 },
+  { id: 'wpa-g42-3', workPackageId: 'wp-g42-1', activityId: 'elec-validation', responsible: 'Sofia Reyes', budgetHours: 1, actualHours: 1.1 },
+  { id: 'wpa-g42-4', workPackageId: 'wp-g42-2', activityId: 'general-cert', responsible: 'Lloyd Pedvis', budgetHours: 1, actualHours: 0 },
+  { id: 'wpa-g42-5', workPackageId: 'wp-g42-2', activityId: 'manuals', responsible: 'Remi Rocheleau', budgetHours: 1, actualHours: 0 },
+  ...COVERAGE.activities,
 ]

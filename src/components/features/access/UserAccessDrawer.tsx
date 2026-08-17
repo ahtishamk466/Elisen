@@ -45,7 +45,7 @@ export function UserAccessDrawer({ user, onClose, onSave }: UserAccessDrawerProp
         </>
       }
     >
-      <FormSection title="Account" subtitle="Managed under user maintenance — shown here for context.">
+      <FormSection title="Account" subtitle="Managed under user maintenance, shown here for context.">
         <div className="grid grid-cols-2 gap-lg">
           <div>
             <p className="text-xs text-text-muted">Username</p>
@@ -57,7 +57,7 @@ export function UserAccessDrawer({ user, onClose, onSave }: UserAccessDrawerProp
           </div>
           <div>
             <p className="text-xs text-text-muted">Status</p>
-            <p className="mt-xxss"><Badge tone={user.status === 'active' ? 'success' : 'neutral'} dot>{user.status === 'active' ? 'Active' : 'Inactive'}</Badge></p>
+            <p className="mt-xxss"><Badge tone={user.status === 'active' ? 'success' : 'neutral'}>{user.status === 'active' ? 'Active' : 'Inactive'}</Badge></p>
           </div>
         </div>
       </FormSection>
@@ -69,14 +69,14 @@ export function UserAccessDrawer({ user, onClose, onSave }: UserAccessDrawerProp
             return (
               <div key={r.id}>
                 <Checkbox
-                  label={`${r.name} — ${r.description}`}
+                  label={`${r.name}: ${r.description}`}
                   checked={roleIds.includes(r.id)}
                   disabled={locked}
                   onChange={() => toggleRole(r.id)}
                 />
                 {locked && (
                   <p className="mt-xxss pl-2xl text-xs text-text-muted">
-                    Can't be removed — this is the only active Sysadmin, and the system must keep one.
+                    Can't be removed. This is the only active Sysadmin, and the system must keep one.
                   </p>
                 )}
               </div>
@@ -87,10 +87,10 @@ export function UserAccessDrawer({ user, onClose, onSave }: UserAccessDrawerProp
 
       <FormSection
         title="Direct permissions"
-        subtitle="Grants outside any role — kept visible so access never hides here. Prefer roles."
+        subtitle="Grants outside any role, kept visible so access never hides here. Prefer roles."
       >
         {directIds.length === 0 ? (
-          <p className="text-sm text-text-muted">None — all access comes from roles.</p>
+          <p className="text-sm text-text-muted">None, all access comes from roles.</p>
         ) : (
           <div className="flex flex-wrap gap-sm">
             {directIds.map((id) => (
@@ -110,9 +110,9 @@ export function UserAccessDrawer({ user, onClose, onSave }: UserAccessDrawerProp
         )}
       </FormSection>
 
-      <FormSection title="Effective access" subtitle="Everything the selections above add up to — read-only.">
+      <FormSection title="Effective access" subtitle="Everything the selections above add up to, read-only.">
         {effective.length === 0 ? (
-          <p className="text-sm text-text-muted">No permissions — assign a role above.</p>
+          <p className="text-sm text-text-muted">No permissions, assign a role above.</p>
         ) : (
           <div className="grid gap-base">
             {groupByModule(effective).map(([module, ids]) => (

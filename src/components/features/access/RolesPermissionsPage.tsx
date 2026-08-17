@@ -30,17 +30,17 @@ export function RolesPermissionsPage({ state = 'ready' }: { state?: PageState })
       activeChild="Roles & Permissions"
       headerActions={
         tab === 'Roles' ? (
-          <Button size="lg" leadingIcon={<Plus size={16} />} onClick={() => setAddingRole(true)}>Add Role</Button>
+          <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setAddingRole(true)}>Add Role</Button>
         ) : (
           <>
-            <div className="min-w-0" style={{ width: 300 }}>
+            <div className="min-w-0" style={{ width: 400 }}>
               <label htmlFor="perm-search" className="sr-only">Search permissions</label>
-              <Input
+              <Input size="sm"
                 id="perm-search" value={permQuery} onChange={(e) => setPermQuery(e.target.value)}
                 placeholder="Search by name or description..." leadingIcon={<Search size={16} />}
               />
             </div>
-            <Button size="lg" leadingIcon={<Plus size={16} />} onClick={() => setAddingPermission(true)}>Add Permission</Button>
+            <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setAddingPermission(true)}>Add Permission</Button>
           </>
         )
       }

@@ -25,11 +25,11 @@ export function TimesheetEntryView({ values, projects, workPackages, deliverable
       <Card title="Entry">
         <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
           <Field label="Employee">{values.employeeName}</Field>
-          <Field label="Project">{project ? `${project.number}-${project.subNumber} — ${project.title}` : '—'}</Field>
+          <Field label="Project">{project ? `${project.number}-${project.subNumber}: ${project.title}` : '—'}</Field>
           <Field label="Work Package">{workPackage?.title}</Field>
           <Field label="Activity">{activity?.name}</Field>
           <Field label="Task">{values.task}</Field>
-          <Field label="Deliverable">{deliverable ? `${deliverable.number} — ${deliverable.title}` : '—'}</Field>
+          <Field label="Deliverable">{deliverable ? `${deliverable.number}: ${deliverable.title}` : '—'}</Field>
           <Field label="Comment">{values.comment}</Field>
         </div>
       </Card>

@@ -3,7 +3,8 @@ import { Plus, Search, Building2, Eye, Pencil, Trash2, CircleCheck, CircleOff } 
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
-import { Pagination } from '@/components/patterns/Pagination'
+import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Truncate } from '@/components/patterns/Truncate'
 import { Button } from '@/components/ui/Button'
@@ -62,8 +63,6 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
   const removeCompany = useLookupStore((s) => s.removeCompany)
 
   const [query, setQuery] = useState('')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; company?: Company } | null>(null)
   const [deleting, setDeleting] = useState<Company | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -83,6 +82,8 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
     })
   }, [companies, contacts, query]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
+
   const loading = state === 'loading'
 
   if (state === 'error') {
@@ -100,14 +101,14 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
       activeChild="Companies"
       headerActions={
         <>
-          <div className="min-w-0" style={{ width: 300 }}>
+          <div className="min-w-0" style={{ width: 400 }}>
             <label htmlFor="company-search" className="sr-only">Search companies and contacts</label>
-            <Input
-              id="company-search" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }}
+            <Input size="sm"
+              id="company-search" value={query} onChange={(e) => { setQuery(e.target.value); resetVisible() }}
               placeholder="Search companies or contacts..." leadingIcon={<Search size={16} />}
             />
           </div>
-          <Button size="lg" leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>Add Company</Button>
+          <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>Add Company</Button>
         </>
       }
     >
@@ -144,7 +145,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
                         {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                       </tr>
                     ))
-                  : filtered.slice((page - 1) * pageSize, page * pageSize).map(({ company: c, matchedContact }) => (
+                  : filtered.slice(0, visibleCount).map(({ company: c, matchedContact }) => (
                       <tr
                         key={c.id}
                         onClick={() => setDrawer({ mode: 'edit', company: c })}
@@ -175,7 +176,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
                               { label: 'View', icon: <Eye size={16} />, onSelect: () => setDrawer({ mode: 'view', company: c }) },
                               { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setDrawer({ mode: 'edit', company: c }) },
                               c.active
-                                ? { label: 'Deactivate', icon: <CircleOff size={16} />, onSelect: () => { updateCompany(c.id, { active: false }); setToast(`${c.name} deactivated — hidden from pickers.`) } }
+                                ? { label: 'Deactivate', icon: <CircleOff size={16} />, onSelect: () => { updateCompany(c.id, { active: false }); setToast(`${c.name} deactivated, hidden from pickers.`) } }
                                 : { label: 'Activate', icon: <CircleCheck size={16} />, onSelect: () => { updateCompany(c.id, { active: true }); setToast(`${c.name} activated.`) } },
                               { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(c), tone: 'danger' },
                             ]}
@@ -187,10 +188,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
             </table>
           </div>
           {!loading && (
-            <Pagination
-              page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="companies"
-              onPageChange={setPage} onPageSizeChange={setPageSize}
-            />
+            <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="companies" />
           )}
           </div>
         )}

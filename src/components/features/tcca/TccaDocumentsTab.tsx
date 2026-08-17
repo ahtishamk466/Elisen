@@ -37,7 +37,7 @@ export function TccaDocumentsTab({ tcca }: { tcca: TccaProject }) {
     <div className="grid gap-lg">
       <div className="flex items-center justify-between gap-lg">
         <p className="text-sm text-text-secondary">
-          Deliverable revisions tracked with Transport Canada. Documents only — drawings stay on the Elisen side.
+          Deliverable revisions tracked with Transport Canada. Documents only, drawings stay on the Elisen side.
         </p>
         <Button leadingIcon={<Plus size={16} />} onClick={() => setLinking(true)}>
           Link document revision
@@ -107,7 +107,7 @@ export function TccaDocumentsTab({ tcca }: { tcca: TccaProject }) {
       <ConfirmDialog
         open={!!removingLink}
         title="Unlink this document?"
-        description="The revision stays on the Elisen side — only its TCCA tracking record is removed."
+        description="The revision stays on the Elisen side, only its TCCA tracking record is removed."
         confirmLabel="Unlink"
         tone="danger"
         onConfirm={() => { if (removingLink) unlinkDoc(removingLink.id); setRemovingLink(null) }}

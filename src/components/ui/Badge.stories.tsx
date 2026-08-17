@@ -22,17 +22,17 @@ export const AllVariants: Story = {
       </div>
       <div className="flex flex-wrap gap-sm">
         {TONES.map((tone) => (
-          <Badge key={tone} tone={tone} appearance="outline" dot>
+          <Badge key={tone} tone={tone} appearance="outline">
             {tone}
           </Badge>
         ))}
       </div>
       <div className="flex flex-wrap gap-sm">
         <Badge tone="danger">1 - Fire</Badge>
-        <Badge tone="info" appearance="outline" dot>
+        <Badge tone="info" appearance="outline">
           Quoted
         </Badge>
-        <Badge tone="success" appearance="outline" dot>
+        <Badge tone="success" appearance="outline">
           Active
         </Badge>
       </div>

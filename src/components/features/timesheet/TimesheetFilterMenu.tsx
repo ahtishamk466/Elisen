@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Filter as FilterIcon } from 'lucide-react'
 import { useDropdown } from '@/components/patterns/useDropdown'
+import type { FilterChip } from '@/components/patterns/FilterChips'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
+import { PersonSelect } from '@/components/ui/PersonSelect'
 import { Input } from '@/components/ui/Input'
 import type { ProjectListRow } from '@/types/project'
 
@@ -18,6 +20,28 @@ export interface TimesheetFilters {
 
 export const EMPTY_FILTERS: TimesheetFilters = {
   employeeName: '', projectId: '', validated: '', active: '', dateFrom: '', dateTo: '',
+}
+
+/** Applied filters as removable chips. Project resolves to its number so a
+    chip never shows a raw id. */
+export function timesheetFilterChips(
+  filters: TimesheetFilters,
+  projects: ProjectListRow[],
+  onChange: (filters: TimesheetFilters) => void,
+): FilterChip[] {
+  const clear = (key: keyof TimesheetFilters) => () => onChange({ ...filters, [key]: '' })
+  const project = projects.find((p) => p.id === filters.projectId)
+  const defs: { key: keyof TimesheetFilters; label: string; value: string }[] = [
+    { key: 'employeeName', label: 'Employee', value: filters.employeeName },
+    { key: 'projectId', label: 'Project', value: project ? `${project.number}-${project.subNumber}` : '' },
+    { key: 'validated', label: 'Validated', value: filters.validated === 'yes' ? 'Yes' : filters.validated === 'no' ? 'No' : '' },
+    { key: 'active', label: 'Active', value: filters.active === 'yes' ? 'Active' : filters.active === 'no' ? 'Inactive' : '' },
+    { key: 'dateFrom', label: 'From', value: filters.dateFrom },
+    { key: 'dateTo', label: 'To', value: filters.dateTo },
+  ]
+  return defs
+    .filter((d) => d.value)
+    .map((d) => ({ key: d.key, label: d.label, value: d.value, onRemove: clear(d.key) }))
 }
 
 export interface TimesheetFilterMenuProps {
@@ -45,7 +69,7 @@ export function TimesheetFilterMenu({ projects, employees, filters, onApply }: T
       <Button
         ref={triggerRef}
         variant="secondary"
-        size="lg"
+        size="md"
         leadingIcon={<FilterIcon size={16} />}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -59,15 +83,14 @@ export function TimesheetFilterMenu({ projects, employees, filters, onApply }: T
             ref={menuRef}
             role="menu"
             aria-label="Filter timesheet entries"
-            className="fixed z-dropdown grid gap-base rounded-sm border border-border-default bg-neutral-25 p-lg shadow-lg"
-            style={{ top: position.top, left: position.left, width: MENU_WIDTH }}
+            className="fixed z-dropdown overflow-y-auto grid gap-base rounded-sm border border-border-default bg-neutral-25 p-lg shadow-lg"
+            style={{ ...position, width: MENU_WIDTH }}
           >
             {employees && (
               <div className="grid gap-xs">
                 <label htmlFor="filter-employee" className="text-xs font-semibold text-text-secondary">Employee</label>
-                <Select id="filter-employee" value={draft.employeeName} placeholder="Any employee" onChange={(e) => setDraft((d) => ({ ...d, employeeName: e.target.value }))}>
-                  {employees.map((p) => <option key={p} value={p}>{p}</option>)}
-                </Select>
+                <PersonSelect id="filter-employee" value={draft.employeeName} placeholder="Any employee" size="sm"
+                  people={employees} onChange={(v) => setDraft((d) => ({ ...d, employeeName: v }))} />
               </div>
             )}
             <div className="grid gap-xs">

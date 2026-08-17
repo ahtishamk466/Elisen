@@ -75,8 +75,8 @@ export const ACCESS_PERMISSIONS: AccessPermission[] = [
   { id: 'tcca-update', description: 'TCCA Update', routes: ['/tcca/update'] },
 
   { id: 'report-index', description: 'Report Index', routes: ['/report/index'] },
-  { id: 'report-hours-worked', description: 'Report — Hours Worked', routes: ['/report/hours-worked'] },
-  { id: 'report-pcc', description: 'Report — Project Completion Checklist', routes: ['/report/pcc'] },
+  { id: 'report-hours-worked', description: 'Report: Hours Worked', routes: ['/report/hours-worked'] },
+  { id: 'report-pcc', description: 'Report: Project Completion Checklist', routes: ['/report/pcc'] },
 ]
 
 /** Registered but guarded by nothing — the "Unassigned" state on System.

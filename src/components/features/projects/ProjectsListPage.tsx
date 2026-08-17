@@ -1,18 +1,27 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, SlidersHorizontal, FolderOpen } from 'lucide-react'
+import { Plus, Search, FolderOpen } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { StatCard } from '@/components/patterns/StatCard'
 import { EmptyState } from '@/components/patterns/EmptyState'
-import { Pagination } from '@/components/patterns/Pagination'
+import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { FilterChips } from '@/components/patterns/FilterChips'
+import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
-import { ProjectsTable } from './ProjectsTable'
+import { ProjectsTable, type ProjectRowWithHealth, type Sort } from './ProjectsTable'
 import { AddProjectDrawer } from './AddProjectDrawer'
 import { ExportMenu } from './ExportMenu'
+import { ProjectFilterMenu, EMPTY_PROJECT_FILTERS, projectFilterChips, type ProjectFilters } from './ProjectFilterMenu'
 import { useProjectsStore } from '@/stores/projectsStore'
+import { useWorkPackagesStore } from '@/stores/workPackagesStore'
+import { useLookupStore } from '@/stores/lookupStore'
+import { useApprovalsStore } from '@/stores/approvalsStore'
+import { useDocumentsStore } from '@/stores/documentsStore'
+import { PEOPLE } from '@/lib/projectFixtures'
+import { HEALTH_LABEL, rollUpProject, type HealthState } from '@/lib/projectHealth'
 import { useTccaStore } from '@/stores/tccaStore'
 import { getNextProjectNumber } from '@/lib/projectFixtures'
 import type { ProjectListRow } from '@/types/project'
@@ -45,33 +54,110 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
   const updateRow = useProjectsStore((s) => s.updateRow)
   const removeRow = useProjectsStore((s) => s.removeRow)
   const addTcca = useTccaStore((s) => s.addTcca)
+  const workPackages = useWorkPackagesStore((s) => s.workPackages)
+  const catalogAircraft = useLookupStore((s) => s.aircraft)
+  const linkApprovalToProject = useApprovalsStore((s) => s.linkToProject)
+  const linkRevisionToProject = useDocumentsStore((s) => s.linkRevisionToProject)
+  const activities = useWorkPackagesStore((s) => s.activities)
 
   const [query, setQuery] = useState('')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [filters, setFilters] = useState<ProjectFilters>(EMPTY_PROJECT_FILTERS)
+  const [sort, setSort] = useState<Sort>({ key: 'number', dir: 'asc' })
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [editingRow, setEditingRow] = useState<ProjectListRow | null>(null)
   const [deletingRow, setDeletingRow] = useState<ProjectListRow | null>(null)
 
+  const companies = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.companyName).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [rows],
+  )
+  const people = useMemo(
+    () => Array.from(new Set([...PEOPLE, ...rows.map((r) => r.personResponsible)].filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [rows],
+  )
+
+  /** Health is rolled up from work-package activities — the level hours are
+      actually booked at — so the list and the detail page can never disagree. */
+  const withHealth = useMemo(
+    () => rows.map((row) => ({
+      row,
+      health: rollUpProject(row.id, workPackages, activities, {
+        budgetHours: row.budgetHours, actualHours: row.actualHours, complete: row.status === 'complete',
+      }),
+    })),
+    [rows, workPackages, activities],
+  )
+
   const filtered = useMemo(() => {
-    if (!query.trim()) return rows
-    const q = query.toLowerCase()
-    return rows.filter((r) =>
-      [r.number, r.subNumber, r.title, r.companyName, r.contactName, r.personResponsible]
-        .join(' ').toLowerCase().includes(q),
-    )
-  }, [rows, query])
+    const q = query.toLowerCase().trim()
+    return withHealth.filter(({ row: r, health }) => {
+      if (filters.company && r.companyName !== filters.company) return false
+      if (filters.personResponsible && r.personResponsible !== filters.personResponsible) return false
+      if (filters.priority && r.priority !== filters.priority) return false
+      if (filters.status && r.status !== filters.status) return false
+      if (filters.type && r.type !== filters.type) return false
+      if (filters.active && (filters.active === 'yes') !== r.active) return false
+      if (filters.health && health.state !== filters.health) return false
+      if (!q) return true
+      return [r.number, r.subNumber, r.title, r.companyName, r.contactName, r.personResponsible]
+        .join(' ').toLowerCase().includes(q)
+    })
+  }, [withHealth, query, filters])
+
+  const sorted = useMemo(() => {
+    const dir = sort.dir === 'asc' ? 1 : -1
+    // Rows with no budget have no progress to compare — park them last in
+    // either direction rather than letting null sort as zero.
+    const value = ({ row, health }: ProjectRowWithHealth) => {
+      switch (sort.key) {
+        case 'number': return `${row.number}-${row.subNumber}`
+        case 'company': return row.companyName
+        case 'priority': return row.priority
+        case 'budget': return health.budget
+        case 'actual': return health.actual
+        case 'remaining': return health.budget > 0 ? health.remaining : null
+        case 'progress': return health.progressPct
+      }
+    }
+    return [...filtered].sort((a, b) => {
+      const av = value(a), bv = value(b)
+      if (av === null || av === undefined) return 1
+      if (bv === null || bv === undefined) return -1
+      if (typeof av === 'string' && typeof bv === 'string') return av.localeCompare(bv) * dir
+      return ((av as number) - (bv as number)) * dir
+    })
+  }, [filtered, sort])
+
+  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(sorted.length, 25)
 
   const loading = state === 'loading'
-  const showEmpty = state === 'empty' || (state === 'ready' && filtered.length === 0)
+  const showEmpty = state === 'empty' || (state === 'ready' && sorted.length === 0)
+  const hasFilters = Object.values(filters).some(Boolean)
 
-  const stats = [
-    { value: rows.length, label: 'Total projects' },
-    { value: rows.filter((r) => r.status === 'active').length, label: 'In progress' },
-    { value: rows.filter((r) => r.status === 'complete').length, label: 'Completed projects' },
-    { value: rows.filter((r) => r.priority === '1-fire').length, label: 'Priority 1 — Fire' },
-  ]
+  /**
+   * Stats describe **what is on screen**, so they move with search and filters
+   * and read 0 when nothing matches. Counting the whole table while the list
+   * showed a filtered slice made the tiles contradict the rows beneath them.
+   *
+   * Health counts lead: "how many need attention" is the question the old
+   * Total/In-progress/Completed tiles couldn't answer.
+   */
+  const countOf = (s: HealthState) => sorted.filter((x) => x.health.state === s).length
+  const stats = canSeeFinancials
+    ? [
+        { value: sorted.length, label: 'Projects shown' },
+        { value: countOf('on-track'), label: HEALTH_LABEL['on-track'] },
+        { value: countOf('at-risk'), label: HEALTH_LABEL['at-risk'] },
+        { value: countOf('over-budget'), label: HEALTH_LABEL['over-budget'] },
+      ]
+    : [
+        { value: sorted.length, label: 'Projects shown' },
+        { value: sorted.filter(({ row }) => row.status === 'active').length, label: 'In progress' },
+        { value: sorted.filter(({ row }) => row.status === 'complete').length, label: 'Completed projects' },
+        { value: sorted.filter(({ row }) => row.priority === '1-fire').length, label: 'Priority 1: Fire' },
+      ]
 
   const handleDuplicate = (row: ProjectListRow) => {
     const number = getNextProjectNumber(rows)
@@ -88,27 +174,29 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
 
   return (
     <AppShell
-      title="Projects — List"
+      title="Projects List"
       headerActions={
         <>
-          <div className="min-w-0" style={{ width: 300 }}>
+          <div className="min-w-0" style={{ width: 400 }}>
             <label htmlFor="project-search" className="sr-only">Search projects</label>
-            <Input
+            <Input size="sm"
               id="project-search"
               value={query}
-              onChange={(e) => { setQuery(e.target.value); setPage(1) }}
+              onChange={(e) => { setQuery(e.target.value); resetVisible() }}
               placeholder="Search by number, project, company or person..."
               leadingIcon={<Search size={16} />}
             />
           </div>
-          <Button variant="secondary" size="lg" leadingIcon={<SlidersHorizontal size={16} />} aria-label="Filter projects">
-            Filter
-          </Button>
-          <ExportMenu
-            rows={filtered}
-            onUnavailableFormat={(format) => setToast(`${format} export isn't wired up yet — HTML, CSV and Text are ready now.`)}
+          <ProjectFilterMenu
+            ariaLabel="Filter projects"
+            companies={companies} people={people} filters={filters}
+            onApply={(f) => { setFilters(f); resetVisible() }}
           />
-          <Button size="lg" leadingIcon={<Plus size={16} />} onClick={() => setDrawerOpen(true)}>
+          <ExportMenu
+            rows={sorted.map(({ row }) => row)}
+            onUnavailableFormat={(format) => setToast(`${format} export isn't wired up yet: HTML, CSV and Text are ready now.`)}
+          />
+          <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setDrawerOpen(true)}>
             Add new project
           </Button>
         </>
@@ -116,6 +204,11 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
     >
       <div className="grid gap-lg">
         {toast && <Alert tone="info" title={toast} />}
+
+        <FilterChips
+          chips={projectFilterChips(filters, (f) => { setFilters(f); resetVisible() })}
+          onClearAll={() => { setFilters(EMPTY_PROJECT_FILTERS); resetVisible() }}
+        />
 
         <div className="grid gap-lg mobile:grid-cols-2 laptop:grid-cols-4">
           {stats.map((s) => (
@@ -131,15 +224,15 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
           <div className="rounded-sm border border-border-default bg-neutral-25">
             <EmptyState
               icon={<FolderOpen size={48} strokeWidth={1.5} />}
-              title={query ? 'No projects match your search' : 'No projects yet'}
+              title={query || hasFilters ? 'No projects match your search' : 'No projects yet'}
               description={
-                query
-                  ? 'Try a different project number, company or person.'
+                query || hasFilters
+                  ? 'Try a different project number, company or person, or clear the filters.'
                   : 'Create your first project to start tracking work packages, deliverables and TCCA approvals.'
               }
               action={
-                query ? (
-                  <Button variant="secondary" onClick={() => setQuery('')}>Clear search</Button>
+                query || hasFilters ? (
+                  <Button variant="secondary" onClick={() => { setQuery(''); setFilters(EMPTY_PROJECT_FILTERS) }}>Clear search &amp; filters</Button>
                 ) : (
                   <Button leadingIcon={<Plus size={16} />} onClick={() => setDrawerOpen(true)}>Add new project</Button>
                 )
@@ -147,21 +240,39 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
             />
           </div>
         ) : (
+          <>
+          {selectedIds.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-lg rounded-sm border border-accent bg-accent-subtle px-lg py-base">
+              <p className="text-sm font-semibold text-text-primary">
+                {selectedIds.length} project{selectedIds.length === 1 ? '' : 's'} selected
+              </p>
+              <div className="flex flex-wrap items-center gap-sm">
+                <ExportMenu
+                  rows={sorted.filter(({ row }) => selectedIds.includes(row.id)).map(({ row }) => row)}
+                  onUnavailableFormat={(format) => setToast(`${format} export isn't wired up yet: HTML, CSV and Text are ready now.`)}
+                />
+                <Button variant="tertiary" onClick={() => setSelectedIds([])}>Clear selection</Button>
+              </div>
+            </div>
+          )}
           <ProjectsTable
-            rows={filtered.slice((page - 1) * pageSize, page * pageSize)}
+            rows={sorted.slice(0, visibleCount)}
             loading={loading}
             canSeeFinancials={canSeeFinancials}
+            sort={sort}
+            onSortChange={(s) => { setSort(s); resetVisible() }}
+            selectedIds={selectedIds}
+            onSelectionChange={setSelectedIds}
             onView={(row) => navigate(`/projects/${row.id}`)}
+            onOpenWorkPackages={(row) => navigate(`/projects/${row.id}?tab=work-packages`)}
             onEdit={setEditingRow}
             onDuplicate={handleDuplicate}
             onDelete={setDeletingRow}
             pagination={!loading && (
-              <Pagination
-                page={page} pageSize={pageSize} totalItems={filtered.length} itemLabel="projects"
-                onPageChange={setPage} onPageSizeChange={setPageSize}
-              />
+              <AutoLoadFooter total={sorted.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="projects" />
             )}
           />
+          </>
         )}
       </div>
 
@@ -200,8 +311,21 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
             proposalAcceptedDate: v.proposalAcceptedDate,
             nextAction: v.nextAction,
             comments: v.comments,
-            aircraft: [],
+            // Snapshot the chosen catalog aircraft so the project row can be
+            // rendered without a second lookup; aircraftId keeps the link real.
+            aircraft: v.aircraftIds.flatMap((aircraftId) => {
+              const a = catalogAircraft.find((x) => x.id === aircraftId)
+              return a ? [{
+                id: crypto.randomUUID(), aircraftId: a.id,
+                modelName: a.modelName || a.modelNumber, modelNumber: a.modelNumber, manufacturer: a.manufacturer,
+              }] : []
+            }),
           })
+          // Links chosen on the form are created against the global records —
+          // the project references them, it doesn't own copies.
+          v.approvalIds.forEach((approvalId) => linkApprovalToProject(approvalId, projectId))
+          ;[...v.deliverableRevisionIds, ...v.designDataRevisionIds]
+            .forEach((revisionId) => linkRevisionToProject(projectId, revisionId))
           if (v.tccaRequired === 'yes') {
             addTcca({
               id: crypto.randomUUID(),

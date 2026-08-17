@@ -30,7 +30,7 @@ export function DocTrackingDrawer({ link, revision, onClose }: { link: TccaDocLi
     <Drawer
       open
       onClose={onClose}
-      title={`Edit Tracking${revision ? ` “${revision.number} rev ${revision.rev}”` : ''}${tccaNumber ? ` — TCCA ${tccaNumber}` : ''}`}
+      title={`Edit Tracking${revision ? ` “${revision.number} rev ${revision.rev}”` : ''}${tccaNumber ? `: TCCA ${tccaNumber}` : ''}`}
       footer={
         <>
           <div className="flex gap-sm">

@@ -51,7 +51,7 @@ export function WorkPackageDrawer({ mode, projectId, initial, onClose, onSubmit 
       <Drawer
         open
         onClose={requestClose}
-        title={isEdit ? `Edit Work Package “${initial?.title}” — ${label}` : `Add Work Package “${label}”`}
+        title={isEdit ? `Edit Work Package “${initial?.title}”: ${label}` : `Add Work Package “${label}”`}
         footer={
           <>
             <div className="flex gap-sm">
@@ -63,7 +63,7 @@ export function WorkPackageDrawer({ mode, projectId, initial, onClose, onSubmit 
       >
         <FormSection
           title="Work Package"
-          subtitle="A scope of work inside this project. Free text — packages differ on every aircraft, so there are no templates."
+          subtitle="A scope of work inside this project. Free text. Packages differ on every aircraft, so there are no templates."
         >
           <FormField label="Title" htmlFor="wp-title" required error={error}
             help={'e.g. "Add missing USB plug", "Seat installation", "Certification Plan"'}>

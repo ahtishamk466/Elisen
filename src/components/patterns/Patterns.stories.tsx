@@ -1,15 +1,22 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { ChevronDown, FolderOpen, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, Filter as FilterIcon, FolderOpen, Plus, Search as SearchIcon, Trash2 } from 'lucide-react'
 import { FormField } from './FormField'
 import { FormSection } from './FormSection'
 import { Stepper } from './Stepper'
 import { StatCard } from './StatCard'
 import { EmptyState } from './EmptyState'
-import { Pagination } from './Pagination'
+import { AutoLoadFooter } from './AutoLoadFooter'
+import { useInfiniteReveal } from './useInfiniteReveal'
 import { TableTabs } from './TableTabs'
 import { FileDropzone } from './FileDropzone'
 import { BarChart } from './BarChart'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { MultiSelect } from '@/components/ui/MultiSelect'
+import { ProgressMeter } from './ProgressMeter'
+import { HealthSummary } from './HealthSummary'
+import { FilterChips } from './FilterChips'
+import { HEALTH_LABEL, HEALTH_TONE, formatPct, healthOf } from '@/lib/projectHealth'
 import { AccordionSection } from './AccordionSection'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Drawer } from './Drawer'
@@ -33,7 +40,7 @@ export const FormBuildingBlocks: Story = {
   render: () => (
     <div className="grid gap-lg p-lg" style={{ maxWidth: 720 }}>
       <FormSection title="Identification" subtitle="Basic details that identify this project.">
-        <FormField label="Project Number" htmlFor="pn-filled" required help="Editing an existing record — the value is real, not a placeholder.">
+        <FormField label="Project Number" htmlFor="pn-filled" required help="Editing an existing record. The value is real, not a placeholder.">
           <Input id="pn-filled" defaultValue="3200" />
         </FormField>
         <FormField label="Project Number" htmlFor="pn" required help="Next available is 3206.">
@@ -110,12 +117,14 @@ export const StatsAndEmpty: Story = {
 
 const PAGINATION_ROW_HEADERS = ['No. / Type', 'Project', 'Company Name', 'Contact Name', 'Person Res.', 'Hours (Act/Bud)', 'Priority', 'Status', 'Actions']
 
-/** Pagination is a table's footer, not a second card below it — always
+/** AutoLoadFooter is a table's footer, not a second card below it — always
     render it as the last child inside the same bordered wrapper as the
-    table, sharing one border/corner-radius. Never give it its own box. */
-function PaginationDemo() {
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+    table, sharing one border/corner-radius. Never give it its own box.
+    Pair with useInfiniteReveal for the visibleCount/loading/onLoadMore
+    state; scrolling the footer into view triggers the next batch itself —
+    there's no page-number control to click. */
+function AutoLoadFooterDemo() {
+  const { visibleCount, loadingMore, loadMore } = useInfiniteReveal(781, 10)
   return (
     <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
       <div className="overflow-x-auto">
@@ -133,7 +142,7 @@ function PaginationDemo() {
                 <p className="text-sm font-semibold text-text-primary">3200-00</p>
                 <p className="text-xs text-text-muted">Internal</p>
               </td>
-              <td className="px-lg py-base text-sm text-text-primary">STC — Cabin Interior Modification, Cert Program</td>
+              <td className="px-lg py-base text-sm text-text-primary">STC: Cabin Interior Modification, Cert Program</td>
               <td className="whitespace-nowrap px-lg py-base">
                 <p className="text-sm text-text-primary">Northwind Aerospace</p>
                 <p className="text-xs text-text-muted">246</p>
@@ -148,14 +157,11 @@ function PaginationDemo() {
           </tbody>
         </table>
       </div>
-      <Pagination
-        page={page} pageSize={pageSize} totalItems={781} itemLabel="items"
-        onPageChange={setPage} onPageSizeChange={setPageSize}
-      />
+      <AutoLoadFooter total={781} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="items" />
     </div>
   )
 }
-export const PaginationExample: Story = { render: () => <div className="p-lg"><PaginationDemo /></div> }
+export const AutoLoadFooterExample: Story = { render: () => <div className="p-lg"><AutoLoadFooterDemo /></div> }
 
 /** Tabs belong to the table, not above it: they render as the first child of
     the same bordered card, and the active tab's accent underline sits on the
@@ -165,8 +171,7 @@ export const PaginationExample: Story = { render: () => <div className="p-lg"><P
     scrolls when the tabs outgrow a narrow viewport. */
 function TableTabsDemo() {
   const [active, setActive] = useState('priorities')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const { visibleCount, loadingMore, loadMore } = useInfiniteReveal(26, 10)
   return (
     <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
       <TableTabs
@@ -200,10 +205,7 @@ function TableTabsDemo() {
           </tbody>
         </table>
       </div>
-      <Pagination
-        page={page} pageSize={pageSize} totalItems={26} itemLabel="projects"
-        onPageChange={setPage} onPageSizeChange={setPageSize}
-      />
+      <AutoLoadFooter total={26} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="projects" />
     </div>
   )
 }
@@ -240,6 +242,229 @@ export const FileDropzoneExample: Story = { render: () => <div className="p-lg">
     plot. `tone="danger"` is only for series that *are* a fault count, so the
     color repeats what the title already said. Every chart carries an
     sr-only data table — values never depend on reading a bar height. */
+/** THE applied-filters row — required on every screen that has a Filters
+    menu, from client feedback. Three parts, always together:
+    1. the trigger counts what's applied — `Filters (2)`;
+    2. each applied filter appears below the header as a chip reading
+       "Field: Value", with an × that removes only that one;
+    3. `Clear filters (n)` removes the lot.
+    It renders nothing when no filter is applied, so an unfiltered page keeps
+    its full height. Chips are built by a `…FilterChips()` helper that lives
+    next to each filter menu's own type, so the labels can't drift from the
+    fields they describe. */
+function FilterChipsDemo() {
+  const [filters, setFilters] = useState<Record<string, string>>({
+    Priority: '1 – Fire', Company: 'Duncan Aviation', 'Budget health': 'Over budget',
+  })
+  const chips = Object.entries(filters).map(([label, value]) => ({
+    key: label, label, value,
+    onRemove: () => setFilters((f) => { const n = { ...f }; delete n[label]; return n }),
+  }))
+  return (
+    <div className="grid gap-lg p-lg">
+      <div className="flex justify-end">
+        <Button variant="secondary" size="md" leadingIcon={<FilterIcon size={16} />}>
+          Filters{chips.length ? ` (${chips.length})` : ''}
+        </Button>
+      </div>
+      <FilterChips chips={chips} onClearAll={() => setFilters({})} />
+      <div className="rounded-sm border border-border-default bg-neutral-25 p-2xl text-center text-sm text-text-muted">
+        Table goes here, the chip row sits between the page header and the table.
+      </div>
+    </div>
+  )
+}
+export const FilterChipsExample: Story = { render: () => <FilterChipsDemo /> }
+
+/** Budget health, computed once in `lib/projectHealth.ts` and rendered the
+    same way at project, work-package and activity level. The bar's colour
+    comes from the health state and is ALWAYS paired with the percentage in
+    text, so state is never carried by colour alone. Past 100% the bar fills
+    and turns danger — it never grows past its own track, because a bar that
+    rescales or spills hides the overrun. A row with no budget is its own
+    state ("No budget set", em dashes), never "0%, on track". */
+/** THE picker for every "link an existing record" flow — Aircraft,
+    Approvals, Deliverables, Design Data. A plain Select stops being usable
+    once its catalog passes a couple of dozen rows, and all of those will.
+    Type to filter on both lines; already-linked rows are disabled with a
+    reason rather than hidden, so the user isn't left wondering where a record
+    went. Portal-rendered so drawers and overflow containers can't clip it. */
+function SearchableSelectDemo() {
+  const [value, setValue] = useState('')
+  return (
+    <div className="grid gap-lg" style={{ maxWidth: 420 }}>
+      <div className="grid gap-xs">
+        <label htmlFor="ss-demo" className="text-sm font-semibold text-text-primary">Select an aircraft to link</label>
+        <SearchableSelect
+          id="ss-demo"
+          value={value}
+          onChange={setValue}
+          placeholder="Search aircraft by model or manufacturer..."
+          options={[
+            { value: 'a', label: 'BE350: King Air 350', hint: 'Beechcraft' },
+            { value: 'b', label: 'DHC-8-402: Dash 8-400', hint: 'De Havilland' },
+            { value: 'c', label: 'CL-600-2B19: CRJ200', hint: 'Bombardier', disabled: true, disabledReason: 'Already linked to this project' },
+            { value: 'd', label: 'A330: A330-300', hint: 'Airbus' },
+          ]}
+        />
+      </div>
+      <div className="grid gap-xs">
+        <label htmlFor="ss-empty" className="text-sm font-semibold text-text-primary">Empty catalog</label>
+        <SearchableSelect id="ss-empty" value="" onChange={() => {}} options={[]} emptyLabel="No aircraft in Reference Data yet." />
+      </div>
+    </div>
+  )
+}
+export const SearchableSelectExample: Story = { render: () => <div className="p-lg"><SearchableSelectDemo /></div> }
+
+/**
+ * THE selection standard. Two components, one pattern — never a bespoke
+ * dropdown anywhere else:
+ *
+ * - **Single choice** → `SearchableSelect`. `indicator="radio"` for a form
+ *   field picking one of a few alternatives; the default `indicator="check"`
+ *   for filters and lookups, where the list is a catalog rather than a small
+ *   fixed set.
+ * - **Many choices** → `MultiSelect`. Checkboxes, `"n selected"` on the
+ *   trigger, and chips underneath naming each pick with an × to drop it.
+ *   The chips matter: a count answers "how many", never "which" — which is
+ *   exactly what a user wants to know after the menu closes.
+ *
+ * Both search on label + hint, are portal-rendered so drawers can't clip
+ * them, disable rather than hide unavailable options (with a reason), and
+ * share the same keyboard model (↑/↓ skipping disabled rows, Enter, Esc).
+ */
+function SelectionStandardDemo() {
+  const [single, setSingle] = useState('active')
+  const [lookup, setLookup] = useState('')
+  const [many, setMany] = useState<string[]>(['b', 'd'])
+  const statuses = [
+    { value: 'query', label: 'Query' },
+    { value: 'quoted', label: 'Quoted' },
+    { value: 'active', label: 'Active' },
+    { value: 'complete', label: 'Complete' },
+  ]
+  const aircraft = [
+    { value: 'a', label: 'BE350: King Air 350', hint: 'Beechcraft' },
+    { value: 'b', label: 'DHC-8-402: Dash 8-400', hint: 'De Havilland' },
+    { value: 'c', label: 'CL-600-2B19: CRJ200', hint: 'Bombardier', disabled: true, disabledReason: 'Already linked to this project' },
+    { value: 'd', label: 'A330: A330-300', hint: 'Airbus' },
+  ]
+  return (
+    <div className="grid gap-2xl p-lg" style={{ maxWidth: 460 }}>
+      <div className="grid gap-xs">
+        <label htmlFor="sel-radio" className="text-sm font-semibold text-text-primary">Single select, radio</label>
+        <p className="text-xs text-text-muted">One of a few alternatives, in a form.</p>
+        <SearchableSelect id="sel-radio" indicator="radio" value={single} onChange={setSingle} options={statuses} placeholder="Select status..." />
+      </div>
+      <div className="grid gap-xs">
+        <label htmlFor="sel-check" className="text-sm font-semibold text-text-primary">Single select, check</label>
+        <p className="text-xs text-text-muted">Picking one record out of a catalog.</p>
+        <SearchableSelect id="sel-check" value={lookup} onChange={setLookup} options={aircraft} placeholder="Search aircraft..." />
+      </div>
+      <div className="grid gap-xs">
+        <label htmlFor="sel-multi" className="text-sm font-semibold text-text-primary">Multi select, checkbox + chips</label>
+        <p className="text-xs text-text-muted">Count on the trigger, chips naming each pick below.</p>
+        <MultiSelect id="sel-multi" value={many} onChange={setMany} options={aircraft} placeholder="Select aircraft..." />
+      </div>
+    </div>
+  )
+}
+export const SelectionStandard: Story = { render: () => <SelectionStandardDemo /> }
+
+/**
+ * THE toolbar row. Every control that sits in a horizontal row with a button —
+ * page-header search, a Filters trigger, an Export menu, a primary CTA, an
+ * inline "pick a record → Link" row — is **36px tall**. Buttons are already
+ * 36px at their default `md` size, so fields in these rows take `size="sm"`.
+ *
+ * Stacked form fields keep the 44px default: nothing sits beside them to
+ * disagree with, and the extra height is the comfortable target for typing.
+ * The rule is about *rows*, not about fields in general.
+ *
+ * Getting this wrong is quietly expensive — a 44px input next to a 36px button
+ * has 4px of visual offset top and bottom, which reads as a rendering bug
+ * rather than a style choice, and it shows up on every screen at once.
+ */
+function ToolbarRowStandardDemo() {
+  const [q, setQ] = useState('')
+  const [pick, setPick] = useState('')
+  return (
+    <div className="grid gap-2xl p-lg">
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Page header: search · filters · export · CTA, all 36px</p>
+        <div className="flex flex-wrap items-center gap-sm rounded-sm border border-border-default bg-neutral-25 p-base">
+          <div className="min-w-0" style={{ width: 320 }}>
+            <label htmlFor="tb-search" className="sr-only">Search projects</label>
+            <Input id="tb-search" size="sm" value={q} onChange={(e) => setQ(e.target.value)}
+              placeholder="Search by number, project, company..." leadingIcon={<SearchIcon size={16} />} />
+          </div>
+          <Button variant="secondary" leadingIcon={<FilterIcon size={16} />}>Filters</Button>
+          <Button variant="secondary">Export</Button>
+          <Button leadingIcon={<Plus size={16} />}>Add new project</Button>
+        </div>
+      </div>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Inline link row: select + action, both 36px</p>
+        <div className="grid gap-sm rounded-sm border border-border-default bg-neutral-25 p-base">
+          <label htmlFor="tb-attach" className="text-sm font-semibold text-text-primary">Select an aircraft to link</label>
+          <div className="flex flex-wrap items-center gap-sm">
+            <div className="min-w-0 flex-1" style={{ minWidth: 240 }}>
+              <SearchableSelect
+                id="tb-attach" size="sm" value={pick} onChange={setPick}
+                placeholder="Search aircraft by model or manufacturer..."
+                options={[
+                  { value: 'a', label: 'BE350: King Air 350', hint: 'Beechcraft' },
+                  { value: 'b', label: 'DHC-8-402: Dash 8-400', hint: 'De Havilland' },
+                ]}
+              />
+            </div>
+            <Button disabled={!pick}>Link to project</Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Stacked form field, 44px, unchanged</p>
+        <div className="grid gap-xs rounded-sm border border-border-default bg-neutral-25 p-base" style={{ maxWidth: 380 }}>
+          <label htmlFor="tb-form" className="text-sm font-semibold text-text-primary">Model No</label>
+          <Input id="tb-form" placeholder="e.g. RV-14A" />
+        </div>
+      </div>
+    </div>
+  )
+}
+export const ToolbarRowStandard: Story = { render: () => <ToolbarRowStandardDemo /> }
+
+export const ProjectHealthExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg">
+      <HealthSummary health={healthOf(87, 61)} />
+      <HealthSummary health={healthOf(40, 58)} />
+      <HealthSummary health={healthOf(0, 304.3)} />
+      {/* The labelled meter: percentage plus all four figures, which is what a
+          reader needs. "used", never "done": the percentage is hours spent
+          against hours budgeted, not work completed. */}
+      <div className="grid gap-lg rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 420 }}>
+        <p className="text-xs font-semibold text-text-secondary">Labelled meter (showLabel)</p>
+        {[healthOf(5, 4.4), healthOf(3, 3.6), healthOf(0, 12)].map((h, i) => (
+          <ProgressMeter key={i} health={h} showLabel ariaLabel={`Labelled example ${i + 1}`} />
+        ))}
+      </div>
+      <div className="grid gap-lg rounded-sm border border-border-default bg-neutral-25 p-lg">
+        {[healthOf(80, 20), healthOf(80, 74), healthOf(80, 96), healthOf(80, 80, true), healthOf(0, 12)].map((h, i) => (
+          <div key={i} className="flex items-center gap-lg">
+            <div className="min-w-0 flex-1"><ProgressMeter health={h} size="sm" ariaLabel={`Example ${i + 1}`} /></div>
+            <span className="w-12 shrink-0 text-right text-xs font-semibold text-text-secondary">{formatPct(h.progressPct)}</span>
+            <span className="w-32 shrink-0"><Badge tone={HEALTH_TONE[h.state]}>{HEALTH_LABEL[h.state]}</Badge></span>
+          </div>
+        ))}
+      </div>
+    </div>
+  ),
+}
+
 export const BarChartExample: Story = {
   render: () => (
     <div className="grid gap-2xl p-lg">
@@ -334,6 +559,78 @@ function OverlayDemo() {
 }
 export const Overlays: Story = { render: () => <OverlayDemo /> }
 
+/**
+ * Layering — a dropdown must paint above whatever opened it.
+ *
+ * This story is a regression guard, not a showcase. Most dropdowns in this app
+ * are opened from inside a drawer (Add new project, every entry drawer), and
+ * they are portal-rendered to `document.body` so the drawer's `overflow` can't
+ * clip them. That only works if the dropdown layer sits **above** the modal
+ * layer — otherwise the panel renders behind the drawer and the control looks
+ * dead: no open state, no error, nothing.
+ *
+ * The scale is therefore ordered by what can spawn what:
+ * `sticky 1000 → modal 1100 → dropdown 1200 → dialog 1300 → toast 1400 →
+ * tooltip 1500`. A confirm dialog opened from a row menu sits above that menu;
+ * a toast can fire from inside the dialog. Nothing in this order is about
+ * importance — it is about which surface can open which.
+ *
+ * Open the drawer below and open both dropdowns, including the nested one in
+ * the filter-style panel. If any panel is invisible, the scale has regressed.
+ */
+function DropdownLayeringDemo() {
+  const [open, setOpen] = useState(false)
+  const [status, setStatus] = useState('active')
+  const [many, setMany] = useState<string[]>([])
+  const aircraft = [
+    { value: 'a', label: 'BE350: King Air 350', hint: 'Beechcraft' },
+    { value: 'b', label: 'DHC-8-402: Dash 8-400', hint: 'De Havilland' },
+    { value: 'c', label: 'A330: A330-300', hint: 'Airbus' },
+  ]
+  return (
+    <div className="p-lg">
+      <Button onClick={() => setOpen(true)}>Open drawer with dropdowns</Button>
+      <Drawer
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Dropdowns inside a drawer"
+        footer={
+          <>
+            <span />
+            <div className="flex gap-sm">
+              <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button onClick={() => setOpen(false)}>Save</Button>
+            </div>
+          </>
+        }
+      >
+        <div className="grid gap-2xl">
+          <div className="grid gap-xs">
+            <label htmlFor="layer-status" className="text-sm font-semibold text-text-primary">Status</label>
+            <SearchableSelect
+              id="layer-status" indicator="radio" value={status} onChange={setStatus}
+              options={[
+                { value: 'query', label: 'Query' },
+                { value: 'active', label: 'Active' },
+                { value: 'complete', label: 'Complete' },
+              ]}
+            />
+          </div>
+          <div className="grid gap-xs">
+            <label htmlFor="layer-aircraft" className="text-sm font-semibold text-text-primary">Aircraft</label>
+            <MultiSelect id="layer-aircraft" value={many} onChange={setMany} options={aircraft} placeholder="Select aircraft..." />
+          </div>
+          <div className="grid gap-xs">
+            <label htmlFor="layer-phone" className="text-sm font-semibold text-text-primary">Phone No</label>
+            <PhoneInput id="layer-phone" countryCode="+1" onCountryCodeChange={() => {}} number="514-555-0142" onNumberChange={() => {}} />
+          </div>
+        </div>
+      </Drawer>
+    </div>
+  )
+}
+export const DropdownLayering: Story = { render: () => <DropdownLayeringDemo /> }
+
 /** The standard for any table cell that can hold long free text (titles,
     descriptions, comments, model names): clip at 2 lines instead of
     stretching the whole row, full text on hover via the native title
@@ -359,7 +656,7 @@ export const TruncatedTableText: Story = {
             <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">Astra SPX</td>
             {/* Long free text: line-clamp-2 + title tooltip via Truncate. */}
             <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 260 }}>
-              <Truncate>Israel Aircraft Astra SPX / Gulfsream 100 — Long-Range Variant, Extended Cabin Configuration</Truncate>
+              <Truncate>Israel Aircraft Astra SPX / Gulfsream 100: Long-Range Variant, Extended Cabin Configuration</Truncate>
             </td>
           </tr>
         </tbody>
@@ -400,7 +697,7 @@ export const StandardEditScreen: Story = {
         <FormField label="Phone No" htmlFor="std-phone">
           <PhoneInput id="std-phone" countryCode="+1" onCountryCodeChange={() => {}} number="514-555-0142" onNumberChange={() => {}} />
         </FormField>
-        <Checkbox label="Active — available in pickers across the app" defaultChecked />
+        <Checkbox label="Active, available in pickers across the app" defaultChecked />
       </FormSection>
 
       <FormSection title="Contacts" subtitle="Repeated children: collapsible entries, never a horizontal row of bare inputs.">

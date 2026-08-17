@@ -23,7 +23,7 @@ export const AllStates: Story = {
         <InteractiveDemo />
       </div>
       <div>
-        <p className="mb-xs text-xs text-text-muted">Filled — flag + dial code, fills its container like any other field</p>
+        <p className="mb-xs text-xs text-text-muted">Filled: flag + dial code, fills its container like any other field</p>
         <PhoneInput id="filled-phone" countryCode="+65" onCountryCodeChange={() => {}} number="000-000-00" onNumberChange={() => {}} />
       </div>
       <div>
@@ -34,6 +34,12 @@ export const AllStates: Story = {
         <p className="mb-xs text-xs text-text-muted">Disabled</p>
         <PhoneInput id="disabled-phone" countryCode="+1" onCountryCodeChange={() => {}} number="(201) 555-0123" onNumberChange={() => {}} disabled />
       </div>
+      <p className="text-xs text-text-muted">
+        Open the dial code: it is a `SearchableSelect variant="bare"`, so the panel
+        is the same one every other dropdown in the app uses, radio markers, a
+        search box, and the country name as a searchable hint. The trigger is only
+        96px wide, so `menuMinWidth` widens the panel enough to read the names.
+      </p>
     </div>
   ),
 }

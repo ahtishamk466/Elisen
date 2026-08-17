@@ -54,7 +54,7 @@ export function TccaReportsTab({ tcca }: { tcca: TccaProject }) {
       </div>
 
       <Alert tone="info" title="Only the Project Completion Checklist is defined so far">
-        The remaining report set lives with management (Jalal) and hasn't been specified yet — those cards will activate once the definitions arrive.
+        The remaining report set lives with management (Jalal) and hasn't been specified yet, those cards will activate once the definitions arrive.
       </Alert>
     </div>
   )

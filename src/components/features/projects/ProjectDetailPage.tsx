@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Pencil, Copy, Trash2, Users, CalendarDays, DollarSign, Clock, Check, Minus } from 'lucide-react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { ArrowLeft, Pencil, Copy, Trash2, Users, CalendarDays, DollarSign, Check, Minus } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
@@ -8,13 +8,17 @@ import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { ReportCard } from '@/components/patterns/ReportCard'
 import { DetailCard as Card, DetailField as Field } from '@/components/patterns/DetailView'
 import { Avatar } from '@/components/patterns/Avatar'
+import { HealthSummary } from '@/components/patterns/HealthSummary'
 import { Badge } from '@/components/ui/Badge'
 import { useProjectsStore } from '@/stores/projectsStore'
+import { useWorkPackagesStore } from '@/stores/workPackagesStore'
 import { useTccaStore } from '@/stores/tccaStore'
 import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore'
+import { useApprovalsStore } from '@/stores/approvalsStore'
 import { getNextProjectNumber } from '@/lib/projectFixtures'
 import { PRIORITY_LABEL, PRIORITY_TONE, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
 import { PENDING_REPORTS } from '@/lib/pendingReports'
+import { rollUpProject } from '@/lib/projectHealth'
 import { downloadCompletionChecklist } from '@/lib/pccReport'
 import { AddProjectDrawer } from './AddProjectDrawer'
 import { ProposalEditDrawer } from './ProposalEditDrawer'
@@ -30,6 +34,9 @@ import type { AddProjectValues } from './useAddProjectForm'
 
 const TABS = ['Overview', 'Work Packages', 'Deliverables', 'Design Data', 'TCCA', 'Approvals'] as const
 type Tab = (typeof TABS)[number]
+
+/** `Work Packages` <-> `work-packages`, so the URL stays readable. */
+export const tabSlug = (t: Tab) => t.toLowerCase().replace(/ /g, '-')
 
 const SCOPES: { key: ScopeKey; label: string }[] = [
   { key: 'design', label: 'Design' },
@@ -73,6 +80,8 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const rows = useProjectsStore((s) => s.rows)
+  const workPackages = useWorkPackagesStore((s) => s.workPackages)
+  const wpActivities = useWorkPackagesStore((s) => s.activities)
   const addRow = useProjectsStore((s) => s.addRow)
   const updateRow = useProjectsStore((s) => s.updateRow)
   const removeRow = useProjectsStore((s) => s.removeRow)
@@ -81,9 +90,22 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
   const docLinks = useTccaStore((s) => s.docLinks)
   const documents = useDocumentsStore((s) => s.documents)
   const docRevisions = useDocumentsStore((s) => s.revisions)
+  const projectRevisionLinks = useDocumentsStore((s) => s.links)
+  const approvals = useApprovalsStore((s) => s.approvals)
 
   const row = rows.find((r) => r.id === id)
-  const [tab, setTab] = useState<Tab>('Overview')
+  /** The open tab lives in the URL, so a row action can deep-link straight to
+      Work Packages and a refresh or a shared link lands in the same place. */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab: Tab = TABS.find((t) => tabSlug(t) === searchParams.get('tab')) ?? 'Overview'
+  const setTab = (next: Tab) => {
+    const params = new URLSearchParams(searchParams)
+    if (next === 'Overview') params.delete('tab')
+    else params.set('tab', tabSlug(next))
+    // replace, not push: flicking through tabs shouldn't fill the back stack,
+    // and Back should return to wherever the project was opened from.
+    setSearchParams(params, { replace: true })
+  }
   /** null = closed; number = open at that step. */
   const [editStep, setEditStep] = useState<number | null>(null)
   /** Proposal/Notes/Aircraft each get their own focused edit drawer instead
@@ -118,6 +140,27 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
   }
 
   const linkedTcca = tccaProjects.filter((t) => t.projectIds.includes(row.id))
+
+  /** Counts in the tab bar, so the project's shape is legible before anything
+      is clicked — "nothing feels hidden". Overview has no count: it is a
+      summary, not a collection. A tab with genuinely nothing in it still shows
+      0 rather than dropping the pill, because a missing count reads as "not
+      counted" instead of "empty". */
+  const revisionsOfKind = (kind: 'deliverable' | 'drawing') =>
+    projectRevisionLinks.filter((l) => {
+      if (l.projectId !== row.id) return false
+      const rev = docRevisions.find((r) => r.id === l.revisionId)
+      const doc = rev && documents.find((d) => d.id === rev.documentId)
+      return !!doc && doc.kind === kind
+    }).length
+
+  const tabCounts: Partial<Record<Tab, number>> = {
+    'Work Packages': workPackages.filter((w) => w.projectId === row.id).length,
+    Deliverables: revisionsOfKind('deliverable'),
+    'Design Data': revisionsOfKind('drawing'),
+    TCCA: linkedTcca.length,
+    Approvals: approvals.filter((a) => a.projectIds.includes(row.id)).length,
+  }
   const generatePcc = () => {
     const tcca = linkedTcca[0]
     if (!tcca) return
@@ -129,7 +172,10 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
     downloadCompletionChecklist(tcca, [row], links)
   }
 
-  const hoursPct = Math.min(100, (row.actualHours / Math.max(1, row.budgetHours)) * 100)
+  /** Same roll-up the list uses, so the two can never disagree. */
+  const health = rollUpProject(row.id, workPackages, wpActivities, {
+    budgetHours: row.budgetHours, actualHours: row.actualHours, complete: row.status === 'complete',
+  })
 
   return (
     <AppShell
@@ -146,6 +192,12 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
       }
     >
       <div className="grid gap-lg">
+        {/* Health first, above everything — the question "is this project in
+            trouble?" gets answered before any detail is read. */}
+        {canSeeFinancials && (
+          <HealthSummary health={health} />
+        )}
+
         <div className="grid gap-lg laptop:grid-cols-[320px_1fr]">
           <aside className="h-fit rounded-sm border border-border-default bg-neutral-25 p-lg">
             <div className="flex items-start justify-between gap-sm">
@@ -165,24 +217,11 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
 
             <div className="mt-base flex flex-wrap items-center gap-sm">
               <Badge tone={PRIORITY_TONE[row.priority]} appearance="outline">{PRIORITY_LABEL[row.priority]}</Badge>
-              <Badge tone={STATUS_TONE[row.status]} appearance="outline" dot>{STATUS_LABEL[row.status]}</Badge>
+              <Badge tone={STATUS_TONE[row.status]} appearance="outline">{STATUS_LABEL[row.status]}</Badge>
             </div>
 
-            <div className="mt-lg border-t border-border-default pt-lg">
-              <p className="flex items-center gap-xs text-xs text-text-muted">
-                <Clock size={14} aria-hidden /> Hours used
-              </p>
-              <p className="mt-xs text-base font-bold text-text-primary">
-                {row.actualHours} / {row.budgetHours}
-              </p>
-              <div className="mt-sm h-xs w-full overflow-hidden rounded-full bg-neutral-100">
-                <div
-                  className={`h-full rounded-full ${row.actualHours > row.budgetHours ? 'bg-danger' : 'bg-warning'}`}
-                  style={{ width: `${hoursPct}%` }}
-                />
-              </div>
-            </div>
-
+            {/* Hours deliberately not repeated here — the four stat boxes at
+                the top of the page are the single place budget is read. */}
             <div className="mt-lg border-t border-border-default pt-lg">
               <p className="flex items-center gap-xs text-xs text-text-muted">
                 <CalendarDays size={14} aria-hidden /> Due date
@@ -249,6 +288,15 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
                     ${tab === t ? 'border-text-primary font-semibold text-text-primary' : 'border-transparent text-text-muted hover:text-text-primary'}`}
                 >
                   {t}
+                  {tabCounts[t] !== undefined && (
+                    <span
+                      className={`ml-sm rounded-sm px-sm py-xxss text-xs font-medium ${
+                        tab === t ? 'bg-accent-subtle text-accent' : 'bg-neutral-100 text-text-secondary'
+                      }`}
+                    >
+                      {tabCounts[t]}
+                    </span>
+                  )}
                 </button>
               ))}
             </nav>
@@ -312,8 +360,11 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
                         <div key={a.id} className={i > 0 ? 'border-t border-border-default pt-lg' : ''}>
                           <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
                             <Field label="Model Name">{a.modelName || '—'}</Field>
-                            <Field label="Model Number">{a.modelNumber || '—'}</Field>
+                            <Field label="Model Number" nowrap>{a.modelNumber || '—'}</Field>
                             <Field label="Manufacture">{a.manufacturer || '—'}</Field>
+                            {/* Blank until the specific airframe is assigned —
+                                the project often starts with only a type. */}
+                            <Field label="Serial No" nowrap>{a.serial || 'Not assigned yet'}</Field>
                           </div>
                         </div>
                       ))}
@@ -338,9 +389,9 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
             ) : tab === 'Work Packages' ? (
               <ProjectWorkPackagesTab projectId={row.id} />
             ) : tab === 'Deliverables' ? (
-              <ProjectDocumentsTab kind="deliverable" projectId={row.id} projectNumber={row.number} />
+              <ProjectDocumentsTab kind="deliverable" projectId={row.id} />
             ) : tab === 'Design Data' ? (
-              <ProjectDocumentsTab kind="drawing" projectId={row.id} projectNumber={row.number} />
+              <ProjectDocumentsTab kind="drawing" projectId={row.id} />
             ) : tab === 'Approvals' ? (
               <ProjectApprovalsTab projectId={row.id} />
             ) : (

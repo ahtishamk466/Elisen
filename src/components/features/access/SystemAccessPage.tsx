@@ -35,7 +35,7 @@ export function SystemAccessPage({ state = 'ready' }: { state?: PageState }) {
     if (routes.includes(path)) { setRouteError('That route is already registered.'); return }
     addRoute(path)
     setNewRoute('')
-    setToast(`Route ${path} registered — attach it to a permission to guard it.`)
+    setToast(`Route ${path} registered, attach it to a permission to guard it.`)
   }
 
   if (state === 'error') {
@@ -50,9 +50,9 @@ export function SystemAccessPage({ state = 'ready' }: { state?: PageState }) {
     <AppShell title="Routes & Rules" activeItem="User Access" activeChild="Routes">
       <div className="grid gap-lg">
         {toast && <Alert tone="info" title={toast} />}
-        <Alert tone="info" title="Advanced — the wiring behind roles and permissions">
+        <Alert tone="info" title="Advanced, the wiring behind roles and permissions">
           Day-to-day access management lives in Users and Roles &amp; Permissions. This page registers the raw
-          routes the app exposes and lists the code-defined rules — usually developer territory.
+          routes the app exposes and lists the code-defined rules, usually developer territory.
         </Alert>
 
         {state === 'loading' ? (
@@ -69,7 +69,7 @@ export function SystemAccessPage({ state = 'ready' }: { state?: PageState }) {
               <div className="mt-lg grid gap-sm tablet:flex tablet:items-start">
                 <div className="min-w-0 tablet:flex-1">
                   <label htmlFor="new-route" className="sr-only">New route</label>
-                  <Input id="new-route" value={newRoute} error={!!routeError} placeholder="/module/action or /module/*"
+                  <Input id="new-route" size="sm" value={newRoute} error={!!routeError} placeholder="/module/action or /module/*"
                     onChange={(e) => { setNewRoute(e.target.value); setRouteError('') }} />
                   {routeError && <p className="mt-xs text-xs text-danger">{routeError}</p>}
                 </div>
@@ -77,7 +77,7 @@ export function SystemAccessPage({ state = 'ready' }: { state?: PageState }) {
               </div>
               <div className="mt-lg" style={{ maxWidth: 380 }}>
                 <label htmlFor="route-search" className="sr-only">Search routes</label>
-                <Input id="route-search" value={query} placeholder="Search routes..." leadingIcon={<Search size={16} />}
+                <Input id="route-search" size="sm" value={query} placeholder="Search routes..." leadingIcon={<Search size={16} />}
                   onChange={(e) => setQuery(e.target.value)} />
               </div>
               <div className="mt-lg grid gap-sm">
@@ -99,7 +99,7 @@ export function SystemAccessPage({ state = 'ready' }: { state?: PageState }) {
             <section className="rounded-sm border border-border-default bg-neutral-25 p-lg">
               <h2 className="text-lg font-bold text-text-primary">Rules</h2>
               <p className="mt-xxss text-xs text-text-muted">
-                Code-defined condition classes referenced by permissions (e.g. "own entries only"). Developers add these in code — they can't be created here.
+                Code-defined condition classes referenced by permissions (e.g. "own entries only"). Developers add these in code. They can't be created here.
               </p>
               <div className="mt-lg grid gap-sm">
                 {rules.length === 0 && <p className="text-sm text-text-muted">No rules defined.</p>}
