@@ -19,10 +19,13 @@ interface LookupState {
   /** Also removes the company's contacts. */
   removeCompany: (id: string) => void
 
-  saveAircraft: (model: AircraftModel, serial: AircraftSerial | null) => void
+  saveAircraft: (model: AircraftModel) => void
   updateAircraft: (id: string, patch: Partial<AircraftModel>) => void
-  /** Also removes the model's serials. */
+  /** Also removes the model's airframes: a serial cannot exist without one. */
   removeAircraft: (id: string) => void
+  saveSerial: (serial: AircraftSerial) => void
+  updateSerial: (id: string, patch: Partial<AircraftSerial>) => void
+  removeSerial: (id: string) => void
 
   addChapter: (c: AtaChapter) => void
   updateChapter: (id: string, patch: Partial<AtaChapter>) => void
@@ -57,15 +60,15 @@ export const useLookupStore = create<LookupState>((set) => ({
       contacts: s.contacts.filter((c) => c.companyId !== id),
     })),
 
-  // One row = one model + one serial; only that serial is touched so a
-  // model's other serials (e.g. Lear 35A's other tail numbers) survive.
-  saveAircraft: (model, serial) =>
-    set((s) => ({
-      aircraft: upsert(s.aircraft, model),
-      serials: serial ? upsert(s.serials, serial) : s.serials,
-    })),
+  // Models and airframes are edited on their own tabs, so saving one never
+  // touches the other.
+  saveAircraft: (model) => set((s) => ({ aircraft: upsert(s.aircraft, model) })),
   updateAircraft: (id, patch) =>
     set((s) => ({ aircraft: s.aircraft.map((a) => (a.id === id ? { ...a, ...patch } : a)) })),
+  saveSerial: (serial) => set((s) => ({ serials: upsert(s.serials, serial) })),
+  updateSerial: (id, patch) =>
+    set((s) => ({ serials: s.serials.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+  removeSerial: (id) => set((s) => ({ serials: s.serials.filter((x) => x.id !== id) })),
   removeAircraft: (id) =>
     set((s) => ({
       aircraft: s.aircraft.filter((a) => a.id !== id),

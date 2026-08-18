@@ -2309,3 +2309,195 @@ contact (**2**), pf-filter-person (5), act-resp (5), filter-employee (5),
 employeeName (5), param-personResponsible (5), ap-holder (22). Typecheck clean;
 console clean on a fresh tab (the hook-order warning in a long-lived tab is the
 known HMR artifact from reworking `useDropdown`).
+
+## 2026-08-17 — TCCA follows the same rule: created in its own tab, linked in a project
+**Confirmed correct.** The requirement document lists "TCCA Project ↔ Projects —
+Link internal projects to TCCA project — **List, assign**" (§1.6), the same
+wording as Approvals and the document revisions. TCCA was the last record type
+still being *created* from inside a project.
+**Three creation paths removed from the project side:**
+1. `ProjectTccaTab` opened `TccaProjectDrawer` with a locked project. It is now
+   link-only: a searchable "Select a TCCA project to link" row, a
+   `Manage in TCCA Projects` button, and `Unlink from project` as the single row
+   action. Same shape as `ProjectApprovalsTab` and `ProjectDocumentsTab`.
+2. The create wizard had a whole **TCCA Setup step** (number, description and a
+   40-item checklist) that built a TCCA project on save. Gone. TCCA is now a
+   multi-select in **Linked Records** beside Aircraft, Approval, Deliverable and
+   Design Data, so the wizard is a fixed two steps instead of a conditional
+   three.
+3. The Basic Info step's "Is TCCA approval required?" radio pair went with it —
+   it existed only to reveal that step. Linking a TCCA project *is* the answer.
+**Added the reverse direction:** a **Projects** tab on the TCCA workspace, so a
+TCCA project can pick up its Elisen projects from its own side. Both sides call
+the same `linkProject` / `unlinkProject` verbs, verified live: linking `0000-00`
+from the project tab immediately showed "2 Elisen projects linked" on the TCCA
+side.
+**Create form rebuilt on the legacy screen the client supplied.** `TccaProject`
+gained the fields the real app has and we were missing: `priority`,
+`certificate`, `issueNumber`, `issued`, `projectStatus`, `projectLevel`,
+`closedDate`, and the four expected dates (FAI, Testing, Approval, Delivery).
+That matches the `tccaproject` table read earlier. The drawer is now three
+sections — TCCA Project / Status & Dates / Link & Notes — with required markers
+matching the screenshot, and 17 fixtures were backfilled with plausible values so
+nothing renders blank.
+**Note on two status fields:** `project_status` (where the work stands at Elisen)
+and `status` (where it stands with Transport Canada) are both in the legacy table
+and both on the legacy screen, so both are kept. They are genuinely different
+questions, but if the client only recognises one, the other should go.
+**Verified live:** project TCCA tab has no create path, links from a searchable
+17-option dropdown, count moves 0 → 1, row action is Unlink only; TCCA workspace
+shows the new Projects tab with the link row and both linked projects; the wizard
+is two steps with TCCA Project Number in Linked Records and no approval-required
+radio; typecheck clean; no console errors.
+
+## 2026-08-17 — Linked Records copy: one line each, and say where the record lives
+The section subtitle and the Aircraft help both wrapped to two lines, and two of
+the five fields had no help at all, so the set read as inconsistent noise rather
+than guidance.
+**Every line is now one line, and every help names the source workspace** — the
+only context that actually matters here, since the whole point of the section is
+that these records are created elsewhere:
+`From Reference Data. Serials set later.` · `From Approvals. Its own, or one it
+amends.` · `From Deliverables.` · `From Design Data.` · `From TCCA Projects.`
+Subtitle: **"Link records that already exist. All optional."**
+**Verified by measurement, not eye:** every help and the subtitle render at
+exactly 1 line (element height ÷ computed line-height).
+
+## 2026-08-17 — Aircraft and Serial Numbers split back apart, as tabs
+**The merged screen was ours, not the client's.** The legacy app keeps two
+create screens; we had merged them into one grid at one row per serial. Three
+sources say separate, and all three agree:
+- **Schema:** `aircraft` holds model/name/manufacture + tcca_tc/faa_tc/easa_tc +
+  dwg_prefix. `serialnumber` holds aircraft_id, serial, registration **and
+  eleven owner/contact fields** (name, company, address ×2, city, prov_state,
+  country, postal, telephone, email, comment). **Zero field overlap.** Approvals
+  even link to the two through separate join tables.
+- **Requirement doc §5.1:** "Aircraft — models/types — List, CRUD, modal" and
+  "Serial Numbers — registry — List, CRUD, modal", listed as two features.
+- **Transcript 22:23–28:07:** our side proposed merging to "avoid one
+  unnecessary step"; the client answered with the Toyota analogy (brake pads
+  need the model, an oil change needs the specific car and its owner) and
+  settled it twice: *"Serial Number and Aircraft will be separate"* (27:41,
+  28:03), with the serial **optional** because at project start "the person
+  creating the project may not know what the Serial Number is yet".
+**Built as two tabs of one workspace**, not two sidebar entries: you move
+between them constantly, which is exactly the Deliverables / Design Data case.
+`?tab=serials` is deep-linkable, and an Airframes count on a type drills through
+to that type's airframes.
+**Restored the 11 owner fields** we had silently dropped — `AircraftSerial` now
+matches the legacy table, and the serial form matches the legacy "Serial Number
+- Create" screen field for field. Ten fixtures were backfilled with real
+operators so nothing renders blank.
+**Removed the long-standing contradiction:** the aircraft form had a *required*
+Serial No field, which flatly contradicted the client's "don't make it a required
+field" and made a type un-creatable without inventing an airframe. The Aircraft
+form is now exactly the legacy Aircraft-Create field set, with no serial at all.
+**Uniqueness is per model, not global** — the same serial legitimately exists
+under two manufacturers. Verified live: `593` on Lear 35A is rejected as a
+duplicate, and the same `593` saves fine against 727, so both now coexist.
+**Edge cases handled:** types with no airframes stay visible and read "None";
+deleting a type names how many airframes go with it; deleting an airframe says
+the type is untouched; both tabs offer Inactive over Delete; registration is
+treated as mutable and never as a key.
+**Verified live:** both tabs render their own column set and CTA; the serial form
+has Airframe + Owner/Operator sections with all 15 fields; the aircraft form has
+8 fields and no serial; drill-down from "1 airframe" switches tab, seeds the
+search and returns 1 row; typecheck clean; no console errors.
+
+## 2026-08-17 — Aircraft / Serial Numbers split, and a per-person Team tab
+**Aircraft split completed.** Two tabs of one Reference Data workspace, the same
+shape as Deliverables / Design Data: **Aircraft** (15 types) and **Serial
+Numbers** (10 airframes), with `?tab=serials` in the URL. `AircraftSerial`
+regained the eleven owner/contact fields from the legacy `serialnumber` table
+that our merged screen had silently dropped, and the store gained real serial
+CRUD so a model save no longer touches airframes. The model drawer is now the
+legacy `Aircraft - Create` field set exactly, with **no serial field** — the
+client was explicit that "Serial Number and Aircraft will be separate" because at
+project start "the person creating the project may not know what the Serial
+Number is yet".
+**New `ProjectTeamTab`, tab name "Team" not "Time".** The document calls it Time,
+but the question it answers is *who is on this project and how are they
+tracking* — "Time" reads like a log (which already exists twice, as Timesheet and
+Hours Worked). "Team" says what the tab is for.
+**Shape: summary row per person, expandable to their assignments**, deliberately
+the same visual language as `WorkPackageCard` — chevron, name, health badge,
+neutral count chips, then hours / % used / 40px bar against the right edge, and a
+compact stat strip above. Someone who has learned the Work Packages tab has
+learned this one.
+**One number, one source.** Budget and actual come from the activity roll-up,
+exactly as the Work Packages tab and the four tiles do, so this tab can never
+disagree with them. Time Entry contributes an **entry count only** — deliberately
+not a second hours figure, because two hour columns that differ by a rounding
+artifact would undo the clarity the tab exists for.
+**Grouping is by person, then by assignment** — an assignment being *activity
+within a work package*, so the same activity name can legitimately appear twice
+under different packages. That is the case the client described: one engineer,
+four assignments, two packages.
+**Sorted by hours spent, descending**, so whoever is carrying the project leads
+and anyone over budget surfaces near the top.
+**Verified live:** project 3200-00 shows People 4 / Assignments 5 / Time entries 7
+/ Over budget 0; Kelly Osei expands to 2 assignments across 2 packages
+(Certification Plan · Airworthiness 33%, Seat Installation · Manuals 60%) with
+per-row entry counts; tab pill reads Team 4; no console errors.
+**Still open, worth naming:** *capacity* does not exist in the data model, so
+"is this person overloaded?" cannot be answered yet — only "how are they tracking
+against budget on this project". The cross-project version of this view (§1.8
+Project Analysis) is also still unbuilt.
+
+## 2026-08-18 — Table figures go left, the percentage takes the right edge
+
+Five client changes on the Team tab, four of which are global rules rather than
+Team-tab fixes, so they were made where every surface inherits them.
+
+**"Activity", not "assignment".** The domain word is Activity everywhere else in
+the app — the catalog, the work package table, the drawer. Inventing
+"assignment" for the person-shaped view of the *same rows* made a reader ask
+whether it was a different thing. It isn't: an activity held by a person inside a
+package. The count chip, the stat and the table caption all say activity now.
+(The internal type is `PersonActivity`, since it still carries the package it
+sits in.)
+
+**Every table column is left-aligned, headings and values, figures included.**
+Right-aligned numbers put the figure at the far end of its own column, away from
+the heading that names it — in a table as wide as Projects List that is a real
+tracking cost. Decimal alignment is the case for right-aligning numeric columns,
+and these are one-decimal hours where nothing is gained. Removed the `numeric`
+column flag from `ProjectsTable` entirely rather than leaving a prop that no
+longer does anything. Fixed in ProjectsTable, WorkPackageCard, ProjectTeamTab and
+AuditCleanTab; `BarChart`'s axis labels stay right-aligned, being an axis and not
+a table.
+
+**Summary row is now hours → bar → `88% used`, percentage against the right
+edge** (it was hours → percentage → bar). The percentage is the figure a reader
+scans down a stack of rows, so it earns the edge; the bar is the pip beside it.
+This also makes the card header agree with the "Budget used" table cell, which
+has always been bar-then-percentage.
+
+**Both figures share one size and weight.** `4h / 4h` was `text-xs`/secondary
+next to a `text-sm`/semibold percentage, which read as caption-plus-headline.
+They are two halves of one sentence.
+
+**This trio now lives in one component, `BudgetInline`.** It had been duplicated
+in `WorkPackageCard` and `ProjectTeamTab` and has been re-ordered four times; a
+fifth request would have drifted them apart again. Also fixed there: no budget
+set now reads `No budget` rather than `— used`, which looked like a rendering
+fault on the Weight & Balance package.
+
+**Card headers are white.** They were `neutral-50` — the same colour as the page
+— so a collapsed card had no visible edge and sank into the background. Changed
+in `WorkPackageCard` as well as `ProjectTeamTab`: the two are deliberately one
+visual language and fixing only the reported one would have split them. The
+expanded region gets a `border-t` so the header still separates from the body.
+
+**Team tab description cut to one line** ("Grouped by person, from the same
+activity roll-up as the Work Packages tab"). Kept rather than deleted because it
+is the answer to "why do these numbers match the other tab", which is the first
+thing a sceptical reader asks of a second view over the same hours.
+
+Storybook: new `TableFiguresExample` story under Patterns carries both rules —
+the summary trio and the left-aligned table — so neither has to be remembered.
+
+**Verified live** on 0000-00 → Team: computed styles confirm both figures at
+14px/600 in `text-primary`, DOM order hours → bar → `60% used`, all `th`/`td`
+`text-align: left`, section background `rgb(255,255,255)`. Work Packages tab and
+Projects List re-checked for the same. Typecheck clean, no console errors.

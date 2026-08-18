@@ -8,7 +8,6 @@ import { Alert } from '@/components/ui/Alert'
 import { useAddProjectForm, validateStep, validateAll, type AddProjectValues } from './useAddProjectForm'
 import { StepBasicInfo } from './StepBasicInfo'
 import { StepAdditionalDetails } from './StepAdditionalDetails'
-import { StepTccaSetup } from './StepTccaSetup'
 
 export interface AddProjectDrawerProps {
   open: boolean
@@ -116,13 +115,11 @@ export function AddProjectDrawer({
           <>
             <StepBasicInfo {...stepProps} />
             <StepAdditionalDetails {...stepProps} />
-            {values.tccaRequired === 'yes' && <StepTccaSetup {...stepProps} />}
           </>
         ) : (
           <>
             {step === 0 && <StepBasicInfo {...stepProps} />}
             {step === 1 && <StepAdditionalDetails {...stepProps} />}
-            {step === 2 && <StepTccaSetup {...stepProps} />}
           </>
         )}
       </Drawer>

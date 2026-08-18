@@ -26,13 +26,14 @@ import { NotesEditDrawer } from './NotesEditDrawer'
 import { AircraftEditDrawer } from './AircraftEditDrawer'
 import { ProjectTccaTab } from '@/components/features/tcca/ProjectTccaTab'
 import { ProjectWorkPackagesTab } from './ProjectWorkPackagesTab'
+import { ProjectTeamTab } from './ProjectTeamTab'
 import { ProjectDocumentsTab } from './ProjectDocumentsTab'
 import { ProjectApprovalsTab } from './ProjectApprovalsTab'
 import type { ProjectListRow, ScopeKey } from '@/types/project'
 import type { DeliverableRevision } from '@/types/tcca'
 import type { AddProjectValues } from './useAddProjectForm'
 
-const TABS = ['Overview', 'Work Packages', 'Deliverables', 'Design Data', 'TCCA', 'Approvals'] as const
+const TABS = ['Overview', 'Work Packages', 'Team', 'Deliverables', 'Design Data', 'TCCA', 'Approvals'] as const
 type Tab = (typeof TABS)[number]
 
 /** `Work Packages` <-> `work-packages`, so the URL stays readable. */
@@ -154,8 +155,14 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
       return !!doc && doc.kind === kind
     }).length
 
+  const projectPackageIds = new Set(workPackages.filter((w) => w.projectId === row.id).map((w) => w.id))
   const tabCounts: Partial<Record<Tab, number>> = {
-    'Work Packages': workPackages.filter((w) => w.projectId === row.id).length,
+    'Work Packages': projectPackageIds.size,
+    Team: new Set(
+      wpActivities
+        .filter((a) => projectPackageIds.has(a.workPackageId) && a.responsible)
+        .map((a) => a.responsible),
+    ).size,
     Deliverables: revisionsOfKind('deliverable'),
     'Design Data': revisionsOfKind('drawing'),
     TCCA: linkedTcca.length,
@@ -388,6 +395,8 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
               </div>
             ) : tab === 'Work Packages' ? (
               <ProjectWorkPackagesTab projectId={row.id} />
+            ) : tab === 'Team' ? (
+              <ProjectTeamTab projectId={row.id} />
             ) : tab === 'Deliverables' ? (
               <ProjectDocumentsTab kind="deliverable" projectId={row.id} />
             ) : tab === 'Design Data' ? (

@@ -15,7 +15,6 @@ export interface AddProjectValues {
   scope: ScopeKey[]
   contractCurrency: string
   contractValue: string
-  tccaRequired: 'yes' | 'no'
   // Step 2
   status: string
   openedDate: string
@@ -36,9 +35,8 @@ export interface AddProjectValues {
   designDataRevisionIds: string[]
   aircraftSpecifics: string
   // Step 3
-  tccaNumber: string
-  tccaDescription: string
-  checklist: string[]
+  /** TCCA projects to link. Created in TCCA Projects, only linked here. */
+  tccaProjectIds: string[]
 }
 
 export type Errors = Partial<Record<keyof AddProjectValues, string>>
@@ -48,13 +46,13 @@ const today = () => new Date().toISOString().slice(0, 10)
 export const INITIAL: AddProjectValues = {
   number: '', subNumber: '00', type: 'internal', priority: '3-med', description: '',
   company: '', contact: '', personResponsible: '', scope: [],
-  contractCurrency: 'USD', contractValue: '', tccaRequired: 'no',
+  contractCurrency: 'USD', contractValue: '',
   status: '', openedDate: today(), dueDate: '', aircraftInputDate: '', closedDate: '',
   proposalSubmitted: 'no', proposalSubmittedDate: '', proposalAccepted: 'no', proposalAcceptedDate: '',
   nextAction: '', comments: '',
   aircraftIds: [], approvalIds: [], deliverableRevisionIds: [], designDataRevisionIds: [],
   aircraftSpecifics: '',
-  tccaNumber: '', tccaDescription: '', checklist: [],
+  tccaProjectIds: [],
 }
 
 /**
@@ -86,7 +84,6 @@ export function validateStep(step: number, v: AddProjectValues, isEdit = false):
       e.closedDate = 'Closed date cannot be before the opened date.'
   }
   if (step === 2) {
-    if (!v.tccaNumber.trim()) e.tccaNumber = 'TCCA project number is required.'
   }
   return e
 }
@@ -98,7 +95,6 @@ export function validateAll(v: AddProjectValues, isEdit = false): Errors {
   return {
     ...validateStep(0, v, isEdit),
     ...validateStep(1, v, isEdit),
-    ...(v.tccaRequired === 'yes' ? validateStep(2, v, isEdit) : {}),
   }
 }
 
@@ -110,8 +106,8 @@ export function useAddProjectForm(initialValues?: Partial<AddProjectValues>, ini
   const [dirty, setDirty] = useState(false)
 
   const steps = useMemo(
-    () => (values.tccaRequired === 'yes' ? ['Basic Info', 'Additional Details', 'TCCA Setup'] : ['Basic Info', 'Additional Details']),
-    [values.tccaRequired],
+    () => ['Basic Info', 'Additional Details'],
+    [],
   )
 
   const setField = useCallback(<K extends keyof AddProjectValues>(key: K, value: AddProjectValues[K]) => {

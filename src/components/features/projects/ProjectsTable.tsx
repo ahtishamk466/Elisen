@@ -28,7 +28,6 @@ interface Column {
   sort?: SortKey
   /** Financial columns come out entirely below manager. */
   financial?: boolean
-  numeric?: boolean
 }
 
 const COLUMNS: Column[] = [
@@ -37,9 +36,9 @@ const COLUMNS: Column[] = [
   { label: 'Company Name', sort: 'company' },
   { label: 'Contact Name' },
   { label: 'Person Res.' },
-  { label: 'Budget', sort: 'budget', financial: true, numeric: true },
-  { label: 'Actual', sort: 'actual', financial: true, numeric: true },
-  { label: 'Remaining', sort: 'remaining', financial: true, numeric: true },
+  { label: 'Budget', sort: 'budget', financial: true },
+  { label: 'Actual', sort: 'actual', financial: true },
+  { label: 'Remaining', sort: 'remaining', financial: true },
   { label: 'Budget used', sort: 'progress', financial: true },
   { label: 'Priority', sort: 'priority' },
   { label: 'Status' },
@@ -94,7 +93,7 @@ export function ProjectsTable({
         type="button"
         onClick={() => onSortChange?.({ key, dir: active && sort?.dir === 'asc' ? 'desc' : 'asc' })}
         className={`flex items-center gap-xs rounded-sm transition-colors duration-fast hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
-          ${c.numeric ? 'ml-auto' : ''} ${active ? 'text-text-primary' : ''}`}
+          ${active ? 'text-text-primary' : ''}`}
       >
         {c.label}
         <Icon size={14} aria-hidden className={active ? 'text-accent' : 'text-text-muted'} />
@@ -119,7 +118,7 @@ export function ProjectsTable({
                 key={c.label}
                 scope="col"
                 aria-sort={sort && c.sort && sort.key === c.sort ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
-                className={`whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary ${c.numeric ? 'text-right' : ''}`}
+                className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary"
               >
                 {c.sort && onSortChange ? headerButton(c, c.sort) : c.label}
               </th>
@@ -174,15 +173,15 @@ export function ProjectsTable({
                     <td className="px-lg py-base align-top text-sm text-text-primary">{row.personResponsible}</td>
                     {canSeeFinancials && (
                       <>
-                        <td className="whitespace-nowrap px-lg py-base text-right align-top text-sm text-text-primary">
+                        <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
                           {health.budget > 0 ? formatHours(health.budget) : '—'}
                         </td>
-                        <td className="whitespace-nowrap px-lg py-base text-right align-top text-sm text-text-primary">
+                        <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
                           {formatHours(health.actual)}
                         </td>
                         {/* Over-budget shows as a negative in danger — the sign
                             carries the meaning, not the colour alone. */}
-                        <td className={`whitespace-nowrap px-lg py-base text-right align-top text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
+                        <td className={`whitespace-nowrap px-lg py-base align-top text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
                           {health.budget > 0 ? `${over ? '−' : ''}${formatHours(Math.abs(health.remaining))}` : '—'}
                         </td>
                         <td className="px-lg py-base align-top" style={{ minWidth: 150 }}>
@@ -194,7 +193,7 @@ export function ProjectsTable({
                                 ariaLabel={`Project ${row.number}-${row.subNumber} budget`}
                               />
                             </div>
-                            <span className="w-10 shrink-0 text-right text-xs font-semibold text-text-primary">
+                            <span className="w-10 shrink-0 text-xs font-semibold text-text-primary">
                               {formatPct(health.progressPct)}
                             </span>
                           </div>

@@ -23,6 +23,32 @@ Updated as components are added or changed.
 | SearchableSelect | closed / open / searching / no matches / empty catalog / option disabled × `sm` / `md` | `ui/SearchableSelect.tsx` | **THE** picker for every "attach an existing record" flow (Aircraft, Approvals, Deliverables, Design Data). Type to filter on label + hint; already-attached options are `disabled` with a `disabledReason` rather than hidden. Portal-rendered so drawers and `overflow` containers can't clip it. Full keyboard support (↑/↓ skip disabled rows, Enter picks, Esc closes). `searchThreshold` (default 8) hides the search box on short lists — a search field over four options is noise. `indicator="radio"` for a form field choosing one of a few alternatives, default `"check"` for catalog lookups. `variant="bare"` drops the border/shadow so it can be a segment inside an already-bordered control (the dial code in `PhoneInput`); `menuMinWidth` floors the panel width when the trigger is too narrow to read the options in |
 | MultiSelect | none / n selected (count + chips) / searching / option disabled / empty catalog × `sm` / `md` | `ui/MultiSelect.tsx` | The multi-choice half of the selection standard. Checkboxes in the list, `"n selected"` on the trigger, and chips underneath naming each pick with an × plus `Clear all`. The chips are required, not decoration: a count answers "how many" but never "which", which is the question a user has once the menu closes. Menu stays open while picking. Storybook: `Patterns/Overview` → SelectionStandard |
 
+### Aircraft and Serial Numbers are two records, one workspace
+
+`Reference Data → Aircraft` has two tabs, `?tab=serials` deep-linkable:
+
+- **Aircraft** is a *type*: model number/name, manufacturer, the three type
+  certificates, and the drawing prefix. A type has no owner.
+- **Serial Numbers** is an *airframe*: which type it is, its serial and
+  registration, and the owner/operator to contact — name, company, full address,
+  telephone, email. Eleven of its fields are owner data, which is why it is a
+  record and not a column.
+
+**Never merge them into one grid.** One row per airframe repeats every model
+field on every row, makes a 3-airframe type appear 3 times, and leaves "Edit"
+ambiguous about which record it acts on. Tabs keep one sidebar entry (you move
+between them constantly, exactly like Deliverables and Design Data) without
+pretending they are one thing.
+
+**Serials are unique per model, never globally.** The same number legitimately
+appears under two manufacturers, so uniqueness is checked against
+`aircraftId + serial`. Registration is *not* a key: an airframe is re-registered
+over its life while the serial stays put.
+
+Deleting a type takes its airframes with it, since `aircraftId` is required —
+the confirm names the count. Prefer Inactive on both tabs: inactive records stay
+attached to the projects and approvals that already reference them.
+
 ### Two global rules for lists and filters
 
 **1. Stats describe what is on screen.** Every stat tile on a filterable list is
@@ -73,10 +99,33 @@ never colour-only, because the percentage itself passes 100 and a status badge
 sits alongside. The one kept exception is a **negative Remaining** value in a
 table, which stays red behind its minus sign.
 
-**Work package header order:** `4.4h / 5h` → `88% used` → bar, with the bar
-against the actions menu. The hours stay in the short `x / y` form; the full
-breakdown is already in the row's Budget / Actual / Remaining columns and in the
-stat tiles above.
+**Summary row order — `BudgetInline`, one component, used by every card
+header:** `4.4h / 5h` → bar → `88% used`, with **the percentage against the
+right edge**. The percentage is what a reader scans down a stack of rows, so it
+owns the edge; the 40px bar is a glanceable pip beside it. The hours stay in the
+short `x / y` form — the full breakdown is already in the row's Budget / Actual
+/ Remaining columns and the stat tiles above. Both figures share **one size and
+weight** (`text-sm font-semibold`): they are two halves of one sentence, and
+making either louder implied a hierarchy that isn't there. With no budget set
+the tail reads `No budget`, never `— used`.
+
+### Table columns are left-aligned — all of them
+
+Headings **and** values, figures included: Budget, Actual, Remaining, Entries,
+counts. Right-aligned numbers pulled the eye away from the heading naming them,
+and in a table as wide as Projects List the reader loses track of which column
+they are in. Decimal alignment is the usual argument for right-aligning, and
+these are one-decimal hours, so there is nothing to win against that cost.
+
+Applies to every table in the app. See the `TableFiguresExample` story in
+Storybook → Patterns for the reference rendering.
+
+### Card headers are white
+
+Cards sit on a `neutral-50` page. A `neutral-50` card header therefore had no
+edge at all — a collapsed row disappeared into the background. Headers are white
+like the card body, with a `border-t` on the expanded region to separate the
+two.
 
 `budgetSummary(health)` remains the shared long phrasing for the meter's own
 `showLabel` mode: "4.4h spent of 5h, 0.6h left".
@@ -171,7 +220,8 @@ in both.
 
 ### Global records — create in the workspace, link in a project
 
-Aircraft, Approvals, Deliverables and Design Data are **global** records. Each
+Aircraft, Approvals, Deliverables, Design Data and **TCCA Projects** are
+**global** records. Each
 outlives any one project and is routinely shared across several, so no project
 can own one. The requirement document splits it explicitly — §1.2 *Project
 Associations* gives a project **"List, assign"**, while §1.3–1.5 give the
@@ -204,8 +254,14 @@ workspace. Here you choose which existing revisions apply to this project.")
 because the old screen let people create here and that was the wrong mental
 model.
 
-Reference implementations: `ProjectApprovalsTab` and `ProjectDocumentsTab` —
-deliberately the same shape. Copy one when a fifth record type appears.
+**Linking is two-way where both sides are workspaces.** A project's TCCA tab and
+a TCCA project's Projects tab call the same `linkProject` / `unlinkProject` store
+verbs, so a link made on either side shows immediately on the other. Approvals
+work the same way.
+
+Reference implementations: `ProjectApprovalsTab`, `ProjectDocumentsTab` and
+`ProjectTccaTab` — deliberately the same shape. Copy one when a sixth record type
+appears.
 
 ### Every popup places itself inside the viewport
 
@@ -309,6 +365,7 @@ Sizes and `UI/Select` → Sizes.
 | DetailCard / DetailField | with/without edit icon; empty field; `nowrap` | `patterns/DetailView.tsx` | THE standard read-only View: bordered card + muted-label/plain-value field grid. Never use a disabled form input to show read-only data — it dims real values to the same gray as an empty placeholder. Pass `nowrap` on short codes (Serial No, Reg. No, Model No, IDs) |
 | BarChart | populated / all-zero (`emptyLabel`) | `patterns/BarChart.tsx` | THE standard single-series bar chart — no chart library in the app, and one series doesn't warrant one. Built from tokens, HTML not SVG (labels stay real type size at any width). Axis is a round *step* (0/2,000/4,000/6,000), never a round max, so gridlines are numbers a reader can hold in their head. `tone="danger"` only for series that *are* a fault count. Carries an `sr-only` data table — values never depend on reading a bar height. One series per chart, always: a second measure means a second scale, so it gets its own chart, never a second y-axis |
 | ProgressMeter | on-track / near / over / complete / no-budget; sm & md | `patterns/ProgressMeter.tsx` | THE **budget-used** bar (hours consumed ÷ hours budgeted — not "progress", which would imply work completed and could never exceed 100%). Fill colour comes from the health state and is always paired with the percentage in text — state is never colour-alone. Over budget the track rescales to the overrun with a notch marking where the budget ran out, so the bar never contradicts the figure beside it. `role="progressbar"` with aria-valuetext |
+| BudgetInline | any health state; no-budget |  `patterns/ProgressMeter.tsx` | The summary read-out for a card header: hours → 40px meter → `88% used` hard against the right edge, both figures at one size and weight. Exists so that order is defined once — it had drifted between the work-package header and the team row |
 | HealthSummary | any health state | `patterns/HealthSummary.tsx` | The budget read-out: Budget hours / Actual hours / Remaining hours / Budget used as **four stat boxes with the exact StatCard metrics (`p-lg`, `text-3xl`)**, so every box is the same 98px height as the Projects List tiles. No meter inside — the percentage, the signed Remaining and the status chip carry the state. Remaining keeps one stable label and goes **signed** (−395.2h, in danger) when over rather than flipping to "Over by". Status chip sits beside the Budget used label; a thin `ProgressMeter` sits under the percentage. The sign + percentage + chip together explain an over-100% figure, so no explanatory sentence is needed inside the card |
 | Truncate | 1 line / 2 lines | `patterns/Truncate.tsx` | THE standard for long free text in a table cell: `line-clamp`, full text on hover via native `title`. Pair with a `maxWidth` style on the `<td>` — without a width constraint the browser just grows the column instead of wrapping. Never use on short codes — see the `whitespace-nowrap` rule below |
 | AccordionSection | open / closed, optional meta | `patterns/AccordionSection.tsx` | Collapsible grouped content (checklist phases) |

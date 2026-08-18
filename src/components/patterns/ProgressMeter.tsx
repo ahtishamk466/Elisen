@@ -84,3 +84,40 @@ export function ProgressMeter({ health, ariaLabel, showLabel = false, size = 'md
     </div>
   )
 }
+
+export interface BudgetInlineProps {
+  health: Health
+  /** Names the bar for screen readers, e.g. "Certification Plan budget". */
+  ariaLabel: string
+}
+
+/**
+ * The one-line budget read-out that sits in a card header or a summary row:
+ * **hours, then the bar, then the percentage hard against the right edge.**
+ *
+ * It exists so that order is defined once. It had drifted between the work
+ * package header and the team row, and the percentage is the figure a reader
+ * scans down a stack of rows for, so it — not the bar — owns the right edge.
+ *
+ * Both figures share one size and weight. They are two halves of the same
+ * sentence ("4h of 4h, which is 100%"), and making one of them louder implied a
+ * hierarchy that isn't there.
+ */
+export function BudgetInline({ health, ariaLabel }: BudgetInlineProps) {
+  return (
+    <div className="flex shrink-0 items-center gap-sm">
+      <span className="whitespace-nowrap text-sm font-semibold text-text-primary">
+        {formatHours(health.actual)} / {formatHours(health.budget)}
+      </span>
+      <div className="shrink-0" style={{ width: 40 }}>
+        <ProgressMeter health={health} size="sm" ariaLabel={ariaLabel} />
+      </div>
+      {/* Figures stay black: the bar signals state, and a number above 100
+          already says "over" without relying on colour. */}
+      <span className="whitespace-nowrap text-sm font-semibold text-text-primary">
+        {/* "— used" read as a glitch on a package with nothing budgeted. */}
+        {health.progressPct === null ? 'No budget' : `${formatPct(health.progressPct)} used`}
+      </span>
+    </div>
+  )
+}

@@ -5,7 +5,6 @@ import { Select } from '@/components/ui/Select'
 import { PersonSelect } from '@/components/ui/PersonSelect'
 import { Textarea } from '@/components/ui/Textarea'
 import { Checkbox } from '@/components/ui/Checkbox'
-import { RadioCard } from '@/components/ui/RadioCard'
 import { PEOPLE, NEXT_AVAILABLE_NUMBER } from '@/lib/projectFixtures'
 import { useLookupStore } from '@/stores/lookupStore'
 import type { ScopeKey } from '@/types/project'
@@ -139,26 +138,6 @@ export function StepBasicInfo({ values, errors, setField, canSeeFinancials = tru
         </FormSection>
       )}
 
-      <FormSection title="Transport Canada approval" subtitle="Choose whether Elisen will manage government approval.">
-        <fieldset>
-          <legend className="sr-only">Is TCCA approval required?</legend>
-          <div className="grid gap-lg tablet:grid-cols-2">
-            <RadioCard
-              name="tccaRequired" value="yes" checked={values.tccaRequired === 'yes'}
-              onChange={() => setField('tccaRequired', 'yes')}
-              title="Yes, approval is required" description="Adds a TCCA setup step and creates a linked TCCA project."
-            />
-            <RadioCard
-              name="tccaRequired" value="no" checked={values.tccaRequired === 'no'}
-              onChange={() => setField('tccaRequired', 'no')}
-              title="No approval required" description="The customer handles it, or it isn't needed."
-            />
-          </div>
-          <p className="mt-sm text-xs text-text-muted">
-            You can add a TCCA project later from the project's TCCA tab if this changes.
-          </p>
-        </fieldset>
-      </FormSection>
     </>
   )
 }

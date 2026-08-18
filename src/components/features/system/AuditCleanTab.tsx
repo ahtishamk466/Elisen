@@ -83,8 +83,8 @@ export function AuditCleanTab({ loading = false, onCleaned }: AuditCleanTabProps
             <thead>
               <tr className="border-b border-border-default bg-neutral-50">
                 <th scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Record type</th>
-                <th scope="col" className="whitespace-nowrap px-lg py-base text-right text-sm font-semibold text-text-secondary">Stored</th>
-                <th scope="col" className="whitespace-nowrap px-lg py-base text-right text-sm font-semibold text-text-secondary">Older than {days} days</th>
+                <th scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Stored</th>
+                <th scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Older than {days} days</th>
               </tr>
             </thead>
             <tbody>
@@ -102,8 +102,8 @@ export function AuditCleanTab({ loading = false, onCleaned }: AuditCleanTabProps
                     {/* Indented to the checkbox's label, not its box. */}
                     <p className="mt-xxss pl-2xl text-xs text-text-muted">{AUDIT_SERIES_DESCRIPTION[r.key]}</p>
                   </td>
-                  <td className="whitespace-nowrap px-lg py-base text-right align-top text-sm text-text-primary">{formatCount(r.total)}</td>
-                  <td className="whitespace-nowrap px-lg py-base text-right align-top text-sm text-text-primary">
+                  <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{formatCount(r.total)}</td>
+                  <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
                     {r.purgeable > 0 ? formatCount(r.purgeable) : '—'}
                   </td>
                 </tr>

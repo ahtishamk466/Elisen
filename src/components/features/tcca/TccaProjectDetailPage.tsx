@@ -9,12 +9,13 @@ import { Badge } from '@/components/ui/Badge'
 import { useTccaStore } from '@/stores/tccaStore'
 import { TCCA_STATUS_LABEL, TCCA_STATUS_TONE } from '@/lib/tccaDisplay'
 import { TccaOverviewTab } from './TccaOverviewTab'
+import { TccaProjectsTab } from './TccaProjectsTab'
 import { TccaDocumentsTab } from './TccaDocumentsTab'
 import { TccaChecklistTab } from './TccaChecklistTab'
 import { TccaReportsTab } from './TccaReportsTab'
 import { TccaProjectDrawer } from './TccaProjectDrawer'
 
-const TABS = ['Overview', 'Documents', 'Checklist', 'Reports', 'GCP'] as const
+const TABS = ['Overview', 'Projects', 'Documents', 'Checklist', 'Reports', 'GCP'] as const
 type Tab = (typeof TABS)[number]
 
 export function TccaProjectDetailPage() {
@@ -88,6 +89,7 @@ export function TccaProjectDetailPage() {
         </nav>
 
         {tab === 'Overview' && <TccaOverviewTab tcca={tcca} />}
+        {tab === 'Projects' && <TccaProjectsTab tcca={tcca} />}
         {tab === 'Documents' && <TccaDocumentsTab tcca={tcca} />}
         {tab === 'Checklist' && <TccaChecklistTab tcca={tcca} />}
         {tab === 'Reports' && <TccaReportsTab tcca={tcca} />}

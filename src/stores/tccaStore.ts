@@ -11,6 +11,10 @@ interface TccaState {
   addTcca: (t: TccaProject) => void
   updateTcca: (id: string, patch: Partial<TccaProject>) => void
   removeTcca: (id: string) => void
+  /** Linkable from either side: a project's TCCA tab and the TCCA project's
+      own Projects tab call these same two verbs. */
+  linkProject: (tccaProjectId: string, projectId: string) => void
+  unlinkProject: (tccaProjectId: string, projectId: string) => void
   /** date: undefined = mark Not Applicable; '' = applicable, not complete; 'YYYY-MM-DD' = complete. */
   setChecklistItem: (tccaId: string, itemId: string, date: string | undefined) => void
   linkRevision: (tccaProjectId: string, revisionId: string) => void
@@ -42,6 +46,18 @@ export const useTccaStore = create<TccaState>((set) => ({
       }),
     })),
 
+  linkProject: (tccaProjectId, projectId) =>
+    set((s) => ({
+      tccaProjects: s.tccaProjects.map((t) =>
+        t.id === tccaProjectId && !t.projectIds.includes(projectId)
+          ? { ...t, projectIds: [...t.projectIds, projectId] }
+          : t),
+    })),
+  unlinkProject: (tccaProjectId, projectId) =>
+    set((s) => ({
+      tccaProjects: s.tccaProjects.map((t) =>
+        t.id === tccaProjectId ? { ...t, projectIds: t.projectIds.filter((p) => p !== projectId) } : t),
+    })),
   linkRevision: (tccaProjectId, revisionId) =>
     set((s) => ({
       docLinks: [

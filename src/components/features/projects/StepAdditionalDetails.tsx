@@ -6,6 +6,7 @@ import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { useLookupStore } from '@/stores/lookupStore'
 import { useApprovalsStore } from '@/stores/approvalsStore'
+import { useTccaStore } from '@/stores/tccaStore'
 import { useDocumentsStore } from '@/stores/documentsStore'
 import type { DocumentKind } from '@/types/documents'
 import type { StepProps } from './StepBasicInfo'
@@ -13,6 +14,7 @@ import type { StepProps } from './StepBasicInfo'
 export function StepAdditionalDetails({ values, errors, setField }: StepProps) {
   const aircraft = useLookupStore((s) => s.aircraft)
   const approvals = useApprovalsStore((s) => s.approvals)
+  const tccaProjects = useTccaStore((s) => s.tccaProjects)
   const documents = useDocumentsStore((s) => s.documents)
   const revisions = useDocumentsStore((s) => s.revisions)
 
@@ -80,9 +82,9 @@ export function StepAdditionalDetails({ values, errors, setField }: StepProps) {
           later from the project's own tabs, so nothing is required. */}
       <FormSection
         title="Linked Records"
-        subtitle="Select existing aircraft, certificates and documents to link to this project. All optional. You can link more at any time from the project's tabs."
+        subtitle="Link records that already exist. All optional."
       >
-        <FormField label="Aircraft Model Number" htmlFor="link-aircraft" help="From Reference Data. Serial numbers are assigned later, per aircraft.">
+        <FormField label="Aircraft Model Number" htmlFor="link-aircraft" help="From Reference Data. Serials set later.">
           <MultiSelect
             id="link-aircraft"
             value={values.aircraftIds}
@@ -96,7 +98,7 @@ export function StepAdditionalDetails({ values, errors, setField }: StepProps) {
             }))}
           />
         </FormField>
-        <FormField label="Approval Number" htmlFor="link-approvals" help="Certificates this project relates to. Its own, or one it amends.">
+        <FormField label="Approval Number" htmlFor="link-approvals" help="From Approvals. Its own, or one it amends.">
           <MultiSelect
             id="link-approvals"
             value={values.approvalIds}
@@ -106,7 +108,7 @@ export function StepAdditionalDetails({ values, errors, setField }: StepProps) {
             options={approvals.map((a) => ({ value: a.id, label: a.number, hint: a.description }))}
           />
         </FormField>
-        <FormField label="Deliverable Number" htmlFor="link-deliverables">
+        <FormField label="Deliverable Number" htmlFor="link-deliverables" help="From Deliverables.">
           <MultiSelect
             id="link-deliverables"
             value={values.deliverableRevisionIds}
@@ -116,7 +118,7 @@ export function StepAdditionalDetails({ values, errors, setField }: StepProps) {
             options={revisionOptions('deliverable')}
           />
         </FormField>
-        <FormField label="Design Data Number" htmlFor="link-design-data">
+        <FormField label="Design Data Number" htmlFor="link-design-data" help="From Design Data.">
           <MultiSelect
             id="link-design-data"
             value={values.designDataRevisionIds}
@@ -126,7 +128,17 @@ export function StepAdditionalDetails({ values, errors, setField }: StepProps) {
             options={revisionOptions('drawing')}
           />
         </FormField>
-        <FormField label="Aircraft Specifics" htmlFor="aircraftSpecifics" help="Configuration notes that apply to the airframes above.">
+        <FormField label="TCCA Project Number" htmlFor="link-tcca" help="From TCCA Projects.">
+          <MultiSelect
+            id="link-tcca"
+            value={values.tccaProjectIds}
+            onChange={(v) => setField('tccaProjectIds', v)}
+            placeholder="Select TCCA projects..."
+            emptyLabel="No TCCA projects exist yet."
+            options={tccaProjects.map((t) => ({ value: t.id, label: t.number, hint: t.description }))}
+          />
+        </FormField>
+        <FormField label="Aircraft Specifics" htmlFor="aircraftSpecifics" help="Configuration notes for the airframes above.">
           <Textarea id="aircraftSpecifics" rows={3} value={values.aircraftSpecifics} placeholder="Write here..." onChange={(e) => setField('aircraftSpecifics', e.target.value)} />
         </FormField>
       </FormSection>

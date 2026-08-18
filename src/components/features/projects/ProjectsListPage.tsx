@@ -53,7 +53,7 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
   const addRow = useProjectsStore((s) => s.addRow)
   const updateRow = useProjectsStore((s) => s.updateRow)
   const removeRow = useProjectsStore((s) => s.removeRow)
-  const addTcca = useTccaStore((s) => s.addTcca)
+  const linkTccaToProject = useTccaStore((s) => s.linkProject)
   const workPackages = useWorkPackagesStore((s) => s.workPackages)
   const catalogAircraft = useLookupStore((s) => s.aircraft)
   const linkApprovalToProject = useApprovalsStore((s) => s.linkToProject)
@@ -326,23 +326,12 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
           v.approvalIds.forEach((approvalId) => linkApprovalToProject(approvalId, projectId))
           ;[...v.deliverableRevisionIds, ...v.designDataRevisionIds]
             .forEach((revisionId) => linkRevisionToProject(projectId, revisionId))
-          if (v.tccaRequired === 'yes') {
-            addTcca({
-              id: crypto.randomUUID(),
-              number: v.tccaNumber,
-              description: v.tccaDescription || v.description || `Certification for project ${v.number}-${v.subNumber}`,
-              status: 'in-progress',
-              openedDate: v.openedDate,
-              closedDate: '',
-              nextAction: '',
-              comments: '',
-              projectIds: [projectId],
-              checklist: Object.fromEntries(v.checklist.map((itemId) => [itemId, ''])),
-            })
-          }
+          // TCCA projects are opened in TCCA Projects; a new project only links
+          // to the ones that already exist.
+          v.tccaProjectIds.forEach((tccaId) => linkTccaToProject(tccaId, projectId))
           setToast(
-            v.tccaRequired === 'yes'
-              ? `Project ${v.number}-${v.subNumber} created, with TCCA project ${v.tccaNumber} linked.`
+            v.tccaProjectIds.length > 0
+              ? `Project ${v.number}-${v.subNumber} created, with ${v.tccaProjectIds.length} TCCA project${v.tccaProjectIds.length === 1 ? '' : 's'} linked.`
               : `Project ${v.number}-${v.subNumber} created.`,
           )
         }}

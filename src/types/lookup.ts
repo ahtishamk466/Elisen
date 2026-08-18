@@ -41,11 +41,36 @@ export interface AircraftModel {
   active: boolean
 }
 
+/**
+ * One specific airframe, plus the owner/operator it belongs to.
+ *
+ * This is not just a tail number hung off a model: eleven of the legacy
+ * `serialnumber` table's fields are owner and contact details, which is why it
+ * is a record in its own right rather than a column on the model. The model
+ * carries type certificates and the drawing prefix; the airframe carries who
+ * owns it and how to reach them.
+ */
 export interface AircraftSerial {
   id: string
+  /** The AircraftModel this airframe is one of. Required: a serial is only
+      unique within its model, so it is meaningless on its own. */
   aircraftId: string
   serial: string
+  /** Tail number. Changes over an airframe's life while the serial does not. */
   registration: string
+
+  // Owner / operator, from the legacy serialnumber table.
+  ownerName: string
+  company: string
+  addressLine1: string
+  addressLine2: string
+  city: string
+  provState: string
+  country: string
+  postalZipcode: string
+  telephone: string
+  email: string
+
   comment: string
   active: boolean
 }

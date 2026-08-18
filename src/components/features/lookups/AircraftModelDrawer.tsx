@@ -3,130 +3,122 @@ import { Drawer } from '@/components/patterns/Drawer'
 import { FormSection } from '@/components/patterns/FormSection'
 import { FormField } from '@/components/patterns/FormField'
 import { DetailCard, DetailField } from '@/components/patterns/DetailView'
-import { Truncate } from '@/components/patterns/Truncate'
+import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { Button } from '@/components/ui/Button'
-import type { AircraftModel, AircraftSerial } from '@/types/lookup'
+import type { AircraftModel } from '@/types/lookup'
 
 export interface AircraftModelDrawerProps {
   mode: 'create' | 'edit' | 'view'
   initial?: AircraftModel
-  /** The one row (model + serial pair) being edited/viewed — a model with
-      several tail numbers has several rows, each edited independently. */
-  initialSerial?: AircraftSerial
   onClose: () => void
-  onSave: (model: AircraftModel, serial: AircraftSerial | null) => void
+  onSave: (model: AircraftModel) => void
 }
 
-const blankSerial = (aircraftId: string): AircraftSerial => (
-  { id: crypto.randomUUID(), aircraftId, serial: '', registration: '', comment: '', active: true }
-)
+const BLANK: AircraftModel = {
+  id: '', modelNumber: '', modelName: '', manufacturer: '',
+  tccaTc: '', faaTc: '', easaTc: '', drawingPrefix: '', active: true,
+}
 
-export function AircraftModelDrawer({ mode, initial, initialSerial, onClose, onSave }: AircraftModelDrawerProps) {
+/**
+ * An aircraft **type**: model number, name, manufacturer, its three type
+ * certificates and the drawing prefix.
+ *
+ * No serial number here, deliberately. A model is not an airframe, and the
+ * client was explicit: "Serial Number and Aircraft will be separate", because
+ * at the moment a project starts "the person creating the project may not know
+ * what the Serial Number is yet". Airframes live on the Serial Numbers tab.
+ */
+export function AircraftModelDrawer({ mode, initial, onClose, onSave }: AircraftModelDrawerProps) {
   const isView = mode === 'view'
-  const isEdit = mode === 'edit'
-  const aircraftId = initial?.id ?? crypto.randomUUID()
-  const [m, setM] = useState<AircraftModel>(initial ?? {
-    id: aircraftId, modelNumber: '', modelName: '', manufacturer: '', tccaTc: '', faaTc: '', easaTc: '', drawingPrefix: '', active: true,
-  })
-  const [sn, setSn] = useState<AircraftSerial>(initialSerial ?? blankSerial(aircraftId))
-  const [error, setError] = useState('')
-  const [serialError, setSerialError] = useState('')
+  const [values, setValues] = useState<AircraftModel>(initial ?? BLANK)
+  const [errors, setErrors] = useState<{ modelNumber?: string }>({})
 
-  const setField = <K extends keyof AircraftModel>(key: K, value: AircraftModel[K]) => setM((prev) => ({ ...prev, [key]: value }))
-  const setSerialField = <K extends keyof AircraftSerial>(key: K, value: AircraftSerial[K]) => setSn((prev) => ({ ...prev, [key]: value }))
+  const set = <K extends keyof AircraftModel>(key: K, value: AircraftModel[K]) => {
+    setValues((v) => ({ ...v, [key]: value }))
+    if (key === 'modelNumber') setErrors({})
+  }
 
   const submit = () => {
-    let hasError = false
-    if (!m.modelNumber.trim()) { setError('Model number is required.'); hasError = true }
-    if (!sn.serial.trim()) { setSerialError('Serial number is required.'); hasError = true }
-    if (hasError) return
-    // One Status field represents the row; the serial's own flag isn't
-    // surfaced separately since nothing else in the app reads it.
-    onSave({ ...m, modelNumber: m.modelNumber.trim() }, { ...sn, serial: sn.serial.trim(), active: m.active })
+    if (!values.modelNumber.trim()) {
+      setErrors({ modelNumber: 'Model number is required.' })
+      return
+    }
+    onSave({ ...values, id: values.id || crypto.randomUUID(), modelNumber: values.modelNumber.trim() })
     onClose()
   }
+
+  const title = mode === 'create' ? 'Add Aircraft'
+    : mode === 'edit' ? `Edit Aircraft ${initial?.modelNumber}`
+      : `Aircraft ${initial?.modelNumber}`
 
   return (
     <Drawer
       open
       onClose={onClose}
-      title={isView ? `Aircraft "${initial!.modelNumber}"` : isEdit ? `Edit Aircraft "${initial!.modelNumber}"` : 'Add Aircraft'}
+      title={title}
       footer={
-        isView ? (
-          <Button variant="secondary" onClick={onClose}>Close</Button>
-        ) : (
-          <>
-            <Button variant="secondary" onClick={onClose}>Cancel</Button>
-            <Button onClick={submit}>{isEdit ? 'Save Changes' : 'Create Aircraft'}</Button>
-          </>
-        )
+        <>
+          <div className="flex gap-sm">
+            <Button variant="secondary" onClick={onClose}>{isView ? 'Close' : 'Cancel'}</Button>
+            {!isView && <Button onClick={submit}>{mode === 'create' ? 'Create Aircraft' : 'Save Changes'}</Button>}
+          </div>
+        </>
       }
     >
       {isView ? (
-        // Field order matches the Aircraft table's own column order.
         <DetailCard title="Aircraft">
-          <div className="grid grid-cols-2 gap-lg tablet:grid-cols-4">
-            <DetailField label="Serial No" nowrap>{sn.serial}</DetailField>
-            <DetailField label="Reg. No" nowrap>{sn.registration}</DetailField>
-            <DetailField label="Model Number" nowrap>{m.modelNumber}</DetailField>
-            <DetailField label="Model Name">{m.modelName && <Truncate>{m.modelName}</Truncate>}</DetailField>
-            <DetailField label="Manufacture">{m.manufacturer}</DetailField>
-            <DetailField label="TCCA TC">{m.tccaTc}</DetailField>
-            <DetailField label="FAA TC">{m.faaTc}</DetailField>
-            <DetailField label="EASA TC">{m.easaTc}</DetailField>
-            <DetailField label="Drawing Prefix">{m.drawingPrefix}</DetailField>
-            <DetailField label="Comment">{sn.comment && <Truncate>{sn.comment}</Truncate>}</DetailField>
-            <DetailField label="Active">{m.active ? 'Active' : 'Inactive'}</DetailField>
+          <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+            <DetailField label="Model Number" nowrap>{values.modelNumber}</DetailField>
+            <DetailField label="Model Name">{values.modelName}</DetailField>
+            <DetailField label="Manufacture">{values.manufacturer}</DetailField>
+            <DetailField label="TCCA TC" nowrap>{values.tccaTc}</DetailField>
+            <DetailField label="FAA TC" nowrap>{values.faaTc}</DetailField>
+            <DetailField label="EASA TC" nowrap>{values.easaTc}</DetailField>
+            <DetailField label="Drawing Prefix" nowrap>{values.drawingPrefix}</DetailField>
+            <DetailField label="Status">{values.active ? 'Active' : 'Inactive'}</DetailField>
           </div>
         </DetailCard>
       ) : (
-        <FormSection title="Aircraft" subtitle="One aircraft, a specific tail number of this model.">
-          <FormField label="Serial No" htmlFor="am-serial" required error={serialError}>
-            <Input
-              id="am-serial" value={sn.serial} error={!!serialError} placeholder="e.g. 593"
-              onChange={(e) => { setSerialField('serial', e.target.value); setSerialError('') }}
-            />
-          </FormField>
-          <FormField label="Reg. No" htmlFor="am-reg">
-            <Input id="am-reg" value={sn.registration} placeholder="e.g. C-GTXM" onChange={(e) => setSerialField('registration', e.target.value)} />
-          </FormField>
-          <FormField label="Model Number" htmlFor="am-number" required error={error}>
-            <Input id="am-number" value={m.modelNumber} error={!!error} placeholder="e.g. A330" onChange={(e) => { setField('modelNumber', e.target.value); setError('') }} />
-          </FormField>
-          <FormField label="Model Name" htmlFor="am-name">
-            <Input id="am-name" value={m.modelName} placeholder="e.g. Airbus A330" onChange={(e) => setField('modelName', e.target.value)} />
-          </FormField>
-          <FormField label="Manufacture" htmlFor="am-mfr">
-            <Input id="am-mfr" value={m.manufacturer} placeholder="e.g. Airbus" onChange={(e) => setField('manufacturer', e.target.value)} />
-          </FormField>
-          <FormField label="TCCA TC" htmlFor="am-tcca" help="Type certificate number, or N/A.">
-            <Input id="am-tcca" value={m.tccaTc} onChange={(e) => setField('tccaTc', e.target.value)} />
-          </FormField>
-          <FormField label="FAA TC" htmlFor="am-faa">
-            <Input id="am-faa" value={m.faaTc} onChange={(e) => setField('faaTc', e.target.value)} />
-          </FormField>
-          <FormField label="EASA TC" htmlFor="am-easa">
-            <Input id="am-easa" value={m.easaTc} onChange={(e) => setField('easaTc', e.target.value)} />
-          </FormField>
-          <FormField label="Drawing Prefix" htmlFor="am-prefix" help="Used when numbering drawings for this type.">
-            <Input id="am-prefix" value={m.drawingPrefix} placeholder="e.g. AB" onChange={(e) => setField('drawingPrefix', e.target.value)} />
-          </FormField>
-          <FormField label="Comment" htmlFor="am-comment">
-            <Input id="am-comment" value={sn.comment} placeholder="Optional note" onChange={(e) => setSerialField('comment', e.target.value)} />
-          </FormField>
-          <FormField label="Status" htmlFor="am-status" help="Inactive hides this aircraft from pickers across the app.">
-            <Select
-              id="am-status"
-              value={m.active ? 'active' : 'inactive'}
-              onChange={(e) => setField('active', e.target.value === 'active')}
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </Select>
-          </FormField>
-        </FormSection>
+        <>
+          <FormSection title="Aircraft" subtitle="The type, not a specific airframe.">
+            <FormField label="Manufacture" htmlFor="am-manufacturer">
+              <Input id="am-manufacturer" value={values.manufacturer} placeholder="e.g. Boeing"
+                onChange={(e) => set('manufacturer', e.target.value)} />
+            </FormField>
+            <FormField label="Model Number" htmlFor="am-number" required error={errors.modelNumber}>
+              <Input id="am-number" value={values.modelNumber} error={!!errors.modelNumber} placeholder="e.g. 737-8"
+                onChange={(e) => set('modelNumber', e.target.value)} />
+            </FormField>
+            <FormField label="Model Name" htmlFor="am-name">
+              <Input id="am-name" value={values.modelName} placeholder="e.g. B737-800"
+                onChange={(e) => set('modelName', e.target.value)} />
+            </FormField>
+          </FormSection>
+
+          <FormSection title="Type Certificates" subtitle="Held against the type by each authority. Leave blank when not applicable.">
+            <FormField label="TCCA TC" htmlFor="am-tcca">
+              <Input id="am-tcca" value={values.tccaTc} onChange={(e) => set('tccaTc', e.target.value)} />
+            </FormField>
+            <FormField label="FAA TC" htmlFor="am-faa">
+              <Input id="am-faa" value={values.faaTc} onChange={(e) => set('faaTc', e.target.value)} />
+            </FormField>
+            <FormField label="EASA TC" htmlFor="am-easa">
+              <Input id="am-easa" value={values.easaTc} onChange={(e) => set('easaTc', e.target.value)} />
+            </FormField>
+            <FormField label="Drawing Prefix" htmlFor="am-prefix" help="Two letters. Drives drawing numbering for this type.">
+              <Input id="am-prefix" value={values.drawingPrefix} maxLength={2} className="w-24"
+                onChange={(e) => set('drawingPrefix', e.target.value.toUpperCase())} />
+            </FormField>
+            <FormField label="Status" htmlFor="am-status" help="Inactive types stay on the projects that already use them.">
+              <Select id="am-status" value={values.active ? 'active' : 'inactive'}
+                onChange={(e) => set('active', e.target.value === 'active')}>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </Select>
+            </FormField>
+          </FormSection>
+        </>
       )}
     </Drawer>
   )

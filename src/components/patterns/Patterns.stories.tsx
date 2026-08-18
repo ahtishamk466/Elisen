@@ -13,10 +13,10 @@ import { FileDropzone } from './FileDropzone'
 import { BarChart } from './BarChart'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { MultiSelect } from '@/components/ui/MultiSelect'
-import { ProgressMeter } from './ProgressMeter'
+import { BudgetInline, ProgressMeter } from './ProgressMeter'
 import { HealthSummary } from './HealthSummary'
 import { FilterChips } from './FilterChips'
-import { HEALTH_LABEL, HEALTH_TONE, formatPct, healthOf } from '@/lib/projectHealth'
+import { HEALTH_LABEL, HEALTH_TONE, formatHours, formatPct, healthOf } from '@/lib/projectHealth'
 import { AccordionSection } from './AccordionSection'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Drawer } from './Drawer'
@@ -456,10 +456,83 @@ export const ProjectHealthExample: Story = {
         {[healthOf(80, 20), healthOf(80, 74), healthOf(80, 96), healthOf(80, 80, true), healthOf(0, 12)].map((h, i) => (
           <div key={i} className="flex items-center gap-lg">
             <div className="min-w-0 flex-1"><ProgressMeter health={h} size="sm" ariaLabel={`Example ${i + 1}`} /></div>
-            <span className="w-12 shrink-0 text-right text-xs font-semibold text-text-secondary">{formatPct(h.progressPct)}</span>
+            <span className="w-12 shrink-0 text-xs font-semibold text-text-secondary">{formatPct(h.progressPct)}</span>
             <span className="w-32 shrink-0"><Badge tone={HEALTH_TONE[h.state]}>{HEALTH_LABEL[h.state]}</Badge></span>
           </div>
         ))}
+      </div>
+    </div>
+  ),
+}
+
+/**
+ * Two rules that hold for every table in the app, shown together because they
+ * are usually broken together.
+ *
+ * **Columns are left-aligned — all of them, headings and values.** Numbers
+ * included. Right-aligned figures were pulling the eye away from the label that
+ * names them, and in a table this wide the reader loses which column they are
+ * in. Decimal alignment would be the reason to right-align, and these are
+ * one-decimal hours, so there is nothing to gain against the cost.
+ *
+ * **The summary trio reads hours, bar, percentage.** The percentage owns the
+ * right edge because it is what a reader scans down a stack of rows; the bar is
+ * the glanceable pip beside it. Both figures share one size and weight.
+ */
+export const TableFiguresExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg">
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Summary row: hours, bar, % used</p>
+        <div className="grid gap-xs rounded-sm border border-border-default bg-neutral-25 p-lg">
+          {[healthOf(4, 4), healthOf(2, 2.4), healthOf(2, 1.7), healthOf(0, 3)].map((h, i) => (
+            <div key={i} className="flex items-center gap-sm border-b border-border-default py-sm last:border-b-0">
+              <span className="flex-1 truncate text-sm font-semibold text-text-primary">Person {i + 1}</span>
+              <Badge tone={HEALTH_TONE[h.state]}>{HEALTH_LABEL[h.state]}</Badge>
+              <BudgetInline health={h} ariaLabel={`Person ${i + 1} budget`} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Table columns: left-aligned, figures included</p>
+        <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+          <table className="w-full border-collapse text-left">
+            <caption className="sr-only">Column alignment reference</caption>
+            <thead>
+              <tr className="border-b border-border-default">
+                {['Activity', 'Budget', 'Actual', 'Remaining', 'Budget used', 'Status'].map((h) => (
+                  <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-xs font-semibold text-text-secondary">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[healthOf(1, 1.3), healthOf(3, 2.7), healthOf(12, 4)].map((h, i) => {
+                const over = h.remaining < 0
+                return (
+                  <tr key={i} className="border-b border-border-default last:border-b-0">
+                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">Activity {i + 1}</td>
+                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{formatHours(h.budget)}</td>
+                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{formatHours(h.actual)}</td>
+                    {/* The one figure that keeps colour: the minus sign carries
+                        the meaning first, so it is never colour-only. */}
+                    <td className={`whitespace-nowrap px-lg py-base text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
+                      {over ? '\u2212' : ''}{formatHours(Math.abs(h.remaining))}
+                    </td>
+                    <td className="px-lg py-base" style={{ minWidth: 120 }}>
+                      <div className="flex items-center gap-sm">
+                        <div className="min-w-0 flex-1"><ProgressMeter health={h} size="sm" ariaLabel={`Activity ${i + 1} budget`} /></div>
+                        <span className="w-9 shrink-0 text-xs font-semibold text-text-primary">{formatPct(h.progressPct)}</span>
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap px-lg py-base"><Badge tone={HEALTH_TONE[h.state]}>{HEALTH_LABEL[h.state]}</Badge></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   ),

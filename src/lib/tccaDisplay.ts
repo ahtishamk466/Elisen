@@ -1,5 +1,5 @@
 import type { BadgeTone } from '@/components/ui/Badge'
-import type { TccaDocState, TccaInvolvement, TccaStatus } from '@/types/tcca'
+import type { TccaDocState, TccaInvolvement, TccaStatus, TccaProjectStatus, TccaProjectLevel } from '@/types/tcca'
 
 export const TCCA_STATUS_LABEL: Record<TccaStatus, string> = {
   'in-progress': 'In Progress',
@@ -29,4 +29,18 @@ export const DOC_STATE_TONE: Record<TccaDocState, BadgeTone> = {
   sent: 'info',
   accepted: 'success',
   comments: 'warning',
+}
+
+export const TCCA_PROJECT_STATUS_LABEL: Record<TccaProjectStatus, string> = {
+  'not-started': 'Not Started',
+  'in-progress': 'In Progress',
+  'on-hold': 'On Hold',
+  complete: 'Complete',
+  cancelled: 'Cancelled',
+}
+
+export const TCCA_PROJECT_LEVEL_LABEL: Record<TccaProjectLevel, string> = {
+  major: 'Major',
+  minor: 'Minor',
+  'not-assigned': 'Not Assigned',
 }

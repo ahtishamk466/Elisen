@@ -3,7 +3,7 @@ import { ChevronDown, Pencil, Trash2, CheckCircle2, RotateCcw, Plus } from 'luci
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
-import { ProgressMeter } from '@/components/patterns/ProgressMeter'
+import { BudgetInline, ProgressMeter } from '@/components/patterns/ProgressMeter'
 import { activityName, ACTIVITY_TASKS } from '@/lib/activityCatalog'
 import { HEALTH_LABEL, HEALTH_TONE, formatHours, formatPct, healthOf, rollUpActivities } from '@/lib/projectHealth'
 import type { WorkPackage, WorkPackageActivity, WorkPackageStatus } from '@/types/workPackage'
@@ -36,7 +36,7 @@ export function WorkPackageCard({
 
   return (
     <section className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-      <header className="flex flex-wrap items-center gap-sm bg-neutral-50 px-lg py-base">
+      <header className="flex flex-wrap items-center gap-sm px-lg py-base">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -55,24 +55,10 @@ export function WorkPackageCard({
           </span>
         </button>
         {/* The package's roll-up, readable without expanding it. "4.4h / 5h"
-            alone left the reader to do the arithmetic, so the row now states
-            the percentage, what was spent, the budget, and what is left or
-            over. The meter stays 40px: a glanceable pip beside figures that
-            carry the precision. */}
-        <div className="flex shrink-0 items-center gap-sm">
-          <span className="whitespace-nowrap text-xs text-text-secondary">
-            {formatHours(health.actual)} / {formatHours(health.budget)}
-          </span>
-          {/* Figures stay black: the bar is what signals state, and a number
-              above 100 already says "over" without relying on colour. */}
-          <span className="whitespace-nowrap text-sm font-semibold text-text-primary">
-            {formatPct(health.progressPct)} used
-          </span>
-          {/* Bar last, so it sits against the actions menu. */}
-          <div className="shrink-0" style={{ width: 40 }}>
-            <ProgressMeter health={health} size="sm" ariaLabel={`${wp.title} budget`} />
-          </div>
-        </div>
+            alone left the reader to do the arithmetic, so the row states the
+            hours, the meter and the percentage — see BudgetInline for why they
+            sit in that order. */}
+        <BudgetInline health={health} ariaLabel={`${wp.title} budget`} />
         <ActionsMenu
           ariaLabel={`Actions for work package ${wp.title}`}
           items={[
@@ -86,7 +72,7 @@ export function WorkPackageCard({
       </header>
 
       {open && (
-        <div className="grid gap-base p-lg">
+        <div className="grid gap-base border-t border-border-default p-lg">
           {wp.description && <p className="text-sm text-text-secondary">{wp.description}</p>}
 
           {activities.length === 0 ? (
@@ -101,7 +87,7 @@ export function WorkPackageCard({
                       <th
                         key={h}
                         scope="col"
-                        className={`whitespace-nowrap px-sm py-sm text-xs font-semibold text-text-secondary ${['Budget', 'Actual', 'Remaining'].includes(h) ? 'text-right' : ''}`}
+                        className="whitespace-nowrap px-sm py-sm text-xs font-semibold text-text-secondary"
                       >
                         {h}
                       </th>
@@ -116,11 +102,11 @@ export function WorkPackageCard({
                     <tr key={a.id} className="border-b border-border-default last:border-b-0">
                       <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">{activityName(a.activityId)}</td>
                       <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">{a.responsible}</td>
-                      <td className="whitespace-nowrap px-sm py-sm text-right text-sm text-text-primary">
+                      <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">
                         {ah.budget > 0 ? formatHours(ah.budget) : '—'}
                       </td>
-                      <td className="whitespace-nowrap px-sm py-sm text-right text-sm text-text-primary">{formatHours(ah.actual)}</td>
-                      <td className={`whitespace-nowrap px-sm py-sm text-right text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
+                      <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">{formatHours(ah.actual)}</td>
+                      <td className={`whitespace-nowrap px-sm py-sm text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
                         {ah.budget > 0 ? `${over ? '−' : ''}${formatHours(Math.abs(ah.remaining))}` : '—'}
                       </td>
                       <td className="px-sm py-sm" style={{ minWidth: 120 }}>
@@ -128,7 +114,7 @@ export function WorkPackageCard({
                           <div className="min-w-0 flex-1">
                             <ProgressMeter health={ah} size="sm" ariaLabel={`${activityName(a.activityId)} budget`} />
                           </div>
-                          <span className="w-9 shrink-0 text-right text-xs font-semibold text-text-primary">
+                          <span className="w-9 shrink-0 text-xs font-semibold text-text-primary">
                             {formatPct(ah.progressPct)}
                           </span>
                         </div>
