@@ -2501,3 +2501,722 @@ the summary trio and the left-aligned table — so neither has to be remembered.
 14px/600 in `text-primary`, DOM order hours → bar → `60% used`, all `th`/`td`
 `text-align: left`, section background `rgb(255,255,255)`. Work Packages tab and
 Projects List re-checked for the same. Typecheck clean, no console errors.
+
+## 2026-08-18 — Hours Worked gains a By Person tab (the doc's "Hours Worked summary")
+
+§2.2 lists **"Hours Worked summary — aggregated hours view"** and it was unbuilt.
+This is that screen. Three things were separate and stayed separate:
+
+| | Scope | Level | Purpose |
+|---|---|---|---|
+| Timesheet | one person | raw rows | self-service entry |
+| Hours Worked → All Entries | everyone | raw rows | admin audit & validation |
+| Hours Worked → By Person | everyone | **aggregated** | who is tracking how |
+
+**Two tabs, not three, and not three pages.** Timesheet keeps its own page — a
+different audience (the employee). All Entries and By Person are the same data at
+two zoom levels for the same reader, so they share one filter set: filter to a
+month and a project, then flip between the raw rows and the roll-up without
+setting the filters twice. Verified: payroll group 2 → All Entries 320 / By
+Person 3, and both tiles and tab counts follow. Same TableTabs pattern as
+Aircraft / Serial Numbers.
+
+**Named "By Person", not "Team Performance".** Budget-vs-actual measures estimate
+accuracy, not people: someone at 130% may be doing excellent work against a bad
+quote. A tab labelled Performance invites it to be read as a productivity
+ranking, which it is not and should never inform.
+
+### Where each number comes from
+
+**Actual comes from the timesheet, budget from the activity.** "How many hours
+has this person worked" is a timesheet question — it is the only record that
+knows *who*, and the only one carrying overtime and banked hours at all. Budget
+exists only on the activity, and counts for the person it is *assigned* to.
+
+The fixtures now hold these in step **by construction**: `timesheetFixtures.ts`
+generates entries from `WP_ACTIVITIES`, splitting each activity's `actualHours`
+into dated rows, so logged regular hours sum to the activity actual. Verified
+live: 907 rows against 539 activities, **0 mismatches**, 22,998h both sides. This
+tab therefore cannot disagree with a project's Work Packages tab. Hand-written
+rows drifted the moment either side was edited.
+
+**Overtime, banked and non-project hours are never inside Actual.** No budget
+covers them; folding them in would push every hard-working person over budget for
+reasons unrelated to the estimate. They get their own columns.
+
+### Edge cases, each of which breaks a screen that assumes it away
+
+- **Non-project time.** `GEN - Holiday / Paid Absence / Sick / Training /
+  Internal` added to the activity catalog behind a `nonProject` flag (a flag, not
+  a naming convention a future activity could break), logged against 0000-00 in a
+  new **General & Absence** package that deliberately holds **no activities** —
+  general time is not budgeted, so inventing budgeted activities for it would put
+  fake numbers into every roll-up. Own column, own detail group, excluded from
+  every budget figure. Filter: include / exclude / only.
+- **Shared activities.** Someone logs against a colleague's work. Hours attribute
+  to whoever logged them; budget stays with the owner; the line is chipped
+  *"Shared, Xh total"* and *"<Name>'s activity"*. 28 such lines exist.
+- **Assigned but nothing logged** (84 lines) shows as "Not started" — the
+  assignment a manager most needs to see. Dropped when the filter is about *when*
+  or *what kind of* hours, because "nothing logged in July" is not "not started"
+  and an activity with no entries cannot satisfy a filter on entries.
+- **Former employee.** Gordon MacLeod: history, no assignments. **Shown by
+  default** and chipped, because hours are payroll record and hiding them by
+  default would quietly change every total; filterable out for a "who is on the
+  team now" read. His hours are a slice of a real activity, so the sum invariant
+  still holds.
+- **Unvalidated hours** are counted and flagged (`N unvalidated`) rather than
+  excluded — excluding makes totals wrong, including silently presents unverified
+  data as fact.
+- **A blended average hides disasters.** Sofia reads 89% On track while 43 of her
+  143 budgeted activities are over — the unders cancel the overs. The badge gives
+  her overall position, the `43 of 143 over` chip gives what it hides. An earlier
+  attempt used the *worst* line for the badge; every person came out red, so the
+  badge carried no information at all.
+- **Scale.** 101 projects for one person, so the detail opens the 5 busiest with
+  *"Show all 101 projects (96 more)"* — the count said out loud, never a silent cap.
+- **Payroll group** and date range added as filters; date range matters because
+  lifetime hours and this month's are different questions.
+
+### Two bugs found while building
+
+**"Over budget" meant `remaining < 0`,** which is true for anyone with *no*
+budget (remaining = −actual). Gordon, with zero budget, was counted as over
+budget. Now `state === 'over-budget'`. **The same bug was in the project Team
+tab** and is fixed there too.
+
+**Unstarted assignments ignored the filters** — they were added from the full
+activity list, so choosing one project still listed all 101. Split the input:
+`activities` stays unfiltered for budget/ownership lookup (so a row on a
+colleague's activity still names them), `unstartedActivities` takes the same
+filtering the rows got.
+
+### Data model gaps closed
+
+`Employee` (new): **designation** — shown under the name, and the thing that
+tells a reader whether 200h of Airworthiness is expected or odd — plus payroll
+group and `active`. It did not exist before; `PEOPLE` was a bare string list and
+remains the assignable-names list.
+
+**Still open:** capacity/availability is still absent, so this answers "how is
+this person tracking against budget" and not "is this person overloaded". Banked
+hours exist per entry but there is no per-person accrued balance (§5.2 "Banked
+Hours (profile)"). Hours Worked *query* and *report* (§2.2) remain unbuilt.
+
+## 2026-08-19 — Activities & Tasks become a real catalog under Reference Data
+
+The client's system spends three screens on this — Activities (51), Activity
+Tasks (41), and a dual-list Create — and Elisen had none of it: activities were a
+hardcoded array in `lib/activityCatalog.ts` with a `Record<string, string[]>` of
+task names beside it. Nothing could be added, renamed or retired.
+
+It is really **two records and a many-to-many link**, which the client's own data
+proves: *Conceptual Design* is a task under both Mech / Struct Design and Av /
+Elec System Design. A task cannot belong to one activity.
+
+**Reference Data → Activities & Tasks, two tabs over one workspace** — the same
+shape as Aircraft / Serial Numbers, for the same reason: you move between them
+constantly while setting the catalog up. Created globally, only *selected* inside
+a project, which is the create-globally / link-locally rule already used for
+Approvals, Documents, TCCA and Aircraft.
+
+**Linking works from both sides.** The Activity drawer carries a searchable
+multi-select of tasks; the Task drawer carries one of activities. Both write the
+same `ActivityTask` rows, so an association made either way shows on both tabs.
+One-way linking would leave the Tasks tab looking empty for tasks that are in
+fact well associated. This also collapses the client's two-trip flow (create the
+activity, then go to Activity Tasks and link) into one drawer.
+
+**`lib/activityCatalog.ts` is deleted, not wrapped.** A shim would have left two
+sources of truth. `lib/catalog.ts` holds pure reads that take the lists
+explicitly, and every consumer now reads `catalogStore` — 15 call sites across
+the work-package card, activity drawer, team tab, both timesheet pages, the entry
+drawer and view, report generators, `timesheetLookup` and `hoursByPerson`.
+Verified live: renaming or re-linking in Reference Data re-labels the project's
+Work Packages tab immediately.
+
+### The functional win
+
+`taskRequired` now does something. The requirement doc asks to **"hide Task when
+activity does not require one"**, and it does: with the flag off the field is
+gone rather than sitting there disabled and empty; with it on the field is
+`Task *` and validation demands it. Verified end-to-end — flipping the flag in
+Reference Data made the field vanish from the Time Entry form. The field still
+shows before an activity is chosen, so the form does not jump about as it is
+filled in.
+
+### Edge cases
+
+- **Deleting something in use is refused, and the dialog offers the remedy.**
+  "Mechanical Design" reports *97 work-package assignments and 162 timesheet
+  entries*, and the button becomes **Retire it instead** — which deactivates.
+  A dead-end dialog would have made the user hunt for the fix themselves.
+  Retired records stay on everything that already references them and vanish from
+  every picker; `Board Drafting` ships inactive to prove it.
+- **An activity that requires a task but has none linked** can never be completed
+  at Time Entry. The drawer refuses to save it, the list shows the count in
+  danger, and a page-level banner counts them — because the state is reachable by
+  unlinking from the *task* side, where the activity is not in view.
+- **Non-project activities cannot carry tasks** (their time is logged directly,
+  so a task list would be unreachable) and are excluded from the task drawer's
+  activity list and from the project activity picker.
+- **Duplicate names** rejected on both records, case-insensitively.
+- **Renaming a task that logged hours name** warns with the count rather than
+  blocking — timesheet entries store the task by name, so old hours keep the old
+  one, and correcting a typo is legitimate.
+- **Inactive activities stay selectable when an existing entry already uses one**,
+  or editing an old row would silently blank its activity.
+- **A task linked to nothing** is normal, not broken: `Vibration Survey` ships
+  that way and the Tasks tab says "Not linked yet".
+- Defaults sort first in the project picker (`isDefault`), matching the client's
+  Default column.
+
+**Still open:** the client's Activity Tasks list has an `active` flag on the
+*link* itself; the store supports it (`setLinkActive`) but no UI toggles a single
+pairing yet — deactivating either side is the coarser control that exists today.
+
+## 2026-08-19 — ATA Chapters redesigned as master–detail; drawings pick from the taxonomy
+
+The client asked for this module to be clearer and self-explanatory. The legacy
+version is three screens — a 116-row Chapters grid, a 617-row Sub Chapters grid,
+and separate Create forms — where the one thing this data *is*, a two-level
+taxonomy, is invisible: "what sections does chapter 25 have?" meant filtering a
+617-row list by hand.
+
+**The hierarchy is now the navigation.** A chapter rail on the left (own scroll,
+code badge, title, section count, inactive dimmed), the selected chapter on the
+right: definition, "N sections · M drawings filed here", and its sections table
+(Code · Title · Definition · Drawings · Active · Actions). A section is created
+from inside its chapter, so no form ever asks which parent it belongs to — the
+legacy Sub Chapter form's redundant Chapter dropdown (and its duplicated
+Chapter/Section inputs) simply has no equivalent. Selection is URL-synced
+(`?chapter=25`); search spans chapter *and* section text and lands on the first
+matching chapter; the stat strip (Chapters shown · Sections · Drawings
+classified) follows the search per the standing rule. Landing selects the first
+*active* chapter, not the reserved 01–04 placeholders.
+
+**The real functional fix is in the drawing form.** A drawing's ATA Chapter was
+a free-text input — which is how 12 demo drawings came to say `92-00`, a code
+resolving to nothing. It is now a searchable picker over the taxonomy's active
+sections (`25-10 — Flight Compartment`, chapter title as hint), storing the same
+`XX-YY` string, so existing data needed no migration. A stored code that no
+longer resolves stays pickable, labelled "Not in the ATA taxonomy", so editing
+an old drawing never blanks it.
+
+**Fixtures now match the module's real scale**: the full ATA 100 chapter list
+(~50 chapters, seeded and id-derived from the codes so existing ids held), a
+`00 — General` section per chapter exactly as the client's data has, curated
+sections where the demo's drawings file, and chapter 92 (AIRCRAFT WIRING) kept
+as a *client extension* — the honest fix for the 92-00 drawings, and proof the
+module accepts non-standard chapters.
+
+Edge cases: duplicate chapter codes and duplicate sections within a chapter are
+rejected by name ("Chapter 25 already exists: EQUIPMENT/FURNISHINGS"); deleting
+a chapter or section that drawings are filed under is refused with the count and
+the dialog's button becomes **Retire it instead** (28 drawings blocked chapter
+25's deletion in verification); an unused chapter deletes cleanly, cascading its
+sections with the count stated.
+
+Verified live: rail auto-scrolls to the selection; search "unscheduled" (a
+section-level word) lands on chapter 05 with the strip reading 1 chapter shown;
+per-section drawing counts (13 under 25-10, 15 under 25-20) match the document
+fixtures; the drawing drawer resolves `25-20` to its title and finds "25-30 —
+Galley" by typing "galley". Typecheck clean; dev-server log clean after the
+edits landed.
+
+## 2026-08-19 — ATA Chapters, client review pass
+
+Seven changes from the client's review of the redesign.
+
+**Stats now use `StatCard`**, the same tiles as every other list page, replacing
+a bespoke inline strip that matched nothing else in the app. They read Chapters
+shown · Sub chapters · Active chapters · Inactive chapters and still follow the
+search: filtering to "reserved" gives 5 · 9 · 1 · 4. The old "Drawings
+classified" tile went with the Drawings column (below).
+
+**All-caps titles are now sentence case** — `TIME LIMITS/MAINTENANCE CHECKS`
+became `Time limits/maintenance checks`. The all-caps came from the client's own
+data, but they asked for standard capitalisation, so the fixtures were rewritten
+rather than the text being cased at render time; the source should hold what the
+UI shows. Sub chapter titles went from Title Case to sentence case too, so the
+two levels read alike. Initialisms are kept (`DC generation`), as are aircraft
+registrations elsewhere in the fixtures. A grep confirmed all-caps existed
+nowhere else in the app except the legitimate `EASA TC` column header.
+
+**"Sub chapter" replaces "Section" in all copy** — headings, column captions,
+buttons, drawer titles, toasts, validation, empty states and aria-labels. The
+record field is still `section` (it is the two-digit code, and renaming the type
+would touch the store and fixtures for no user-visible gain); only what a reader
+sees changed.
+
+**The Drawings column is gone**, and with it the "N drawings filed here" line in
+the chapter header — neither appears in the client's list, and their reference is
+the spec here. The drawing counts still run: they guard deletion, so a code
+cannot be deleted out from under the drawings filed against it. That guard is
+invisible until it fires, which is the right place for it.
+
+**Chapter actions moved into a 3-dot `ActionsMenu`**, matching every other row in
+the app; the paired Edit/Delete buttons beside the status badge were a one-off.
+
+**The chapter definition line was removed** from the detail view at the client's
+request. It remains editable in the drawer, and sub chapter definitions still
+show in their column.
+
+**"Add Sub Chapter" is now the primary button.** Kept in Title Case to match
+"Add Chapter" beside it and every other action label in the app — the
+sentence-case rule above is about content, not UI labels.
+
+## 2026-08-19 — ATA rail: the chapter code and the sub chapter count stop looking alike
+
+The client could not tell the two numbers in a rail row apart. Fair: they were
+the same shape, the same pale fill and the same size, sitting at either end of
+the row. But they are not the same kind of thing — **one is a name, the other is
+a quantity** — so the fix was to make that difference visible before either
+number is read, not to make one bigger.
+
+- **The chapter code is now a solid, dark, square chip** with inverse text. It is
+  the taxonomy's own identity, so it is the loudest thing in the row. Inactive
+  chapters get the same square in muted grey — still obviously a code.
+- **The sub chapter count is an outlined round pill.** Filled-vs-outline and
+  square-vs-round separate them at a glance; there is no case where a reader has
+  to work out which number is which.
+- **A header row names both columns once** — `Ch.` and `Sub ch.`, the short forms
+  the client offered — instead of repeating a label on all fifty rows. The rail
+  is 320px wide, so the labels had to live somewhere that costs nothing per row.
+
+Both badges are `aria-hidden`; each row carries an `sr-only` sentence ("Chapter
+25, Equipment/furnishings, 7 sub chapters") so a screen reader gets the meaning
+the shapes now carry visually. Verified: code renders `rgb(2,6,23)` on white at
+8px radius, the count transparent with a 1px border at pill radius.
+
+## 2026-08-19 — Projects List fits the page: 13 columns → 7, no horizontal scroll
+
+The table declared a 1501px minimum. A 1280 laptop offers **959px** after the
+256px sidebar and page padding, so roughly a third of every record was off-screen
+— and it overflowed even on a 1680 monitor. Measured, not estimated.
+
+**Seven columns now, and it fits at 1280 with zero horizontal scroll** (959px
+available, 959px used; verified in the browser at both 1280 and 1680).
+
+| Column | Line 1 | Line 2 |
+|---|---|---|
+| Project | `0000-00` | project title |
+| Customer | company | contact name |
+| Person Res. | name | — |
+| Actual / Budget | `7461.4h` | `of 7800h` |
+| Remaining / Used | `−0.6h` | meter + `106%` |
+| Status | status badge | priority |
+
+Fields are paired only where they answer the **same question** — identity, who
+the customer is, what has been spent, what is left. Two values of the same kind
+are never stacked unlabelled, which is why Contact Name (client-side) sits under
+Company and Person Res. (Elisen-side) keeps its own column: two bare names in one
+cell cannot be told apart.
+
+**"of 7800h" labels itself with a preposition** rather than repeating a field
+name on all 115 rows. Repeating labels down a column is what the heading is for.
+
+**Cell padding went 16px → 12px.** After the merges the table still wanted 975px
+against 959px available; 16px of side padding buys nothing on a dense table and
+cost exactly the 64px that decided it. This is now the pattern for data tables.
+
+**Dropped, at the client's direction:** the project Type tag (Internal/External),
+and the budget-health badge in Status — the meter beside it already carries that,
+with the percentage and a signed Remaining as its non-colour cues, so state is
+still never colour-alone. The company number came off too, to make room for the
+contact name; it remains on the project detail.
+
+**Merged columns keep every sort they replaced.** Folding four financial columns
+into two would have cost four sort keys, so `patterns/SortMenu.tsx` gives a
+heading a menu over the fields stacked inside it — "Remaining / Used" sorts by
+Remaining or by Used, and the heading says which is active ("· Used ↓") so the
+arrow is never ambiguous on a cell holding two numbers. `aria-sort` is set when
+any of a column's keys is the active one. Verified: sorting by Used descending
+puts 145% / 124% / 124% at the top, and re-picking a field flips direction.
+
+**Still to do:** the same treatment for Hours Worked (15 columns), Timesheet (14)
+and Hours by Person (12), and the opt-in **Columns** menu for fields kept out of
+the default set.
+
+## 2026-08-19 — Projects List, second pass: Priority back out, `x / y` hours, shorter meter
+
+Client review of the seven-column table. All three notes were right.
+
+**Priority is its own column again.** A status badge with muted priority text
+under it looked like the priority belonged to the status — they are two
+independent facts about how to treat a project, and stacking them implied a
+relationship that isn't there. Splitting them costs a column; three savings paid
+for it: the "Remaining / Used" heading became **"Remaining"** (the cell shows the
+meter and percentage underneath, so the heading was spelling out what the cell
+already says), the **Actions heading went `sr-only`** (a 3-dot menu needs no
+label, and the word "Actions" was setting that column's width), and the hours
+cell went to one line.
+
+**Actual / Budget is one line, `10.6h / 10h`** — the app's short form, already
+used in work-package and team rows. Stacking it as "10.6h" over "of 10h" made a
+comparison into two glances; side by side it is one.
+
+**The meter is a fixed 64px**, ~30% shorter than the stretched bar. It is a
+glanceable pip beside figures that carry the precision; length beyond that reads
+as accuracy the bar does not have.
+
+Result: **nine columns, 959px against 959px available at 1280 — still no
+horizontal scroll**, verified in the browser. Both sort menus and the plain
+Priority header sort re-verified.
+
+**Sample data:** 18 project rows stored a literal `'—'` as their contact name —
+a placeholder standing in for data nobody had entered, which then rendered as an
+empty-looking column. Internal cost-centre projects do have someone to call, so
+they now carry real internal contacts; exactly two rows are left genuinely blank
+so the empty state is still exercised. Page one of the list now renders **zero**
+dash cells.
+
+## 2026-08-19 — ATA chapter code: one style, primary-25 on primary-500
+
+Client review. The explanatory line above the rail is gone, the rail headings
+read **No.** and **Chapter name** (the old "Ch." saved four pixels and cost
+clarity), and the chapter code chip is now **`bg-accent-subtle` / `text-accent`**
+— the semantic tokens for primary-25 (#EDF5FF) and primary-500 (#0054B7), so the
+client's colours are used without hard-coding primitives into a component
+(CLAUDE.md rule 4). Verified identical at all three call sites: rail row, the
+selected chapter's large chip, and inactive rows.
+
+**One style, active or not.** The muted variant is gone: "inactive" is already
+said in words beside the code and by the status badge on the detail, so dimming
+the chip made the same point a third time, in colour — the one cue a reader may
+not be able to see.
+
+**A conflict the change created, and the fix.** The selected rail row was itself
+`bg-accent-subtle`, so a chip in the same colour would have disappeared into it
+exactly when a chapter is selected. The selected row is now `bg-neutral-100`,
+which keeps three distinct states — white / `neutral-50` hover / `neutral-100`
+selected — alongside the accent left border and semibold title it already had.
+
+The code chip stays a **filled square** and the sub chapter count an **outlined
+pill**, so the two numbers at either end of a row still read as different kinds
+of thing.
+
+## 2026-08-19 — Projects List: Actions heading back, contact avatars, headings that wrap
+
+**The Actions heading is back.** Hiding it (`sr-only`) had saved 25px, but a
+column whose heading is invisible reads as a rendering fault.
+
+**Budget was already two columns, not three** — `Actual / Budget` and
+`Remaining`, the latter already holding the meter. What made it *look* like three
+was the heading: shortening it to "Remaining" left the bar underneath looking
+like an unlabelled third column. It reads **"Remaining / Used"** again, and the
+count is unchanged at two.
+
+**The customer's contact now carries an avatar.** `Avatar` gained a `sm` size
+(20px, for a table's second line) and a `neutral` tone, so a company and the
+person to call are never mistaken for one another. Existing 36px avatars in the
+Team tab and Hours by Person are untouched.
+
+**The real finding: every column was sized by its heading, not its data.**
+Restoring three labels pushed the table 82px past the page. The fix was not to
+shorten the labels the client had chosen — it was to stop forcing them onto one
+line. Headings lost `whitespace-nowrap`, so "Customer / Contact" folds to two
+lines when the page is tight and stays on one when it isn't. **959px of 959px at
+1280, and comfortable at 1680** — verified at both.
+
+**Honest limit worth recording:** at 1280 with nine columns every column is at
+its minimum, so "take width from Project and give it to Remaining" moves about
+5px — there is no slack to redistribute. Project's cap came down anyway
+(190→170px) and the meter is now 44px; both help at 1440+ where slack exists.
+Long project titles and long contact names ellipsize at 1280. That is the cost of
+nine columns on a small laptop, and it beats a scrollbar hiding whole fields.
+
+## 2026-08-19 — Approvals and Documents each become one sidebar entry with tabs
+
+Navigation only. No data, table content, drawer, filter or action changed.
+
+**Approvals** was two sidebar rows (Approvals List, Approval Revisions) and two
+routes. It is now one entry at `/approvals`, with **Approvals · Revisions** tabs
+inside — the same shape as Aircraft / Serial Numbers. `?tab=revisions` selects
+the second, and `ApprovalsWorkspace` picks the component from that param, so
+each listing keeps its own page component untouched: its own search, filters,
+tiles, columns, "Add Approval" / "Raise Revision" and drawers are exactly as they
+were. `ApprovalsTabs` is shared by both so the counts and the switch are defined
+once. The old `/approvals/revisions` URL redirects, so existing bookmarks land on
+the right tab.
+
+**Documents** already had the tabs; only the navigation lagged. The two sidebar
+rows collapse to one entry, and the page heading is now the workspace name
+("Documents") with the tabs naming the view, instead of the heading changing
+between "Deliverables" and "Design Data" while the tabs said the same thing
+twice. Both routes are kept — the tabs navigate between them — so bookmarks to
+either listing still work.
+
+**One thing that needed fixing while wiring it:** a top-level nav item links via
+`TOP_ROUTES`, not the child map, so dropping the children initially left both
+entries rendering as inert `href="#"`. Both are now in `TOP_ROUTES`.
+
+Verified: sidebar shows `/approvals` and `/documents/deliverables`; each tab
+switch keeps the heading, swaps the table (Approvals 7 rows ↔ Revisions 9 rows,
+Deliverables 81 ↔ Design Data 40) and preserves the original columns and primary
+action.
+
+## 2026-08-19 — Projects List: person avatars everywhere, split budget figures, fixed-share columns
+
+**Every person in a table now renders through `patterns/PersonCell.tsx`** —
+initials avatar, then the name. It exists so the rule is structural rather than
+remembered: a column of bare names gives a reader nothing to aim at, and two
+people-columns styled differently read as two different kinds of data when they
+are the same kind. Person Responsible and the customer contact now match.
+
+**The avatar-overflow fix is in that component:** `min-w-0` on the flex row plus
+`truncate` on the label. Without `min-w-0` a flex child refuses to shrink below
+its text, and the avatar gets pushed past the cell edge. Verified: zero avatars
+and zero text overrun their cell at 1280.
+
+**"Customer / Contact" → "Company / Contact"**, and the column is compact — the
+company truncates on one line with the contact beneath it.
+
+**Priority is rank over name** (`5` / `Lowest`) instead of "5 - Lowest" on one
+line: it was the widest thing in a column nobody reads as a sentence.
+
+**Remaining is its own column**, beside Actual / Budget, with **Used** (the
+percentage over its meter) after it — three budget figures reading as one group,
+then the picture. Both keep their sort.
+
+**Rows are vertically centred** (`align-middle` throughout), which is what makes
+a two-line cell sit level with a one-line one.
+
+**The layout mechanism changed, and this is the part worth keeping.** Hard
+`maxWidth` caps were being used to force truncation — but a cap truncates on a
+1680 monitor exactly as hard as on a 1280 laptop, so a wide screen bought the
+reader nothing. The table is now **`table-fixed` with percentage column shares**,
+so every column scales with the page: tight but complete at 1280, comfortable at
+1680, and *mathematically incapable* of horizontal scroll at any width. The
+`minWidth` is gone with it.
+
+Ten columns, 0px overflow at 1280, verified along with both split sorts.
+
+## 2026-08-19 — One person design, app-wide, enforced by the component
+
+The client signed off the person treatment on Projects List and asked for it
+everywhere: **an `accent-subtle` disc of `accent` initials, then the name.**
+
+**`Avatar` no longer takes a `tone`.** It had three (accent / success /
+neutral), and they were in use: the project detail drew the person responsible
+green and the contact blue, while the customer contact in a table was grey. The
+same person rendered three ways on three screens, and the colour looked like it
+carried a meaning it never did. One fill, one text colour — and removing the
+prop meant the compiler listed every call site rather than leaving me to find
+them by eye.
+
+**`PersonCell` keeps only a label variant.** `secondary` shrinks the *name* for
+a person on a cell's second line under a company; the avatar is identical.
+
+**Swept onto `PersonCell`:** person responsible and customer contact (Projects
+List), activity responsible (work package rows), employee (Timesheet and Hours
+Worked), document owner (Documents workspace and a project's Deliverables tab),
+and next action. Approval Holder is deliberately left plain — "Elisen Inc." is
+an organisation, not a person.
+
+**Left alone, and worth a decision:** the sidebar profile shows a generic person
+*icon* on the navy sidebar, not initials, so the rule doesn't apply to it. Its
+light-blue disc would also fight that background. Say the word if it should
+carry initials too.
+
+**Storybook:** `PersonExample` under Patterns shows the list form, the
+company-over-contact pairing, the empty state, both avatar sizes, and the
+truncation case that keeps the avatar inside a narrow cell.
+
+**Verified across nine screens: 128 initials avatars, exactly one computed
+design** — `rgb(237,245,255)` behind `rgb(0,84,183)`, fully round.
+
+## 2026-08-19 — Projects List: single-line headings, Project widest
+
+**Every heading is on one line.** "Company / Contact" was the only one wrapping,
+and it was shortened rather than widened: the avatar on line 2 already says that
+line is a person, so "Contact" was naming something the cell shows for itself —
+and the width belongs to Project. It reads **Company**.
+
+**Cell padding went 12px → 8px, and that is what actually fixed this.** Twelve
+pixels a side across ten columns was 240px of the 959 available: it is why two
+headings wrapped and why "Remaining ⇅Used ⇅" and "Priority ⇅Status" were
+colliding with no gap between them. At 8px the same ten columns have ~90px of
+slack, which went to Project.
+
+**New shares** — Project 16% (the widest content column), Actual / Budget 15%,
+Person Res. 12%, Company 11%, Remaining 10%, Status 10%, Priority 8%, Used 7%,
+Actions 7%, select 4%. Verified at 1280: **0px overflow, no heading wraps, no
+content past a cell**.
+
+**The honest limit, unchanged:** at 1280 the two people columns and long project
+titles still ellipsize — ten columns want about 1030px to show everything in
+full, and 1280 offers 959. From ~1440 up everything reads in full; verified at
+1512. The cheapest way to buy that back at 1280 would be dropping the select
+checkbox column (4%), which costs the Export-selected flow — not taken without
+asking.
+
+## 2026-08-19 — Project tabs go full width; chip lists fold; one Used pattern
+
+**The two-line rule was being broken by chip lists, structurally.** The Tasks
+column rendered every chip an activity had — eight of them once stacked a row
+nine lines tall. The fix is a component, not vigilance: `patterns/ChipOverflow`
+shows at most 2 chips then **“+N more”**, a button that expands the full list in
+place and offers “Show less”, so nothing is hidden, only folded. Storybook story
+`ChipOverflowExample` documents it. Applied to Work Package tasks; every other
+chip list in a table should adopt it as those tables are reworked.
+
+**Project detail: the identity card now lives on the Overview tab only.** Every
+other tab gets the full page width. A table beside a 320px card had ~590px to
+work with — the reason the Work Packages table needed 270px of sideways scroll.
+Measured after: **942px available, 0px overflow.** The tab strip moved above the
+split so it never jumps between layouts.
+
+**One Used pattern everywhere**: percentage over a fixed 44px meter — the
+client-approved Projects List treatment — replacing the stretched bar-beside-
+percentage variant in WorkPackageCard, ProjectTeamTab, PersonHoursDetail (both
+row kinds) and HoursByPersonTab. Column heading is “Used”.
+
+**Work Package / Team stat strips**: each stat sits in its own bay behind a 1px
+`border-default` (neutral-200) divider. The “Budget is entered per activity…”
+helper line is gone at the client's direction. Note for verification: Tailwind
+v4's `divide-x` puts the border on the *preceding* sibling's inline-end — check
+`borderRightWidth` of child N, not `borderLeftWidth` of child N+1.
+
+## 2026-08-19 — Hours by Person made compact; the two-line rule enforced by measurement
+
+**1440px → 1060px needed.** At 974 available that is 86px of scroll — well under
+one column, inside the client's "1–2 columns at most" allowance. Applied the
+compact recipe: `table-fixed` with percentage shares, `px-sm` padding,
+`align-middle` rows. Description line above the table removed.
+
+**Rows went 89px → 69px, and every row is now identical.** Two separate
+three-line cells were the cause, and neither was visible by reading the code:
+
+- **Status** rendered a badge plus *two* chips stacked. Folding the flags behind
+  `ChipOverflow max={1}` was not enough on its own — `"43 of 143 over"` plus
+  `"+1 more"` measured 140px inside a 98px column, so the chip line itself
+  wrapped to two. The denominator moved into the tooltip (`43 over`) and Status
+  took 2% more width. Only then did the cell come down to two lines.
+- **The staff flag** ("Former employee") was a third line under name and
+  designation. It now shares the designation line — `Former · Senior Designer`.
+
+**The lesson, recorded as a rule:** the two-line ceiling has to be *measured*,
+not reasoned about. A cell can hold exactly two elements and still render three
+lines because one of them wrapped. Check the inner content height against the
+line height, not the source.
+
+Also fixed while measuring: the Person button had no `min-w-0`/`w-full`, so
+`truncate` never engaged and long names spilled into the Projects column — the
+same trap noted for `PersonCell`. Avatar dropped to `sm`, matching the row.
+
+## 2026-08-19 — Hours Worked / Timesheet: two merges and the compact recipe
+
+Shared component, so one change covers both pages.
+
+**Project # + Project Description → Project**, and **Work Package + Activity
+Title → Work Package / Activity.** Each pair is one thing read two ways — a
+number and what it is called, a package and the discipline working in it — so
+they stack rather than taking a column each.
+
+**Headings lost their label cruft**: `Project #` → Project, `Activity Title` →
+(folded), `Task Title` → Task, `Deliverable #` → Deliverable, `Working Date` →
+Date, `Bk Hrs RG` → Bk Hrs. A column of project numbers does not need a heading
+explaining that they are numbers.
+
+**Compact recipe applied**: `table-fixed` with percentage shares, `px-sm`
+padding, `align-middle`. **1627px → 1240px**, 15 columns → 13, and every row is
+a uniform **61px** — one line shorter than before because the merged cells
+replaced two single-line columns with one two-line cell.
+
+**Caught in verification, not in the code:** `Work Package / Activity` is a
+nowrap heading ~171px wide sitting in a 149px cell, so under `table-fixed` it
+overflowed *into the Task column* — visible only on screen. The column went to
+14% and Task to 6%. Worth adding to the check list: after any fixed-layout
+change, compare each `th.scrollWidth` against its rendered width, not just the
+table total.
+
+**Remaining:** 281px of scroll at 1280 (~2 columns), inside the client's
+"minimal" allowance. Closing it entirely needs the two merges still awaiting
+approval in the audit — Hrs RG/OT/Bk Hrs → Hours, and Validated + Active →
+Status — which together would take it under 960.
+
+## 2026-08-19 — By Person: status trimmed, expanded detail nested properly
+
+**The over-budget count came out of Status.** It was my device for "a blended
+average hides disasters", but it was a third thing in a column that only needs
+two — and the Used percentage with its meter already carries health, while the
+expanded rows name exactly which activities are over. Status is now the health
+badge plus the unvalidated flag when there is one.
+
+**The expanded detail read as a slab bolted to the table.** It was a full-bleed
+panel flush to the container edge, with rows tighter than the table it sat
+inside — so it broke the card rather than nesting in it. Now: the detail row is
+tinted (`neutral-50`), the panel is inset from it, and the detail is **its own
+white card** with a border and radius. Detail rows moved from `px-sm py-sm` to
+`px-lg py-base`, so the nested table breathes more than its parent rather than
+less — a cramped detail was the thing that made the whole card feel congested.
+
+**Note on verification**: `button[aria-expanded="false"]` first matches the
+sidebar's own nav group, so an expand probe must be scoped (`tbody tr button…`).
+The first measurement of this change looked like a render failure and was not.
+
+## 2026-08-19 — Timesheet / Hours Worked: Work Package back out, Activity + Task merged
+
+Client corrected the pairing, and they were right. **Work Package is the scope
+of work, not a qualifier of the activity** — merging it under Activity made two
+independent facts look like one. **Activity and Task** genuinely are one thing
+read two ways: a task only exists inside its activity. So Work Package is its
+own column again and Activity / Task share a cell, activity over task.
+
+**Task and Deliverable now carry data.** Both were `''` for every generated row,
+so two columns rendered as a wall of dashes. They are populated from the real
+records rather than invented: **tasks come from the catalog's own activity–task
+links**, so a logged task is always one its activity actually offers, and
+**deliverables come from revisions raised for that project**, so an entry can
+only point at a deliverable that exists on the project it was logged against.
+Roughly two rows in three carry each, which is what the client's data looks
+like — a column that is never empty is as unrealistic as one that always is.
+
+**1240px → 1180px** (221px of scroll at 1280, down from 281), every column
+narrower except Project, which the client asked to keep. `Validated` → **`Valid.`**:
+the heading, not the Yes/No under it, was setting that column's width — the same
+lesson as before, that a column is usually sized by its label rather than its
+values. Verified: no heading overflows its cell, rows uniform at 61px
+(Timesheet) / 65px (Hours Worked).
+
+## 2026-08-19 — Activity view drawer; "+N more" opens it instead of expanding
+
+**`ActivityViewDrawer` is new**: one activity in full — activity, work package,
+responsible, status, Actual / Budget, Remaining, Used with its meter, and
+**every task it carries**. Edit and Remove sit in its footer, so the row's menu
+and the view offer the same actions.
+
+**The activity menu gains View**, first, in the house order View → Edit →
+Remove.
+
+**"+N more" on Tasks now opens that drawer rather than expanding in place.**
+`ChipOverflow` gained an optional `onShowAll`: with it, the count hands over to
+the caller instead of unfolding. In a table row, unfolding was the wrong
+behaviour — it grows the cell past two lines, which is exactly the rule the
+component exists to enforce. In Storybook's standalone example, expanding in
+place is still right, so the default is unchanged. Verified: clicking `+6 more`
+opens the drawer with all 8 tasks and leaves the table's row count untouched.
+
+**Work package descriptions removed** from the card body at the client's
+direction, and the stat strip's bays went from `px-xl` to `px-2xl` so the five
+figures read as separate stats rather than one run-on row.
+
+## 2026-08-19 — Approvals fits the page: 1180px → 974px, no scroll
+
+All eight columns visible at 1280 with **zero** horizontal scroll (974 of 974),
+no column merged and none removed. Three things paid for it:
+
+- **`table-fixed` with percentage shares and `px-sm` padding** — the standard
+  recipe.
+- **Two headings shortened**: `Approval Holder` → **Holder**, `Current Revision`
+  → **Revision**. Both were setting their columns' width from the *label*, not
+  the values under them ("Elisen Inc." needs 88px; "Approval Holder" needed 134).
+- **Current Revision stacked**: `Rev 2` over its date instead of
+  `Rev 2 · 2024-12-09` on one line. The date was the widest thing in the row and
+  it is the qualifier, not the value — so it goes underneath, and the column
+  drops from ~146px to ~107px.
+
+Aircraft and Projects moved to `ChipOverflow`, so a certificate covering six
+airframes can never grow the row past two lines — previously they mapped every
+chip. Verified: no heading overflows, no content past a cell, rows 61–69px.

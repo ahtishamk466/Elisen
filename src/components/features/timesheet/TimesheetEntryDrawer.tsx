@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/Button'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useWorkPackagesStore } from '@/stores/workPackagesStore'
 import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore'
-import { ACTIVITY_CATALOG, ACTIVITY_TASKS } from '@/lib/activityCatalog'
+import { useCatalogStore } from '@/stores/catalogStore'
+import { tasksForActivity } from '@/lib/catalog'
 import { useTimesheetEntryForm, validate, type TimesheetEntryValues } from './useTimesheetEntryForm'
 import { TimesheetEntryView } from './TimesheetEntryView'
 import { TimesheetEntryFormFields } from './TimesheetEntryFormFields'
@@ -39,11 +40,20 @@ export function TimesheetEntryDrawer({
   const documents = useDocumentsStore((s) => s.documents)
   const docRevisions = useDocumentsStore((s) => s.revisions)
   const deliverables = useMemo(() => deliverableSummaries(documents, docRevisions), [documents, docRevisions])
+  const activities = useCatalogStore((s) => s.activities)
+  const tasks = useCatalogStore((s) => s.tasks)
+  const links = useCatalogStore((s) => s.links)
+  const catalog = useMemo(() => ({ activities, tasks, links }), [activities, tasks, links])
 
   const workPackageOptions = workPackages.filter((w) => w.projectId === values.projectId)
   const assignedActivityIds = wpActivities.filter((a) => a.workPackageId === values.workPackageId).map((a) => a.activityId)
-  const activityOptions = ACTIVITY_CATALOG.filter((a) => assignedActivityIds.includes(a.id))
-  const taskOptions = values.activityId ? (ACTIVITY_TASKS[values.activityId] ?? []) : []
+  /* Only activities actually assigned to the chosen package, and inactive ones
+     stay visible when an existing entry already uses them — otherwise editing
+     an old row would silently blank its activity. */
+  const activityOptions = activities.filter((a) =>
+    assignedActivityIds.includes(a.id) && (a.active || a.id === initialValues?.activityId))
+  const activity = activities.find((a) => a.id === values.activityId)
+  const taskOptions = values.activityId ? tasksForActivity(catalog, values.activityId, true) : []
   const deliverableOptions = deliverables.filter((d) => d.projectId === values.projectId)
 
   const hasErrors = Object.values(errors).some(Boolean)
@@ -55,7 +65,7 @@ export function TimesheetEntryDrawer({
   }
 
   const handleSubmit = async () => {
-    const e = validate(values)
+    const e = validate(values, !!activity?.taskRequired)
     setErrors(e)
     if (Object.keys(e).length > 0) return
     setSubmitting(true)
@@ -125,7 +135,8 @@ export function TimesheetEntryDrawer({
             setProject={setProject} setWorkPackage={setWorkPackage} setActivity={setActivity}
             employeeMode={employeeMode} employeeOptions={employeeOptions} projects={projects}
             workPackageOptions={workPackageOptions} activityOptions={activityOptions}
-            taskOptions={taskOptions} deliverableOptions={deliverableOptions}
+            taskOptions={taskOptions}
+            activity={activity} deliverableOptions={deliverableOptions}
           />
         )}
       </Drawer>

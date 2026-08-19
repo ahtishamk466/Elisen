@@ -1,7 +1,7 @@
 import type { ProjectListRow } from '@/types/project'
 import type { WorkPackage } from '@/types/workPackage'
 import type { DeliverableRevision } from '@/types/tcca'
-import { ACTIVITY_CATALOG } from '@/lib/activityCatalog'
+import { useCatalogStore } from '@/stores/catalogStore'
 import { DetailCard as Card, DetailField as Field } from '@/components/patterns/DetailView'
 import type { TimesheetEntryValues } from './useTimesheetEntryForm'
 
@@ -15,9 +15,10 @@ export interface TimesheetEntryViewProps {
 /** Read-only detail layout for View mode — two cards (data, hours), labels
     and values only, no form controls. Editing happens through the Edit action. */
 export function TimesheetEntryView({ values, projects, workPackages, deliverables }: TimesheetEntryViewProps) {
+  const activities = useCatalogStore((s) => s.activities)
   const project = projects.find((p) => p.id === values.projectId)
   const workPackage = workPackages.find((w) => w.id === values.workPackageId)
-  const activity = ACTIVITY_CATALOG.find((a) => a.id === values.activityId)
+  const activity = activities.find((a) => a.id === values.activityId)
   const deliverable = deliverables.find((d) => d.id === values.deliverableRevisionId)
 
   return (

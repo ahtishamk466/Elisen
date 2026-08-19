@@ -118,29 +118,110 @@ export const AIRCRAFT_SERIALS: AircraftSerial[] = [
     country: 'Papua New Guinea', postalZipcode: '121', telephone: '+675 327 3444', email: 'ops@airniugini.example', comment: '', active: true },
 ]
 
-export const ATA_CHAPTERS: AtaChapter[] = [
-  { id: 'ata-01', chapter: '01', title: '*Reserved for Airline Use', definition: '', sort: 1, active: false },
-  { id: 'ata-02', chapter: '02', title: '*Reserved for Airline Use', definition: '', sort: 2, active: false },
-  { id: 'ata-03', chapter: '03', title: '*Reserved for Airline Use', definition: '', sort: 3, active: false },
-  { id: 'ata-04', chapter: '04', title: '*Reserved for Airline Use', definition: '', sort: 4, active: false },
-  { id: 'ata-05', chapter: '05', title: 'TIME LIMITS/MAINTENANCE CHECKS', definition: "Manufacturers' recommended time limits for inspections, maintenance checks and inspections (both scheduled and unscheduled).", sort: 5, active: true },
-  { id: 'ata-06', chapter: '06', title: 'DIMENSIONS AND AREAS', definition: 'Those charts, diagrams, and text which show the area, dimensions, stations, access doors/zoning (Ref. [Heading 3-1-3.3]) and physical locations, of the major structural members of the aircraft. Includes an explanation of the system of zoning and measurement used.', sort: 6, active: true },
-  { id: 'ata-07', chapter: '07', title: 'LIFTING & SHORING', definition: 'This chapter shall include the necessary procedures to lift & shore aircraft in any of the conditions to which it may be subjected. Includes lifting and shoring procedures that may be employed during aircraft maintenance and repair.', sort: 7, active: true },
-  { id: 'ata-08', chapter: '08', title: 'LEVELING & WEIGHING', definition: 'This chapter shall include the necessary information to properly level the aircraft for any of the various maintenance, overhaul or major repairs which might become necessary during the life of the aircraft. It shall also include those units or components which are specifically dedicated to record, store or compute weight and balance data. Includes those maintenance practices necessary to prepare the aircraft for weighing.', sort: 8, active: true },
-  { id: 'ata-09', chapter: '09', title: 'TOWING & TAXIING', definition: 'Those instructions necessary to tow and taxi the aircraft. Charts showing location of attachment points, turning radius, etc., shall be included. Includes those maintenance practices necessary to prepare the aircraft for towing and taxiing.', sort: 9, active: true },
-  { id: 'ata-10', chapter: '10', title: 'PARKING, MOORING, STORAGE & RETURN', definition: 'Those instructions necessary to park, store, moor and prepare the aircraft for service in any of the conditions to which it may be subjected. Charts showing location of landing gear and control surface locks, blanking plugs and covers.', sort: 10, active: true },
-  { id: 'ata-25', chapter: '25', title: 'EQUIPMENT/FURNISHINGS', definition: 'Those removable items of equipment and furnishings contained in the flight and passenger compartments. Includes emergency, galley and lavatory equipment.', sort: 25, active: true },
+/**
+ * The ATA 100 chapter list as the industry uses it, plus the client's own
+ * extensions — 01–04 airline-reserved and 92 wiring — because the taxonomy is
+ * a base that OEMs and airlines add to, and the module must carry non-standard
+ * chapters without complaint.
+ *
+ * Generated from a compact seed table so the ids stay derived from the codes
+ * (`ata-05`, `atas-0510`): in the ATA spec the code *is* the identity. Every
+ * chapter carries a `00 — General` section, exactly as the client's own data
+ * does; curated sections beyond that exist where the demo's drawings and
+ * screenshots need them.
+ */
+type ChapterSeed = [code: string, title: string, definition: string, active?: boolean]
+
+const ATA_CHAPTER_SEEDS: ChapterSeed[] = [
+  ['01', '*Reserved for airline use', '', false],
+  ['02', '*Reserved for airline use', '', false],
+  ['03', '*Reserved for airline use', '', false],
+  ['04', '*Reserved for airline use', '', false],
+  ['05', 'Time limits/maintenance checks', "Manufacturers' recommended time limits for inspections, maintenance checks and inspections (both scheduled and unscheduled)."],
+  ['06', 'Dimensions and areas', 'Those charts, diagrams, and text which show the area, dimensions, stations, access doors/zoning and physical locations of the major structural members of the aircraft. Includes an explanation of the system of zoning and measurement used.'],
+  ['07', 'Lifting & shoring', 'The necessary procedures to lift and shore the aircraft in any of the conditions to which it may be subjected, including during maintenance and repair.'],
+  ['08', 'Leveling & weighing', 'The information needed to level the aircraft for maintenance, overhaul or major repair, and the practices needed to prepare the aircraft for weighing.'],
+  ['09', 'Towing & taxiing', 'Instructions for towing and taxiing the aircraft, with charts showing attachment points, turning radius and related limits.'],
+  ['10', 'Parking, mooring, storage & return', 'Instructions for parking, storing and mooring the aircraft and preparing it for return to service, including locations of locks, blanking plugs and covers.'],
+  ['11', 'Placards and markings', 'Exterior and interior placards, markings and signs, and their required locations.'],
+  ['12', 'Servicing', 'Replenishing fluids and gases, scheduled servicing and routine attention that does not require disassembly.'],
+  ['20', 'Standard practices — airframe', 'Standard maintenance practices applying to the airframe as a whole rather than to one system.'],
+  ['21', 'Air conditioning', 'Units and components which furnish a means of pressurizing, heating, cooling, moisture controlling and filtering the cabin air.'],
+  ['22', 'Auto flight', 'Units and components which furnish a means of automatically controlling the flight of the aircraft, including the autothrottle and yaw damper.'],
+  ['23', 'Communications', 'Units and components which furnish a means of communicating internally and externally, including audio integrating and static discharge.'],
+  ['24', 'Electrical power', 'Units and components which generate, control and supply AC and/or DC electrical power, including generation, distribution and load management.'],
+  ['25', 'Equipment/furnishings', 'Those removable items of equipment and furnishings contained in the flight and passenger compartments. Includes emergency, galley and lavatory equipment.'],
+  ['26', 'Fire protection', 'Units and components which detect and indicate fire or smoke and store and distribute fire extinguishing agent.'],
+  ['27', 'Flight controls', 'Units and components which furnish a means of manually controlling the flight attitude characteristics of the aircraft.'],
+  ['28', 'Fuel', 'Units and components which store and deliver fuel to the engine, including tanks, pumps, valves and indicating.'],
+  ['29', 'Hydraulic power', 'Units and components which furnish hydraulic fluid under pressure to a common point for actuating other systems.'],
+  ['30', 'Ice and rain protection', 'Units and components which provide a means of preventing or disposing of ice and rain on the aircraft.'],
+  ['31', 'Indicating/recording systems', 'Instruments, recorders and central computers, and the systems which integrate indicating and recording.'],
+  ['32', 'Landing gear', 'Units and components which furnish a means of supporting and steering the aircraft on the ground, and retracting the gear in flight.'],
+  ['33', 'Lights', 'Units and components which provide interior and exterior illumination, including warning, emergency and instrument lighting.'],
+  ['34', 'Navigation', 'Units and components which provide aircraft navigational information, from flight environment data to position determining and landing aids.'],
+  ['35', 'Oxygen', 'Units and components which store, regulate and deliver oxygen to the passengers and crew.'],
+  ['36', 'Pneumatic', 'Units and components which deliver compressed air from a power source to using systems.'],
+  ['38', 'Water/waste', 'Units and components which store and deliver fresh water and dispose of waste water.'],
+  ['45', 'Central maintenance system', 'The central computer systems which collect, store and display aircraft maintenance data.'],
+  ['49', 'Airborne auxiliary power', 'Airborne power plants installed for generating and supplying auxiliary electric, hydraulic and pneumatic power.'],
+  ['51', 'Standard practices & structures', 'Standard practices and general structural information, including repair schemes applicable to more than one structural chapter.'],
+  ['52', 'Doors', 'Passenger, crew, cargo and service doors, with their actuating mechanisms, warning and safety devices.'],
+  ['53', 'Fuselage', 'The structural units and associated components which make up the fuselage, including frames, skin and pressure bulkheads.'],
+  ['54', 'Nacelles/pylons', 'The structural units and associated components which furnish a means of housing and mounting the power plant.'],
+  ['55', 'Stabilizers', 'The structural units and associated components of the horizontal and vertical stabilizers.'],
+  ['56', 'Windows', 'Windows, windshields and their surrounding structure, including flight compartment and cabin windows.'],
+  ['57', 'Wings', 'The structural units and associated components which make up the wing, including the center wing box, flaps and slat structure.'],
+  ['61', 'Propellers', 'The propeller assembly, its controlling, braking and indicating systems.'],
+  ['71', 'Power plant', 'The complete power plant package, its cowling, mounts and general practices applying to the installation as a whole.'],
+  ['72', 'Engine', 'The engine itself — compressor, combustion, turbine and accessory drive sections.'],
+  ['73', 'Engine fuel and control', 'Units and components which deliver metered fuel to the engine, including engine-driven pumps, controls and indicating.'],
+  ['74', 'Ignition', 'Units and components which generate, control and distribute the electrical current to ignite the fuel-air mixture.'],
+  ['76', 'Engine controls', 'Units and components which control engine operation from the flight compartment, including emergency shutdown.'],
+  ['77', 'Engine indicating', 'Units and components which indicate engine operation, including power, temperature and analyzer systems.'],
+  ['78', 'Exhaust', 'Units and components which direct the engine exhaust gases overboard, including thrust reversers and noise suppressors.'],
+  ['79', 'Oil', 'Units and components external to the engine which store, deliver and indicate the engine lubricating oil.'],
+  ['80', 'Starting', 'Units and components which furnish a means of starting the engine, including cranking systems.'],
+  // The client's own extension, outside the ATA 100 standard: wiring diagrams
+  // are filed here. Kept because the module must accept non-standard chapters.
+  ['92', 'Aircraft wiring', 'Wiring diagrams and electrical installation drawings, filed by system. A client extension to the standard ATA chapter list.'],
 ]
 
+type SectionSeed = [chapter: string, section: string, title: string, definition: string]
+
+const ATA_SECTION_SEEDS: SectionSeed[] = [
+  ['05', '10', 'Time limits', "Those manufacturer recommended time limits for inspections, maintenance and overhaul of the aircraft, its systems and units, and life of parts. For engine manufacturers this will include the flight cycle lives of major rotating components and other items designated critical. NOTE: Inclusion of the data described above, in any manual or manual publication is specifically prohibited unless required by government regulation. Airlines desire the manufacturer's recommended time limits and scheduled maintenance checks but these should be provided in a separate document."],
+  ['05', '20', 'Scheduled maintenance checks', 'Those manufacturer recommended maintenance checks and inspections of the aircraft, its systems and units dictated by the time limits specified in -10 above. This section shall list in more detail the items which are outlined on the airline job forms (usually by title only), and shall cross-reference the detailed procedures included in the individual Maintenance Practices.'],
+  ['05', '30', 'Scheduled maintenance checks', '-30 & -40: Reserved for use in those cases where the number of breakouts provided by the fourth digit of the -20 breakout is not sufficient to cover all of the maintenance checks dictated by subsystem -10 above.'],
+  ['05', '50', 'Unscheduled maintenance checks', 'Those checks required after hard landings, severe turbulence, lightning strike or other unusual occurrences.'],
+  ['24', '30', 'DC generation', 'Units and components which generate, regulate, control and indicate DC electrical power.'],
+  ['24', '50', 'Electrical load distribution', 'Units and components which distribute AC and DC electrical power to using systems, including buses and circuit breakers.'],
+  ['25', '10', 'Flight compartment', 'Equipment and furnishings located in the flight compartment.'],
+  ['25', '20', 'Passenger compartment', 'Equipment and furnishings located in the passenger compartment, including seats and tables.'],
+  ['25', '30', 'Galley', 'Removable galley equipment and furnishings, including inserts and trolleys.'],
+  ['25', '40', 'Lavatories', 'Removable lavatory equipment and furnishings.'],
+  ['25', '50', 'Cargo compartments', 'Equipment and furnishings of the cargo compartments, including lining and restraint systems.'],
+  ['25', '60', 'Emergency', 'Emergency equipment: slides, life vests, first aid and portable extinguishers.'],
+  ['33', '10', 'Flight compartment', 'Flight compartment illumination, including instrument and panel lighting.'],
+  ['33', '20', 'Passenger compartments', 'Passenger compartment illumination, including signs and reading lights.'],
+  ['33', '40', 'Exterior lighting', 'Exterior illumination: navigation, anti-collision, landing and taxi lights.'],
+  ['52', '10', 'Passenger/crew doors', 'Passenger and crew doors, their actuating mechanisms and safety devices.'],
+  ['52', '30', 'Cargo doors', 'Cargo and service doors, their actuating mechanisms and warning systems.'],
+]
+
+export const ATA_CHAPTERS: AtaChapter[] = ATA_CHAPTER_SEEDS.map(
+  ([code, title, definition, active = true]) => ({
+    id: `ata-${code}`, chapter: code, title, definition, sort: Number(code), active,
+  }),
+)
+
 export const ATA_SUB_CHAPTERS: AtaSubChapter[] = [
-  { id: 'atas-0100', chapterId: 'ata-01', section: '00', title: 'General', definition: '', sort: 100, active: false },
-  { id: 'atas-0200', chapterId: 'ata-02', section: '00', title: 'General', definition: '', sort: 200, active: false },
-  { id: 'atas-0300', chapterId: 'ata-03', section: '00', title: 'General', definition: '', sort: 300, active: false },
-  { id: 'atas-0400', chapterId: 'ata-04', section: '00', title: 'General', definition: '', sort: 400, active: false },
-  { id: 'atas-0500', chapterId: 'ata-05', section: '00', title: 'General', definition: '', sort: 500, active: true },
-  { id: 'atas-0510', chapterId: 'ata-05', section: '10', title: 'Time Limits', definition: "Those manufacturer recommended time limits for inspections, maintenance and overhaul of the aircraft, its systems and units, and life of parts. For engine manufacturers this will include the flight cycle lives of major rotating components and other items designated critical. NOTE: Inclusion of the data described above, in any manual or manual publication is specifically prohibited unless required by government regulation. Airlines desire the manufacturer's recommended time limits and scheduled maintenance checks but these should be provided in a separate document.", sort: 510, active: true },
-  { id: 'atas-0520', chapterId: 'ata-05', section: '20', title: 'Scheduled Maintenance Checks', definition: 'Those manufacturer recommended maintenance checks and inspections of the aircraft, its systems and units dictated by the time limits specified in -10 above. This section shall list in more detail the items which are outlined on the airline job forms (usually by title only), and shall cross-reference the detailed procedures included in the individual Maintenance Practices.', sort: 520, active: true },
-  { id: 'atas-0530', chapterId: 'ata-05', section: '30', title: 'Scheduled Maintenance Checks', definition: '-30 & -40: Reserved for use in those cases where the number of breakouts provided by the fourth digit of the -20 breakout is not sufficient to cover all of the maintenance checks dictated by subsystem -10 above.', sort: 530, active: true },
-  { id: 'atas-2510', chapterId: 'ata-25', section: '10', title: 'Flight Compartment', definition: 'Equipment and furnishings located in the flight compartment.', sort: 2510, active: true },
-  { id: 'atas-2520', chapterId: 'ata-25', section: '20', title: 'Passenger Compartment', definition: 'Equipment and furnishings located in the passenger compartment, including seats and tables.', sort: 2520, active: true },
+  // Every chapter carries 00 — General, as the client's own list does; a
+  // reserved (inactive) chapter's General section follows the chapter's fate.
+  ...ATA_CHAPTER_SEEDS.map(([code, , , active = true]) => ({
+    id: `atas-${code}00`, chapterId: `ata-${code}`, section: '00', title: 'General', definition: '', sort: Number(`${code}00`), active,
+  })),
+  ...ATA_SECTION_SEEDS.map(([chapter, section, title, definition]) => ({
+    id: `atas-${chapter}${section}`, chapterId: `ata-${chapter}`, section, title, definition, sort: Number(`${chapter}${section}`), active: true,
+  })),
 ]

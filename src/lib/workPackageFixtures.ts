@@ -226,6 +226,12 @@ export const WORK_PACKAGES: WorkPackage[] = [
   { id: 'wp-g42-1', projectId: 'rv-569', title: 'Validation & Analysis', description: 'Structural and electrical substantiation of the design.', status: 'in-progress' },
   { id: 'wp-g42-2', projectId: 'rv-569', title: 'Certification & Manuals', description: 'Compliance documentation, approvals and manual supplements.', status: 'not-started' },
   ...COVERAGE.packages,
+  /* Holiday, sick and training hours are logged against 0000-00, the internal
+     non-chargeable project. The package deliberately holds **no activities**:
+     general time is not budgeted or assigned, so inventing budgeted activities
+     for it would put fake numbers into every roll-up. The hours exist only as
+     timesheet rows, and Hours by Person keeps them in their own column. */
+  { id: 'wp-gen', projectId: 'rv-562', title: 'General & Absence', description: 'Holiday, sick leave, training and internal time. Not budgeted.', status: 'in-progress' },
 ]
 
 export const WP_ACTIVITIES: WorkPackageActivity[] = [

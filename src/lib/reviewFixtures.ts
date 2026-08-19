@@ -72,7 +72,7 @@ export const REVIEW_ROWS: ProjectListRow[] = [
   {
     id: 'rv-773', number: '3283', subNumber: '00', type: 'other',
     title: '*placeholder*',
-    companyName: '*', companyNumber: '', contactName: '—', contactEmail: '', personResponsible: '',
+    companyName: '*', companyNumber: '', contactName: '', contactEmail: '', personResponsible: '',
     actualHours: 0.0, budgetHours: 18, priority: '4-low', status: 'query', active: true,
     openedDate: '2025-09-26', dueDate: '2026-06-23', aircraftInputDate: '2025-11-30', closedDate: '',
     scope: ['certification', 'aircraft-mod'], contractCurrency: 'CDN', contractValue: '72500',
@@ -84,7 +84,7 @@ export const REVIEW_ROWS: ProjectListRow[] = [
   {
     id: 'rv-776', number: '3290', subNumber: '00', type: 'internal',
     title: 'Test Project',
-    companyName: 'Elisen', companyNumber: '001', contactName: '—', contactEmail: '', personResponsible: 'Sofia Reyes',
+    companyName: 'Elisen', companyNumber: '001', contactName: 'Denis Fortier', contactEmail: '', personResponsible: 'Sofia Reyes',
     actualHours: 0.0, budgetHours: 30, priority: '3-med', status: 'query', active: true,
     openedDate: '2025-12-11', dueDate: '2026-10-22', aircraftInputDate: '2026-01-05', closedDate: '',
     scope: ['design', 'parts-kit', 'aircraft-mod'], contractCurrency: 'CDN', contractValue: '185000',
@@ -432,7 +432,7 @@ export const REVIEW_ROWS: ProjectListRow[] = [
   {
     id: 'rv-562', number: '0000', subNumber: '00', type: 'internal',
     title: 'Elisen - General (non-chargeable)',
-    companyName: 'Elisen', companyNumber: '001', contactName: '—', contactEmail: '', personResponsible: 'Harris Bell',
+    companyName: 'Elisen', companyNumber: '001', contactName: 'Karim Haddad', contactEmail: '', personResponsible: 'Harris Bell',
     actualHours: 10.6, budgetHours: 10, priority: '5-lowest', status: 'active', active: true,
     openedDate: '2026-03-07', dueDate: '2026-12-02', aircraftInputDate: '2026-05-11', closedDate: '',
     scope: ['design'], contractCurrency: 'CDN', contractValue: '92000',
@@ -444,7 +444,7 @@ export const REVIEW_ROWS: ProjectListRow[] = [
   {
     id: 'rv-570', number: '0000', subNumber: '01', type: 'internal',
     title: 'Elisen - HR',
-    companyName: 'Elisen', companyNumber: '001', contactName: '—', contactEmail: '', personResponsible: 'Sofia Reyes',
+    companyName: 'Elisen', companyNumber: '001', contactName: 'Isabelle Tremblay', contactEmail: '', personResponsible: 'Sofia Reyes',
     actualHours: 26.0, budgetHours: 50, priority: '2-high', status: 'active', active: true,
     openedDate: '2026-03-24', dueDate: '2027-02-02', aircraftInputDate: '2026-04-18', closedDate: '',
     scope: ['design', 'validation'], contractCurrency: 'CDN', contractValue: '156000',
@@ -456,7 +456,7 @@ export const REVIEW_ROWS: ProjectListRow[] = [
   {
     id: 'rv-561', number: '0000', subNumber: '02', type: 'internal',
     title: 'Elisen - Quality System',
-    companyName: 'Elisen', companyNumber: '001', contactName: '—', contactEmail: '', personResponsible: 'Lloyd Pedvis',
+    companyName: 'Elisen', companyNumber: '001', contactName: 'Owen Whitfield', contactEmail: '', personResponsible: 'Lloyd Pedvis',
     actualHours: 7.9, budgetHours: 10, priority: '5-lowest', status: 'active', active: true,
     openedDate: '2025-06-14', dueDate: '2025-09-12', aircraftInputDate: '2025-07-19', closedDate: '',
     scope: ['certification', 'aircraft-mod'], contractCurrency: 'CDN', contractValue: '48000',
@@ -468,7 +468,7 @@ export const REVIEW_ROWS: ProjectListRow[] = [
   {
     id: 'rv-347', number: '0000', subNumber: '03', type: 'internal',
     title: 'Elisen - DAO Activities',
-    companyName: 'Elisen', companyNumber: '001', contactName: '—', contactEmail: '', personResponsible: 'Remi Rocheleau',
+    companyName: 'Elisen', companyNumber: '001', contactName: 'Mei-Lin Chow', contactEmail: '', personResponsible: 'Remi Rocheleau',
     actualHours: 3.4, budgetHours: 10, priority: '5-lowest', status: 'active', active: true,
     openedDate: '2025-07-01', dueDate: '2025-11-13', aircraftInputDate: '2025-08-15', closedDate: '',
     scope: ['design', 'parts-kit', 'aircraft-mod'], contractCurrency: 'CDN', contractValue: '125000',
@@ -480,7 +480,7 @@ export const REVIEW_ROWS: ProjectListRow[] = [
   {
     id: 'rv-569', number: '0000', subNumber: '04', type: 'internal',
     title: 'Elisen - IT',
-    companyName: 'Elisen', companyNumber: '001', contactName: '—', contactEmail: '', personResponsible: 'Kelly Osei',
+    companyName: 'Elisen', companyNumber: '001', contactName: 'Grégoire Lambert', contactEmail: '', personResponsible: 'Kelly Osei',
     actualHours: 6.1, budgetHours: 10, priority: '5-lowest', status: 'active', active: true,
     openedDate: '2025-07-18', dueDate: '2026-01-14', aircraftInputDate: '2025-09-11', closedDate: '',
     scope: ['validation', 'certification'], contractCurrency: 'CDN', contractValue: '96000',

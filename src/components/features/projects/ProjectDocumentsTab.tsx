@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FileText, Link2, Pencil, Unlink, ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
+import { PersonCell } from '@/components/patterns/PersonCell'
 import { Button } from '@/components/ui/Button'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { EmptyState } from '@/components/patterns/EmptyState'
@@ -165,11 +166,11 @@ export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProp
                       </>
                     ) : (
                       <>
-                        <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{doc.owner}</td>
+                        <td className="px-lg py-base"><PersonCell name={doc.owner} /></td>
                         <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{rev.dueDate || '—'}</td>
                       </>
                     )}
-                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{rev.nextAction || '—'}</td>
+                    <td className="px-lg py-base"><PersonCell name={rev.nextAction} /></td>
                     <td className="px-lg py-base"><Badge tone={REVISION_STATUS_TONE[rev.status]}>{REVISION_STATUS_LABEL[rev.status]}</Badge></td>
                     <td className="px-lg py-base">
                       {/* No "add revision" here: a new revision is a new record,

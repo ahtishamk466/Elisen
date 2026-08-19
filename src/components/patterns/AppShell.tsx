@@ -7,6 +7,9 @@ import { SidebarProfile } from './SidebarProfile'
     router Links; the rest stay inert until their screens exist. */
 const TOP_ROUTES: Record<string, string> = {
   'Reports': '/reports',
+  // One entry each: their two listings are tabs inside the workspace.
+  'Approvals': '/approvals',
+  'Documents': '/documents/deliverables',
 }
 
 /** Children with real routes render as router Links; the rest stay inert
@@ -15,10 +18,6 @@ const CHILD_ROUTES: Record<string, string> = {
   'Projects List': '/projects',
   'Projects Review': '/projects/review',
   'TCCA Projects': '/tcca-projects',
-  'Deliverables': '/documents/deliverables',
-  'Design Data': '/documents/design-data',
-  'Approvals List': '/approvals',
-  'Approval Revisions': '/approvals/revisions',
   'Timesheet': '/timesheet',
   'Hours Worked': '/hours-worked',
   'Users': '/admin/users',
@@ -28,6 +27,7 @@ const CHILD_ROUTES: Record<string, string> = {
   'Routes': '/admin/system',
   'Companies': '/admin/companies',
   'Aircraft': '/admin/aircraft',
+  'Activities & Tasks': '/admin/activities',
   'ATA Chapters': '/admin/ata-chapters',
   'Software Settings': '/system/settings',
   'Audit Control': '/system/audit',
@@ -47,13 +47,13 @@ const NAV: NavItem[] = [
   // certificate or a drawing outlives any one project and is often shared
   // across several, so they can't be owned by a project. They sit next to
   // Projects because that's where they're used from.
-  // Two listings, because a Revision is a record in its own right with its own
-  // create screen in the legacy app — you raise one against an approval you
-  // pick, so it needs a home outside any single certificate. Aircraft and
-  // serial numbers stay *inside* the approval workspace: they are coverage of
-  // one certificate, not a list anyone browses on its own.
-  { label: 'Approvals', icon: <Award size={18} />, children: ['Approvals List', 'Approval Revisions'] },
-  { label: 'Documents', icon: <FileText size={18} />, children: ['Deliverables', 'Design Data'] },
+  // One sidebar entry each: the two listings inside them (Approvals /
+  // Revisions, Deliverables / Design Data) are tabs of one workspace, the same
+  // shape as Aircraft / Serial Numbers. A revision is still a record in its own
+  // right with its own listing — it just doesn't need a second nav row to
+  // reach it.
+  { label: 'Approvals', icon: <Award size={18} /> },
+  { label: 'Documents', icon: <FileText size={18} /> },
   { label: 'Time Entry', icon: <Clock size={18} />, children: ['Hours Worked', 'Timesheet'] },
   { label: 'Reports', icon: <ListChecks size={18} /> },
   { label: 'GCP', icon: <ShieldCheck size={18} />, children: [] },
@@ -61,7 +61,7 @@ const NAV: NavItem[] = [
   // senior enough to see them: business data staff maintain, access
   // management, and machine-side tooling. Ordered most-used first, and each
   // gated as a whole rather than child-by-child.
-  { label: 'Reference Data', icon: <Database size={18} />, children: ['Companies', 'Aircraft', 'ATA Chapters'] },
+  { label: 'Reference Data', icon: <Database size={18} />, children: ['Companies', 'Aircraft', 'Activities & Tasks', 'ATA Chapters'] },
   { label: 'User Access', icon: <KeyRound size={18} />, children: ['Users', 'Roles & Permissions', 'Routes'] },
   { label: 'System', icon: <Settings size={18} />, children: ['Software Settings', 'Audit Control', 'Database Management'] },
 ]

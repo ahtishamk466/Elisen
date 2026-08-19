@@ -29,12 +29,18 @@ function isValidHours(v: string) {
   return v.trim() !== '' && !Number.isNaN(Number(v)) && Number(v) >= 0
 }
 
-export function validate(v: TimesheetEntryValues): Errors {
+/**
+ * @param taskRequired the chosen activity's flag. A task is only mandatory when
+ *   the catalog says so — the field is hidden otherwise, and demanding a hidden
+ *   field is an unfixable form.
+ */
+export function validate(v: TimesheetEntryValues, taskRequired = false): Errors {
   const e: Errors = {}
   if (!v.employeeName.trim()) e.employeeName = 'Employee is required.'
   if (!v.projectId) e.projectId = 'Project is required.'
   if (!v.workPackageId) e.workPackageId = 'Work package is required.'
   if (!v.activityId) e.activityId = 'Activity is required.'
+  if (taskRequired && !v.task.trim()) e.task = 'This activity requires a task.'
   if (!v.workingDate) e.workingDate = 'Working date is required.'
   if (!isValidHours(v.hoursRegular)) e.hoursRegular = 'Enter a valid number of hours.'
   if (v.hoursOvertime && !isValidHours(v.hoursOvertime)) e.hoursOvertime = 'Enter a valid number.'

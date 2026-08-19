@@ -20,6 +20,7 @@ import { useApprovalsStore } from '@/stores/approvalsStore'
 import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore'
 import { useTimesheetStore } from '@/stores/timesheetStore'
 import { useWorkPackagesStore } from '@/stores/workPackagesStore'
+import { useCatalogStore } from '@/stores/catalogStore'
 
 const CATEGORIES: ReportCategory[] = ['project', 'time', 'gcp']
 
@@ -36,6 +37,7 @@ export function ReportsPage({ state = 'ready' }: { state?: PageState }) {
   const revisions = useDocumentsStore((s) => s.revisions)
   const entries = useTimesheetStore((s) => s.rows)
   const workPackages = useWorkPackagesStore((s) => s.workPackages)
+  const catalogActivities = useCatalogStore((s) => s.activities)
 
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<'' | ReportCategory>('')
@@ -50,7 +52,7 @@ export function ReportsPage({ state = 'ready' }: { state?: PageState }) {
   }, [query, category])
 
   const generate = (report: ReportDef, values: Record<string, string>) => {
-    const joins = { projects, workPackages, deliverables: deliverableSummaries(documents, revisions) }
+    const joins = { projects, workPackages, deliverables: deliverableSummaries(documents, revisions), activities: catalogActivities }
     switch (report.id) {
       case 'approvals': runApprovals(approvals, projects); break
       case 'project-status': runProjectStatus(projects); break

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
+import { ApprovalsTabs } from './ApprovalsTabs'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
@@ -61,7 +62,7 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
 
   if (state === 'error') {
     return (
-      <AppShell title="Approval Revisions" activeItem="Approvals" activeChild="Approval Revisions">
+      <AppShell title="Approvals" activeItem="Approvals">
         <Alert title="We couldn't load approval revisions">
           Refresh the page, and if it keeps happening, contact your administrator.
         </Alert>
@@ -71,9 +72,8 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
 
   return (
     <AppShell
-      title="Approval Revisions"
+      title="Approvals"
       activeItem="Approvals"
-      activeChild="Approval Revisions"
       headerActions={
         <>
           <div className="min-w-0" style={{ width: 400 }}>
@@ -92,13 +92,9 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
       <div className="grid gap-lg">
         {toast && <Alert tone="info" title={toast} />}
 
-        <p className="text-sm text-text-secondary">
-          Every revision raised against a certificate, newest first. A revision records what changed
-          and when, and it is what authorises extending an approval to further aircraft.
-        </p>
-
         {!loading && rows.length === 0 ? (
-          <div className="rounded-sm border border-border-default bg-neutral-25">
+          <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+            <ApprovalsTabs active="revisions" />
             <EmptyState
               icon={<FileText size={48} strokeWidth={1.5} />}
               title={query ? 'No revisions match your search' : 'No approval revisions yet'}
@@ -112,6 +108,7 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
           </div>
         ) : (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+            <ApprovalsTabs active="revisions" />
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left" style={{ minWidth: 1000 }}>
                 <caption className="sr-only">Approval revisions across all certificates</caption>

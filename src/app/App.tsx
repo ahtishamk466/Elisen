@@ -6,6 +6,7 @@ import { TccaProjectsListPage } from '@/components/features/tcca/TccaProjectsLis
 import { TccaProjectDetailPage } from '@/components/features/tcca/TccaProjectDetailPage'
 import { TimesheetListPage } from '@/components/features/timesheet/TimesheetListPage'
 import { HoursWorkedPage } from '@/components/features/timesheet/HoursWorkedPage'
+import { ActivityCatalogPage } from '@/components/features/lookups/ActivityCatalogPage'
 import { ReportsPage } from '@/components/features/reports/ReportsPage'
 import { UsersAccessPage } from '@/components/features/access/UsersAccessPage'
 import { RolesPermissionsPage } from '@/components/features/access/RolesPermissionsPage'
@@ -17,9 +18,8 @@ import { DatabaseBackupsPage } from '@/components/features/system/DatabaseBackup
 import { SoftwareSettingsPage } from '@/components/features/system/SoftwareSettingsPage'
 import { AuditControlPage } from '@/components/features/system/AuditControlPage'
 import { ProfilePage } from '@/components/features/profile/ProfilePage'
-import { ApprovalsPage } from '@/components/features/approvals/ApprovalsPage'
+import { ApprovalsWorkspace } from '@/components/features/approvals/ApprovalsWorkspace'
 import { ApprovalDetailPage } from '@/components/features/approvals/ApprovalDetailPage'
-import { ApprovalRevisionsPage } from '@/components/features/approvals/ApprovalRevisionsPage'
 import { DocumentsPage } from '@/components/features/documents/DocumentsPage'
 import { SignedOutScreen } from './SignedOutScreen'
 import { useSessionStore } from '@/stores/sessionStore'
@@ -35,9 +35,10 @@ export default function App() {
         <Route path="/projects" element={<ProjectsListPage />} />
         <Route path="/projects/review" element={<ProjectReviewPage />} />
         <Route path="/projects/:id" element={<ProjectDetailPage />} />
-        <Route path="/approvals" element={<ApprovalsPage />} />
+        <Route path="/approvals" element={<ApprovalsWorkspace />} />
         {/* Before the :id route — otherwise "revisions" is read as an approval id. */}
-        <Route path="/approvals/revisions" element={<ApprovalRevisionsPage />} />
+        {/* Old bookmark: the revisions listing is a tab now. */}
+        <Route path="/approvals/revisions" element={<Navigate to="/approvals?tab=revisions" replace />} />
         <Route path="/approvals/:id" element={<ApprovalDetailPage />} />
         <Route path="/documents" element={<Navigate to="/documents/deliverables" replace />} />
         <Route path="/documents/deliverables" element={<DocumentsPage kind="deliverable" />} />
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="/tcca-projects/:id" element={<TccaProjectDetailPage />} />
         <Route path="/timesheet" element={<TimesheetListPage />} />
         <Route path="/hours-worked" element={<HoursWorkedPage />} />
+        <Route path="/admin/activities" element={<ActivityCatalogPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/admin/users" element={<UsersAccessPage />} />
         <Route path="/admin/roles" element={<RolesPermissionsPage />} />

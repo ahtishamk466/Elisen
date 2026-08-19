@@ -14,6 +14,9 @@ import { BarChart } from './BarChart'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { MultiSelect } from '@/components/ui/MultiSelect'
 import { BudgetInline, ProgressMeter } from './ProgressMeter'
+import { Avatar } from './Avatar'
+import { PersonCell } from './PersonCell'
+import { ChipOverflow } from './ChipOverflow'
 import { HealthSummary } from './HealthSummary'
 import { FilterChips } from './FilterChips'
 import { HEALTH_LABEL, HEALTH_TONE, formatHours, formatPct, healthOf } from '@/lib/projectHealth'
@@ -479,6 +482,95 @@ export const ProjectHealthExample: Story = {
  * right edge because it is what a reader scans down a stack of rows; the bar is
  * the glanceable pip beside it. Both figures share one size and weight.
  */
+/**
+ * **A person is drawn one way everywhere in the app**: an `accent-subtle` disc
+ * of `accent` initials, then the name. Person responsible, customer contact,
+ * document owner, next action, timesheet employee — all the same.
+ *
+ * `Avatar` has **no tone prop**, deliberately. Colour-coding people by role (a
+ * green avatar for the person responsible, grey for a contact) rendered the
+ * same person two different ways on two screens, and made the colour look like
+ * it carried meaning it didn't. One fill, one text colour.
+ *
+ * Use `PersonCell` rather than assembling the avatar and name by hand — that is
+ * what keeps the rule structural. `secondary` shrinks only the *label*, for a
+ * person on a cell's second line under a company; the avatar never changes.
+ */
+/**
+ * **A chip list in a table cell shows at most 2 chips, then `+N more`.**
+ *
+ * This is how the two-line row rule survives real data: a cell that renders
+ * every chip grows with its content — eight task chips once stacked a row nine
+ * lines tall. The count is a button: clicking expands the full list in place
+ * and offers "Show less", so nothing is hidden, only folded.
+ *
+ * Use `ChipOverflow` for every chip list in a table — tasks on an activity,
+ * aircraft on an approval, projects on a document — never a bare `.map()`.
+ */
+export const ChipOverflowExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg">
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Two or fewer — no count shown</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 340 }}>
+          <ChipOverflow items={['River Jones', 'Ron Swanson']} label="people" />
+        </div>
+      </div>
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">More than two — “+N more” expands in place</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 340 }}>
+          <ChipOverflow items={['3D Modeling', 'Assembly Design', 'Bracket and fitting design', 'Conceptual Design', 'Design Checking', 'Detail Design']} label="tasks" />
+        </div>
+      </div>
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Empty</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 340 }}>
+          <ChipOverflow items={[]} label="tasks" />
+        </div>
+      </div>
+    </div>
+  ),
+}
+
+export const PersonExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg">
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">PersonCell — the table and list form</p>
+        <div className="grid gap-xs rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 320 }}>
+          {['Harris Bell', 'Sofia Reyes', 'Lloyd Pedvis', 'Remi Rocheleau', 'Kelly Osei'].map((n) => (
+            <div key={n} className="border-b border-border-default py-sm last:border-b-0"><PersonCell name={n} /></div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Company over contact — `secondary` shrinks the label only</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 320 }}>
+          <span className="block truncate text-sm text-text-primary">Air Niugini</span>
+          <PersonCell name="Tahawar Durrani" variant="secondary" />
+        </div>
+      </div>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Empty, and the two Avatar sizes</p>
+        <div className="flex items-center gap-2xl rounded-sm border border-border-default bg-neutral-25 p-lg">
+          <PersonCell name="" />
+          <span className="flex items-center gap-sm"><Avatar name="Kelly Osei" size="sm" /><span className="text-xs text-text-muted">sm — table rows</span></span>
+          <span className="flex items-center gap-sm"><Avatar name="Kelly Osei" /><span className="text-xs text-text-muted">md — cards & detail</span></span>
+        </div>
+      </div>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Truncation keeps the avatar inside the cell</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 150 }}>
+          <PersonCell name="Grégoire Lambert-Rousseau" />
+        </div>
+      </div>
+    </div>
+  ),
+}
+
 export const TableFiguresExample: Story = {
   render: () => (
     <div className="grid gap-2xl p-lg">

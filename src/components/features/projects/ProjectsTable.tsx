@@ -5,9 +5,11 @@ import { Checkbox } from '@/components/ui/Checkbox'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ProgressMeter } from '@/components/patterns/ProgressMeter'
+import { PersonCell } from '@/components/patterns/PersonCell'
 import { Truncate } from '@/components/patterns/Truncate'
-import { PRIORITY_LABEL, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
-import { HEALTH_LABEL, HEALTH_TONE, formatHours, formatPct, type Health } from '@/lib/projectHealth'
+import { SortMenu } from '@/components/patterns/SortMenu'
+import { PRIORITY_LABEL, STATUS_LABEL, STATUS_TONE } from '@/lib/projectDisplay'
+import { formatHours, formatPct, type Health } from '@/lib/projectHealth'
 import type { ProjectListRow } from '@/types/project'
 
 /** A row plus the budget roll-up computed for it by the page. */
@@ -26,23 +28,42 @@ interface Column {
   label: string
   /** Omitted = not sortable (free text and action columns). */
   sort?: SortKey
+  /** Two or more fields stacked in this cell; the heading offers all of them. */
+  sorts?: { key: SortKey; label: string }[]
   /** Financial columns come out entirely below manager. */
   financial?: boolean
+  /** Share of the table's width. Fixed layout, so columns scale with the page
+      instead of being pinned by a hard cap that wastes a wide screen. */
+  width: string
 }
 
+/**
+ * Seven columns, and **no horizontal scroll**: the table used to declare a
+ * 1501px minimum against roughly 960px of page on a 1280 laptop, so half the
+ * record was always off-screen.
+ *
+ * Related fields are stacked two-to-a-cell instead — line 1 is what you scan
+ * for, line 2 is what you confirm once you've found the row. Only fields
+ * answering the *same* question are paired, so nothing has to be decoded:
+ * a project's identity, its customer, its budget-so-far, its budget-left.
+ */
 const COLUMNS: Column[] = [
-  { label: 'No. / Type', sort: 'number' },
-  { label: 'Project' },
-  { label: 'Company Name', sort: 'company' },
-  { label: 'Contact Name' },
-  { label: 'Person Res.' },
-  { label: 'Budget', sort: 'budget', financial: true },
-  { label: 'Actual', sort: 'actual', financial: true },
-  { label: 'Remaining', sort: 'remaining', financial: true },
-  { label: 'Budget used', sort: 'progress', financial: true },
-  { label: 'Priority', sort: 'priority' },
-  { label: 'Status' },
-  { label: 'Actions' },
+  { label: 'Project', sort: 'number', width: '16%' },
+  { label: 'Company', sort: 'company', width: '11%' },
+  { label: 'Person Res.', width: '12%' },
+  {
+    label: 'Actual / Budget',
+    financial: true,
+    width: '15%',
+    sorts: [{ key: 'actual', label: 'Actual' }, { key: 'budget', label: 'Budget' }],
+  },
+  /* Remaining stands alone beside Actual / Budget so the three budget figures
+     read as one group of numbers, with the meter after them as the picture. */
+  { label: 'Remaining', sort: 'remaining', financial: true, width: '10%' },
+  { label: 'Used', sort: 'progress', financial: true, width: '7%' },
+  { label: 'Priority', sort: 'priority', width: '8%' },
+  { label: 'Status', width: '10%' },
+  { label: 'Actions', width: '7%' },
 ]
 
 export interface ProjectsTableProps {
@@ -104,12 +125,12 @@ export function ProjectsTable({
   return (
     <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
       <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left" style={{ minWidth: 1320 }}>
+      <table className="w-full table-fixed border-collapse text-left">
         <caption className="sr-only">Projects, with budget health per project</caption>
         <thead>
           <tr className="border-b border-border-default bg-neutral-50">
             {selectable && (
-              <th scope="col" className="w-px px-lg py-base">
+              <th scope="col" className="px-sm py-base" style={{ width: '4%' }}>
                 <Checkbox checked={allSelected} onChange={toggleAll} aria-label="Select all projects on this page" />
               </th>
             )}
@@ -117,10 +138,14 @@ export function ProjectsTable({
               <th
                 key={c.label}
                 scope="col"
-                aria-sort={sort && c.sort && sort.key === c.sort ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
-                className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary"
+                style={{ width: c.width }}
+                aria-sort={sort && (c.sort === sort.key || c.sorts?.some((o) => o.key === sort.key))
+                  ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
+                className="px-sm py-base align-bottom text-sm font-semibold text-text-secondary"
               >
-                {c.sort && onSortChange ? headerButton(c, c.sort) : c.label}
+                {c.sorts && onSortChange
+                  ? <SortMenu label={c.label} options={c.sorts} sort={sort} onChange={onSortChange} />
+                  : c.sort && onSortChange ? headerButton(c, c.sort) : c.label}
               </th>
             ))}
           </tr>
@@ -130,7 +155,7 @@ export function ProjectsTable({
             ? Array.from({ length: 6 }, (_, i) => (
                 <tr key={i} className="border-b border-border-default last:border-b-0">
                   {Array.from({ length: columns.length + (selectable ? 1 : 0) }, (_, j) => (
-                    <td key={j} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>
+                    <td key={j} className="px-sm py-base"><Skeleton className="h-4 w-full" /></td>
                   ))}
                 </tr>
               ))
@@ -144,7 +169,7 @@ export function ProjectsTable({
                     className={`cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle ${selected ? 'bg-accent-subtle' : ''}`}
                   >
                     {selectable && (
-                      <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-sm py-base align-middle" onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={selected}
                           onChange={() => toggleOne(row.id)}
@@ -152,67 +177,70 @@ export function ProjectsTable({
                         />
                       </td>
                     )}
-                    <td className="whitespace-nowrap px-lg py-base align-top">
-                      <span className="block text-sm text-text-primary">{row.number}-{row.subNumber}</span>
-                      <span className="block text-xs text-text-muted">{TYPE_LABEL[row.type]}</span>
-                    </td>
-                    <td className="px-lg py-base align-top" style={{ maxWidth: 240 }}>
+                    {/* Number leads — it is how a project is asked for — with
+                        the title under it as the line that confirms the row. */}
+                    <td className="px-sm py-base align-middle">
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onView?.(row) }}
-                        className="block w-full text-left text-sm text-text-primary underline-offset-2 hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+                        className="block w-full text-left underline-offset-2 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
                       >
-                        <Truncate>{row.title}</Truncate>
+                        <span className="block whitespace-nowrap text-sm font-semibold tabular-nums text-text-primary">
+                          {row.number}-{row.subNumber}
+                        </span>
+                        <span className="block text-xs text-text-secondary"><Truncate lines={1}>{row.title}</Truncate></span>
                       </button>
                     </td>
-                    <td className="px-lg py-base align-top" style={{ maxWidth: 170 }}>
-                      <span className="block text-sm text-text-primary"><Truncate lines={1}>{row.companyName}</Truncate></span>
-                      <span className="block text-xs text-text-muted">{row.companyNumber}</span>
+                    {/* Both client-side: who we work for, and who we call. */}
+                    <td className="px-sm py-base align-middle">
+                      <span className="block truncate text-sm text-text-primary">{row.companyName}</span>
+                      {/* Initials mark line 2 as a person, so a company and its
+                          contact are never mistaken for one another. */}
+                      <PersonCell name={row.contactName} variant="secondary" />
                     </td>
-                    <td className="px-lg py-base align-top text-sm text-text-primary">{row.contactName}</td>
-                    <td className="px-lg py-base align-top text-sm text-text-primary">{row.personResponsible}</td>
+                    <td className="px-sm py-base align-middle">
+                      <PersonCell name={row.personResponsible} />
+                    </td>
                     {canSeeFinancials && (
                       <>
-                        <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
-                          {health.budget > 0 ? formatHours(health.budget) : '—'}
+                        {/* The app's `x / y` short form, spent against budgeted:
+                            the two numbers a reader compares, side by side where
+                            comparing them is one glance rather than two. */}
+                        <td className="whitespace-nowrap px-sm py-base align-middle text-sm text-text-primary">
+                          {health.budget > 0
+                            ? `${formatHours(health.actual)} / ${formatHours(health.budget)}`
+                            : `${formatHours(health.actual)} / no budget`}
                         </td>
-                        <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
-                          {formatHours(health.actual)}
-                        </td>
-                        {/* Over-budget shows as a negative in danger — the sign
-                            carries the meaning, not the colour alone. */}
-                        <td className={`whitespace-nowrap px-lg py-base align-top text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
+                        {/* Remaining over the meter: the figure and the picture
+                            of the same fact. Over-budget shows as a negative in
+                            danger — the sign carries it, not the colour alone. */}
+                        <td className={`whitespace-nowrap px-sm py-base align-middle text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
                           {health.budget > 0 ? `${over ? '−' : ''}${formatHours(Math.abs(health.remaining))}` : '—'}
                         </td>
-                        <td className="px-lg py-base align-top" style={{ minWidth: 150 }}>
-                          <div className="flex items-center gap-sm">
-                            <div className="min-w-0 flex-1">
-                              <ProgressMeter
-                                health={health}
-                                size="sm"
-                                ariaLabel={`Project ${row.number}-${row.subNumber} budget`}
-                              />
-                            </div>
-                            <span className="w-10 shrink-0 text-xs font-semibold text-text-primary">
-                              {formatPct(health.progressPct)}
-                            </span>
-                          </div>
+                        <td className="whitespace-nowrap px-sm py-base align-middle">
+                          <span className="block text-sm text-text-primary">{formatPct(health.progressPct)}</span>
+                          {/* The meter under its own figure: a glanceable pip,
+                              where the number carries the precision. */}
+                          <span className="mt-xxss block" style={{ width: 44 }}>
+                            <ProgressMeter health={health} size="sm" ariaLabel={`Project ${row.number}-${row.subNumber} budget`} />
+                          </span>
                         </td>
                       </>
                     )}
-                    <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
-                      {PRIORITY_LABEL[row.priority]}
+                    {/* Rank on top, name under it: "5 - Lowest" on one line was
+                        the widest thing in a column nobody reads as a sentence. */}
+                    <td className="whitespace-nowrap px-sm py-base align-middle">
+                      <span className="block text-sm font-semibold text-text-primary">{PRIORITY_LABEL[row.priority].split(' - ')[0]}</span>
+                      <span className="block text-xs text-text-muted">{PRIORITY_LABEL[row.priority].split(' - ')[1]}</span>
                     </td>
-                    <td className="whitespace-nowrap px-lg py-base align-top">
-                      <div className="grid gap-xs">
-                        <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>
-                        {canSeeFinancials && health.state !== 'no-budget' && (
-                          <Badge tone={HEALTH_TONE[health.state]}>{HEALTH_LABEL[health.state]}</Badge>
-                        )}
-                      </div>
+                    {/* Budget health is not repeated here — the meter beside it
+                        already carries it, with the percentage and a signed
+                        Remaining as its non-colour cues. */}
+                    <td className="whitespace-nowrap px-sm py-base align-middle">
+                      <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>
                     </td>
                     {/* Row opens View; the menu must not trigger it too. */}
-                    <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-sm py-base align-middle" onClick={(e) => e.stopPropagation()}>
                       <ActionsMenu
                         ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
                         items={[

@@ -205,8 +205,36 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
           <HealthSummary health={health} />
         )}
 
-        <div className="grid gap-lg laptop:grid-cols-[320px_1fr]">
-          <aside className="h-fit rounded-sm border border-border-default bg-neutral-25 p-lg">
+<nav className="flex gap-lg overflow-x-auto rounded-sm border border-border-default bg-neutral-25 px-lg" aria-label="Project sections">
+              {TABS.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTab(t)}
+                  aria-current={tab === t ? 'page' : undefined}
+                  className={`whitespace-nowrap border-b-2 py-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
+                    ${tab === t ? 'border-text-primary font-semibold text-text-primary' : 'border-transparent text-text-muted hover:text-text-primary'}`}
+                >
+                  {t}
+                  {tabCounts[t] !== undefined && (
+                    <span
+                      className={`ml-sm rounded-sm px-sm py-xxss text-xs font-medium ${
+                        tab === t ? 'bg-accent-subtle text-accent' : 'bg-neutral-100 text-text-secondary'
+                      }`}
+                    >
+                      {tabCounts[t]}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+
+            {tab === 'Overview' ? (
+              /* The identity card lives on Overview only. Every other tab gets
+                 the full page: a table beside a 320px card had ~590px to work
+                 with, which is why the Work Packages table could not breathe. */
+              <div className="grid items-start gap-lg laptop:grid-cols-[320px_minmax(0,1fr)]">
+              <aside className="h-fit rounded-sm border border-border-default bg-neutral-25 p-lg">
             <div className="flex items-start justify-between gap-sm">
               <p className="text-2xl font-bold leading-tight text-text-primary">{row.number}-{row.subNumber}</p>
               <ActionsMenu
@@ -256,7 +284,7 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
               <div className="mt-base grid gap-base">
                 {row.contactName !== '—' && (
                   <div className="flex items-center gap-sm">
-                    <Avatar name={row.contactName} tone="accent" />
+                    <Avatar name={row.contactName} />
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-text-primary">{row.contactName}</p>
                       {row.contactEmail ? (
@@ -273,7 +301,7 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
                   </div>
                 )}
                 <div className="flex items-center gap-sm">
-                  <Avatar name={row.personResponsible} tone="success" />
+                  <Avatar name={row.personResponsible} />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-text-primary">{row.personResponsible}</p>
                     <p className="text-xs text-text-muted">Person responsible</p>
@@ -282,33 +310,6 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
               </div>
             </div>
           </aside>
-
-          <div className="grid content-start gap-lg">
-            <nav className="flex gap-lg overflow-x-auto rounded-sm border border-border-default bg-neutral-25 px-lg" aria-label="Project sections">
-              {TABS.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTab(t)}
-                  aria-current={tab === t ? 'page' : undefined}
-                  className={`whitespace-nowrap border-b-2 py-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
-                    ${tab === t ? 'border-text-primary font-semibold text-text-primary' : 'border-transparent text-text-muted hover:text-text-primary'}`}
-                >
-                  {t}
-                  {tabCounts[t] !== undefined && (
-                    <span
-                      className={`ml-sm rounded-sm px-sm py-xxss text-xs font-medium ${
-                        tab === t ? 'bg-accent-subtle text-accent' : 'bg-neutral-100 text-text-secondary'
-                      }`}
-                    >
-                      {tabCounts[t]}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </nav>
-
-            {tab === 'Overview' ? (
               <div className="grid gap-lg">
                 <Card title="Dates">
                   <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
@@ -393,6 +394,7 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
                   </div>
                 </Card>
               </div>
+              </div>
             ) : tab === 'Work Packages' ? (
               <ProjectWorkPackagesTab projectId={row.id} />
             ) : tab === 'Team' ? (
@@ -406,8 +408,6 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
             ) : (
               <ProjectTccaTab projectId={row.id} />
             )}
-          </div>
-        </div>
       </div>
 
       {editStep !== null && (

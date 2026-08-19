@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { useWorkPackagesStore } from '@/stores/workPackagesStore'
-import { activityName } from '@/lib/activityCatalog'
+import { activityName } from '@/lib/catalog'
+import { useCatalogStore } from '@/stores/catalogStore'
 import { WorkPackageCard } from './WorkPackageCard'
 import { WorkPackageDrawer } from './WorkPackageDrawer'
 import { ActivityDrawer } from './ActivityDrawer'
+import { ActivityViewDrawer } from './ActivityViewDrawer'
 import type { WorkPackage, WorkPackageActivity } from '@/types/workPackage'
 
 /**
@@ -20,6 +22,9 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
   const workPackages = useWorkPackagesStore((s) => s.workPackages)
   const activities = useWorkPackagesStore((s) => s.activities)
   const { addWp, updateWp, removeWp, addActivity, updateActivity, removeActivity } = useWorkPackagesStore()
+  const catalogActivities = useCatalogStore((s) => s.activities)
+  const catalogTasks = useCatalogStore((s) => s.tasks)
+  const catalogLinks = useCatalogStore((s) => s.links)
 
   const [adding, setAdding] = useState(false)
   const [editingWp, setEditingWp] = useState<WorkPackage | null>(null)
@@ -28,6 +33,7 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
   const [addingActivityTo, setAddingActivityTo] = useState<WorkPackage | null>(null)
   const [editingActivity, setEditingActivity] = useState<{ wp: WorkPackage; activity: WorkPackageActivity } | null>(null)
   const [removingActivity, setRemovingActivity] = useState<WorkPackageActivity | null>(null)
+  const [viewingActivity, setViewingActivity] = useState<{ wp: WorkPackage; activity: WorkPackageActivity } | null>(null)
 
   const list = workPackages.filter((w) => w.projectId === projectId)
   const activitiesOf = (wpId: string) => activities.filter((a) => a.workPackageId === wpId)
@@ -57,7 +63,9 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
               already own that weight, and this answers a smaller question —
               how much is in here, and where does it stand. */}
           <div className="flex flex-wrap items-end justify-between gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg py-base">
-            <dl className="flex flex-wrap items-end gap-x-3xl gap-y-base">
+            {/* border-default is neutral-200 — each figure gets its own bay,
+                so five numbers read as five stats rather than one long row. */}
+            <dl className="flex flex-wrap items-stretch gap-y-base divide-x divide-border-default">
               <Stat label="Work packages" value={list.length} />
               <Stat label="Activities" value={totalActivities} />
               <Stat label="Not started" value={statusCount('not-started')} />
@@ -69,9 +77,6 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
             </Button>
           </div>
 
-          <p className="text-sm text-text-secondary">
-            Budget is entered per activity and rolled up per package.
-          </p>
           {list.map((wp, i) => (
             <WorkPackageCard
               key={wp.id}
@@ -84,6 +89,7 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
               onAddActivity={() => setAddingActivityTo(wp)}
               onEditActivity={(a) => setEditingActivity({ wp, activity: a })}
               onRemoveActivity={setRemovingActivity}
+              onViewActivity={(a) => setViewingActivity({ wp, activity: a })}
             />
           ))}
         </>
@@ -148,13 +154,25 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
         onCancel={() => setDeletingWp(null)}
       />
 
+      {viewingActivity && (
+        <ActivityViewDrawer
+          key={viewingActivity.activity.id}
+          activity={viewingActivity.activity}
+          workPackage={viewingActivity.wp}
+          catalog={{ activities: catalogActivities, tasks: catalogTasks, links: catalogLinks }}
+          onClose={() => setViewingActivity(null)}
+          onEdit={() => setEditingActivity({ wp: viewingActivity.wp, activity: viewingActivity.activity })}
+          onRemove={() => setRemovingActivity(viewingActivity.activity)}
+        />
+      )}
+
       <ConfirmDialog
         open={!!removingActivity}
         title={removeActivityBlocked ? "This activity can't be removed" : 'Remove this activity?'}
         description={
           removeActivityBlocked
-            ? `${removingActivity ? activityName(removingActivity.activityId) : ''} has ${removingActivity?.actualHours}h logged in Time Entry. Removing it would orphan those records.`
-            : `${removingActivity ? activityName(removingActivity.activityId) : ''} and its budget will be removed from this package.`
+            ? `${removingActivity ? activityName(catalogActivities, removingActivity.activityId) : ''} has ${removingActivity?.actualHours}h logged in Time Entry. Removing it would orphan those records.`
+            : `${removingActivity ? activityName(catalogActivities, removingActivity.activityId) : ''} and its budget will be removed from this package.`
         }
         confirmLabel={removeActivityBlocked ? 'Understood' : 'Remove activity'}
         tone={removeActivityBlocked ? 'primary' : 'danger'}
@@ -173,7 +191,7 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
     for free. */
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div>
+    <div className="px-2xl first:pl-0 last:pr-0">
       <dt className="text-xs text-text-muted">{label}</dt>
       <dd className="text-lg font-bold text-text-primary">{value}</dd>
     </div>

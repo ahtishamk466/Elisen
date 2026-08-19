@@ -1,5 +1,6 @@
 import { downloadBlob } from './exportRows'
 import { enrichTimesheetRows, type EnrichedTimesheetRow } from './timesheetLookup'
+import type { Activity } from '@/types/catalog'
 import { PRIORITY_LABEL, STATUS_LABEL, TYPE_LABEL } from './projectDisplay'
 import { TCCA_STATUS_LABEL } from './tccaDisplay'
 import { REVISION_STATUS_LABEL } from './documentDisplay'
@@ -96,12 +97,14 @@ interface TimeJoins {
   projects: ProjectListRow[]
   workPackages: WorkPackage[]
   deliverables: DeliverableRevision[]
+  /** Catalog activities, so a report names an activity the same way the app does. */
+  activities: Activity[]
 }
 
 function timeRows(entries: TimesheetEntry[], joins: TimeJoins, from: string, to: string): EnrichedTimesheetRow[] {
   return enrichTimesheetRows(
     entries.filter((e) => e.active && e.workingDate >= from && e.workingDate <= to),
-    joins.projects, joins.workPackages, joins.deliverables,
+    joins.projects, joins.workPackages, joins.deliverables, joins.activities,
   ).sort((a, b) => a.employeeName.localeCompare(b.employeeName) || a.workingDate.localeCompare(b.workingDate))
 }
 

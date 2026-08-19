@@ -18,6 +18,8 @@ import { useProjectsStore } from '@/stores/projectsStore'
 import { useWorkPackagesStore } from '@/stores/workPackagesStore'
 import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore'
 import { enrichTimesheetRows } from '@/lib/timesheetLookup'
+import { isNonProjectActivity } from '@/lib/catalog'
+import { useCatalogStore } from '@/stores/catalogStore'
 import { CURRENT_EMPLOYEE } from '@/lib/timesheetFixtures'
 import type { TimesheetEntry } from '@/types/timesheet'
 import type { TimesheetEntryValues } from './useTimesheetEntryForm'
@@ -44,6 +46,7 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
   const removeRow = useTimesheetStore((s) => s.removeRow)
   const projects = useProjectsStore((s) => s.rows)
   const workPackages = useWorkPackagesStore((s) => s.workPackages)
+  const catalogActivities = useCatalogStore((s) => s.activities)
   const documents = useDocumentsStore((s) => s.documents)
   const docRevisions = useDocumentsStore((s) => s.revisions)
   const deliverables = useMemo(() => deliverableSummaries(documents, docRevisions), [documents, docRevisions])
@@ -55,7 +58,7 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
   const [toast, setToast] = useState<string | null>(null)
 
   const ownRows = useMemo(() => rows.filter((r) => r.employeeName === CURRENT_EMPLOYEE), [rows])
-  const enriched = useMemo(() => enrichTimesheetRows(ownRows, projects, workPackages, deliverables), [ownRows, projects, workPackages, deliverables])
+  const enriched = useMemo(() => enrichTimesheetRows(ownRows, projects, workPackages, deliverables, catalogActivities), [ownRows, projects, workPackages, deliverables])
 
   const hasActiveFilters = Object.values(filters).some(Boolean)
 
@@ -73,6 +76,10 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
     if (filters.active) list = list.filter((r) => (filters.active === 'yes' ? r.active : !r.active))
     if (filters.dateFrom) list = list.filter((r) => r.workingDate >= filters.dateFrom)
     if (filters.dateTo) list = list.filter((r) => r.workingDate <= filters.dateTo)
+    // Useful on your own timesheet too: "my project work only", or "how much
+    // holiday have I actually taken".
+    if (filters.nonProject === 'only') list = list.filter((r) => isNonProjectActivity(catalogActivities, r.activityId))
+    if (filters.nonProject === 'exclude') list = list.filter((r) => !isNonProjectActivity(catalogActivities, r.activityId))
     return list
   }, [enriched, query, filters])
 

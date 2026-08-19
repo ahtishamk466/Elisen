@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { PersonSelect } from '@/components/ui/PersonSelect'
-import { ACTIVITY_CATALOG, ACTIVITY_TASKS, activityName } from '@/lib/activityCatalog'
+import { activityName, assignableActivities, tasksForActivity } from '@/lib/catalog'
+import { useCatalogStore } from '@/stores/catalogStore'
 import { PEOPLE } from '@/lib/projectFixtures'
 import { useProjectLabel } from './useProjectLabel'
 import type { WorkPackage, WorkPackageActivity } from '@/types/workPackage'
@@ -29,8 +30,16 @@ export function ActivityDrawer({ mode, workPackage, usedActivityIds, initial, on
   const [budgetHours, setBudgetHours] = useState(initial ? String(initial.budgetHours) : '')
   const [errors, setErrors] = useState<{ activityId?: string; responsible?: string; budgetHours?: string }>({})
 
-  const options = ACTIVITY_CATALOG.filter((a) => a.id === initial?.activityId || !usedActivityIds.includes(a.id))
-  const tasks = activityId ? ACTIVITY_TASKS[activityId] ?? [] : []
+  const catalogActivities = useCatalogStore((s) => s.activities)
+  const catalogTasks = useCatalogStore((s) => s.tasks)
+  const links = useCatalogStore((s) => s.links)
+  const catalog = { activities: catalogActivities, tasks: catalogTasks, links }
+
+  /* Assignable = active project activities, defaults first. Ones already on this
+     package drop out so the same activity can't be added twice. */
+  const options = assignableActivities(catalogActivities)
+    .filter((a) => a.id === initial?.activityId || !usedActivityIds.includes(a.id))
+  const tasks = activityId ? tasksForActivity(catalog, activityId, true) : []
 
   const submit = () => {
     const e: typeof errors = {}
@@ -57,7 +66,7 @@ export function ActivityDrawer({ mode, workPackage, usedActivityIds, initial, on
       onClose={onClose}
       title={
         isEdit
-          ? `Edit Activity “${activityName(initial!.activityId)}”: ${workPackage.title} · ${label}`
+          ? `Edit Activity “${activityName(catalogActivities, initial!.activityId)}”: ${workPackage.title} · ${label}`
           : `Add Activity to “${workPackage.title}”: ${label}`
       }
       footer={
@@ -75,7 +84,7 @@ export function ActivityDrawer({ mode, workPackage, usedActivityIds, initial, on
       >
         {isEdit ? (
           <FormField label="Activity" htmlFor="act-name">
-            <Input id="act-name" value={activityName(initial!.activityId)} disabled />
+            <Input id="act-name" value={activityName(catalogActivities, initial!.activityId)} disabled />
           </FormField>
         ) : (
           <FormField label="Activity" htmlFor="act-select" required error={errors.activityId}>
@@ -95,13 +104,13 @@ export function ActivityDrawer({ mode, workPackage, usedActivityIds, initial, on
             onChange={(e) => { setBudgetHours(e.target.value); setErrors((p) => ({ ...p, budgetHours: undefined })) }} />
         </FormField>
         <FormField label="Tasks" htmlFor="act-tasks"
-          help="Tasks follow the standard activity–task associations and filter the Time Entry picklist. Managed in Admin, not per package.">
+          help="From the activity's task associations, which filter the Time Entry picklist. Managed in Reference Data → Activities & Tasks, not per package.">
           <div id="act-tasks" className="flex min-h-11 flex-wrap items-center gap-xs rounded-sm border border-border-default bg-neutral-50 px-base py-sm">
             {tasks.length === 0 ? (
               <span className="text-sm text-text-muted">{activityId ? 'No tasks associated with this activity.' : 'Pick an activity to see its tasks.'}</span>
             ) : (
               tasks.map((t) => (
-                <span key={t} className="rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{t}</span>
+                <span key={t.id} className="rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{t.name}</span>
               ))
             )}
           </div>

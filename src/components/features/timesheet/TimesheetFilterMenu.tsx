@@ -16,10 +16,25 @@ export interface TimesheetFilters {
   active: '' | 'yes' | 'no'
   dateFrom: string
   dateTo: string
+  /** Employee's payroll group, as in the client's Hours Worked screen. */
+  payrollGroup: string
+  /**
+   * General/absence time. `only` isolates holiday and sick leave; `exclude`
+   * gives a clean view of chargeable project work, which is what a budget
+   * question usually means.
+   */
+  nonProject: '' | 'only' | 'exclude'
+  /**
+   * Former employees are **shown by default** and labelled, because their hours
+   * are payroll record — dropping them by default would quietly change every
+   * total. This hides them for a "who is on the team now" read.
+   */
+  formerStaff: '' | 'hide'
 }
 
 export const EMPTY_FILTERS: TimesheetFilters = {
   employeeName: '', projectId: '', validated: '', active: '', dateFrom: '', dateTo: '',
+  payrollGroup: '', nonProject: '', formerStaff: '',
 }
 
 /** Applied filters as removable chips. Project resolves to its number so a
@@ -38,6 +53,9 @@ export function timesheetFilterChips(
     { key: 'active', label: 'Active', value: filters.active === 'yes' ? 'Active' : filters.active === 'no' ? 'Inactive' : '' },
     { key: 'dateFrom', label: 'From', value: filters.dateFrom },
     { key: 'dateTo', label: 'To', value: filters.dateTo },
+    { key: 'payrollGroup', label: 'Payroll group', value: filters.payrollGroup },
+    { key: 'nonProject', label: 'Non-project time', value: filters.nonProject === 'only' ? 'Only' : filters.nonProject === 'exclude' ? 'Excluded' : '' },
+    { key: 'formerStaff', label: 'Former employees', value: filters.formerStaff === 'hide' ? 'Hidden' : '' },
   ]
   return defs
     .filter((d) => d.value)
@@ -48,13 +66,15 @@ export interface TimesheetFilterMenuProps {
   projects: ProjectListRow[]
   /** Pass to show the Employee filter — Hours Worked (admin) only. */
   employees?: string[]
+  /** Pass to show the payroll group and former-employee filters (admin only). */
+  payrollGroups?: string[]
   filters: TimesheetFilters
   onApply: (filters: TimesheetFilters) => void
 }
 
 const MENU_WIDTH = 300
 
-export function TimesheetFilterMenu({ projects, employees, filters, onApply }: TimesheetFilterMenuProps) {
+export function TimesheetFilterMenu({ projects, employees, payrollGroups, filters, onApply }: TimesheetFilterMenuProps) {
   const { open, setOpen, position, triggerRef, menuRef } = useDropdown<HTMLButtonElement>(MENU_WIDTH)
   const [draft, setDraft] = useState(filters)
 
@@ -115,6 +135,31 @@ export function TimesheetFilterMenu({ projects, employees, filters, onApply }: T
                 <option value="no">Inactive</option>
               </Select>
             </div>
+            {payrollGroups && payrollGroups.length > 0 && (
+              <div className="grid gap-xs">
+                <label htmlFor="filter-payroll" className="text-xs font-semibold text-text-secondary">Payroll Group</label>
+                <Select id="filter-payroll" value={draft.payrollGroup} placeholder="Any group" onChange={(e) => setDraft((d) => ({ ...d, payrollGroup: e.target.value }))}>
+                  {payrollGroups.map((g) => <option key={g} value={g}>{g}</option>)}
+                </Select>
+              </div>
+            )}
+            <div className="grid gap-xs">
+              <label htmlFor="filter-nonproject" className="text-xs font-semibold text-text-secondary">Non-project Time</label>
+              <Select id="filter-nonproject" value={draft.nonProject} onChange={(e) => setDraft((d) => ({ ...d, nonProject: e.target.value as TimesheetFilters['nonProject'] }))}>
+                <option value="">Include</option>
+                <option value="exclude">Exclude, project work only</option>
+                <option value="only">Only holiday, absence & training</option>
+              </Select>
+            </div>
+            {employees && (
+              <div className="grid gap-xs">
+                <label htmlFor="filter-former" className="text-xs font-semibold text-text-secondary">Former Employees</label>
+                <Select id="filter-former" value={draft.formerStaff} onChange={(e) => setDraft((d) => ({ ...d, formerStaff: e.target.value as TimesheetFilters['formerStaff'] }))}>
+                  <option value="">Include their history</option>
+                  <option value="hide">Hide, current staff only</option>
+                </Select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-sm">
               <div className="grid gap-xs">
                 <label htmlFor="filter-date-from" className="text-xs font-semibold text-text-secondary">From</label>

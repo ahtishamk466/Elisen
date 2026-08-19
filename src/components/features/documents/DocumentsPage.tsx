@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { TableTabs } from '@/components/patterns/TableTabs'
 import { Truncate } from '@/components/patterns/Truncate'
 import { Badge } from '@/components/ui/Badge'
+import { PersonCell } from '@/components/patterns/PersonCell'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
@@ -86,7 +87,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
 
   if (state === 'error') {
     return (
-      <AppShell title={label.plural} activeItem="Documents" activeChild={label.plural}>
+      <AppShell title="Documents" activeItem="Documents">
         <Alert title={`We couldn't load ${label.plural.toLowerCase()}`}>
           Refresh the page, and if it keeps happening, contact your administrator.
         </Alert>
@@ -121,9 +122,8 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
 
   return (
     <AppShell
-      title={label.plural}
+      title="Documents"
       activeItem="Documents"
-      activeChild={label.plural}
       headerActions={
         <>
           <div className="min-w-0" style={{ width: 400 }}>
@@ -198,8 +198,8 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                               <Truncate>{doc.title}</Truncate>
                             </td>
                             <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{doc.type}</td>
-                            <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
-                              {isDrawing ? doc.aircraft || '—' : doc.owner || '—'}
+                            <td className="px-lg py-base align-top text-sm text-text-primary">
+                              {isDrawing ? doc.aircraft || '—' : <PersonCell name={doc.owner} />}
                             </td>
                             <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
                               {isDrawing ? doc.ataChapter || '—' : rev.dueDate || '—'}

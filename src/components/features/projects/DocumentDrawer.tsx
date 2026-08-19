@@ -11,6 +11,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { useDocumentsStore } from '@/stores/documentsStore'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useTccaStore } from '@/stores/tccaStore'
+import { useLookupStore } from '@/stores/lookupStore'
 import { DOC_TYPES, KIND_LABEL } from '@/lib/documentDisplay'
 import { PEOPLE } from '@/lib/projectFixtures'
 import type { DocumentKind, ProjectDocument, RevisionStatus } from '@/types/documents'
@@ -44,9 +45,29 @@ export function DocumentDrawer({ kind, initial, onClose, onSaved }: DocumentDraw
   const tccaProjects = useTccaStore((s) => s.tccaProjects)
   const linkRevision = useTccaStore((s) => s.linkRevision)
 
+  const ataChapters = useLookupStore((s) => s.chapters)
+  const ataSections = useLookupStore((s) => s.subChapters)
+
   const isEdit = !!initial
   const isDrawing = kind === 'drawing'
   const label = KIND_LABEL[kind]
+
+  /* The taxonomy, flattened to codes a drawing files under. Free text was how
+     unknown codes crept into the data, so this is a picker, not an input. */
+  const ataOptions = useMemo(() => {
+    const opts = ataChapters
+      .filter((c) => c.active)
+      .sort((a, b) => a.sort - b.sort)
+      .flatMap((c) => ataSections
+        .filter((sec) => sec.chapterId === c.id && sec.active)
+        .sort((a, b) => a.sort - b.sort)
+        .map((sec) => ({ value: `${c.chapter}-${sec.section}`, label: `${c.chapter}-${sec.section} — ${sec.title}`, hint: c.title })))
+    const current = initial?.ataChapter
+    if (current && !opts.some((o) => o.value === current)) {
+      opts.unshift({ value: current, label: current, hint: 'Not in the ATA taxonomy' })
+    }
+    return opts
+  }, [ataChapters, ataSections, initial?.ataChapter])
 
   const [number, setNumber] = useState(initial?.number ?? '')
   const [title, setTitle] = useState(initial?.title ?? '')
@@ -182,8 +203,15 @@ export function DocumentDrawer({ kind, initial, onClose, onSaved }: DocumentDraw
               <FormField label="Aircraft Type" htmlFor="doc-aircraft" help="So the drawing can be found and reused on future projects.">
                 <Input id="doc-aircraft" value={aircraft} placeholder="e.g. King Air 350" onChange={(e) => set(setAircraft)(e.target.value)} />
               </FormField>
-              <FormField label="ATA Chapter" htmlFor="doc-ata" help="e.g. 25-10, equipment/furnishings, cockpit.">
-                <Input id="doc-ata" value={ataChapter} placeholder="e.g. 25-10" onChange={(e) => set(setAtaChapter)(e.target.value)} />
+              <FormField label="ATA Chapter" htmlFor="doc-ata"
+                help="From Reference Data → ATA Chapters, so every drawing files under the same taxonomy.">
+                <SearchableSelect
+                  id="doc-ata" value={ataChapter}
+                  onChange={(v) => set(setAtaChapter)(v)}
+                  options={ataOptions}
+                  placeholder="Search by code or title..."
+                  emptyLabel="No ATA chapters exist yet. Add them in Reference Data."
+                />
               </FormField>
             </>
           )}

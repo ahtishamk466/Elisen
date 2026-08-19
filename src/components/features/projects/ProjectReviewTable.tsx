@@ -17,7 +17,7 @@ import type { ProjectListRow } from '@/types/project'
  */
 const HEADERS = [
   'Number', 'Company Name', 'Description', 'Priority', 'Status', 'Comments', 'Next Action',
-  'Due Date', 'Aging', 'Bdg Hrs', 'Actl Hrs', 'Active', 'Actions',
+  'Due Date', 'Aging', 'Actual / Budget', 'Active', 'Actions',
 ]
 
 const HOURS = new Intl.NumberFormat('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -41,7 +41,7 @@ export interface ProjectReviewTableProps {
 export function ProjectReviewTable({
   rows, loading = false, canSeeFinancials = true, onView, onOpenWorkPackages, onEdit, tabs, activeTabKey, pagination,
 }: ProjectReviewTableProps) {
-  const headers = canSeeFinancials ? HEADERS : HEADERS.filter((h) => h !== 'Bdg Hrs' && h !== 'Actl Hrs')
+  const headers = canSeeFinancials ? HEADERS : HEADERS.filter((h) => h !== 'Actual / Budget')
 
   return (
     // Tabs, columns and pagination share one bordered card — the tabs are the
@@ -56,7 +56,7 @@ export function ProjectReviewTable({
           ? { role: 'tabpanel', 'aria-labelledby': `tab-${activeTabKey}`, tabIndex: 0 }
           : {})}
       >
-        <table className="w-full border-collapse text-left" style={{ minWidth: 1800 }}>
+        <table className="w-full border-collapse text-left" style={{ minWidth: 1700 }}>
           <caption className="sr-only">Projects review</caption>
           <thead>
             <tr className="border-b border-border-default bg-neutral-50">
@@ -112,9 +112,10 @@ export function ProjectReviewTable({
                       <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{aging ?? '—'}</td>
                       {canSeeFinancials && (
                         <>
-                          <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{HOURS.format(row.budgetHours)}</td>
                           <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
-                            {HOURS.format(row.actualHours)}
+                            {row.budgetHours > 0
+                              ? `${HOURS.format(row.actualHours)} / ${HOURS.format(row.budgetHours)}`
+                              : `${HOURS.format(row.actualHours)} / no budget`}
                             {row.budgetHours > 0 && row.actualHours > row.budgetHours && (
                               <span className="ml-xs text-xs text-danger">over</span>
                             )}

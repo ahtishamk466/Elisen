@@ -1,15 +1,36 @@
 import type { ReactNode } from 'react'
 import { Eye, Pencil, Copy, Trash2, CheckCircle2 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
+import { PersonCell } from '@/components/patterns/PersonCell'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionsMenu, type ActionsMenuItem } from '@/components/patterns/ActionsMenu'
-import { Truncate } from '@/components/patterns/Truncate'
 import type { EnrichedTimesheetRow } from '@/lib/timesheetLookup'
 
-const BASE_HEADERS = [
-  'Project #', 'Project Description', 'Work Package', 'Activity Title', 'Task Title', 'Deliverable #',
-  'Working Date', 'Hrs RG', 'Hrs OT', 'Bk Hrs RG', 'Comment', 'Validated', 'Active', 'Actions',
+/**
+ * Number over description, activity over task: each pair is one thing read two
+ * ways, so they share a cell. Work Package keeps its own column — it is the
+ * scope of work, not a qualifier of the activity.
+ *
+ * Headings drop the "#", "Title" and "Description" suffixes: a column of
+ * project numbers needs no label saying these are numbers.
+ */
+const BASE_COLUMNS: { label: string; width: string }[] = [
+  { label: 'Project', width: '13%' },
+  { label: 'Work Package', width: '10%' },
+  { label: 'Activity / Task', width: '10%' },
+  { label: 'Deliverable', width: '8%' },
+  { label: 'Date', width: '8%' },
+  { label: 'Hrs RG', width: '6%' },
+  { label: 'Hrs OT', width: '6%' },
+  { label: 'Bk Hrs', width: '6%' },
+  { label: 'Comment', width: '7%' },
+  /* "Valid." rather than "Validated": the heading, not the Yes/No under it,
+     was setting this column's width. */
+  { label: 'Valid.', width: '5%' },
+  { label: 'Active', width: '6%' },
+  { label: 'Actions', width: '6%' },
 ]
+const EMPLOYEE_COLUMN = { label: 'Employee', width: '9%' }
 
 export interface TimesheetTableProps {
   rows: EnrichedTimesheetRow[]
@@ -24,16 +45,19 @@ export interface TimesheetTableProps {
   onDuplicate?: (row: EnrichedTimesheetRow) => void
   onDelete?: (row: EnrichedTimesheetRow) => void
   onToggleValidated?: (row: EnrichedTimesheetRow) => void
+  /** Drop the table's own card border — it is already inside one, e.g. under
+      the Hours Worked tab strip. */
+  bare?: boolean
   /** Rendered as the table's own footer bar — inside the same card, not a
       second box below it. Typically an <AutoLoadFooter>. */
   pagination?: ReactNode
 }
 
 export function TimesheetTable({
-  rows, loading = false, showEmployee = false, canValidate = false,
+  rows, loading = false, showEmployee = false, canValidate = false, bare = false,
   onView, onEdit, onDuplicate, onDelete, onToggleValidated, pagination,
 }: TimesheetTableProps) {
-  const headers = showEmployee ? ['Employee', ...BASE_HEADERS] : BASE_HEADERS
+  const columns = showEmployee ? [EMPLOYEE_COLUMN, ...BASE_COLUMNS] : BASE_COLUMNS
 
   const actionsFor = (row: EnrichedTimesheetRow): ActionsMenuItem[] => {
     const view: ActionsMenuItem = { label: 'View', icon: <Eye size={16} />, onSelect: () => onView?.(row) }
@@ -52,14 +76,15 @@ export function TimesheetTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+    <div className={bare ? '' : 'overflow-hidden rounded-sm border border-border-default bg-neutral-25'}>
       <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left" style={{ minWidth: 1280 }}>
+      <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 1180 }}>
         <caption className="sr-only">Timesheet entries</caption>
         <thead>
           <tr className="border-b border-border-default bg-neutral-50">
-            {headers.map((h) => (
-              <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+            {columns.map((c) => (
+              <th key={c.label} scope="col" style={{ width: c.width }}
+                className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-secondary">{c.label}</th>
             ))}
           </tr>
         </thead>
@@ -67,8 +92,8 @@ export function TimesheetTable({
           {loading
             ? Array.from({ length: 6 }, (_, i) => (
                 <tr key={i} className="border-b border-border-default last:border-b-0">
-                  {headers.map((h) => (
-                    <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>
+                  {columns.map((c) => (
+                    <td key={c.label} className="px-sm py-base"><Skeleton className="h-4 w-full" /></td>
                   ))}
                 </tr>
               ))
@@ -78,33 +103,39 @@ export function TimesheetTable({
                   onClick={() => onView?.(row)}
                   className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
                 >
-                  {showEmployee && <td className="px-lg py-base align-top text-sm text-text-primary">{row.employeeName}</td>}
-                  <td className="px-lg py-base align-top">
+                  {showEmployee && <td className="px-sm py-base align-middle"><PersonCell name={row.employeeName} /></td>}
+                  <td className="px-sm py-base align-middle">
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); onView?.(row) }}
-                      className="text-left text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+                      className="block w-full min-w-0 text-left underline-offset-2 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
                     >
-                      {row.projectLabel}
+                      <span className="block truncate text-sm font-semibold text-text-primary">{row.projectLabel}</span>
+                      <span className="block truncate text-xs text-text-secondary">{row.projectDescription}</span>
                     </button>
                   </td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 200 }}><Truncate>{row.projectDescription}</Truncate></td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 160 }}><Truncate>{row.workPackageTitle}</Truncate></td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 160 }}><Truncate>{row.activityTitle}</Truncate></td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary">{row.task || '—'}</td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary">{row.deliverableNumber || '—'}</td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary">{row.workingDate}</td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary">{row.hoursRegular.toFixed(2)}</td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary">{row.hoursOvertime.toFixed(2)}</td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary">{row.bankHoursRegular.toFixed(2)}</td>
-                  <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 180 }}><Truncate>{row.comment || '—'}</Truncate></td>
-                  <td className="px-lg py-base align-top">
+                  <td className="px-sm py-base align-middle text-sm text-text-primary">
+                    <span className="block truncate">{row.workPackageTitle}</span>
+                  </td>
+                  <td className="px-sm py-base align-middle">
+                    <span className="block truncate text-sm text-text-primary">{row.activityTitle}</span>
+                    <span className="block truncate text-xs text-text-secondary">{row.task || '—'}</span>
+                  </td>
+                  <td className="px-sm py-base align-middle text-sm text-text-primary">
+                    <span className="block truncate">{row.deliverableNumber || '—'}</span>
+                  </td>
+                  <td className="px-sm py-base align-middle text-sm text-text-primary">{row.workingDate}</td>
+                  <td className="px-sm py-base align-middle text-sm text-text-primary">{row.hoursRegular.toFixed(2)}</td>
+                  <td className="px-sm py-base align-middle text-sm text-text-primary">{row.hoursOvertime.toFixed(2)}</td>
+                  <td className="px-sm py-base align-middle text-sm text-text-primary">{row.bankHoursRegular.toFixed(2)}</td>
+                  <td className="px-sm py-base align-middle text-sm text-text-primary"><span className="block truncate">{row.comment || '—'}</span></td>
+                  <td className="px-sm py-base align-middle">
                     <Badge tone={row.validated ? 'success' : 'neutral'}>{row.validated ? 'Yes' : 'No'}</Badge>
                   </td>
-                  <td className="px-lg py-base align-top">
+                  <td className="px-sm py-base align-middle">
                     <Badge tone={row.active ? 'success' : 'danger'}>{row.active ? 'Active' : 'Inactive'}</Badge>
                   </td>
-                  <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-sm py-base align-middle" onClick={(e) => e.stopPropagation()}>
                     <ActionsMenu ariaLabel={`Actions for timesheet entry on ${row.workingDate}`} items={actionsFor(row)} />
                   </td>
                 </tr>

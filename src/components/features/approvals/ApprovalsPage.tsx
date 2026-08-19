@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Award, Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
+import { ApprovalsTabs } from './ApprovalsTabs'
 import { StatCard } from '@/components/patterns/StatCard'
 import { FilterChips } from '@/components/patterns/FilterChips'
 import { EmptyState } from '@/components/patterns/EmptyState'
@@ -11,6 +12,7 @@ import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Truncate } from '@/components/patterns/Truncate'
 import { Badge } from '@/components/ui/Badge'
+import { ChipOverflow } from '@/components/patterns/ChipOverflow'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
@@ -22,7 +24,19 @@ import { useProjectsStore } from '@/stores/projectsStore'
 import { useLookupStore } from '@/stores/lookupStore'
 import type { Approval } from '@/types/documents'
 
-const HEADERS = ['Number', 'Description', 'Primary', 'Approval Holder', 'Aircraft', 'Current Revision', 'Projects', 'Actions']
+/** Shares, not fixed widths — the table scales with the page and cannot
+    overflow. "Approval Holder" → "Holder" and "Current Revision" → "Revision":
+    both headings, not their values, were setting their columns' width. */
+const COLUMNS: { label: string; width: string }[] = [
+  { label: 'Number', width: '13%' },
+  { label: 'Description', width: '25%' },
+  { label: 'Primary', width: '8%' },
+  { label: 'Holder', width: '10%' },
+  { label: 'Aircraft', width: '15%' },
+  { label: 'Revision', width: '11%' },
+  { label: 'Projects', width: '10%' },
+  { label: 'Actions', width: '8%' },
+]
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -108,7 +122,7 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
 
   if (state === 'error') {
     return (
-      <AppShell title="Approvals" activeItem="Approvals" activeChild="Approvals List">
+      <AppShell title="Approvals" activeItem="Approvals">
         <Alert title="We couldn't load approvals">
           Refresh the page, and if it keeps happening, contact your administrator.
         </Alert>
@@ -120,7 +134,6 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
     <AppShell
       title="Approvals"
       activeItem="Approvals"
-      activeChild="Approvals List"
       headerActions={
         <>
           <div className="min-w-0" style={{ width: 400 }}>
@@ -156,13 +169,9 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
           ))}
         </div>
 
-        <p className="text-sm text-text-secondary">
-          Certificates are created and managed here. Open one for its revision history, the aircraft and
-          airframes it covers, and the projects it is linked to. One certificate can serve several.
-        </p>
-
         {!loading && filtered.length === 0 ? (
-          <div className="rounded-sm border border-border-default bg-neutral-25">
+          <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+            <ApprovalsTabs active="approvals" />
             <EmptyState
               icon={<Award size={48} strokeWidth={1.5} />}
               title={query || hasFilters ? 'No approvals match your search' : 'No approvals yet'}
@@ -176,13 +185,15 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
           </div>
         ) : (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+            <ApprovalsTabs active="approvals" />
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left" style={{ minWidth: 1180 }}>
+              <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 900 }}>
                 <caption className="sr-only">Approvals, with the projects each is attached to</caption>
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
-                    {HEADERS.map((h) => (
-                      <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                    {COLUMNS.map((c) => (
+                      <th key={c.label} scope="col" style={{ width: c.width }}
+                        className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-secondary">{c.label}</th>
                     ))}
                   </tr>
                 </thead>
@@ -190,7 +201,7 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
                   {loading
                     ? Array.from({ length: 6 }, (_, i) => (
                         <tr key={i} className="border-b border-border-default last:border-b-0">
-                          {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                          {COLUMNS.map((c) => <td key={c.label} className="px-sm py-base"><Skeleton className="h-4 w-full" /></td>)}
                         </tr>
                       ))
                     : filtered.slice(0, visibleCount).map((a) => {
@@ -201,48 +212,47 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
                             onClick={() => navigate(`/approvals/${a.id}`)}
                             className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
                           >
-                            <td className="whitespace-nowrap px-lg py-base align-top">
+                            <td className="px-sm py-base align-middle">
                               <Link
                                 to={`/approvals/${a.id}`}
                                 onClick={(e) => e.stopPropagation()}
-                                className="text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline"
+                                className="block truncate text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline"
                               >
                                 {a.number}
                               </Link>
-                              {!a.active && <span className="ml-xs text-xs text-text-muted">Inactive</span>}
+                              {!a.active && <span className="block text-xs text-text-muted">Inactive</span>}
                             </td>
-                            <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 260 }}>
-                              <Truncate>{a.description}</Truncate>
+                            <td className="px-sm py-base align-middle text-sm text-text-primary">
+                              <Truncate lines={2}>{a.description}</Truncate>
                             </td>
-                            <td className="whitespace-nowrap px-lg py-base align-top">
+                            <td className="whitespace-nowrap px-sm py-base align-middle">
                               <Badge tone={a.primary ? 'info' : 'neutral'}>{a.primary ? 'Primary' : 'Change'}</Badge>
                             </td>
-                            <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 180 }}>
-                              <Truncate>{a.designApprovalHolder || '—'}</Truncate>
+                            <td className="px-sm py-base align-middle text-sm text-text-primary">
+                              <span className="block truncate">{a.designApprovalHolder || '—'}</span>
                             </td>
-                            <td className="px-lg py-base align-top">
-                              {aircraftLabels(a).length === 0
-                                ? <span className="text-sm text-text-muted">—</span>
-                                : <div className="flex flex-wrap gap-xs">
-                                    {aircraftLabels(a).map((m) => <Badge key={m} appearance="outline">{m}</Badge>)}
-                                  </div>}
+                            <td className="px-sm py-base align-middle">
+                              <ChipOverflow items={aircraftLabels(a)} label="aircraft" />
                             </td>
-                            <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
+                            <td className="whitespace-nowrap px-sm py-base align-middle">
                               {(() => {
                                 const cr = currentRevision(a.id)
-                                return cr ? `Rev ${cr.revision} · ${cr.revisionDate}` : <span className="text-text-muted">Not issued yet</span>
+                                return cr ? (
+                                  <>
+                                    <span className="block text-sm text-text-primary">Rev {cr.revision}</span>
+                                    <span className="block text-xs text-text-muted">{cr.revisionDate}</span>
+                                  </>
+                                ) : <span className="text-sm text-text-muted">Not issued</span>
                               })()}
                             </td>
                             {/* The count is the point: it's what makes deleting
                                 a shared certificate obviously dangerous. */}
-                            <td className="px-lg py-base align-top">
+                            <td className="px-sm py-base align-middle">
                               {labels.length === 0
                                 ? <span className="text-sm text-text-muted">Not linked</span>
-                                : <div className="flex flex-wrap gap-xs">
-                                    {labels.map((l) => <Badge key={l} appearance="outline">{l}</Badge>)}
-                                  </div>}
+                                : <ChipOverflow items={labels} label="projects" />}
                             </td>
-                            <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
+                            <td className="px-sm py-base align-middle" onClick={(e) => e.stopPropagation()}>
                               <ActionsMenu
                                 ariaLabel={`Actions for approval ${a.number}`}
                                 items={[

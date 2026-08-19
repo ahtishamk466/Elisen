@@ -7,7 +7,7 @@ import { PersonSelect } from '@/components/ui/PersonSelect'
 import { Textarea } from '@/components/ui/Textarea'
 import type { ProjectListRow } from '@/types/project'
 import type { WorkPackage } from '@/types/workPackage'
-import type { CatalogActivity } from '@/lib/activityCatalog'
+import type { Activity, Task } from '@/types/catalog'
 import type { DeliverableRevision } from '@/types/tcca'
 import type { Errors, TimesheetEntryValues } from './useTimesheetEntryForm'
 
@@ -23,8 +23,10 @@ export interface TimesheetEntryFormFieldsProps {
   employeeOptions: string[]
   projects: ProjectListRow[]
   workPackageOptions: WorkPackage[]
-  activityOptions: CatalogActivity[]
-  taskOptions: string[]
+  activityOptions: Activity[]
+  taskOptions: Task[]
+  /** The chosen activity, which decides whether Task is shown at all. */
+  activity?: Activity
   deliverableOptions: DeliverableRevision[]
 }
 
@@ -32,7 +34,7 @@ export interface TimesheetEntryFormFieldsProps {
     file under ~200 lines (CLAUDE.md rule). View mode never renders this. */
 export function TimesheetEntryFormFields({
   values, errors, hasErrors, setField, setProject, setWorkPackage, setActivity,
-  employeeMode, employeeOptions, projects, workPackageOptions, activityOptions, taskOptions, deliverableOptions,
+  employeeMode, employeeOptions, projects, workPackageOptions, activityOptions, taskOptions, deliverableOptions, activity,
 }: TimesheetEntryFormFieldsProps) {
   return (
     <>
@@ -87,17 +89,26 @@ export function TimesheetEntryFormFields({
             {activityOptions.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </Select>
         </FormField>
-        <FormField
-          label="Task" htmlFor="task"
-          help={values.activityId && taskOptions.length === 0 ? 'No tasks associated with this activity.' : undefined}
-        >
-          <Select
-            id="task" value={values.task} disabled={!values.activityId || taskOptions.length === 0}
-            placeholder="Select a task..." onChange={(e) => setField('task', e.target.value)}
+        {/* The requirement doc's "hide Task when activity does not require one":
+            the field is gone rather than sitting there disabled and empty. It
+            still shows before an activity is picked, so the form does not jump
+            around as you fill it in. */}
+        {(!values.activityId || activity?.taskRequired) && (
+          <FormField
+            label="Task" htmlFor="task" required={!!activity?.taskRequired} error={errors.task}
+            help={values.activityId && taskOptions.length === 0
+              ? 'This activity requires a task but has none linked. An administrator can link one in Reference Data → Activities & Tasks.'
+              : undefined}
           >
-            {taskOptions.map((t) => <option key={t} value={t}>{t}</option>)}
-          </Select>
-        </FormField>
+            <Select
+              id="task" value={values.task} error={!!errors.task}
+              disabled={!values.activityId || taskOptions.length === 0}
+              placeholder="Select a task..." onChange={(e) => setField('task', e.target.value)}
+            >
+              {taskOptions.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
+            </Select>
+          </FormField>
+        )}
         <FormField
           label="Deliverable" htmlFor="deliverableRevisionId"
           help={values.projectId && deliverableOptions.length === 0 ? 'No deliverables tracked on this project yet.' : undefined}

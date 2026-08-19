@@ -1,10 +1,13 @@
 import { useState } from 'react'
-import { ChevronDown, Pencil, Trash2, CheckCircle2, RotateCcw, Plus } from 'lucide-react'
+import { ChevronDown, Eye, Pencil, Trash2, CheckCircle2, RotateCcw, Plus } from 'lucide-react'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
+import { ChipOverflow } from '@/components/patterns/ChipOverflow'
+import { PersonCell } from '@/components/patterns/PersonCell'
 import { BudgetInline, ProgressMeter } from '@/components/patterns/ProgressMeter'
-import { activityName, ACTIVITY_TASKS } from '@/lib/activityCatalog'
+import { activityName, tasksForActivity } from '@/lib/catalog'
+import { useCatalogStore } from '@/stores/catalogStore'
 import { HEALTH_LABEL, HEALTH_TONE, formatHours, formatPct, healthOf, rollUpActivities } from '@/lib/projectHealth'
 import type { WorkPackage, WorkPackageActivity, WorkPackageStatus } from '@/types/workPackage'
 
@@ -25,13 +28,19 @@ export interface WorkPackageCardProps {
   onAddActivity: () => void
   onEditActivity: (a: WorkPackageActivity) => void
   onRemoveActivity: (a: WorkPackageActivity) => void
+  /** Opens the activity in full — also what "+N more" on Tasks does. */
+  onViewActivity: (a: WorkPackageActivity) => void
 }
 
 export function WorkPackageCard({
   wp, activities, defaultOpen = false,
-  onEdit, onDelete, onToggleComplete, onAddActivity, onEditActivity, onRemoveActivity,
+  onEdit, onDelete, onToggleComplete, onAddActivity, onEditActivity, onRemoveActivity, onViewActivity,
 }: WorkPackageCardProps) {
   const [open, setOpen] = useState(defaultOpen)
+  const activities_ = useCatalogStore((s) => s.activities)
+  const tasks = useCatalogStore((s) => s.tasks)
+  const links = useCatalogStore((s) => s.links)
+  const catalog = { activities: activities_, tasks, links }
   const health = rollUpActivities(activities, wp.status === 'complete')
 
   return (
@@ -73,17 +82,16 @@ export function WorkPackageCard({
 
       {open && (
         <div className="grid gap-base border-t border-border-default p-lg">
-          {wp.description && <p className="text-sm text-text-secondary">{wp.description}</p>}
 
           {activities.length === 0 ? (
             <p className="text-sm text-text-muted">No activities yet, add who will do this work.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left" style={{ minWidth: 860 }}>
+              <table className="w-full border-collapse text-left" style={{ minWidth: 780 }}>
                 <caption className="sr-only">Activities in {wp.title}, with budget health each</caption>
                 <thead>
                   <tr className="border-b border-border-default">
-                    {['Activity', 'Responsible', 'Budget', 'Actual', 'Remaining', 'Budget used', 'Status', 'Tasks', 'Actions'].map((h) => (
+                    {['Activity', 'Responsible', 'Actual / Budget', 'Remaining', 'Used', 'Status', 'Tasks', 'Actions'].map((h) => (
                       <th
                         key={h}
                         scope="col"
@@ -100,43 +108,33 @@ export function WorkPackageCard({
                     const over = ah.remaining < 0
                     return (
                     <tr key={a.id} className="border-b border-border-default last:border-b-0">
-                      <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">{activityName(a.activityId)}</td>
-                      <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">{a.responsible}</td>
+                      <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">{activityName(activities_, a.activityId)}</td>
+                      <td className="px-sm py-sm"><PersonCell name={a.responsible} /></td>
+                      {/* Spent against budgeted, side by side: the two numbers
+                          a reader compares, in one glance rather than two. */}
                       <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">
-                        {ah.budget > 0 ? formatHours(ah.budget) : '—'}
+                        {ah.budget > 0 ? `${formatHours(ah.actual)} / ${formatHours(ah.budget)}` : `${formatHours(ah.actual)} / no budget`}
                       </td>
-                      <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">{formatHours(ah.actual)}</td>
                       <td className={`whitespace-nowrap px-sm py-sm text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
                         {ah.budget > 0 ? `${over ? '−' : ''}${formatHours(Math.abs(ah.remaining))}` : '—'}
                       </td>
-                      <td className="px-sm py-sm" style={{ minWidth: 120 }}>
-                        <div className="flex items-center gap-sm">
-                          <div className="min-w-0 flex-1">
-                            <ProgressMeter health={ah} size="sm" ariaLabel={`${activityName(a.activityId)} budget`} />
-                          </div>
-                          <span className="w-9 shrink-0 text-xs font-semibold text-text-primary">
-                            {formatPct(ah.progressPct)}
-                          </span>
-                        </div>
+                      <td className="whitespace-nowrap px-sm py-sm">
+                        <span className="block text-sm text-text-primary">{formatPct(ah.progressPct)}</span>
+                        <span className="mt-xxss block" style={{ width: 44 }}>
+                          <ProgressMeter health={ah} size="sm" ariaLabel={`${activityName(activities_, a.activityId)} budget`} />
+                        </span>
                       </td>
                       <td className="whitespace-nowrap px-sm py-sm">
                         <Badge tone={HEALTH_TONE[ah.state]}>{HEALTH_LABEL[ah.state]}</Badge>
                       </td>
-                      <td className="px-sm py-sm">
-                        <span className="flex max-w-64 flex-wrap gap-xs">
-                          {(ACTIVITY_TASKS[a.activityId] ?? []).length === 0 ? (
-                            <span className="text-sm text-text-muted">—</span>
-                          ) : (
-                            ACTIVITY_TASKS[a.activityId].map((t) => (
-                              <span key={t} className="whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{t}</span>
-                            ))
-                          )}
-                        </span>
+                      <td className="px-sm py-sm" style={{ maxWidth: 220 }}>
+                        <ChipOverflow items={tasksForActivity(catalog, a.activityId, true).map((t) => t.name)} label="tasks" onShowAll={() => onViewActivity(a)} />
                       </td>
                       <td className="px-sm py-sm">
                         <ActionsMenu
-                          ariaLabel={`Actions for activity ${activityName(a.activityId)}`}
+                          ariaLabel={`Actions for activity ${activityName(activities_, a.activityId)}`}
                           items={[
+                            { label: 'View', icon: <Eye size={16} />, onSelect: () => onViewActivity(a) },
                             { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => onEditActivity(a) },
                             { label: 'Remove', icon: <Trash2 size={16} />, onSelect: () => onRemoveActivity(a), tone: 'danger' },
                           ]}

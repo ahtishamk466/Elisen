@@ -1,0 +1,94 @@
+import { Drawer } from '@/components/patterns/Drawer'
+import { FormSection } from '@/components/patterns/FormSection'
+import { PersonCell } from '@/components/patterns/PersonCell'
+import { ProgressMeter } from '@/components/patterns/ProgressMeter'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
+import { activityName, tasksForActivity, type Catalog } from '@/lib/catalog'
+import { HEALTH_LABEL, HEALTH_TONE, formatHours, formatPct, healthOf } from '@/lib/projectHealth'
+import type { WorkPackage, WorkPackageActivity } from '@/types/workPackage'
+
+export interface ActivityViewDrawerProps {
+  activity: WorkPackageActivity
+  workPackage: WorkPackage
+  catalog: Catalog
+  onClose: () => void
+  onEdit: () => void
+  onRemove: () => void
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs text-text-muted">{label}</p>
+      <div className="mt-xxss text-sm text-text-primary">{children}</div>
+    </div>
+  )
+}
+
+/**
+ * One activity in full: its budget, who owns it, and **every task it carries**.
+ *
+ * The row can only show two task chips before it would break the two-line rule,
+ * so "+N more" opens this rather than expanding the row — the table keeps its
+ * shape and the full list gets somewhere it can be read properly. Edit and
+ * Delete sit here too, so the row's menu and this view offer the same actions.
+ */
+export function ActivityViewDrawer({ activity, workPackage, catalog, onClose, onEdit, onRemove }: ActivityViewDrawerProps) {
+  const health = healthOf(activity.budgetHours, activity.actualHours, workPackage.status === 'complete')
+  const tasks = tasksForActivity(catalog, activity.activityId, true)
+  const name = activityName(catalog.activities, activity.activityId)
+
+  return (
+    <Drawer
+      open
+      onClose={onClose}
+      title={`${name}: ${workPackage.title}`}
+      footer={
+        <div className="flex w-full items-center justify-between gap-sm">
+          <Button variant="tertiary" onClick={() => { onRemove(); onClose() }}>Remove activity</Button>
+          <div className="flex gap-sm">
+            <Button variant="secondary" onClick={onClose}>Close</Button>
+            <Button onClick={() => { onEdit(); onClose() }}>Edit</Button>
+          </div>
+        </div>
+      }
+    >
+      <FormSection title="Activity" subtitle="Who performs this work, and how it is tracking against its budget.">
+        <div className="grid grid-cols-2 gap-lg">
+          <Field label="Activity">{name}</Field>
+          <Field label="Work package">{workPackage.title}</Field>
+          <Field label="Responsible"><PersonCell name={activity.responsible} /></Field>
+          <Field label="Status"><Badge tone={HEALTH_TONE[health.state]}>{HEALTH_LABEL[health.state]}</Badge></Field>
+        </div>
+      </FormSection>
+
+      <FormSection title="Budget" subtitle="Hours spent against hours budgeted.">
+        <div className="grid grid-cols-3 gap-lg">
+          <Field label="Actual / Budget">
+            {health.budget > 0 ? `${formatHours(health.actual)} / ${formatHours(health.budget)}` : `${formatHours(health.actual)} / no budget`}
+          </Field>
+          <Field label="Remaining">
+            <span className={health.remaining < 0 ? 'font-semibold text-danger' : ''}>
+              {health.budget > 0 ? `${health.remaining < 0 ? '−' : ''}${formatHours(Math.abs(health.remaining))}` : '—'}
+            </span>
+          </Field>
+          <Field label="Used">{formatPct(health.progressPct)}</Field>
+        </div>
+        <ProgressMeter health={health} ariaLabel={`${name} budget`} />
+      </FormSection>
+
+      <FormSection title="Tasks" subtitle="Every task this activity offers in Time Entry.">
+        {tasks.length === 0 ? (
+          <p className="text-sm text-text-muted">No tasks linked to this activity.</p>
+        ) : (
+          <div className="flex flex-wrap gap-xs">
+            {tasks.map((t) => (
+              <span key={t.id} className="whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{t.name}</span>
+            ))}
+          </div>
+        )}
+      </FormSection>
+    </Drawer>
+  )
+}
