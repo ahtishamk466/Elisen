@@ -4,7 +4,7 @@ import { employeeByName } from './employeeFixtures'
 import { healthOf, type Health } from './projectHealth'
 import type { TimesheetEntry } from '@/types/timesheet'
 import type { ProjectListRow } from '@/types/project'
-import type { WorkPackage, WorkPackageActivity } from '@/types/workPackage'
+import type { WorkPackage, WorkPackageActivity, WorkPackageStatus } from '@/types/workPackage'
 
 /**
  * Hours rolled up per person, across every project — the aggregate behind the
@@ -65,12 +65,36 @@ export interface PersonActivityLine {
   health: Health
 }
 
+/**
+ * A person's lines within one work package, with that package's sub-total.
+ *
+ * The level the flat grouping used to skip. A person's work is *organised* as
+ * project → work package → activity, and a reader asking "where did my 40
+ * hours on 3369 go" wants the package answer before the activity one — the
+ * package is the unit of work that gets planned, quoted and reported on.
+ */
+export interface PersonPackageGroup {
+  workPackageId: string
+  workPackageTitle: string
+  /** Absent when the package has been deleted out from under its hours. */
+  status?: WorkPackageStatus
+  lines: PersonActivityLine[]
+  health: Health
+  overtime: number
+  banked: number
+  entries: number
+  unvalidated: number
+}
+
 /** A person's lines within one project, with that project's sub-total. */
 export interface PersonProjectGroup {
   projectId: string
   projectLabel: string
   projectTitle: string
+  /** Every line in the project, flat — the comparable-rows view. */
   lines: PersonActivityLine[]
+  /** The same lines nested under their work package, for the detail view. */
+  packages: PersonPackageGroup[]
   health: Health
   overtime: number
   banked: number
@@ -250,7 +274,7 @@ export function summarisePeople({
       if (!g) {
         g = {
           projectId: line.projectId, projectLabel: line.projectLabel, projectTitle: line.projectTitle,
-          lines: [], health: healthOf(0, 0), overtime: 0, banked: 0, entries: 0, unvalidated: 0,
+          lines: [], packages: [], health: healthOf(0, 0), overtime: 0, banked: 0, entries: 0, unvalidated: 0,
         }
         byProject.set(line.projectId, g)
       }
@@ -267,6 +291,35 @@ export function summarisePeople({
         g.lines.reduce((s, l) => s + l.budget, 0),
         g.lines.reduce((s, l) => s + l.actual, 0),
       )
+
+      /* The same lines again, nested under their package. Built from the
+         sorted flat list so the packages come out in the order the flat view
+         shows them, and every sub-total is the sum of the rows under it
+         rather than a second, independently-derived figure that could drift. */
+      const byPackage = new Map<string, PersonPackageGroup>()
+      for (const line of g.lines) {
+        let p = byPackage.get(line.workPackageId)
+        if (!p) {
+          p = {
+            workPackageId: line.workPackageId, workPackageTitle: line.workPackageTitle,
+            status: packageById.get(line.workPackageId)?.status,
+            lines: [], health: healthOf(0, 0), overtime: 0, banked: 0, entries: 0, unvalidated: 0,
+          }
+          byPackage.set(line.workPackageId, p)
+        }
+        p.lines.push(line)
+        p.overtime += line.overtime
+        p.banked += line.banked
+        p.entries += line.entries
+        p.unvalidated += line.unvalidated
+      }
+      for (const p of byPackage.values()) {
+        p.health = healthOf(
+          p.lines.reduce((s, l) => s + l.budget, 0),
+          p.lines.reduce((s, l) => s + l.actual, 0),
+        )
+      }
+      g.packages = [...byPackage.values()]
     }
 
     const nonProject = [...(nonProjectPerPerson.get(name)?.values() ?? [])]

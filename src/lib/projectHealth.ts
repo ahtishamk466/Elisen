@@ -40,11 +40,15 @@ export function healthOf(budget: number, actual: number, complete = false): Heal
   return { budget, actual, remaining, progressPct, state }
 }
 
+/* Title Case throughout — matches WP_STATUS_LABEL and ProjectStatus's own
+   STATUS_LABEL ("In Progress", "On Hold"), which this set was the one
+   holdout against (sentence case) despite reading the same badge shape
+   everywhere it's used. */
 export const HEALTH_LABEL: Record<HealthState, string> = {
-  'no-budget': 'No budget set',
-  'on-track': 'On track',
-  'at-risk': 'Near budget',
-  'over-budget': 'Over budget',
+  'no-budget': 'No Budget Set',
+  'on-track': 'On Track',
+  'at-risk': 'Near Budget',
+  'over-budget': 'Over Budget',
   complete: 'Complete',
 }
 

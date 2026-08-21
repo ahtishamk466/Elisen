@@ -67,12 +67,13 @@ interface Column {
 }
 
 /** Below this the flexible three would start truncating everything — must
-    equal the sum of the three flex columns' own `min`. Adding the Active
-    column and Company/Contact's longer heading cost this table its old
-    exact fit at 1280; every fixed and flex column here is already at its
-    own content or heading floor (verified live), so the small residual
-    scroll below is the honest remainder, not an untried optimisation. */
-const FLEX_FLOOR = 291
+    equal the sum of the three flex columns' own `min` (145 + 121 + 102).
+    Every `fixed` and `min` on this table is its content's own floor plus the
+    32px column gutter, so this number moves whenever that gutter does. The
+    wider gutter buys legibility at the price of an exact fit on a 1280
+    laptop: the table declares 1109px against ~959 of page there and scrolls
+    the remainder, rather than closing the gaps back up. */
+const FLEX_FLOOR = 368
 
 /**
  * Seven columns, and **no horizontal scroll**: the table used to declare a
@@ -91,24 +92,34 @@ const COLUMNS: Column[] = [
      **Flex** ones hold free text that truncates, so every pixel the fixed
      columns don't need is split between them. Percentages for all ten grew the
      date column on a 1728px screen while the project names were still cut off. */
-  { label: 'Project', sort: 'number', flex: 52, min: 84 },
+  /* Project's floor is set above its heading rather than at it: it is the
+     column a reader starts every scan in, and it is the only one holding two
+     lines of free text, so it leads the table at every width instead of
+     collapsing to the narrowest column on the row. It is also the one column
+     with no `max`, so every pixel the others don't claim lands here.
+     min 110 → 145: a project number plus a truncated title read as cramped
+     at the old floor, and this is the one column meant to lead the row. */
+  { label: 'Project', sort: 'number', flex: 52, min: 145 },
   {
     label: 'Priority/Type',
-    fixed: 118,
+    fixed: 126,
     sorts: [{ key: 'priority', label: 'Priority' }, { key: 'type', label: 'Type' }],
   },
   {
     label: 'Company/Contact',
     shortLabel: 'Co./Contact',
-    fullLabelMin: 150,
+    fullLabelMin: 158,
     flex: 26,
-    min: 113,
-    max: 248,
+    min: 121,
+    max: 256,
     sorts: [{ key: 'company', label: 'Company' }, { key: 'contact', label: 'Contact' }],
   },
-  { label: 'Person Res.', flex: 22, min: 94, max: 208 },
-  /* One line: the column has the width now, and a date reads as one thing. */
-  { label: 'Opened', sort: 'opened', fixed: 113 },
+  { label: 'Person Res.', flex: 22, min: 102, max: 216 },
+  /* One line: a date reads as one thing. Sized to the widest month name
+     rather than the average — "May 23, 2026" needs 100px where "Jul 6, 2026"
+     needs 84, and the column was quietly breaking the wide ones over two
+     lines at the old figure. */
+  { label: 'Opened', sort: 'opened', fixed: 132 },
   /* One column for the whole budget question, because it *is* one question and
      only two of its four numbers are independent — remaining is budget minus
      actual, used is actual over budget. Split across two columns it read as
@@ -119,7 +130,10 @@ const COLUMNS: Column[] = [
   {
     label: 'Budget',
     financial: true,
-    align: 'right',
+    /* 212 → 204: measured its true worst case live (widest single-project
+       actual/budget pair, the widest over-budget phrase, the meter at its
+       narrowed 36px) rather than guessing — this is that floor plus the
+       32px gutter, not an arbitrary trim. */
     fixed: 204,
     sorts: [
       { key: 'actual', label: 'Actual' },
@@ -128,9 +142,20 @@ const COLUMNS: Column[] = [
       { key: 'progress', label: 'Used' },
     ],
   },
-  { label: 'Status', fixed: 105 },
-  { label: 'Active', fixed: 74 },
-  { label: 'Actions', fixed: 69 },
+  /* Status and Active measured live, both already exactly tight for their
+     own widest label — "In Progress" (Status) and "Inactive" (Active) each
+     leave 5px or less of trailing room on their own row. Any shorter status
+     or "Active" leaves more visible space after it than "In Progress" or
+     "Inactive" do, the same way a short name leaves more space in
+     Person Res. than a long one — that variation is inherent to a
+     fixed-width column holding text of different lengths, not slack to
+     trim, so neither width changed. */
+  { label: 'Status', fixed: 113 },
+  { label: 'Active', fixed: 82 },
+  /* 77 → 58: the 3-dot trigger is a 26px button behind 16px of padding on
+     each side (58px) — 19px of dead space past that, more than any other
+     column carries, and nothing else in this cell ever grows into it. */
+  { label: 'Actions', fixed: 58 },
 ]
 
 export interface ProjectsTableProps {
@@ -212,8 +237,17 @@ export function ProjectsTable({
       <button
         type="button"
         onClick={() => onSortChange?.({ key, dir: active && sort?.dir === 'asc' ? 'desc' : 'asc' })}
+        /* Every heading keeps the <th>'s own weight and colour, active or not.
+           Darkening the sorted one to text-primary read as a second, heavier
+           font next to its grey neighbours — the blue arrow already says which
+           column is sorted, without a second cue that looks like a typo. */
+        /* `w-full` is what makes `justify-end` mean anything: a <button> is a
+           form control, so it shrinks to fit its text even at `display:flex`
+           — the heading sat left of a 212px cell with 135px of empty space
+           after it, while the <th>'s own `text-right` had no inline content
+           left to align. */
         className={`flex items-center gap-xs whitespace-nowrap rounded-sm transition-colors duration-fast hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
-          ${c.align === 'right' ? 'justify-end' : ''} ${active ? 'text-text-primary' : ''}`}
+          ${c.align === 'right' ? 'w-full justify-end' : ''}`}
       >
         {c.label}
         <Icon size={14} aria-hidden className={active ? 'text-accent' : 'text-text-muted'} />
@@ -247,7 +281,7 @@ export function ProjectsTable({
                   scope="col"
                   aria-sort={sort && (c.sort === sort.key || c.sorts?.some((o) => o.key === sort.key))
                     ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
-                  className={`whitespace-nowrap px-base py-base align-middle text-xs font-semibold text-text-secondary ${c.align === 'right' ? 'text-right' : ''}`}
+                  className={`whitespace-nowrap px-lg py-base align-middle text-xs font-semibold text-text-secondary ${c.align === 'right' ? 'text-right' : ''}`}
                 >
                   {c.sorts && onSortChange
                     ? <SortMenu label={label} options={c.sorts} sort={sort} onChange={onSortChange} align={c.align} />
@@ -262,7 +296,7 @@ export function ProjectsTable({
             ? Array.from({ length: 6 }, (_, i) => (
                 <tr key={i} className="border-b border-border-default last:border-b-0">
                   {Array.from({ length: columns.length }, (_, j) => (
-                    <td key={j} className="px-base py-base"><Skeleton className="h-4 w-full" /></td>
+                    <td key={j} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>
                   ))}
                 </tr>
               ))
@@ -276,7 +310,7 @@ export function ProjectsTable({
                   >
                     {/* Number leads — it is how a project is asked for — with
                         the title under it as the line that confirms the row. */}
-                    <td className="px-base py-base align-middle">
+                    <td className="px-lg py-base align-middle">
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onView?.(row) }}
@@ -290,57 +324,70 @@ export function ProjectsTable({
                     </td>
                     {/* Priority reads as one phrase ("5 - Lowest"), with the
                         project's type under it. */}
-                    <td className="px-base py-base align-middle">
+                    <td className="px-lg py-base align-middle">
                       <span className="block truncate text-sm font-semibold text-text-primary">{PRIORITY_LABEL[row.priority]}</span>
                       <span className="block truncate text-xs text-text-muted">{TYPE_LABEL[row.type]}</span>
                     </td>
                     {/* Both client-side: who we work for, and who we call. */}
-                    <td className="px-base py-base align-middle">
+                    <td className="px-lg py-base align-middle">
                       <span className="block truncate text-sm text-text-primary" title={row.companyName}>{row.companyName}</span>
                       {/* Initials mark line 2 as a person, so a company and its
                           contact are never mistaken for one another. */}
                       <PersonCell name={row.contactName} variant="secondary" />
                     </td>
-                    <td className="px-base py-base align-middle">
+                    <td className="px-lg py-base align-middle">
                       <PersonCell name={row.personResponsible} />
                     </td>
                     {/* ISO, as everywhere else in the app: it is unambiguous
                         across locales and it sorts as text. */}
-                    <td className="px-base py-base align-middle text-sm tabular-nums text-text-primary">
+                    <td className="px-lg py-base align-middle text-sm tabular-nums text-text-primary">
                       <DateText value={row.openedDate} />
                     </td>
                     {canSeeFinancials && (
-                      /* Line 1 is the two real numbers — spent, of what was set
-                         aside — with the budget muted so the eye lands on the
-                         figure that moves. Line 2 is what they mean: how far
-                         through, and what is left, in words, so nobody has to
-                         decode whether a minus sign is good news.
-                         Right-aligned, not left: the column is sized for the
-                         widest row's figures, and a short row's left-aligned
-                         text otherwise strands a ragged gap of empty column
-                         before Status — right-aligning means every row's
-                         content sits flush against the next column instead. */
-                      <td className="whitespace-nowrap px-base py-base align-middle text-right">
-                        <span className="block text-sm tabular-nums">
-                          <span className="font-semibold text-text-primary">{formatHours(health.actual)}</span>
-                          <span className="text-text-muted">
-                            {health.budget > 0 ? ` / ${formatHours(health.budget)}` : ' / no budget'}
-                          </span>
+                      /* Left-aligned, like every other column on this table —
+                         Budget was the one exception, right-aligned on its own
+                         because the column is sized for the widest row's
+                         figures. Consistency with the rest of the table wins.
+                         Line 1 is the two real numbers — spent, of what was set
+                         aside. Line 2 is what they mean: how far through, and
+                         what is left, in words, so nobody has to decode whether
+                         a minus sign is good news. */
+                      <td className="whitespace-nowrap px-lg py-base align-middle">
+                        {/* One weight, one colour, for the whole line: actual
+                            and budget used to be two different colours
+                            (text-primary against text-muted), which read as
+                            two different values rather than one figure with
+                            its target attached. Both are text-primary now,
+                            separated only by the "/" a reader already parses
+                            as "of". */}
+                        <span className="block text-sm tabular-nums text-text-primary">
+                          {formatHours(health.actual)}
+                          {health.budget > 0 ? ` / ${formatHours(health.budget)}` : ' / no budget'}
                         </span>
                         {health.progressPct === null ? (
                           <span className="mt-xxss block text-xs text-text-muted">Not budgeted</span>
                         ) : (
-                          <span className="mt-xxss flex items-center justify-end gap-xs">
-                            <span className="shrink-0" style={{ width: 44 }}>
-                              <ProgressMeter health={health} size="sm" ariaLabel={`Project ${row.number}-${row.subNumber} budget`} />
-                            </span>
-                            <span className={`text-xs tabular-nums ${over ? 'font-semibold text-danger' : 'text-text-secondary'}`}>
-                              {formatPct(health.progressPct)}
-                            </span>
+                          /* Remaining, then the meter, then the percentage — the
+                             same order `RemainingUsedInline` uses on Person
+                             Detail, so the budget line reads identically
+                             wherever it appears. */
+                          <span className="mt-xxss flex items-center gap-xs">
                             <span className={`text-xs tabular-nums ${over ? 'text-danger' : 'text-text-muted'}`}>
                               {over
                                 ? `${formatHours(Math.abs(health.remaining))} over`
                                 : `${formatHours(health.remaining)} left`}
+                            </span>
+                            {/* 44px → 36px: this line is the column's own
+                                width bottleneck (remaining text + meter +
+                                percentage, all three at once) — narrowing
+                                the meter a touch is what let Budget shrink
+                                without cutting off "396.8h over" on its
+                                worst row. */}
+                            <span className="shrink-0" style={{ width: 36 }}>
+                              <ProgressMeter health={health} size="sm" ariaLabel={`Project ${row.number}-${row.subNumber} budget`} />
+                            </span>
+                            <span className={`text-xs tabular-nums ${over ? 'text-danger' : 'text-text-secondary'}`}>
+                              {formatPct(health.progressPct)}
                             </span>
                           </span>
                         )}
@@ -349,18 +396,18 @@ export function ProjectsTable({
                     {/* Budget health is not repeated here — the meter beside it
                         already carries it, with the percentage and a signed
                         Remaining as its non-colour cues. */}
-                    <td className="whitespace-nowrap px-base py-base align-middle">
+                    <td className="whitespace-nowrap px-lg py-base align-middle">
                       <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>
                     </td>
                     {/* Its own column, not a second line under Status: where
                         the work has got to and whether the record is still
                         live are different questions, and a badge that answers
                         both looked like it was answering neither clearly. */}
-                    <td className="whitespace-nowrap px-base py-base align-middle">
+                    <td className="whitespace-nowrap px-lg py-base align-middle">
                       <Badge tone={row.active ? 'success' : 'neutral'}>{row.active ? 'Active' : 'Inactive'}</Badge>
                     </td>
                     {/* Row opens View; the menu must not trigger it too. */}
-                    <td className="px-base py-base align-middle" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-lg py-base align-middle" onClick={(e) => e.stopPropagation()}>
                       <ActionsMenu
                         ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
                         items={[

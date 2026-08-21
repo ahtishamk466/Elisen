@@ -4029,3 +4029,596 @@ match (`Column.align: 'right'`, threaded through both `SortMenu` and
 `headerButton` as an optional prop so any future right-aligned numeric column
 can reuse it). No other column was touched; residual scroll at 1280 is
 unchanged (15px, documented earlier today).
+
+## 2026-08-21 — Projects table: one heading style, 32px column gutters
+
+**Heading weight.** Reported as "some headers Medium, some Semibold". Measured
+live: every heading was already `font-weight: 600`. What differed was *colour* —
+the active-sort heading was darkened to `text-primary` (near-black) while the
+other eight sat at `text-secondary` (grey), and a darker heading at the same
+weight reads as a heavier one. Removed the active-state colour swap from both
+`SortMenu`'s trigger and `ProjectsTable`'s `headerButton`; all nine headings now
+render a single computed style (`600 / 12px / rgb(51,65,85)`), verified with the
+active sort on a merged column and on a single-key one. Nothing is lost: the
+blue directional arrow already marks the sorted column, and it was always the
+unambiguous cue — the colour change was a second, weaker one that cost
+typographic consistency across the row.
+
+**Column gutters: asked 50px, shipped 32px.** Flagging the shortfall rather than
+quietly approximating it. Column padding went `px-base` → `px-lg` (12px → 16px a
+side, so a 24px gutter → 32px), and every `fixed`/`min`/`max` figure moved with
+it since each is its content's floor *plus* the gutter. 50px was not affordable
+at any laptop width: the nine columns' content needs total 856px, so 50px
+gutters demand 856 + 9x50 = 1306px against the 1119px the page actually offers
+at a 1440 viewport — 187px short before the 1280 case is even considered. 32px
+is the next step down the spacing scale (there is no 14px token, and rule 4
+forbids an arbitrary value), and it is the widest gutter that still fits at
+1440.
+
+**What it cost.** At 1440: zero horizontal scroll, unchanged. At 1280 the table
+now declares 1075px against ~959px of page and scrolls 116px, where it
+previously scrolled 15px — `Active` and `Actions` fall off the initial view
+there. That is the honest price of the wider gutters, not an untried
+optimisation: every other column is still at its own content floor. Reverting is
+one token (`px-lg` → `px-base`) plus the paired width figures.
+
+**Project column.** Its `min` is now set *above* its heading's floor (110 vs the
+92 the label needs) rather than at it, so it no longer collapses to the
+narrowest column on the row when space is tight — it was 84px at 1280, behind
+even `Actions`. It remains the only column without a `max`, so it still absorbs
+all slack: 154px at 1440. Long titles clip past that, which is by design — line
+2 is the confirm line, and `Truncate` carries the full text in a `title`.
+
+**Opened.** Sized to the widest month name (`fixed: 132`) instead of the average.
+Pre-existing bug found while measuring: at the old figure it had 89px of content
+against the 100px "May 23, 2026" needs, so wide-month dates were silently
+breaking over two lines. Now zero rows wrap.
+
+## 2026-08-21 — Hours Worked → By Person: a person detail page, not an expanding row
+
+**What was wrong.** Clicking a person opened their detail *inside* the summary
+table: a second table, up to eight columns wide, nested in a cell of the
+eleven-column one. It listed every activity across every project **flat** — work
+package was a repeating *column*, not a level — so a busy person produced 40+
+rows of three-level data with the levels folded out of it, filling a screen and
+a half and pushing the next person out of view. Every figure was present and
+almost none of it was legible.
+
+**What replaced it.** `/hours-worked/person/:name`, built on the same
+master–detail shape as ATA Chapters so the two read alike: identity and roll-up
+at the top, the person's projects on a rail, and the selected project opened out
+into its work packages, each with its own sub-total and its activities beneath
+it. The row in the list now navigates there (whole-row click, with the name as
+the real keyboard-reachable control, as on the projects table).
+
+**Nothing was dropped.** Every figure and chip the expanded row carried has a
+home: project label/title/sub-total/status, per-activity actual-vs-budget,
+remaining, used + meter, health badge, entry count, and the four note chips
+(someone else's activity, shared with a total, unvalidated, not started). Two
+that used to be project-level only — overtime and banked — are now also shown
+per activity, where they were previously invisible. Verified live rather than by
+reading: for every project sampled, the rail's activity count, the panel
+header's "N work packages · N activities" and the number of rendered rows all
+agree.
+
+**New level in the data.** `PersonProjectGroup` gained `packages:
+PersonPackageGroup[]` — the same lines nested under their work package, built
+from the already-sorted flat list so every sub-total is the sum of the rows
+under it rather than a second, independently-derived figure that could drift.
+The flat `lines` array stays, because the panel header still counts across the
+whole project.
+
+**Time period filter** (`lib/hoursPeriod.ts`): All Time · This/Last Week ·
+This/Last Month · This/Last Year, in the URL as `?period=`. Whole **calendar**
+periods, not rolling ones — a timesheet is approved, invoiced and payrolled
+against calendar boundaries, and a rolling window produces figures that
+reconcile with nothing. Weeks run Monday–Sunday. The window is shown in dates
+beside the name as well as in words, because "Last Week" is ambiguous the moment
+the screen is read on a Monday or shared as a screenshot. Local calendar fields
+throughout, never `toISOString()`, which converts to UTC and hands back
+yesterday for anything logged in the evening west of Greenwich.
+
+The filter lives on this page rather than being inherited from the list because
+the question changes: the list asks "who is over budget", which wants
+everything; the person view asks "what did they do in March". Assignments with
+no hours are shown only on All Time — inside a window, "nothing logged in March"
+is not "not started", the same rule the list already applies under a date
+filter.
+
+**Fixture anchor fixed along the way.** `timesheetFixtures.ts` pinned its demo
+"today" to a hard-coded 2026-07-31. The wall clock has passed it, so This Week
+and This Month returned nothing at all and the newest entry on the system got
+further into the past every day the demo was opened. It now follows the real
+date, keeping the fixture's shape (~120 working days of history, Gordon
+MacLeod's hours still stranded ~200 days back) with its recent end actually
+recent. Every period except Last Year now returns data; Last Year is genuinely
+outside the fixture's span and shows the empty state with a "View all time"
+action.
+
+**Tablet.** Both panes stack and each scrolls internally, as on ATA Chapters.
+The summary figures and stat tiles go four-across from `tablet:` rather than
+`laptop:` — stacked, every extra row of figures is a row taken off *both* panes
+below, and that one change moved each pane from 197px to 304px, in line with ATA
+Chapters' 313px at the same width.
+
+## 2026-08-21 — By Person table: drop Activities, own toolbar, explicit action
+
+Three follow-up changes to the By Person list (not the detail page built earlier
+today):
+
+**Activities column removed.** Projects and Work Packages stayed — Activities
+was the one count that changes fastest as work is logged, so it read as noise
+next to the more stable Projects/Packages counts. It is still visible one click
+away, at the top of the person's detail page.
+
+**Its own toolbar, not the page's.** A compact period Select (160px, reusing
+`lib/hoursPeriod.ts`) and a project/work-package search (280px cap) now sit
+above this table specifically, inside `HoursByPersonTab`. Deliberately separate
+from the page header's own search box and `TimesheetFilterMenu`: those keep
+scoping the raw entries both tabs already share, while this pair only narrows
+what gets summed *into this table* — switching to All Entries sees none of it.
+The project/work-package search stays scoped to project and work package text
+only; employee is already the page's own search field, and folding it in here
+too would make the placeholder's promise a lie. Verified live: picking This
+Month dropped the row count and every total; typing a project name scoped each
+remaining person's own Actual/Budget down to just that project's hours (Sofia
+Reyes: 6203.3h → 2598.7h), and an unmatched query correctly reaches the empty
+state.
+
+**Expand-in-place replaced with a direct action.** The chevron (a holdover from
+the old expanding row, doing nothing once the row started navigating instead)
+is gone; each row ends in a **View Details** button. Chose a direct action over
+a 3-dot menu: there is exactly one thing to do with a row here, and a menu that
+opens to reveal a single item is a click this doesn't need — `ActionsMenu` stays
+reserved for rows with more than one.
+
+**Column widths retuned.** Removing Activities and adding Actions cost the table
+its old fit: Actions at a naive 2% rendered 23px against the 91px "View
+Details" needs, forcing 76px of otherwise-avoidable scroll. Rebalanced all
+eleven columns by measuring the button's actual rendered width; verified zero
+horizontal scroll at 1440 with `wrap.scrollWidth − wrap.clientWidth`.
+
+## 2026-08-21 — Person Detail header rebuilt to a supplied screenshot, exactly
+
+Given a screenshot of the intended header and told to match it as-is — layout,
+spacing, stats arrangement, typography — rather than adapt it. Differences from
+what was built earlier today:
+
+**One card, not two.** The four StatCard tiles (Projects / Work packages /
+Activities / Time entries) folded into the same card as the other eight
+figures, as one twelve-figure `<dl>` on a tinted band under the identity row —
+`bg-neutral-50`, six across at laptop, `gap-2xl` — instead of a separate grid
+below. Removed `StatCard` from this page; it's still the right component
+elsewhere, just not the shape this screenshot asks for here.
+
+**Search + period in the header, not a description line.** `headerActions` now
+carries a 360px project/work-package search next to a 150px period Select,
+matching the screenshot's top-right row. The "window in dates" line that used
+to sit under the name (`periodRangeLabel`) is gone from the visible layout —
+it's now the period select's own `title` tooltip, so the answer to "which days
+is This Month" is still one hover away without adding a row the screenshot
+doesn't have.
+
+**Search now drives the whole page, not just the rail.** It filters the
+timesheet rows themselves (project label/title, work package title) before
+`summarisePeople` runs, so the twelve header figures, the rail and the panel
+all narrow together — searching "Piper" took Sofia Reyes' Actual/Budget from
+6203.3h to 2598.7h and the rail from 101 projects to 1, verified live.
+
+**Actions menu added.** A single "View time entries" item, landing on
+`/hours-worked?employee=NAME` — `HoursWorkedPage` now seeds its filter state
+from an `?employee=` query param on mount, so the handoff shows up as a normal,
+clearable filter chip rather than a special case. Verified: 264 rows, all
+Sofia Reyes.
+
+**Avatar gained an `lg` size** (44px, was missing between `sm` 20px and `md`
+36px) — the screenshot's avatar sits beside a 20px name and a 36px disc read
+as an afterthought next to it.
+
+**`UsedCell` gained an `inline` mode.** The header figure band gives every cell
+one line; the existing stacked meter-under-percentage (used in the project and
+activity tables) would have made Used alone twice the height of its eleven
+neighbours. `inline` lays the 44px meter and the percentage side by side
+instead — same component, a second arrangement, not a fork.
+
+**Cost.** The merge added ~74px to both panes at 1280 (399px → 473px) versus
+the four-tile version, since a wider card is a shorter one below it. Traded
+knowingly: the screenshot is the spec here, not a target to negotiate against.
+Verified zero horizontal scroll at mobile/tablet/laptop/desktop; the figure
+band drops to 3 columns at tablet and 2 at mobile, same responsive rule as
+before.
+
+## 2026-08-21 — Person summary card: 3px inset on the stats block, flagged token deviation
+
+Follow-up correction against the same reference screenshot: the stats `<dl>`
+was flush to the card's edges (full-bleed, separated from the header only by a
+`border-t` line), so it had no corners of its own — the screenshot shows it
+inset a few pixels on every side, with its own visible rounding.
+
+Wrapped the `<dl>` in a `div` carrying `margin: 3` and `rounded-sm`, and moved
+the tinted `bg-neutral-50` background onto that wrapper instead of the `dl`
+directly; dropped the `border-t` divider, since the inset itself now reads as
+the separation. Verified live: 3px measured on all four sides (top from the
+header's own bottom edge, not the card's), 8px radius confirmed rendering on
+the wrapper.
+
+**Flagged, not silently resolved** (CLAUDE.md rule 12): `3px` is not on the
+spacing scale (nearest tokens are `xxss` 2px and `xs` 4px) — used as a literal
+`margin: 3` inline style rather than rounded to a token, because the ask was to
+match this reference pixel-for-pixel. This is a deliberate, narrow exception
+to rule 4 (semantic tokens only) for this one measurement; nothing else on the
+page uses an arbitrary value.
+
+## 2026-08-21 — Work Package activities table: full width, tinted header, roomier rows
+
+`WorkPackageCard.tsx`'s activities table, on the Project → Work Packages tab.
+Four fixes against a reference screenshot:
+
+**Full width, corners aligned.** The table used to sit inside a `p-lg` wrapper
+around both the table *and* the Add Activity button, so its own borders landed
+16px short of the card's edges on every side and it read as floating rather
+than filling the card. Removed the wrapper's padding; the table now runs edge
+to edge under the header's `border-b`, with `p-lg` moved onto just the empty
+message and the Add Activity row (text/controls, not a bordered surface).
+Verified live: table wrapper's left/right edges sit 1px inside the card's —
+exactly the card's own border width, i.e. flush.
+
+**Header row tinted** (`bg-neutral-50`, the same token every other table's
+header uses) — previously only a `border-b` separated titles from data, which
+read as one more inter-row line rather than a boundary.
+
+**Row padding widened**, `px-sm py-sm` (8px/8px) → `px-lg py-lg` (16px/16px),
+header included. This row carries a two-line Used cell, a status badge and a
+chip row at once — 8px was tight for any one of them, congested for all three
+together. Verified: row height went from ~40px to 61px.
+
+**Space above the table removed**, not just redistributed — the old `p-lg`
+above it duplicated separation the header's own `border-b` already provided.
+
+## 2026-08-21 — Work Package activities table: closed the gap above Add Activity
+
+Follow-up to the same table: the last row's own `py-lg` (16px) bottom padding
+was stacking with the Add Activity wrapper's `p-lg` (16px) top padding for a
+32px gap — and with no border between them to anchor it (unlike the identical
+32px between the header and the first row, which reads fine because a
+border-b sits in the middle of it), the bare whitespace looked like nearly
+double the spacing used anywhere else in the card.
+
+Changed the wrapper to `px-lg pb-lg pt-sm`: kept its horizontal padding and
+bottom breathing room, cut the top to 8px. Verified live: gap between the last
+row and the button is now 8px, button stays left-aligned with the row text.
+
+## 2026-08-21 — Person Detail's work packages: rebuilt to match WorkPackageCard exactly
+
+The panel's work-package blocks were flat, always-open, `border-b`-divided
+sections with a bespoke design (a colored "01"/"02" index chip, a 6-figure
+`<dl>` band) — the client flagged it as inconsistent with the rest of the app
+and asked for it to follow **the same pattern as Project → Work Packages**
+exactly, including the chevron.
+
+Rebuilt as `PersonWorkPackageCard` (local to `PersonProjectPanel.tsx`, not an
+import of the real `WorkPackageCard` — `features/timesheet` importing from
+`features/projects` is a sideways import, which CLAUDE.md's import-direction
+rule forbids, and the two feed it different shapes regardless: `WorkPackageCard`
+edits real assignments with a Responsible/Tasks/Actions table; this one reads a
+person's hours, so its table keeps Entries/Notes instead). Copied line for
+line: `overflow-hidden rounded-sm border` card, chevron-toggle header
+(`ChevronDown`, rotates -90° closed), title, status `Badge`, "N activities"
+count chip, and `BudgetInline` on the right — replacing the old `Actual/Budget
++ Remaining + Used` trio with the same single-line "hours · meter · % used"
+read-out the work package header uses everywhere else. First package opens by
+default, the rest start collapsed (`defaultOpen={i === 0}`, the same rule
+`ProjectWorkPackagesTab` uses) — verified the chevron toggles correctly on a
+second package and a three-package project.
+
+The table below, when expanded, already matched (built in an earlier pass
+today): `bg-neutral-50` header row, `px-lg py-lg` cells, full width.
+
+**Cost, measured and accepted rather than hidden:** each card now needs its own
+`p-lg` gutter (cards, not a continuous flush block, need breathing room around
+them) — verified 17px on both sides of every card, matching the container's
+border width. That gutter takes width away from the activities table, so its
+own internal horizontal scroll grew: 37px → 56px at 1440, contained entirely
+inside the table's own scroll region — the page itself still scrolls 0px at
+every width, verified.
+
+## 2026-08-21 — Person Detail rail: Work Packages count, two lines per row
+
+Three small fixes to the project rail on the left of Person Detail, per client
+feedback on a screenshot:
+
+- Header renamed **Activities → Work Packages**, and the count badge on each
+  row now reads `g.packages.length` instead of `g.lines.length` (activities) —
+  the label and the number now agree.
+- Dropped the third line (hours + "% used") from every row. Two lines —
+  project number, project title — plus the work-package count badge on the
+  right, nothing else.
+- The Non-project row lost its matching third line too (hours / "not
+  budgeted"), so every row in the rail is the same height — it wasn't asked
+  for directly, but leaving it three lines while every project row went to two
+  would have made the rail visibly uneven.
+
+## 2026-08-21 — Person Detail: project header rebuilt to the reference, activity table stops scrolling
+
+**Project header, matched to the reference screenshot.** Sequence is now title →
+subtitle → stat strip, in that order:
+
+- **Title leads.** The project code was a coloured `accent-subtle` chip *in
+  front of* the title, which put a 6-character label ahead of the name a reader
+  actually scans for. Title is now `text-xl font-bold` on its own line; the
+  code drops to the subtitle as plain text, beside the counts it belongs with:
+  `3116-00 · 2 Work packages · 4 Activities`, dot-separated.
+- **Time entries moved out of the subtitle** into a neutral count chip at
+  top-right, next to the health badge — it is a quantity, not part of the
+  project's identity line.
+- **Stat strip** is now the divided `divide-x` row `ProjectWorkPackagesTab`
+  already uses for its own structure strip (`text-lg font-bold` values,
+  `text-xs text-text-muted` labels, each figure in its own bay), replacing a
+  5-column grid of small `Figure`s. The two screens' stat rows now read as one
+  pattern.
+- **Remaining and Used merged into one figure** (`RemainingUsedInline`):
+  "521.3h left — meter — 83%". A reader was recombining the two adjacent
+  figures into the one question they actually have; the reference merges them,
+  and it buys the width the table below needs.
+
+**The activity table no longer scrolls horizontally.** It declared
+`minWidth: 820` and let the pane scroll under it — inside a split pane that is
+~604px at 1280, that guaranteed a scrollbar. Now `table-fixed` with percentage
+`<col>` widths, so it always renders at exactly the pane's width. Three changes
+got the content to fit:
+- 7 columns → 6 (Remaining + Used merged, as above).
+- Cell padding `px-lg` → `px-base`; this pane is narrower than the project
+  page's own Work Packages tab, and 8px a side across 6 columns was most of the
+  overflow.
+- `Status` given the widest share after Activity (18%) — sized to
+  "No budget set", the longest badge it carries, not to the word "Status".
+
+`overflow-hidden` on every cell as the backstop: percentages are tuned so
+nothing should hit it, but a column carrying a badge, a chip row and a meter
+needs a guarantee rather than a good guess — content clips to its own cell
+instead of forcing the table wider. Verified 0px table scroll and 0px page
+scroll at 1440, 1280 and 768.
+
+**File split** (CLAUDE.md ~200-line rule): `PersonWorkPackageCard` and its
+`notesFor` helper moved to their own file; `PersonProjectPanel.tsx` is 239
+lines, `PersonWorkPackageCard.tsx` 145.
+
+## 2026-08-21 — Projects List Budget column: heading alignment, one font weight, figure order
+
+**The right-aligned heading was never actually right-aligned.** `Column.align:
+'right'` put `text-right` on the `<th>` and `justify-end` on its trigger, and
+neither did anything: a `<button>` is a form control, so it shrinks to fit its
+text even at `display:flex` — the heading measured 61px inside a 212px cell
+with 135px of dead space after it, and the `<th>`'s `text-right` had no inline
+content left to align. Added `w-full` alongside `justify-end` in both
+`SortMenu` and `ProjectsTable`'s `headerButton`, gated on `align === 'right'`
+so left-aligned headings keep their shrink-to-fit hit area. Verified: 16px
+padding on both sides now, i.e. flush right, and the sort popup still opens.
+
+**One font weight in the cell.** `formatHours(actual)` was `font-semibold`
+against a muted budget, which read as a different font next to every other
+column's regular text. Weight is now 400 throughout (verified: every span in
+the cell computes to 400); the emphasis that remains is colour —
+`text-primary` for actual against `text-muted` for budget — which is enough to
+land the eye on the figure that moves. The over-budget percentage lost its
+`font-semibold` too, for the same consistency; it keeps `text-danger`, and a
+number above 100 beside "19.2h over" is already a non-colour signal, so no
+meaning is carried by colour alone.
+
+**Second line reordered** to `19.2h left · meter · 94%` — previously
+`meter · 94% · 19.2h left`. This is the order `RemainingUsedInline` uses on
+Person Detail, so the budget line now reads identically wherever it appears.
+
+## 2026-08-21 — Person Detail project card, matched to the reference
+
+Rebuilt to the supplied screenshot rather than re-interpreted. Measured values
+now: card `rounded-sm` (8px) + `border-border-default`, `px-lg py-lg`; title
+`text-xl`/700; subtitle `text-sm`/400 `text-secondary` at `mt-xs`, dot-
+separated; stat strip at `mt-2xl`; labels `text-sm`/400 `text-secondary`;
+values `text-base`/600 `text-primary` at `mt-xs`; both header pills 28px/14px.
+
+Four substantive fixes fell out of matching it:
+
+**1. `divide-x` has never worked in this app — a real bug, not a tuning issue.**
+The strip's separators were specified with `divide-x divide-border-default`,
+and *no CSS rule for `.divide-x` exists in the generated stylesheet at all*:
+Tailwind v4 emits `@property --tw-divide-x-reverse` but not the utility, so
+every child computed `border-left-width: 0`. The dividers the reference shows
+were simply absent. Replaced with an explicit `border-l border-border-default
+… first:border-l-0`. **`ProjectWorkPackagesTab` and `ProjectTeamTab` still use
+`divide-x` and still have invisible dividers** — same one-line fix, left alone
+here because it changes two screens that weren't in scope.
+
+**2. The card is a card.** It was a pinned `border-b` header — three square
+corners and a full-bleed divider. The reference shows a self-contained card,
+bordered and rounded on all four sides. It is now the first item in the same
+`gap-lg` / `p-lg` scrolling stack as the work package cards. Trade-off, stated
+rather than hidden: the project summary now scrolls with the packages instead
+of staying pinned. The person-level summary above it is still fixed.
+
+**3. Remaining is signed, not suffixed.** `−0.6h`, per the reference, replacing
+`0.6h over`. The minus carries "over budget" without the red — as does a
+percentage above 100 beside it — so the pair still reads in monochrome
+(rule 6).
+
+**4. `Badge` gained a `size` prop** (`sm` 20px default / `md` 28px). The
+reference's status pill matches the count chip beside it; `Badge`'s only size
+was the 20px table badge, which sat visibly shorter. Added as a variant rather
+than changing the component globally: **every existing call site keeps `sm`**,
+verified live (work package and table badges still 20px/12px). Story updated
+with both sizes per rule 8b.
+
+**Not matched, flagged instead:** the reference reads "On Track" and
+"Remaining/ Used". The app's `HEALTH_LABEL` is "On track" — a shared label
+across every screen, so capitalising it here would either fork the label or
+change the whole app; and "Remaining/ Used" is a spacing typo. Both left as
+the app's own convention.
+
+## 2026-08-21 — Projects List: Budget left-aligned, one colour, status fixture fixed
+
+**Budget column reverted to left-aligned**, to be consistent with every other
+column on this table — the earlier right-alignment (this morning's session)
+is superseded. Removed `align: 'right'` from the column config and the
+matching `text-right` / `justify-end` on the cell; the sort heading now
+shrink-wraps flush left like Project/Opened, verified 16px padding on both
+sides of the heading text itself (not the cell).
+
+**One colour for "Actual / Budget".** `formatHours(actual)` and the budget
+half were two different colours (`text-primary` vs `text-muted`), which the
+client read correctly as one value looking heavier than the other. Both are
+`text-text-primary` now, separated only by the `/` a reader already parses as
+"of" — no colour is spent distinguishing them.
+
+**Status fixture bug found and fixed.** The generated `gen-3300`…`gen-3369`
+block (comment: "Demo coverage row so filter combinations return results")
+assigned `status` in **runs of 7 identical values** — literally what the
+client saw as "same status in every row." Rewrote it with a max-heap
+rearrangement (the classic "reorganize string" algorithm) so no two adjacent
+rows share a status, while keeping the exact same total count of each status
+(`active`: 21, `query`/`quoted`: 14 each, `tentative`/`on-hold`/`complete`: 7
+each) — verified the Projects List stat tiles (115 / 52 / 20 / 21) are
+unchanged before and after, since nothing was added or removed, only
+reordered. `PROJECT_ROWS` (the earlier, hand-authored ~30 rows) was already
+varied and untouched.
+
+## 2026-08-21 — Person Detail panel: tinted canvas so the project/work-package cards actually separate
+
+The project card and every work-package card were `bg-neutral-25` (pure
+white, `#FFFFFF`) sitting inside a panel that was **also** `bg-neutral-25` —
+so a 1px `border-default` line was the only thing marking a card's edge, and
+against a white background rows blended into one continuous mass rather than
+reading as separate cards. This is what the client's screenshot showed:
+"Piper Electric Aircraft" and "Certification & Manuals" with no visible
+separation between them.
+
+Changed the panel's own background (the `<section>` in `PersonDetailPage.tsx`
+that holds `PersonProjectPanel`) from `bg-neutral-25` to `bg-neutral-50`
+(`#F8FAFC`) — the cards stay white, the canvas behind them is now visibly
+tinted, and the existing `gap-lg` between cards (verified at 16px, unchanged)
+reads as real whitespace instead of two colours of the same white. The rail
+on the left keeps `bg-neutral-25`: it is a list of rows, not a stack of
+cards, and was never part of the complaint.
+
+## 2026-08-21 — Projects List column widths: Project widened, real slack trimmed
+
+Measured every column's actual gutter and content-tight floor live before
+changing anything, rather than guessing from the screenshot:
+
+**The structural gutter was already uniform.** `px-lg` both sides (32px)
+identically, on every column — confirmed by measuring content-to-cell-edge
+distance across 25 rows: Priority/Type, Co./Contact, Person Res., Opened,
+Project and Budget all sit at exactly 16px trailing space on their tightest
+row. What reads as "Budget/Status feel wider" is each holding more or
+longer content than its neighbours, not an inconsistent gutter — a table
+column's trailing space is always going to vary row to row once its content
+does; Priority/Type and Person Res. have the same variation, just over a
+shorter range because their content varies less.
+
+**Project widened**, as asked: `min` 110 → 145 (rendered 145px at 1280, 181px
+at 1440, up from 154 either way before — it's the one column meant to lead
+every row, holding two lines of free text).
+
+**Two real, measured trims — not guesses:**
+- **Budget**: 212 → 204. Its true floor is the worst-case second line
+  (remaining text + meter + percentage together) — measured live at 204px
+  including padding, 8px tighter than before, bought by narrowing the meter
+  44px → 36px. Verified the widest actual row on the page still fits with
+  exactly 16px (baseline) to spare — no truncation.
+- **Actions**: 77 → 58. The 3-dot trigger is a 26px button; 58px is exactly
+  that plus the standard 32px gutter. It carried 51px of dead space before —
+  by far the table's worst offender, more than double Budget's.
+
+**Status and Active left unchanged**, and this is a finding, not an omission:
+both measured **already exactly tight** for their own widest label — "In
+Progress" (Status, 5px slack) and "Inactive" (Active, 5px slack). Shrinking
+either would truncate that label; the visible slack on shorter rows
+("Query", "Active") is the same row-to-row content variation every column on
+this table has, not a gutter bug.
+
+**Cost, accepted rather than hidden**: at 1280 the table's own local scroll
+grew from ~0px to 127px (page-level scroll stays 0px, verified — the
+overflow is contained inside the table's own scroll region). At 1440 it
+grew by 3px. This is the direct, honest price of widening Project as asked;
+the Budget/Actions trims partly offset it but don't erase it.
+
+## 2026-08-22 — Person Detail: removed the fifth wrapping container
+
+The detail pane's own `<section>` (in `PersonDetailPage.tsx`) carried a
+border, radius and `bg-neutral-50` — a visible box wrapping the project card
+and every work-package card inside it. The client counted it correctly: that
+made five containers (the wrapper, the project card, three work-package
+cards) where the design calls for four (just the cards).
+
+Stripped the wrapper to a layout-only `<div>` — `flex min-h-0 flex-col
+overflow-hidden`, no border, no radius, no background. It still exists in the
+DOM (it sizes the scroll region inside the two-pane grid column), but it is
+now fully transparent, verified live (`border: 0px`, `background:
+rgba(0,0,0,0)`). The tint each card needs to read as separate from its
+neighbour still comes through — the app's own root canvas is already
+`bg-neutral-50` (`AppShell`'s outermost div), so a transparent section shows
+that colour exactly as a section painted the same colour would.
+
+**Collateral fix, not asked for but required by the same change:**
+`PersonNonProjectPanel` (the "Non-project time" branch, shown instead of a
+project when that rail entry is selected) had never had its own card — it
+relied entirely on the wrapper's border for containment, being just a header
+and a table. Removing the wrapper left it floating with no visible boundary
+at all. Gave it the same two-card shape `PersonProjectPanel` uses (a header
+card with `HeaderStat`s, a table card) rather than leave it looking
+unfinished next to the newly-bordered project view — same pattern, not a new
+one.
+
+Verified: exactly 3 direct-child cards render for a 2-work-package project
+(1 project + 2 work packages), 0px page-level horizontal scroll at 1280 and
+1440, non-project branch now two clean cards instead of an unbounded block.
+
+## 2026-08-22 — Person Detail project card: title size and HEALTH_LABEL casing, matched to reference
+
+Two fixes against the same reference screenshot, sent again with a stricter
+"exact" ask:
+
+**Title font-size**: `text-xl` (20px) → `text-2xl` (24px), on both
+`PersonProjectPanel`'s project-card heading and `PersonNonProjectPanel`'s —
+the reference's title reads visibly larger relative to the "3 Time Entries" /
+badge pair beside it than 20px produced.
+
+**`HEALTH_LABEL` was sentence case** ("On track", "Near budget", "Over
+budget", "No budget set") — the one holdout against the rest of the app's
+Title Case convention for status-shaped badges (`WP_STATUS_LABEL`: "In
+Progress", "On Hold"; `STATUS_LABEL`: "In Progress", "On Hold", "Cancelled").
+The reference shows "On Track". Since `HEALTH_LABEL` is deliberately a single
+exported source of truth used in 11 files specifically so the same state
+never reads two different ways across the app, fixed it at the source rather
+than only in this one card — every health badge in the app now reads Title
+Case. Verified the Projects List stat tiles ("52 On Track", "20 Near Budget",
+"21 Over Budget") show the counts unchanged, only the casing.
+
+## 2026-08-22 — Person Detail: one fill colour across stats band, selected row, table header
+
+Three tinted areas on this screen were two different shades: the person
+summary's stat band and each work-package table's header were `bg-neutral-50`
+(`#F8FAFC`), the rail's selected row was `bg-neutral-100` (`#F1F5F9`) — close
+enough to look like a rendering inconsistency rather than three different
+colours, which is exactly how the client read it.
+
+Client specified `#F0F5F9` exactly. That's 1/255 off neutral-100's `#F1F5F9`
+in the red channel only — imperceptible, and almost certainly colour-picker
+noise from sampling a screenshot rather than a deliberately distinct value.
+Used the existing `neutral-100` token rather than add a near-duplicate
+arbitrary hex a shade away from a token that already exists (CLAUDE.md rule
+4) for zero visible difference. Flagging this substitution rather than
+picking it silently, per rule 12 — happy to switch to the literal hex if
+that reasoning is wrong.
+
+Changed: the stat band's inset wrapper (`PersonDetailPage.tsx`) and every
+`PersonWorkPackageCard` activity table's header row, both `bg-neutral-50` →
+`bg-neutral-100`. The rail's selected row was already `bg-neutral-100`,
+unchanged. Verified live: all three compute to `#F1F5F9` now.
+
+**Flagging a side effect, not fixing it silently**: this makes this screen's
+work-package table headers a shade darker (`neutral-100`) than every other
+table header in the app, which uses `neutral-50` (`ProjectsTable`,
+`WorkPackageCard` on Project Detail, `PersonNonProjectPanel`'s own table,
+left untouched since it wasn't in the reference). Scoped the change to what
+was shown — this screen's three fills matching each other — rather than
+also changing every other table in the app to follow.

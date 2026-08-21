@@ -1,8 +1,10 @@
 /** `sm` fits a table row or a cell's second line; `md` is the standalone
-    card/detail avatar. Both carry the same colours. */
+    card avatar; `lg` heads a detail page, where it sits beside a 20px name and
+    a 36px disc reads as an afterthought. All three carry the same colours. */
 const AVATAR_SIZES = {
   sm: 'h-5 w-5 text-[10px]',
   md: 'h-9 w-9 text-xs',
+  lg: 'h-11 w-11 text-sm',
 } as const
 
 export type AvatarSize = keyof typeof AVATAR_SIZES

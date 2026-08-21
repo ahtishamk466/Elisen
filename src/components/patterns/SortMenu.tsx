@@ -56,9 +56,12 @@ export function SortMenu<K extends string>({ label, options, sort, onChange, ali
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         /* One centred line: the arrow sits on the middle of the label, not at
-           the top of a heading that may be two words long. */
+           the top of a heading that may be two words long. The label keeps the
+           heading row's own weight and colour whether or not it is the active
+           sort — darkening it made one heading look like a heavier font than
+           its neighbours, and the arrow already carries that state. */
         className={`flex items-center gap-xs whitespace-nowrap rounded-sm text-left transition-colors duration-fast hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
-          ${align === 'right' ? 'justify-end' : ''} ${active ? 'text-text-primary' : ''}`}
+          ${align === 'right' ? 'w-full justify-end' : ''}`}
       >
         <span className="whitespace-nowrap">{label}</span>
         <Icon size={14} aria-hidden className={active ? 'text-accent' : 'text-text-muted'} />

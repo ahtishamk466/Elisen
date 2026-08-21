@@ -78,21 +78,29 @@ export function WorkPackageCard({
       </header>
 
       {open && (
-        <div className="grid gap-base border-t border-border-default p-lg">
-
+        /* No padding on this wrapper — the table used to sit inset inside a
+           p-lg box, which left its own borders short of the card's corners and
+           added 16px above it that the header's own border-b already supplied
+           as separation. The table now runs edge to edge under that border;
+           only the empty message and the Add Activity row keep p-lg, since
+           they are text/controls rather than a bordered surface of their own. */
+        <div className="border-t border-border-default">
           {activities.length === 0 ? (
-            <p className="text-sm text-text-muted">No activities yet, add who will do this work.</p>
+            <p className="p-lg text-sm text-text-muted">No activities yet, add who will do this work.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left" style={{ minWidth: 780 }}>
+              <table className="w-full border-collapse text-left" style={{ minWidth: 900 }}>
                 <caption className="sr-only">Activities in {wp.title}, with budget health each</caption>
                 <thead>
-                  <tr className="border-b border-border-default">
+                  {/* A tinted row, not just the border below it — the border
+                      alone read as one more inter-row line rather than a
+                      boundary between titles and data. */}
+                  <tr className="border-b border-border-default bg-neutral-50">
                     {['Activity', 'Responsible', 'Actual / Budget', 'Remaining', 'Used', 'Status', 'Tasks', 'Actions'].map((h) => (
                       <th
                         key={h}
                         scope="col"
-                        className="whitespace-nowrap px-sm py-sm text-xs font-semibold text-text-secondary"
+                        className="whitespace-nowrap px-lg py-base text-xs font-semibold text-text-secondary"
                       >
                         {h}
                       </th>
@@ -104,30 +112,34 @@ export function WorkPackageCard({
                     const ah = healthOf(a.budgetHours, a.actualHours, wp.status === 'complete')
                     const over = ah.remaining < 0
                     return (
+                    /* py-lg, not py-base: this row carries a two-line Used cell,
+                       a badge and a chip row at once, and the old py-sm (8px)
+                       left almost no air around any of them — the same
+                       congestion `px-sm` produced sideways. */
                     <tr key={a.id} className="border-b border-border-default last:border-b-0">
-                      <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">{activityName(activities_, a.activityId)}</td>
-                      <td className="px-sm py-sm"><PersonCell name={a.responsible} /></td>
+                      <td className="whitespace-nowrap px-lg py-lg text-sm text-text-primary">{activityName(activities_, a.activityId)}</td>
+                      <td className="px-lg py-lg"><PersonCell name={a.responsible} /></td>
                       {/* Spent against budgeted, side by side: the two numbers
                           a reader compares, in one glance rather than two. */}
-                      <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">
+                      <td className="whitespace-nowrap px-lg py-lg text-sm text-text-primary">
                         {ah.budget > 0 ? `${formatHours(ah.actual)} / ${formatHours(ah.budget)}` : `${formatHours(ah.actual)} / no budget`}
                       </td>
-                      <td className={`whitespace-nowrap px-sm py-sm text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
+                      <td className={`whitespace-nowrap px-lg py-lg text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
                         {ah.budget > 0 ? `${over ? '−' : ''}${formatHours(Math.abs(ah.remaining))}` : '—'}
                       </td>
-                      <td className="whitespace-nowrap px-sm py-sm">
+                      <td className="whitespace-nowrap px-lg py-lg">
                         <span className="block text-sm text-text-primary">{formatPct(ah.progressPct)}</span>
                         <span className="mt-xxss block" style={{ width: 44 }}>
                           <ProgressMeter health={ah} size="sm" ariaLabel={`${activityName(activities_, a.activityId)} budget`} />
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-sm py-sm">
+                      <td className="whitespace-nowrap px-lg py-lg">
                         <Badge tone={HEALTH_TONE[ah.state]}>{HEALTH_LABEL[ah.state]}</Badge>
                       </td>
-                      <td className="px-sm py-sm" style={{ maxWidth: 220 }}>
+                      <td className="px-lg py-lg" style={{ maxWidth: 220 }}>
                         <ChipOverflow items={tasksForActivity(catalog, a.activityId, true).map((t) => t.name)} label="tasks" onShowAll={() => onViewActivity(a)} />
                       </td>
-                      <td className="px-sm py-sm">
+                      <td className="px-lg py-lg">
                         <ActionsMenu
                           ariaLabel={`Actions for activity ${activityName(activities_, a.activityId)}`}
                           items={[
@@ -145,7 +157,11 @@ export function WorkPackageCard({
             </div>
           )}
 
-          <div>
+          {/* pt-sm, not pt-lg: the last row already carries py-lg of its own
+              padding below its text, and with no border between the table and
+              this button to anchor the gap, that padding stacked with a second
+              p-lg read as nearly double the space anywhere else in the card. */}
+          <div className="px-lg pb-lg pt-sm">
             <Button variant="tertiary" size="sm" leadingIcon={<Plus size={14} />} onClick={onAddActivity}>
               Add Activity
             </Button>

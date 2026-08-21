@@ -7,6 +7,7 @@ import { TccaProjectsListPage } from '@/components/features/tcca/TccaProjectsLis
 import { TccaProjectDetailPage } from '@/components/features/tcca/TccaProjectDetailPage'
 import { TimesheetListPage } from '@/components/features/timesheet/TimesheetListPage'
 import { HoursWorkedPage } from '@/components/features/timesheet/HoursWorkedPage'
+import { PersonDetailPage } from '@/components/features/timesheet/PersonDetailPage'
 import { ActivityCatalogPage } from '@/components/features/lookups/ActivityCatalogPage'
 import { ReportsPage } from '@/components/features/reports/ReportsPage'
 import { UsersAccessPage } from '@/components/features/access/UsersAccessPage'
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="/tcca-projects/:id" element={<TccaProjectDetailPage />} />
         <Route path="/timesheet" element={<TimesheetListPage />} />
         <Route path="/hours-worked" element={<HoursWorkedPage />} />
+        <Route path="/hours-worked/person/:name" element={<PersonDetailPage />} />
         <Route path="/admin/activities" element={<ActivityCatalogPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/admin/users" element={<UsersAccessPage />} />

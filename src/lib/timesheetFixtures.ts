@@ -40,7 +40,20 @@ function hash(s: string): number {
 }
 
 const DAY_MS = 86_400_000
-const PERIOD_END = Date.UTC(2026, 6, 31) // 2026-07-31, the demo "today"
+/**
+ * The demo's "today", which **follows the real one**.
+ *
+ * It used to be pinned to 2026-07-31. Every entry is generated as an offset
+ * back from here, so once the wall clock passed that date the whole timesheet
+ * became historical: Hours Worked's This Week and This Month periods returned
+ * nothing at all, and the newest entry on the system was always further in the
+ * past each day the demo was opened. Anchoring to the current date keeps the
+ * fixture's *shape* — roughly 120 working days of history, Gordon MacLeod's
+ * hours still stranded ~200 days back — while keeping the recent end of it
+ * recent.
+ */
+const today = new Date()
+const PERIOD_END = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
 
 /** Working date `back` days before the period end, skipping weekends. */
 function workingDate(back: number): string {

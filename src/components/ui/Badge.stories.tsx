@@ -36,6 +36,22 @@ export const AllVariants: Story = {
           Active
         </Badge>
       </div>
+      {/* Both sizes, side by side: `sm` (20px, the default every table uses)
+          against `md` (28px, for a card heading beside a 20px title). */}
+      <div className="flex flex-wrap items-center gap-sm">
+        {TONES.map((tone) => (
+          <Badge key={tone} tone={tone} size="md">
+            {tone}
+          </Badge>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-sm">
+        <Badge tone="success">On track — sm</Badge>
+        <Badge tone="success" size="md">On track — md</Badge>
+        <Badge tone="neutral" appearance="outline" size="md">
+          Outline — md
+        </Badge>
+      </div>
     </div>
   ),
 }
