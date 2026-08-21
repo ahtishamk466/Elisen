@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, FolderOpen, Trash2, Copy } from 'lucide-react'
+import { Plus, Search, FolderOpen } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { StatCard } from '@/components/patterns/StatCard'
 import { EmptyState } from '@/components/patterns/EmptyState'
@@ -63,13 +63,14 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
 
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<ProjectFilters>(EMPTY_PROJECT_FILTERS)
-  const [sort, setSort] = useState<Sort>({ key: 'number', dir: 'asc' })
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  // Newest project first by default — a higher number is a later project,
+  // and every number is a zero-padded 4-digit string, so lexicographic order
+  // matches numeric order.
+  const [sort, setSort] = useState<Sort>({ key: 'number', dir: 'desc' })
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [editingRow, setEditingRow] = useState<ProjectListRow | null>(null)
   const [deletingRow, setDeletingRow] = useState<ProjectListRow | null>(null)
-  const [bulkDeleting, setBulkDeleting] = useState(false)
 
   const companies = useMemo(
     () => Array.from(new Set(rows.map((r) => r.companyName).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
@@ -116,6 +117,10 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
       switch (sort.key) {
         case 'number': return `${row.number}-${row.subNumber}`
         case 'company': return row.companyName
+        // '—' is the fixture placeholder for "no contact" — treat it as
+        // absent so contact-less rows park last, like every other optional
+        // field here, rather than sorting as if "—" were a real name.
+        case 'contact': return row.contactName && row.contactName !== '—' ? row.contactName : null
         case 'priority': return row.priority
         case 'type': return TYPE_LABEL[row.type]
         case 'opened': return row.openedDate || null
@@ -174,30 +179,6 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
     removeRow(deletingRow.id)
     setToast(`Project ${deletingRow.number}-${deletingRow.subNumber} deleted.`)
     setDeletingRow(null)
-  }
-
-  const selectedRows = sorted.filter(({ row }) => selectedIds.includes(row.id)).map(({ row }) => row)
-
-  /** Same recipe as the single duplicate, numbered consecutively — the store
-      doesn't re-render inside the loop, so the next free number is counted
-      here rather than re-asked per row. */
-  const handleBulkDuplicate = () => {
-    const start = Number(getNextProjectNumber(rows))
-    let n = start
-    for (const row of selectedRows) {
-      addRow({ ...row, id: crypto.randomUUID(), number: String(n++), subNumber: '00', title: `${row.title} (Copy)`, actualHours: 0, status: 'quoted' })
-    }
-    setToast(selectedRows.length === 1
-      ? `Duplicated as project ${start}-00.`
-      : `Duplicated ${selectedRows.length} projects as ${start}-00 to ${n - 1}-00.`)
-    setSelectedIds([])
-  }
-
-  const handleBulkDeleteConfirmed = () => {
-    for (const row of selectedRows) removeRow(row.id)
-    setToast(`${selectedRows.length} project${selectedRows.length === 1 ? '' : 's'} deleted.`)
-    setSelectedIds([])
-    setBulkDeleting(false)
   }
 
   return (
@@ -275,23 +256,6 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
             canSeeFinancials={canSeeFinancials}
             sort={sort}
             onSortChange={(s) => { setSort(s); resetVisible() }}
-            selectedIds={selectedIds}
-            onSelectionChange={setSelectedIds}
-            allIds={sorted.map(({ row }) => row.id)}
-            selectionActions={
-              <>
-                <Button size="sm" variant="secondary" leadingIcon={<Trash2 size={14} />} onClick={() => setBulkDeleting(true)}>
-                  Delete
-                </Button>
-                <Button size="sm" variant="secondary" leadingIcon={<Copy size={14} />} onClick={handleBulkDuplicate}>
-                  Duplicate
-                </Button>
-                <ExportMenu
-                  rows={selectedRows}
-                  onUnavailableFormat={(format) => setToast(`${format} export isn't wired up yet: HTML, CSV and Text are ready now.`)}
-                />
-              </>
-            }
             onView={(row) => navigate(`/projects/${row.id}`)}
             onOpenWorkPackages={(row) => navigate(`/projects/${row.id}?tab=work-packages`)}
             onEdit={setEditingRow}
@@ -387,18 +351,6 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
           }}
         />
       )}
-
-      <ConfirmDialog
-        open={bulkDeleting}
-        title={`Delete ${selectedRows.length} project${selectedRows.length === 1 ? '' : 's'}?`}
-        description={`${selectedRows.length === 1
-          ? `"${selectedRows[0]?.title}" (${selectedRows[0]?.number}-${selectedRows[0]?.subNumber})`
-          : `${selectedRows.length} selected projects`} will be permanently removed. This cannot be undone.`}
-        confirmLabel={`Delete ${selectedRows.length === 1 ? 'project' : `${selectedRows.length} projects`}`}
-        tone="danger"
-        onConfirm={handleBulkDeleteConfirmed}
-        onCancel={() => setBulkDeleting(false)}
-      />
 
       <ConfirmDialog
         open={!!deletingRow}

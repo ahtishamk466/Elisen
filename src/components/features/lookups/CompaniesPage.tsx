@@ -49,7 +49,7 @@ function ContactChips({ contacts, onOpen }: { contacts: CompanyContact[]; onOpen
   )
 }
 
-const HEADERS = ['Name', 'Contacts', 'Address', 'City', 'Zip Code', 'Actions']
+const HEADERS = ['Name', 'Contacts', 'Address', 'City', 'Zip Code', 'Status', 'Actions']
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -130,7 +130,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
         ) : (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left" style={{ minWidth: 900 }}>
+            <table className="w-full border-collapse text-left" style={{ minWidth: 980 }}>
               <caption className="sr-only">Companies and their contacts</caption>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
@@ -170,6 +170,9 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
                         <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 260 }}><Truncate>{c.address || '—'}</Truncate></td>
                         <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{c.city || '—'}</td>
                         <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{c.postal || '—'}</td>
+                        <td className="whitespace-nowrap px-lg py-base align-top">
+                          <Badge tone={c.active ? 'success' : 'neutral'}>{c.active ? 'Active' : 'Inactive'}</Badge>
+                        </td>
                         <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
                           <ActionsMenu
                             ariaLabel={`Actions for ${c.name}`}

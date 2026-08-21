@@ -43,7 +43,10 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
-  { label: 'Projects', icon: <FolderOpen size={18} />, children: ['Projects List', 'Work Packages', 'Projects Review', 'TCCA Projects'] },
+  // 'Work Packages' hidden from nav at the client's request — not deleted.
+  // The route, page and CHILD_ROUTES entry below are untouched, so it comes
+  // back by re-adding the label to this children array.
+  { label: 'Projects', icon: <FolderOpen size={18} />, children: ['Projects List', 'Projects Review', 'TCCA Projects'] },
   // Approvals and Documents are global records that projects *link to* — a
   // certificate or a drawing outlives any one project and is often shared
   // across several, so they can't be owned by a project. They sit next to
@@ -53,8 +56,8 @@ const NAV: NavItem[] = [
   // shape as Aircraft / Serial Numbers. A revision is still a record in its own
   // right with its own listing — it just doesn't need a second nav row to
   // reach it.
-  { label: 'Approvals', icon: <Award size={18} /> },
   { label: 'Documents', icon: <FileText size={18} /> },
+  { label: 'Approvals', icon: <Award size={18} /> },
   { label: 'Time Entry', icon: <Clock size={18} />, children: ['Hours Worked', 'Timesheet'] },
   { label: 'Reports', icon: <ListChecks size={18} /> },
   { label: 'GCP', icon: <ShieldCheck size={18} />, children: [] },

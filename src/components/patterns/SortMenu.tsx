@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom'
-import { ArrowDown, ArrowUp, ArrowUpDown, Check } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check } from 'lucide-react'
 import { useDropdown } from './useDropdown'
 
 export interface SortOption<K extends string> {
@@ -22,14 +22,20 @@ const MENU_WIDTH = 220
  *
  * Merging columns to kill horizontal scroll would otherwise cost a sort per
  * field folded away — four of them on the Projects table. The heading keeps
- * them all: it names the column, and says which of its fields the table is
- * currently sorted by ("Remaining / Used · Used ↓"), so a merged column is
- * never less capable than the columns it replaced.
+ * them all: clicking it always opens the field picker, never sorts directly,
+ * because a merged column has more than one reasonable "up".
+ *
+ * No icon at all until the column is actually the active sort — a resting
+ * up-down glyph on every sortable heading reads as noise across a wide table,
+ * and it was this heading's own "· Priority" suffix that used to overflow
+ * into the next column on a narrow one. Active state is a single blue arrow
+ * and nothing else: no field name, no "Selected" — the direction is the only
+ * fact worth a permanent pixel here.
  */
 export function SortMenu<K extends string>({ label, options, sort, onChange }: SortMenuProps<K>) {
   const { open, setOpen, position, triggerRef, menuRef } = useDropdown<HTMLButtonElement>(MENU_WIDTH)
   const active = options.find((o) => o.key === sort?.key)
-  const Icon = !active || !sort ? ArrowUpDown : sort.dir === 'asc' ? ArrowUp : ArrowDown
+  const Icon = active && sort ? (sort.dir === 'asc' ? ArrowUp : ArrowDown) : null
 
   const choose = (key: K) => {
     // Re-picking the active field flips direction, as a plain sort header does.
@@ -52,10 +58,7 @@ export function SortMenu<K extends string>({ label, options, sort, onChange }: S
           ${active ? 'text-text-primary' : ''}`}
       >
         <span className="whitespace-nowrap">{label}</span>
-        {/* Which of the stacked fields is doing the sorting, so the arrow is
-            never ambiguous on a column holding two numbers. */}
-        {active && <span className="whitespace-nowrap text-xs font-normal text-accent">· {active.label}</span>}
-        <Icon size={14} aria-hidden className={active ? 'text-accent' : 'text-text-muted'} />
+        {Icon && <Icon size={14} aria-hidden className="text-accent" />}
       </button>
       {open && position &&
         createPortal(

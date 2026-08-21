@@ -3854,3 +3854,157 @@ Not touched, and worth a decision: the Activities table below still carries
 `Actual / Budget`, `Remaining` and `Used` as three separate columns, so the same
 figures now read two ways on one screen. Merging them there would free ~100px
 and remove the residual scroll that table has below ~1400px.
+
+**Work Package detail: Change Status added — 2026-08-20.** The facts strip
+holds six fields: **Sr #, Type, Project, Priority, Opened, Budget** — a Seq
+field (the rail's own "01"/"02" position) was tried and removed same-day; the
+strip reads better as the clean 3/3 grid than with a seventh field forcing an
+uneven 3/3/1.
+
+The package's 3-dot menu gained **Change Status**, opening the same edit
+drawer as **Edit** — status lives on that form, not a screen of its own, so a
+second entry point named for the task (rather than a duplicate of "Edit") gets
+someone there without hunting for which item does it. Verified live: the menu
+now reads Edit / Change Status / Delete, and Change Status opens "Edit Work
+Package" with the Status field showing the package's current status.
+
+**Projects List: Export out of the selection bar, Status gains a second line,
+wider gutters — 2026-08-20.**
+
+**Export removed from the selection bar.** It already sits in the page header
+and exports the same filtered set, so a second trigger only made the bar
+busier. The bar is now Delete / Duplicate — both act on the rows you picked,
+which is what a selection bar is for. `ExportMenu`'s `size` and
+`triggerClassName` props stay: they cost nothing and the header call site still
+uses the defaults.
+
+**Status is two lines: the work status, then Active / Inactive.** They answer
+different questions — where the work has got to, and whether the record is live
+at all — and a cancelled project and an archived one were indistinguishable
+from the badge alone. Inactive renders in `text-secondary` semibold rather than
+the muted grey Active gets, so the exception is the one that catches the eye.
+
+**Gutters 16px → 24px** (`px-sm` → `px-base` on every cell). Opened sitting
+hard against Budget was the complaint, but the spacing was uniform — so the fix
+was the whole table, not one boundary. Paid for by sizing every fixed column to
+its **measured** need rather than an estimate: `Priority/Type` 127 → 118,
+`Opened` 115 → 113, `Budget` 206 → 204, and the flex minimums set to each
+heading's real width (Project 84, Company 98, Person Res. 94). Verified at 1280
+(**0px scroll**, 964 → 951px table) and 1728 (0px scroll, Project 393px), no
+heading overflow and no cell overflowing its padding at either.
+
+**Work Packages hidden from the sidebar — 2026-08-20.** Client asked to hide it
+"for now", so only the `NAV` children array in `AppShell.tsx` was touched —
+removed `'Work Packages'` from the Projects section's list. The route (`/work-
+packages` in `App.tsx`), the page itself, `CHILD_ROUTES['Work Packages']`, and
+every row-level link into it from Projects List / Project Detail are all
+untouched, so it still works if reached directly and comes back with a
+one-line change (re-add the label to `NAV`'s Projects `children`). Verified:
+sidebar shows Projects List / Projects Review / TCCA Projects only; navigating
+to `/work-packages` directly still renders the page.
+
+**Sidebar order: Documents moved above Approvals — 2026-08-20.** Client-
+requested top-level order: Dashboard → Projects → Documents → Approvals →
+Time Entry → Reports → GCP → Reference Data → User Access → System. Only the
+two entries' position in `AppShell.tsx`'s `NAV` array swapped; nothing else
+about either section (routes, icons, the "one entry each" comment explaining
+why they're not nested under Projects) changed. Verified live against the
+full expected order.
+
+**Companies table: added a Status column — 2026-08-20.** New column between
+Zip Code and Actions, `<Badge tone={c.active ? 'success' : 'neutral'}>`, same
+convention as every other Active/Inactive badge in the app (ATA Chapters,
+Aircraft, Users). The 3-dot Activate/Deactivate action already existed and now
+has a visible result in the row instead of only being legible by opening the
+row. `minWidth` widened 900 → 980 for the extra column; verified 0px scroll.
+
+**Projects List: checkbox column removed, Active split into its own column
+— 2026-08-20.**
+
+**Checkbox/bulk-selection removed entirely**, not hidden — the client's
+instruction was a plain "remove", unlike the earlier Work Packages nav item
+which was explicitly "hide for now, don't delete." Bulk Duplicate/Delete had
+no unique capability: every row's own 3-dot menu already carries Duplicate and
+Delete, so nothing was lost. Deleted from `ProjectsTable.tsx`: the
+`selectedIds`/`onSelectionChange`/`allIds`/`selectionActions` props, the
+`Checkbox` import, the `TableSelectionBar` header branch, `SELECT_WIDTH`, and
+the per-row checkbox cell. Deleted from `ProjectsListPage.tsx`: the
+`selectedIds` state, `handleBulkDuplicate`/`handleBulkDeleteConfirmed`, the
+`bulkDeleting` state and its `ConfirmDialog`, and the now-unused `Trash2`/
+`Copy` icon imports. `TableSelectionBar` itself is untouched — it's a
+documented, table-agnostic Storybook pattern, not deleted, just unused here
+now.
+
+**Active is its own column**, not a second line under Status — they answer
+different questions (where the work has got to vs. whether the record is
+still live), and stacking them under one heading read as one fact split
+awkwardly rather than two. `<Badge tone={row.active ? 'success' : 'neutral'}>`,
+the same green/grey convention as the Companies table added earlier today.
+Status reverted to its original single-line badge.
+
+**Widths retuned from the ground up**, not just patched: removing the 44px
+checkbox column and adding a 74px Active column is a net change, so every
+fixed column was re-measured rather than assuming the old numbers still fit.
+Active itself went through three iterations (90 → tried 78/76/74) against the
+one metric that matters — `wrap.scrollWidth − wrap.clientWidth`, not a per-
+cell heuristic, which flagged a harmless ~2px sub-pixel padding artifact as a
+false positive at 74px (the badge's own `scrollWidth === clientWidth`, so
+nothing is actually clipped). Verified: **0px scroll at both 1280 and 1728**,
+no heading overflows, no cell overflows, an `Inactive` row (project 3369-00)
+renders correctly as `Quoted` / `Inactive` in two separate cells.
+
+**Projects List sorting: fixed the overflow bug, quieted the icons, renamed
+Company, defaulted to newest-first — 2026-08-20.**
+
+**The overlap in the screenshot was a real bug, not a display quirk.**
+`SortMenu`'s trigger appended `· {active field}` (e.g. "Priority/Type ·
+Priority") whenever a merged column was actively sorted — text with no ceiling
+on its own width, rendered inside a `fixed`-width column. On Priority/Type
+(118px) that suffix had nowhere to go but into Company's header next to it.
+Removed entirely, along with the "Selected"-style affordance it was there to
+provide — the user asked for exactly this ("do not add extra text… limited
+space").
+
+**No icon by default, anywhere.** Both `SortMenu` (Priority/Type,
+Company/Contact, Budget) and the plain `headerButton` (Project, Opened) used
+to render a neutral `ArrowUpDown` on every sortable heading whether or not it
+was the active sort — noise across a nine-column table. Now: **no icon at all
+until a column is the active sort**, then a single blue `↑`/`↓` and nothing
+else. Verified live: at load only `Project` (the default sort) carries an
+icon; clicking Priority/Type's popup and choosing a field gives it the arrow
+and Project's disappears.
+
+**Clicking an already-active SortMenu column reopens the popup** — this was
+already true (the trigger always opens the menu; a field is only ever chosen
+from inside it), so no behavioural change was needed there, only verified.
+
+**Company → Company/Contact, with a measured short-form fallback.** The
+column shows both a company and a contact name, so the heading now says so.
+Converted from a plain single-key sort (`company` only) to a `SortMenu` with
+two real options — **Company** and **Contact** — mirroring Priority/Type,
+since the user grouped the two as parallel examples. New `Column.shortLabel` /
+`fullLabelMin`: below 150px assigned width the heading reads **"Co./Contact"**
+instead of truncating or silently dropping to "Company" alone (which the user
+explicitly ruled out — "show both name, dont one"). The threshold is measured
+against the column's width in its **active** state (with icon), so choosing
+Contact as the sort never causes the label to reflow.
+
+**Default sort flipped to newest-first.** `{ key: 'number', dir: 'desc' }` —
+project numbers are zero-padded 4-digit strings assigned sequentially, so
+lexicographic descending is numeric descending.
+
+**Honest residual scroll at 1280 — 15px, not 0.** Adding the Active column
+(74px) and widening Company/Contact's floor (98px → 113px, even in its short
+form) cost this table its exact fit at the narrowest supported width. Every
+fixed column was re-verified at its **true minimum in its active state**
+(Priority/Type 118, Project 84, Person Res. 94 — all exact, zero slack) before
+accepting this; the only two numbers with any give were Company/Contact's
+`min` and the short-label threshold, both already tightened to their measured
+floor. `FLEX_FLOOR` raised 276 → 291 to match. Documented in code rather than
+silently eaten, matching how Timesheet and Projects Review's residual scroll
+was handled earlier in this project.
+
+Verified at 1280 and 1728: **0 heading overflows, 0 clipped cells** at both;
+scroll is 0px at 1728 and 15px at 1280 (was 32px before retuning). Sorting by
+Contact correctly reorders rows by contact name; sorting by Priority/Type from
+its popup still works exactly as before, minus the overflow.

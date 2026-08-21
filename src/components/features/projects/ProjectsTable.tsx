@@ -1,7 +1,6 @@
 import { useRef, type ReactNode } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Eye, Pencil, Copy, Trash2, Package } from 'lucide-react'
+import { ArrowDown, ArrowUp, Eye, Pencil, Copy, Trash2, Package } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
-import { Checkbox } from '@/components/ui/Checkbox'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ProgressMeter } from '@/components/patterns/ProgressMeter'
@@ -9,7 +8,6 @@ import { PersonCell } from '@/components/patterns/PersonCell'
 import { Truncate } from '@/components/patterns/Truncate'
 import { SortMenu } from '@/components/patterns/SortMenu'
 import { useElementWidth } from '@/components/patterns/useElementWidth'
-import { TableSelectionBar } from '@/components/patterns/TableSelectionBar'
 import { PRIORITY_LABEL, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
 import { formatHours, formatPct, type Health } from '@/lib/projectHealth'
 import type { ProjectListRow } from '@/types/project'
@@ -21,7 +19,7 @@ export interface ProjectRowWithHealth {
   health: Health
 }
 
-export type SortKey = 'number' | 'company' | 'budget' | 'actual' | 'remaining' | 'progress' | 'priority' | 'type' | 'opened'
+export type SortKey = 'number' | 'company' | 'contact' | 'budget' | 'actual' | 'remaining' | 'progress' | 'priority' | 'type' | 'opened'
 export interface Sort {
   key: SortKey
   dir: 'asc' | 'desc'
@@ -55,13 +53,23 @@ interface Column {
   max?: number
   /** Its own heading's width: below this the column can't label itself. */
   min?: number
+  /**
+   * Fallback heading text for a flex column whose full label doesn't fit —
+   * still names every field the column holds, just shorter, so a reader is
+   * never left wondering whether "Company" also sorts by contact. Shown
+   * whenever the column's assigned width is under `fullLabelMin`.
+   */
+  shortLabel?: string
+  fullLabelMin?: number
 }
 
-/** The checkbox column: a 16px box and its breathing room, at any width. */
-const SELECT_WIDTH = 44
-/** Below this the flexible three would start truncating everything. Sized so a
-    1280px laptop still fits the table exactly, with no horizontal scroll. */
-const FLEX_FLOOR = 280
+/** Below this the flexible three would start truncating everything — must
+    equal the sum of the three flex columns' own `min`. Adding the Active
+    column and Company/Contact's longer heading cost this table its old
+    exact fit at 1280; every fixed and flex column here is already at its
+    own content or heading floor (verified live), so the small residual
+    scroll below is the honest remainder, not an untried optimisation. */
+const FLEX_FLOOR = 291
 
 /**
  * Seven columns, and **no horizontal scroll**: the table used to declare a
@@ -80,16 +88,24 @@ const COLUMNS: Column[] = [
      **Flex** ones hold free text that truncates, so every pixel the fixed
      columns don't need is split between them. Percentages for all ten grew the
      date column on a 1728px screen while the project names were still cut off. */
-  { label: 'Project', sort: 'number', flex: 52, min: 82 },
+  { label: 'Project', sort: 'number', flex: 52, min: 84 },
   {
     label: 'Priority/Type',
-    fixed: 119,
+    fixed: 118,
     sorts: [{ key: 'priority', label: 'Priority' }, { key: 'type', label: 'Type' }],
   },
-  { label: 'Company', sort: 'company', flex: 26, min: 98, max: 240 },
-  { label: 'Person Res.', flex: 22, min: 94, max: 200 },
+  {
+    label: 'Company/Contact',
+    shortLabel: 'Co./Contact',
+    fullLabelMin: 150,
+    flex: 26,
+    min: 113,
+    max: 248,
+    sorts: [{ key: 'company', label: 'Company' }, { key: 'contact', label: 'Contact' }],
+  },
+  { label: 'Person Res.', flex: 22, min: 94, max: 208 },
   /* One line: the column has the width now, and a date reads as one thing. */
-  { label: 'Opened', sort: 'opened', fixed: 107 },
+  { label: 'Opened', sort: 'opened', fixed: 113 },
   /* One column for the whole budget question, because it *is* one question and
      only two of its four numbers are independent — remaining is budget minus
      actual, used is actual over budget. Split across two columns it read as
@@ -100,7 +116,7 @@ const COLUMNS: Column[] = [
   {
     label: 'Budget',
     financial: true,
-    fixed: 200,
+    fixed: 204,
     sorts: [
       { key: 'actual', label: 'Actual' },
       { key: 'budget', label: 'Budget' },
@@ -108,8 +124,9 @@ const COLUMNS: Column[] = [
       { key: 'progress', label: 'Used' },
     ],
   },
-  { label: 'Status', fixed: 97 },
-  { label: 'Actions', fixed: 61 },
+  { label: 'Status', fixed: 105 },
+  { label: 'Active', fixed: 74 },
+  { label: 'Actions', fixed: 69 },
 ]
 
 export interface ProjectsTableProps {
@@ -119,14 +136,6 @@ export interface ProjectsTableProps {
   canSeeFinancials?: boolean
   sort?: Sort
   onSortChange?: (sort: Sort) => void
-  /** Ids of selected rows; omit both to render without the select column. */
-  selectedIds?: string[]
-  onSelectionChange?: (ids: string[]) => void
-  /** Every selectable id across the whole filtered list (not just this page) —
-      what "Select all" selects and what the selection header counts against. */
-  allIds?: string[]
-  /** Bulk action buttons shown in the selection header (Duplicate, Delete…). */
-  selectionActions?: ReactNode
   onView?: (row: ProjectListRow) => void
   /** Straight to the project's Work Packages tab — the part of a project people
       come back to most, so it shouldn't need a detour through Overview. */
@@ -175,12 +184,9 @@ function shareOut(flexible: Column[], available: number): Map<string, number> {
 
 export function ProjectsTable({
   rows, loading = false, canSeeFinancials = true, sort, onSortChange,
-  selectedIds, onSelectionChange, allIds, selectionActions,
   onView, onOpenWorkPackages, onEdit, onDuplicate, onDelete, pagination,
 }: ProjectsTableProps) {
   const columns = canSeeFinancials ? COLUMNS : COLUMNS.filter((c) => !c.financial)
-  const selectable = !!selectedIds && !!onSelectionChange
-  const selectableIds = allIds ?? rows.map((r) => r.row.id)
   const wrapRef = useRef<HTMLDivElement>(null)
   const measured = useElementWidth(wrapRef)
 
@@ -188,26 +194,14 @@ export function ProjectsTable({
      between the three that hold names, in their `flex` ratio. Measured rather
      than expressed in CSS because a browser ignores `calc(40% - 264px)` on a
      <col> and silently splits the space evenly instead. */
-  const fixedTotal = columns.reduce((n, c) => n + (c.fixed ?? 0), 0) + (selectable ? SELECT_WIDTH : 0)
+  const fixedTotal = columns.reduce((n, c) => n + (c.fixed ?? 0), 0)
   const available = Math.max((measured ?? fixedTotal + FLEX_FLOOR) - fixedTotal, FLEX_FLOOR)
   const flexWidths = shareOut(columns.filter((c) => c.flex), available)
   const widthOf = (c: Column) => c.fixed ?? flexWidths.get(c.label) ?? 0
-  const selecting = selectable && selectedIds!.length > 0
-  const pageIds = rows.map((r) => r.row.id)
-  const allSelected = selectable && pageIds.length > 0 && pageIds.every((id) => selectedIds!.includes(id))
-
-  const toggleAll = () => {
-    if (!onSelectionChange) return
-    onSelectionChange(allSelected ? selectedIds!.filter((id) => !pageIds.includes(id)) : [...new Set([...selectedIds!, ...pageIds])])
-  }
-  const toggleOne = (id: string) => {
-    if (!onSelectionChange) return
-    onSelectionChange(selectedIds!.includes(id) ? selectedIds!.filter((x) => x !== id) : [...selectedIds!, id])
-  }
 
   const headerButton = (c: Column, key: SortKey) => {
     const active = sort?.key === key
-    const Icon = !active || !sort ? ArrowUpDown : sort.dir === 'asc' ? ArrowUp : ArrowDown
+    const Icon = active && sort ? (sort.dir === 'asc' ? ArrowUp : ArrowDown) : null
     return (
       <button
         type="button"
@@ -216,7 +210,7 @@ export function ProjectsTable({
           ${active ? 'text-text-primary' : ''}`}
       >
         {c.label}
-        <Icon size={14} aria-hidden className={active ? 'text-accent' : 'text-text-muted'} />
+        {Icon && <Icon size={14} aria-hidden className="text-accent" />}
       </button>
     )
   }
@@ -226,85 +220,57 @@ export function ProjectsTable({
       <div ref={wrapRef} className="overflow-x-auto">
       <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: fixedTotal + FLEX_FLOOR }}>
         <caption className="sr-only">Projects, with budget health per project</caption>
-        {/* Widths live on <colgroup>, not the header cells: while rows are
-            selected the header row is one colSpan cell, and under table-fixed
-            a header that no longer has per-column cells would otherwise hand
-            the widths to whatever the first body row happens to contain. */}
+        {/* Widths live on <colgroup>, not the header cells — under
+            table-fixed a header without per-column cells hands its widths to
+            whatever the first body row happens to contain. */}
         <colgroup>
-          {selectable && <col style={{ width: SELECT_WIDTH }} />}
           {columns.map((c) => <col key={c.label} style={{ width: widthOf(c) }} />)}
         </colgroup>
         <thead>
-          {selecting ? (
-            /* The Shopify pattern: the column titles hand their row to the
-               selection — count, select-all menu, bulk actions — and return
-               the moment it clears. */
-            <tr className="border-b border-border-default bg-neutral-50">
-              <th colSpan={columns.length + 1} className="px-base py-sm">
-                <TableSelectionBar
-                  selectedCount={selectedIds!.length}
-                  totalCount={selectableIds.length}
-                  itemLabel="projects"
-                  onSelectAll={() => onSelectionChange!([...selectableIds])}
-                  onClearAll={() => onSelectionChange!([])}
-                >
-                  {selectionActions}
-                </TableSelectionBar>
-              </th>
-            </tr>
-          ) : (
-            <tr className="border-b border-border-default bg-neutral-50">
-              {selectable && (
-                <th scope="col" className="px-base py-base">
-                  <Checkbox checked={allSelected} onChange={toggleAll} aria-label="Select all projects on this page" />
-                </th>
-              )}
-              {columns.map((c) => (
+          <tr className="border-b border-border-default bg-neutral-50">
+            {columns.map((c) => {
+              // The short form still names every field the column holds —
+              // just shorter — so a reader is never left thinking a merged
+              // column sorts by only one of them. Only kicks in below the
+              // width the full label needs in either its active or inactive
+              // state, so choosing that sort never makes the label reflow.
+              const label = c.shortLabel && widthOf(c) < (c.fullLabelMin ?? 0) ? c.shortLabel : c.label
+              return (
                 <th
                   key={c.label}
                   scope="col"
                   aria-sort={sort && (c.sort === sort.key || c.sorts?.some((o) => o.key === sort.key))
                     ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
-                  className="whitespace-nowrap px-sm py-base align-middle text-xs font-semibold text-text-secondary"
+                  className="whitespace-nowrap px-base py-base align-middle text-xs font-semibold text-text-secondary"
                 >
                   {c.sorts && onSortChange
-                    ? <SortMenu label={c.label} options={c.sorts} sort={sort} onChange={onSortChange} />
-                    : c.sort && onSortChange ? headerButton(c, c.sort) : c.label}
+                    ? <SortMenu label={label} options={c.sorts} sort={sort} onChange={onSortChange} />
+                    : c.sort && onSortChange ? headerButton({ ...c, label }, c.sort) : label}
                 </th>
-              ))}
-            </tr>
-          )}
+              )
+            })}
+          </tr>
         </thead>
         <tbody>
           {loading
             ? Array.from({ length: 6 }, (_, i) => (
                 <tr key={i} className="border-b border-border-default last:border-b-0">
-                  {Array.from({ length: columns.length + (selectable ? 1 : 0) }, (_, j) => (
-                    <td key={j} className="px-sm py-base"><Skeleton className="h-4 w-full" /></td>
+                  {Array.from({ length: columns.length }, (_, j) => (
+                    <td key={j} className="px-base py-base"><Skeleton className="h-4 w-full" /></td>
                   ))}
                 </tr>
               ))
             : rows.map(({ row, health }) => {
                 const over = health.remaining < 0
-                const selected = selectable && selectedIds!.includes(row.id)
                 return (
                   <tr
                     key={row.id}
                     onClick={() => onView?.(row)}
-                    className={`cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle ${selected ? 'bg-accent-subtle' : ''}`}
+                    className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
                   >
-                    {selectable && (
-                      <td className="px-base py-base align-middle" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          checked={selected}
-                          onChange={() => toggleOne(row.id)}
-                          aria-label={`Select project ${row.number}-${row.subNumber}`}
-                        />
-                      </td>
-                    )}
                     {/* Number leads — it is how a project is asked for — with
                         the title under it as the line that confirms the row. */}
-                    <td className="px-sm py-base align-middle">
+                    <td className="px-base py-base align-middle">
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onView?.(row) }}
@@ -318,23 +284,23 @@ export function ProjectsTable({
                     </td>
                     {/* Priority reads as one phrase ("5 - Lowest"), with the
                         project's type under it. */}
-                    <td className="px-sm py-base align-middle">
+                    <td className="px-base py-base align-middle">
                       <span className="block truncate text-sm font-semibold text-text-primary">{PRIORITY_LABEL[row.priority]}</span>
                       <span className="block truncate text-xs text-text-muted">{TYPE_LABEL[row.type]}</span>
                     </td>
                     {/* Both client-side: who we work for, and who we call. */}
-                    <td className="px-sm py-base align-middle">
+                    <td className="px-base py-base align-middle">
                       <span className="block truncate text-sm text-text-primary" title={row.companyName}>{row.companyName}</span>
                       {/* Initials mark line 2 as a person, so a company and its
                           contact are never mistaken for one another. */}
                       <PersonCell name={row.contactName} variant="secondary" />
                     </td>
-                    <td className="px-sm py-base align-middle">
+                    <td className="px-base py-base align-middle">
                       <PersonCell name={row.personResponsible} />
                     </td>
                     {/* ISO, as everywhere else in the app: it is unambiguous
                         across locales and it sorts as text. */}
-                    <td className="px-sm py-base align-middle text-sm tabular-nums text-text-primary">
+                    <td className="px-base py-base align-middle text-sm tabular-nums text-text-primary">
                       <DateText value={row.openedDate} />
                     </td>
                     {canSeeFinancials && (
@@ -343,7 +309,7 @@ export function ProjectsTable({
                          figure that moves. Line 2 is what they mean: how far
                          through, and what is left, in words, so nobody has to
                          decode whether a minus sign is good news. */
-                      <td className="whitespace-nowrap px-sm py-base align-middle">
+                      <td className="whitespace-nowrap px-base py-base align-middle">
                         <span className="block text-sm tabular-nums">
                           <span className="font-semibold text-text-primary">{formatHours(health.actual)}</span>
                           <span className="text-text-muted">
@@ -372,11 +338,18 @@ export function ProjectsTable({
                     {/* Budget health is not repeated here — the meter beside it
                         already carries it, with the percentage and a signed
                         Remaining as its non-colour cues. */}
-                    <td className="whitespace-nowrap px-sm py-base align-middle">
+                    <td className="whitespace-nowrap px-base py-base align-middle">
                       <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>
                     </td>
+                    {/* Its own column, not a second line under Status: where
+                        the work has got to and whether the record is still
+                        live are different questions, and a badge that answers
+                        both looked like it was answering neither clearly. */}
+                    <td className="whitespace-nowrap px-base py-base align-middle">
+                      <Badge tone={row.active ? 'success' : 'neutral'}>{row.active ? 'Active' : 'Inactive'}</Badge>
+                    </td>
                     {/* Row opens View; the menu must not trigger it too. */}
-                    <td className="px-sm py-base align-middle" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-base py-base align-middle" onClick={(e) => e.stopPropagation()}>
                       <ActionsMenu
                         ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
                         items={[

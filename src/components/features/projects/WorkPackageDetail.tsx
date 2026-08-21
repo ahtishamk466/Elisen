@@ -1,4 +1,4 @@
-import { ClipboardCheck, Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ClipboardCheck, Eye, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ChipOverflow } from '@/components/patterns/ChipOverflow'
 import { PersonCell } from '@/components/patterns/PersonCell'
@@ -105,6 +105,10 @@ export function WorkPackageDetail({
               ariaLabel={`Actions for work package ${workPackage.title}`}
               items={[
                 { label: 'Edit', icon: <Pencil size={16} />, onSelect: onEditPackage },
+                // Status lives on the edit form, not a screen of its own — so
+                // "Change Status" opens the same drawer as Edit. A separate
+                // entry point for the one field people come back to most.
+                { label: 'Change Status', icon: <RefreshCw size={16} />, onSelect: onEditPackage },
                 { label: 'Delete', icon: <Trash2 size={16} />, onSelect: onDeletePackage, tone: 'danger' },
               ]}
             />
@@ -122,14 +126,20 @@ export function WorkPackageDetail({
           <Fact label="Project">
             <span className="block truncate" title={projectTitle}>{projectTitle || '—'}</span>
           </Fact>
+          {/* Alongside its type and its number, not a state chip on the
+              package's own header. */}
+          <Fact label="Priority">
+            {projectPriority
+              ? <span className="block truncate">{PRIORITY_LABEL[projectPriority]}</span>
+              : <span className="text-text-muted">—</span>}
+          </Fact>
           <Fact label="Opened">
             <span className="block truncate tabular-nums">{formatDate(projectOpenedDate)}</span>
           </Fact>
           {/* One field for the whole budget question, as on the Projects
               List: only two of its four numbers are independent, so it reads
               top to bottom — spent of what was set aside, then how far through
-              and what is left. Merging them is what freed the slot Priority
-              needed without making a seventh cell. */}
+              and what is left. */}
           <Fact label="Budget">
             <span className="block tabular-nums">
               <span className="font-semibold text-text-primary">{formatHours(health.actual)}</span>
@@ -154,14 +164,6 @@ export function WorkPackageDetail({
                 </span>
               </span>
             )}
-          </Fact>
-          {/* Back in the strip, where the client wants it: it is a fact about
-              the project this package belongs to, alongside its type and its
-              number, not a state chip on the package's own header. */}
-          <Fact label="Priority">
-            {projectPriority
-              ? <span className="block truncate">{PRIORITY_LABEL[projectPriority]}</span>
-              : <span className="text-text-muted">—</span>}
           </Fact>
         </dl>
       </section>

@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom'
 import { ChevronDown, Download, FileSpreadsheet, FileText, FileType2 } from 'lucide-react'
 import { useDropdown } from '@/components/patterns/useDropdown'
-import { Button } from '@/components/ui/Button'
+import { Button, type ButtonSize } from '@/components/ui/Button'
 import { exportRowsAsCsv, exportRowsAsHtml, exportRowsAsText } from '@/lib/exportRows'
 import type { ProjectListRow } from '@/types/project'
 
@@ -9,11 +9,17 @@ export interface ExportMenuProps {
   rows: ProjectListRow[]
   /** PDF/Excel need a binary-generation library not yet added — see docs/SECURITY.md rule 7. */
   onUnavailableFormat: (format: string) => void
+  /** Match the trigger to whatever it sits beside — a page header's own
+      buttons (`md`, the default) or a selection bar's compact ones (`sm`). */
+  size?: ButtonSize
+  /** Selection-bar callers pass `rounded-xs!` so the trigger matches the
+      bar's other pill buttons, without changing the button's own default. */
+  triggerClassName?: string
 }
 
 const MENU_WIDTH = 208
 
-export function ExportMenu({ rows, onUnavailableFormat }: ExportMenuProps) {
+export function ExportMenu({ rows, onUnavailableFormat, size = 'md', triggerClassName }: ExportMenuProps) {
   const { open, setOpen, position, triggerRef, menuRef } = useDropdown<HTMLButtonElement>(MENU_WIDTH)
 
   const items = [
@@ -29,7 +35,8 @@ export function ExportMenu({ rows, onUnavailableFormat }: ExportMenuProps) {
       <Button
         ref={triggerRef}
         variant="secondary"
-        size="md"
+        size={size}
+        className={triggerClassName}
         trailingIcon={<ChevronDown size={16} />}
         aria-haspopup="menu"
         aria-expanded={open}
