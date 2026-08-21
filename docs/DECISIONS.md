@@ -10,6 +10,11 @@ Entries follow this format:
 **Rationale:** ...
 ```
 
+## 2026-08-21 — CI/CD deploys SPA to Apache on push to main
+**Context:** Need auto-deploy of the Elisen Vite admin app to `tpmsv2.elisen.com` on `154.53.38.1`, where existing TPMS sites already use Apache + Let’s Encrypt (not nginx).
+**Choice:** GitHub Actions builds on `main`, `rsync`s `dist/` to `/var/www/tpmsv2`, served by a dedicated Apache vhost with SPA `FallbackResource` and Certbot SSL. Auth uses a dedicated ed25519 deploy key stored only as GitHub secret `DEPLOY_SSH_KEY` (public half on the server) — never the interactive user key in the repo. Pipeline is split into `build` then `deploy` (`needs: build`): `npm ci`, typecheck, Vite build, artifact checks, then deploy + HTTPS smoke check — so missing libraries, TS errors, or empty builds never reach the server.
+**Rationale:** Matches the server’s existing Apache stack; static SPA needs no Node process; dedicated CI key limits blast radius vs reusing personal SSH keys. Separating jobs makes failure gates explicit and keeps a broken build from overwriting a good live site.
+
 ## 2026-08-07 — Radius reverted from 4px-max to 8px standard
 **Context:** Earlier the same day, the user set an explicit rule: 4px maximum
 corner radius everywhere, based on a button reference screenshot, and I
