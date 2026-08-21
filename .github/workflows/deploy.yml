@@ -1,0 +1,88 @@
+name: Deploy TPMS V2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-tpmsv2
+  cancel-in-progress: true
+
+jobs:
+  # Fails the pipeline (and skips deploy) on missing deps, lockfile drift,
+  # TypeScript errors, or Vite build failures.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Production build
+        run: npx vite build
+
+      - name: Verify build output
+        run: |
+          test -f dist/index.html
+          test -d dist/assets
+          # Fail if the bundle looks empty / incomplete
+          test "$(find dist -type f | wc -l)" -ge 2
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 3
+          if-no-files-found: error
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H 154.53.38.1 >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" \
+            dist/ aqeel@154.53.38.1:/var/www/tpmsv2/
+
+      - name: Smoke check live site
+        run: |
+          set -e
+          for i in 1 2 3 4 5; do
+            code=$(curl -sS -o /tmp/smoke.html -w "%{http_code}" \
+              --max-time 15 https://tpmsv2.elisen.com/) || code=000
+            if [ "$code" = "200" ] && grep -q '<div id="root"' /tmp/smoke.html; then
+              echo "Smoke OK (HTTP $code)"
+              exit 0
+            fi
+            echo "Attempt $i failed (HTTP $code); retrying..."
+            sleep 3
+          done
+          echo "Smoke check failed after deploy"
+          exit 1
