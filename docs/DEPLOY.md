@@ -17,12 +17,10 @@ Workflow: [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)
 
 | Secret | Value |
 |--------|--------|
-| `DEPLOY_SSH_KEY` | Private key for the CI deploy user (ed25519). Public half is in `aqeel`'s `~/.ssh/authorized_keys` on the server. |
-
-Repo admin must set it (Settings → Secrets and variables → Actions), or:
+| `DEPLOY_SSH_KEY` | **Base64** of the OpenSSH private key (ed25519). Public half is in `aqeel`'s `~/.ssh/authorized_keys` on the server. |
 
 ```bash
-gh secret set DEPLOY_SSH_KEY -R ahtishamk466/Elisen < /path/to/deploy_key
+base64 < /path/to/deploy_key | tr -d '\n' | gh secret set DEPLOY_SSH_KEY -R ahtishamk466/Elisen
 ```
 
 Never commit the private key.
