@@ -23,6 +23,7 @@ import { useCatalogStore } from '@/stores/catalogStore'
 import { CURRENT_EMPLOYEE } from '@/lib/timesheetFixtures'
 import type { TimesheetEntry } from '@/types/timesheet'
 import type { TimesheetEntryValues } from './useTimesheetEntryForm'
+import { formatDate } from '@/lib/formatDate'
 
 export type PageState = 'ready' | 'loading' | 'empty' | 'error'
 
@@ -108,6 +109,7 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
   return (
     <AppShell
       title="Timesheet"
+      description="Your own logged hours."
       activeItem="Time Entry"
       activeChild="Timesheet"
       headerActions={
@@ -209,7 +211,7 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
       <ConfirmDialog
         open={!!deletingRow}
         title="Delete this entry?"
-        description={deletingRow ? `This timesheet entry for ${deletingRow.workingDate} will be permanently removed. This cannot be undone.` : ''}
+        description={deletingRow ? `This timesheet entry for ${formatDate(deletingRow.workingDate)} will be permanently removed. This cannot be undone.` : ''}
         confirmLabel="Delete entry"
         tone="danger"
         onConfirm={handleDeleteConfirmed}

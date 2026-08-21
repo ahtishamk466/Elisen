@@ -98,19 +98,19 @@ export function AircraftModelDrawer({ mode, initial, onClose, onSave }: Aircraft
 
           <FormSection title="Type Certificates" subtitle="Held against the type by each authority. Leave blank when not applicable.">
             <FormField label="TCCA TC" htmlFor="am-tcca">
-              <Input id="am-tcca" value={values.tccaTc} onChange={(e) => set('tccaTc', e.target.value)} />
+              <Input id="am-tcca" placeholder="e.g. A-123" value={values.tccaTc} onChange={(e) => set('tccaTc', e.target.value)} />
             </FormField>
             <FormField label="FAA TC" htmlFor="am-faa">
-              <Input id="am-faa" value={values.faaTc} onChange={(e) => set('faaTc', e.target.value)} />
+              <Input id="am-faa" placeholder="e.g. A00009CH" value={values.faaTc} onChange={(e) => set('faaTc', e.target.value)} />
             </FormField>
             <FormField label="EASA TC" htmlFor="am-easa">
-              <Input id="am-easa" value={values.easaTc} onChange={(e) => set('easaTc', e.target.value)} />
+              <Input id="am-easa" placeholder="e.g. EASA.IM.A.064" value={values.easaTc} onChange={(e) => set('easaTc', e.target.value)} />
             </FormField>
             <FormField label="Drawing Prefix" htmlFor="am-prefix" help="Two letters. Drives drawing numbering for this type.">
-              <Input id="am-prefix" value={values.drawingPrefix} maxLength={2} className="w-24"
+              <Input id="am-prefix" placeholder="e.g. KA" value={values.drawingPrefix} maxLength={2}
                 onChange={(e) => set('drawingPrefix', e.target.value.toUpperCase())} />
             </FormField>
-            <FormField label="Status" htmlFor="am-status" help="Inactive types stay on the projects that already use them.">
+            <FormField label="Status" htmlFor="am-status" help="Inactive stays on old projects, out of pickers.">
               <Select id="am-status" value={values.active ? 'active' : 'inactive'}
                 onChange={(e) => set('active', e.target.value === 'active')}>
                 <option value="active">Active</option>

@@ -18,6 +18,7 @@ import { useTccaStore } from '@/stores/tccaStore'
 import { TCCA_STATUS_LABEL, TCCA_STATUS_TONE } from '@/lib/tccaDisplay'
 import { TccaProjectDrawer } from './TccaProjectDrawer'
 import type { TccaProject } from '@/types/tcca'
+import { DateText } from '@/components/patterns/DateText'
 
 const HEADERS = ['Number', 'Description', 'Linked Project', 'Opened', 'Status', 'Actions']
 
@@ -59,6 +60,7 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
     <AppShell
       activeChild="TCCA Projects"
       title="TCCA Projects"
+      description="Transport Canada certification projects."
       headerActions={
         <>
           <div className="min-w-0" style={{ width: 400 }}>
@@ -118,7 +120,7 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
                         </td>
                         <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 320 }}><Truncate>{t.description}</Truncate></td>
                         <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{projectLabel(t)}</td>
-                        <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{t.openedDate}</td>
+                        <td className="px-lg py-base text-sm text-text-primary"><DateText value={t.openedDate} /></td>
                         <td className="px-lg py-base"><Badge tone={TCCA_STATUS_TONE[t.status]}>{TCCA_STATUS_LABEL[t.status]}</Badge></td>
                         <td className="px-lg py-base" onClick={(e) => e.stopPropagation()}>
                           <ActionsMenu

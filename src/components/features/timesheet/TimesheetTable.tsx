@@ -5,6 +5,8 @@ import { PersonCell } from '@/components/patterns/PersonCell'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionsMenu, type ActionsMenuItem } from '@/components/patterns/ActionsMenu'
 import type { EnrichedTimesheetRow } from '@/lib/timesheetLookup'
+import { DateText } from '@/components/patterns/DateText'
+import { formatDate } from '@/lib/formatDate'
 
 /**
  * Number over description, activity over task: each pair is one thing read two
@@ -124,7 +126,7 @@ export function TimesheetTable({
                   <td className="px-sm py-base align-middle text-sm text-text-primary">
                     <span className="block truncate">{row.deliverableNumber || '—'}</span>
                   </td>
-                  <td className="px-sm py-base align-middle text-sm text-text-primary">{row.workingDate}</td>
+                  <td className="px-sm py-base align-middle text-sm text-text-primary"><DateText value={row.workingDate} /></td>
                   <td className="px-sm py-base align-middle text-sm text-text-primary">{row.hoursRegular.toFixed(2)}</td>
                   <td className="px-sm py-base align-middle text-sm text-text-primary">{row.hoursOvertime.toFixed(2)}</td>
                   <td className="px-sm py-base align-middle text-sm text-text-primary">{row.bankHoursRegular.toFixed(2)}</td>
@@ -136,7 +138,7 @@ export function TimesheetTable({
                     <Badge tone={row.active ? 'success' : 'danger'}>{row.active ? 'Active' : 'Inactive'}</Badge>
                   </td>
                   <td className="px-sm py-base align-middle" onClick={(e) => e.stopPropagation()}>
-                    <ActionsMenu ariaLabel={`Actions for timesheet entry on ${row.workingDate}`} items={actionsFor(row)} />
+                    <ActionsMenu ariaLabel={`Actions for timesheet entry on ${formatDate(row.workingDate)}`} items={actionsFor(row)} />
                   </td>
                 </tr>
               ))}

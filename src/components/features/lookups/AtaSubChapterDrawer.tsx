@@ -5,9 +5,9 @@ import { FormField } from '@/components/patterns/FormField'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
-import { Checkbox } from '@/components/ui/Checkbox'
 import { useLookupStore } from '@/stores/lookupStore'
 import type { AtaChapter, AtaSubChapter } from '@/types/lookup'
+import { ActiveSelect } from '@/components/patterns/ActiveSelect'
 
 export interface AtaSubChapterDrawerProps {
   mode: 'create' | 'edit'
@@ -76,7 +76,9 @@ export function AtaSubChapterDrawer({ mode, chapter, initial, onClose, onSubmit 
         <FormField label="Definition" htmlFor="atas-def">
           <Textarea id="atas-def" value={definition} placeholder="What this sub chapter covers..." onChange={(e) => setDefinition(e.target.value)} />
         </FormField>
-        <Checkbox label="Active" checked={active} onChange={() => setActive((v) => !v)} />
+        <FormField label="Active" htmlFor="atas-active" help="Inactive stays on old drawings, out of pickers.">
+          <ActiveSelect id="atas-active" value={active} onChange={setActive} />
+        </FormField>
       </FormSection>
     </Drawer>
   )

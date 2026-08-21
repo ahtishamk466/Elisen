@@ -23,6 +23,7 @@ import { useApprovalsStore } from '@/stores/approvalsStore'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useLookupStore } from '@/stores/lookupStore'
 import type { Approval } from '@/types/documents'
+import { formatDate } from '@/lib/formatDate'
 
 /** Shares, not fixed widths — the table scales with the page and cannot
     overflow. "Approval Holder" → "Holder" and "Current Revision" → "Revision":
@@ -240,7 +241,7 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
                                 return cr ? (
                                   <>
                                     <span className="block text-sm text-text-primary">Rev {cr.revision}</span>
-                                    <span className="block text-xs text-text-muted">{cr.revisionDate}</span>
+                                    <span className="block text-xs text-text-muted">{formatDate(cr.revisionDate)}</span>
                                   </>
                                 ) : <span className="text-sm text-text-muted">Not issued</span>
                               })()}

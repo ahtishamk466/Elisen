@@ -30,10 +30,20 @@ export function ChipOverflow({ items, max = 2, label, onShowAll }: ChipOverflowP
   const shown = open && !onShowAll ? items : items.slice(0, max)
   const hidden = items.length - shown.length
 
+  /* In table-row mode the chips share one line and truncate; a long task name
+     would otherwise wrap the cell to a second and third line, which is the very
+     thing this component exists to prevent. */
+  const inRow = !!onShowAll
+
   return (
-    <span className="flex flex-wrap items-center gap-xs">
+    <span className={`flex min-w-0 items-center gap-xs ${inRow ? 'flex-nowrap' : 'flex-wrap'}`}>
       {shown.map((t) => (
-        <span key={t} className="whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">
+        <span
+          key={t}
+          title={inRow ? t : undefined}
+          style={inRow ? { maxWidth: 96 } : undefined}
+          className={`rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary ${inRow ? 'truncate' : 'whitespace-nowrap'}`}
+        >
           {t}
         </span>
       ))}
@@ -43,7 +53,7 @@ export function ChipOverflow({ items, max = 2, label, onShowAll }: ChipOverflowP
           aria-expanded={onShowAll ? undefined : open}
           aria-label={open && !onShowAll ? `Show fewer ${label}` : `Show all ${items.length} ${label}`}
           onClick={(e) => { e.stopPropagation(); if (onShowAll) onShowAll(); else setOpen((v) => !v) }}
-          className="whitespace-nowrap text-xs font-medium text-text-primary underline underline-offset-2 transition-colors duration-fast hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+          className="shrink-0 whitespace-nowrap text-xs font-medium text-text-primary underline underline-offset-2 transition-colors duration-fast hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
         >
           {open && !onShowAll ? 'Show less' : `+${hidden} more`}
         </button>

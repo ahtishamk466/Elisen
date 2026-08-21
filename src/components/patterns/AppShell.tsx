@@ -16,6 +16,7 @@ const TOP_ROUTES: Record<string, string> = {
     until their screens exist. */
 const CHILD_ROUTES: Record<string, string> = {
   'Projects List': '/projects',
+  'Work Packages': '/work-packages',
   'Projects Review': '/projects/review',
   'TCCA Projects': '/tcca-projects',
   'Timesheet': '/timesheet',
@@ -42,7 +43,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
-  { label: 'Projects', icon: <FolderOpen size={18} />, children: ['Projects List', 'Projects Review', 'TCCA Projects'] },
+  { label: 'Projects', icon: <FolderOpen size={18} />, children: ['Projects List', 'Work Packages', 'Projects Review', 'TCCA Projects'] },
   // Approvals and Documents are global records that projects *link to* — a
   // certificate or a drawing outlives any one project and is often shared
   // across several, so they can't be owned by a project. They sit next to
@@ -76,11 +77,27 @@ export interface AppShellProps {
   headerLeft?: ReactNode
   /** Page-level controls (search, filters, primary CTA) rendered on the same
       line as the heading, aligned right. Keeps every list page identical. */
+  /**
+   * One short line under the heading, in the same block as it — **not** a
+   * paragraph floated into the page body, where `gap-lg` put 16px of air
+   * between a title and the sentence explaining it. Keep it to one clause:
+   * what this screen holds, not how it works.
+   */
+  description?: ReactNode
   headerActions?: ReactNode
+  /**
+   * Hand the vertical scroll to the page instead of to `<main>`.
+   *
+   * The default is right for a list page: the page is as tall as its content
+   * and `<main>` scrolls it. A master–detail screen wants the opposite — its
+   * rail and its detail each scroll inside a frame that ends at the fold — so
+   * it opts in here and sizes its own panes with `min-h-0 flex-1`.
+   */
+  fill?: boolean
   children: ReactNode
 }
 
-export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List', title, headerLeft, headerActions, children }: AppShellProps) {
+export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List', title, headerLeft, description, headerActions, fill = false, children }: AppShellProps) {
   // Expansion is independent of the current route — otherwise a parent
   // section (e.g. Time Entry) can only ever open on pages already inside it,
   // making it look unclickable everywhere else. Defaults to whichever
@@ -89,11 +106,14 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
   const [expanded, setExpanded] = useState(activeItem)
 
   return (
-    <div className="flex min-h-screen bg-neutral-50">
-      {/* Sticky + fixed to the viewport height (not the page's, which can be
-          taller) so the profile footer stays above the fold at any scroll
-          position; the nav list scrolls internally if it ever overflows. */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-primary-700 laptop:flex">
+    /* The shell owns the viewport: it is exactly one screen tall and never
+       scrolls itself, so the sidebar and the page heading stay put and only
+       the content below them moves. Scrolling the whole document instead used
+       to carry the nav and the title off the top of the screen. */
+    <div className="flex h-screen overflow-hidden bg-neutral-50">
+      {/* Full height of that frame, with the nav list scrolling internally, so
+          the profile footer stays above the fold at any scroll position. */}
+      <aside className="hidden h-full w-64 shrink-0 flex-col bg-primary-700 laptop:flex">
         <div className="px-lg py-xl">
           <img src="/logo-elisen.svg" alt="Elisen" width={600} height={104} className="h-6 w-auto brightness-0 invert" />
         </div>
@@ -169,12 +189,27 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex flex-wrap items-center justify-between gap-lg px-lg py-lg tablet:px-2xl">
-          {headerLeft ?? <h1 className="text-2xl font-bold text-text-primary">{title}</h1>}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <header className="flex shrink-0 flex-wrap items-center justify-between gap-lg px-lg py-lg tablet:px-2xl">
+          {headerLeft ?? (
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-text-primary">{title}</h1>
+              {description && <p className="mt-xxss text-sm text-text-secondary">{description}</p>}
+            </div>
+          )}
           {headerActions && <div className="flex flex-wrap items-center gap-sm">{headerActions}</div>}
         </header>
-        <main className="min-w-0 flex-1 px-lg pb-2xl tablet:px-2xl">{children}</main>
+        <main
+          /* `relative` is load-bearing, not decoration: `sr-only` is
+             `position: absolute`, and with no positioned ancestor its
+             containing block is the document — so a screen-reader label in
+             row 50 of a scrolling list sits 2600px down the *page* and gives
+             the window a scrollbar the design never asked for. */
+          className={`relative min-h-0 min-w-0 flex-1 px-lg tablet:px-2xl ${
+            fill ? 'flex flex-col overflow-hidden pb-lg' : 'overflow-y-auto pb-2xl'}`}
+        >
+          {children}
+        </main>
       </div>
     </div>
   )

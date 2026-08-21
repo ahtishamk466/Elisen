@@ -42,9 +42,6 @@ export function StepAdditionalDetails({ values, errors, setField }: StepProps) {
             <option value="cancelled">Cancelled</option>
           </Select>
         </FormField>
-        <FormField label="Project Opened Date" htmlFor="openedDate" required error={errors.openedDate}>
-          <Input id="openedDate" type="date" value={values.openedDate} error={!!errors.openedDate} onChange={(e) => setField('openedDate', e.target.value)} />
-        </FormField>
         <FormField label="Due Date" htmlFor="dueDate" error={errors.dueDate}>
           <Input id="dueDate" type="date" value={values.dueDate} error={!!errors.dueDate} onChange={(e) => setField('dueDate', e.target.value)} />
         </FormField>

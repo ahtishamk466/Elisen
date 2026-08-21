@@ -24,8 +24,27 @@ import type { Activity, Task } from '@/types/catalog'
 
 export type PageState = 'ready' | 'loading' | 'error'
 
-const ACTIVITY_HEADERS = ['Activity', 'Description', 'Tasks', 'Task Required', 'Default', 'Type', 'Active', 'Actions']
-const TASK_HEADERS = ['Task', 'Activities', 'Used', 'Active', 'Actions']
+/* Shares, not content-sized columns: Description is prose and would take the
+   whole table if left to its own devices, so it gets a fixed portion and
+   truncates. "Task Required" shortened — the heading was wider than the Yes/No
+   under it. */
+const ACTIVITY_COLUMNS: { label: string; width: string }[] = [
+  { label: 'Activity', width: '18%' },
+  { label: 'Description', width: '26%' },
+  { label: 'Tasks', width: '10%' },
+  { label: 'Required', width: '9%' },
+  { label: 'Default', width: '9%' },
+  { label: 'Type', width: '12%' },
+  { label: 'Active', width: '9%' },
+  { label: 'Actions', width: '7%' },
+]
+const TASK_COLUMNS: { label: string; width: string }[] = [
+  { label: 'Task', width: '26%' },
+  { label: 'Activities', width: '40%' },
+  { label: 'Used', width: '12%' },
+  { label: 'Active', width: '11%' },
+  { label: 'Actions', width: '11%' },
+]
 
 type Tab = 'activities' | 'tasks'
 
@@ -155,7 +174,7 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
     )
   }
 
-  const headers = tab === 'activities' ? ACTIVITY_HEADERS : TASK_HEADERS
+  const columns = tab === 'activities' ? ACTIVITY_COLUMNS : TASK_COLUMNS
   const blockedActivity = deletingActivity ? activityUsage(deletingActivity.id) : null
   const blockedActivityCount = blockedActivity ? blockedActivity.assignments + blockedActivity.entries : 0
   const blockedTaskCount = deletingTask ? taskUsage(deletingTask.name) : 0
@@ -165,6 +184,9 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
       title="Activities & Tasks"
       activeItem="Reference Data"
       activeChild="Activities & Tasks"
+      description={tab === 'activities'
+        ? 'Standard activities, with the tasks each one offers.'
+        : 'Tasks shared across activities.'}
       headerActions={
         <>
           <div className="min-w-0" style={{ width: 400 }}>
@@ -189,12 +211,6 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
           </Alert>
         )}
 
-        <p className="text-sm text-text-secondary">
-          {tab === 'activities'
-            ? 'Activities are created here and only selected inside a project. Each carries the tasks Time Entry offers once it is chosen.'
-            : 'Tasks sit below activities and are shared: one task can belong to several activities. Link them from either side.'}
-        </p>
-
         <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
           {tabs}
           {!loading && rowCount === 0 ? (
@@ -214,12 +230,13 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-left" style={{ minWidth: tab === 'activities' ? 1180 : 900 }}>
+                <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 860 }}>
                   <caption className="sr-only">{tab === 'activities' ? 'Catalog activities' : 'Catalog tasks'}</caption>
                   <thead>
                     <tr className="border-b border-border-default bg-neutral-50">
-                      {headers.map((h) => (
-                        <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                      {columns.map((c) => (
+                        <th key={c.label} scope="col" style={{ width: c.width }}
+                          className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-secondary">{c.label}</th>
                       ))}
                     </tr>
                   </thead>
@@ -227,7 +244,7 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
                     {loading
                       ? Array.from({ length: 6 }, (_, i) => (
                           <tr key={i} className="border-b border-border-default last:border-b-0">
-                            {headers.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                            {columns.map((c) => <td key={c.label} className="px-sm py-base"><Skeleton className="h-4 w-full" /></td>)}
                           </tr>
                         ))
                       : tab === 'activities'
@@ -237,27 +254,27 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
                             return (
                               <tr key={a.id} onClick={() => setActivityDrawer({ mode: 'view', activity: a })}
                                 className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
-                                <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">{a.name}</td>
-                                <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 300 }}>
+                                <td className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-primary">{a.name}</td>
+                                <td className="px-sm py-base text-sm text-text-primary" style={{ maxWidth: 300 }}>
                                   <Truncate>{a.description || '—'}</Truncate>
                                 </td>
-                                <td className="whitespace-nowrap px-lg py-base text-sm">
+                                <td className="whitespace-nowrap px-sm py-base text-sm">
                                   {a.nonProject ? <span className="text-text-muted">Not applicable</span>
                                     : linked.length === 0
                                       ? <span className={broken ? 'font-semibold text-danger' : 'text-text-muted'}>None</span>
                                       : <button type="button"
-                                          onClick={(e) => { e.stopPropagation(); setQuery(a.name); setTab('tasks'); resetVisible() }}
+                                          onClick={(e) => { e.stopPropagation(); setActivityDrawer({ mode: 'view', activity: a }) }}
                                           className="text-text-primary underline-offset-2 hover:text-accent hover:underline">
                                           {linked.length} task{linked.length === 1 ? '' : 's'}
                                         </button>}
                                 </td>
-                                <td className="whitespace-nowrap px-lg py-base"><YesNo on={a.taskRequired} /></td>
-                                <td className="whitespace-nowrap px-lg py-base"><YesNo on={a.isDefault} /></td>
-                                <td className="whitespace-nowrap px-lg py-base">
+                                <td className="whitespace-nowrap px-sm py-base"><YesNo on={a.taskRequired} /></td>
+                                <td className="whitespace-nowrap px-sm py-base"><YesNo on={a.isDefault} /></td>
+                                <td className="whitespace-nowrap px-sm py-base">
                                   <Badge tone={a.nonProject ? 'info' : 'neutral'}>{a.nonProject ? 'Non-project' : 'Project work'}</Badge>
                                 </td>
-                                <td className="whitespace-nowrap px-lg py-base"><YesNo on={a.active} yes="Active" no="Inactive" /></td>
-                                <td className="px-lg py-base" onClick={(e) => e.stopPropagation()}>
+                                <td className="whitespace-nowrap px-sm py-base"><YesNo on={a.active} yes="Active" no="Inactive" /></td>
+                                <td className="px-sm py-base" onClick={(e) => e.stopPropagation()}>
                                   <ActionsMenu
                                     ariaLabel={`Actions for activity ${a.name}`}
                                     items={[
@@ -277,8 +294,8 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
                             return (
                               <tr key={t.id} onClick={() => setTaskDrawer({ mode: 'view', task: t })}
                                 className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
-                                <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">{t.name}</td>
-                                <td className="px-lg py-base text-sm">
+                                <td className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-primary">{t.name}</td>
+                                <td className="px-sm py-base text-sm">
                                   {owners.length === 0
                                     ? <span className="text-text-muted">Not linked yet</span>
                                     : <span className="flex flex-wrap gap-xs">
@@ -287,11 +304,11 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
                                         ))}
                                       </span>}
                                 </td>
-                                <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">
+                                <td className="whitespace-nowrap px-sm py-base text-sm text-text-primary">
                                   {used === 0 ? <span className="text-text-muted">—</span> : `${used} ${used === 1 ? 'entry' : 'entries'}`}
                                 </td>
-                                <td className="whitespace-nowrap px-lg py-base"><YesNo on={t.active} yes="Active" no="Inactive" /></td>
-                                <td className="px-lg py-base" onClick={(e) => e.stopPropagation()}>
+                                <td className="whitespace-nowrap px-sm py-base"><YesNo on={t.active} yes="Active" no="Inactive" /></td>
+                                <td className="px-sm py-base" onClick={(e) => e.stopPropagation()}>
                                   <ActionsMenu
                                     ariaLabel={`Actions for task ${t.name}`}
                                     items={[

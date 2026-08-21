@@ -2,7 +2,9 @@ import type { BadgeTone } from '@/components/ui/Badge'
 import type { DocumentKind, RevisionStatus } from '@/types/documents'
 
 export const REVISION_STATUS_LABEL: Record<RevisionStatus, string> = {
-  wip: 'Work in Progress',
+  // Same words as a project's `active` status, so one state reads one way
+  // everywhere in the app.
+  wip: 'In Progress',
   'in-review': 'In Review',
   signature: 'Signature Cycle',
   accepted: 'Accepted',

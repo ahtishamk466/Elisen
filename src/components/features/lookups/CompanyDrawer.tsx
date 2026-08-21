@@ -109,15 +109,15 @@ export function CompanyDrawer({ mode, initial, initialContacts = [], onClose, on
               <Input id="co-address" value={c.address} placeholder="Street, unit, province/state" onChange={(e) => setField('address', e.target.value)} />
             </FormField>
             <FormField label="City" htmlFor="co-city">
-              <Input id="co-city" value={c.city} onChange={(e) => setField('city', e.target.value)} />
+              <Input id="co-city" placeholder="e.g. Dorval" value={c.city} onChange={(e) => setField('city', e.target.value)} />
             </FormField>
             <FormField label="Country" htmlFor="co-country">
-              <Input id="co-country" value={c.country} onChange={(e) => setField('country', e.target.value)} />
+              <Input id="co-country" placeholder="e.g. Canada" value={c.country} onChange={(e) => setField('country', e.target.value)} />
             </FormField>
             <FormField label="Postal / Zipcode" htmlFor="co-postal">
-              <Input id="co-postal" value={c.postal} onChange={(e) => setField('postal', e.target.value)} />
+              <Input id="co-postal" placeholder="e.g. H4Y 1C2" value={c.postal} onChange={(e) => setField('postal', e.target.value)} />
             </FormField>
-            <FormField label="Status" htmlFor="co-status" help="Inactive companies keep their history but are hidden from pickers.">
+            <FormField label="Status" htmlFor="co-status" help="Inactive keeps history, out of the pickers.">
               <Select id="co-status" value={c.active ? 'active' : 'inactive'} onChange={(e) => setField('active', e.target.value === 'active')}>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>

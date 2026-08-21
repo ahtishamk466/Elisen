@@ -258,6 +258,17 @@ export const DOC_REVISIONS: DocRevision[] = [
   { id: 'rev-gd24-0', documentId: 'doc-gd24-0', rev: 'A', initialProjectId: 'rv-569', openedDate: '2025-08-17', dueDate: '2025-10-06', releasedDate: '', receivedDate: '', closedDate: '', nextAction: 'Kelly Osei', url: '', status: 'wip' },
 ]
 
+/* Roughly two in three revisions have their file linked, which is how the data
+   actually looks — a document is filed once it is released, and a rev that is
+   still being written has nowhere to point yet. Deterministic (index-based, no
+   randomness) so a reload never changes which rows carry a link. */
+DOC_REVISIONS.forEach((r, i) => {
+  if (i % 3 === 2) return
+  const doc = DOCUMENTS.find((d) => d.id === r.documentId)
+  if (!doc) return
+  r.url = `https://files.elisen.example/${doc.kind === 'drawing' ? 'design-data' : 'deliverables'}/${doc.number.toLowerCase()}-rev-${r.rev.toLowerCase()}.pdf`
+})
+
 export const PROJECT_REVISION_LINKS: ProjectRevisionLink[] = DOC_REVISIONS.map((r) => ({
   id: `prl-${r.id}`,
   projectId: r.initialProjectId,

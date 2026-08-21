@@ -4,6 +4,7 @@ import type { DeliverableRevision } from '@/types/tcca'
 import { useCatalogStore } from '@/stores/catalogStore'
 import { DetailCard as Card, DetailField as Field } from '@/components/patterns/DetailView'
 import type { TimesheetEntryValues } from './useTimesheetEntryForm'
+import { formatDate } from '@/lib/formatDate'
 
 export interface TimesheetEntryViewProps {
   values: TimesheetEntryValues
@@ -37,7 +38,7 @@ export function TimesheetEntryView({ values, projects, workPackages, deliverable
 
       <Card title="Hours">
         <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
-          <Field label="Working Date">{values.workingDate}</Field>
+          <Field label="Working Date">{formatDate(values.workingDate)}</Field>
           <Field label="Hours">{values.hoursRegular}</Field>
           <Field label="Hours Overtime">{values.hoursOvertime || '0'}</Field>
           <Field label="Bank Regular Hours">{values.bankHoursRegular || '0'}</Field>

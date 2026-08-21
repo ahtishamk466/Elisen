@@ -47,7 +47,7 @@ export function TimesheetEntryFormFields({
       <FormSection title="Entry" subtitle="Who did the work, and against which project.">
         <FormField label="Employee" htmlFor="employeeName" required={employeeMode === 'selectable'} error={errors.employeeName}>
           {employeeMode === 'fixed' ? (
-            <Input id="employeeName" value={values.employeeName} disabled />
+            <Input id="employeeName" placeholder="Select a person..." value={values.employeeName} disabled />
           ) : (
             <PersonSelect
               id="employeeName" value={values.employeeName} error={!!errors.employeeName}

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ExternalLink, FilePlus2, FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { ExternalLink, Eye, FilePlus2, FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
@@ -8,19 +8,22 @@ import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { TableTabs } from '@/components/patterns/TableTabs'
-import { Truncate } from '@/components/patterns/Truncate'
 import { Badge } from '@/components/ui/Badge'
 import { PersonCell } from '@/components/patterns/PersonCell'
+import { ChipOverflow } from '@/components/patterns/ChipOverflow'
+import { isOpenableUrl } from '@/components/patterns/UrlField'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { DocumentDrawer } from '@/components/features/projects/DocumentDrawer'
 import { RevisionDrawer } from '@/components/features/projects/RevisionDrawer'
+import { RevisionViewDrawer } from './RevisionViewDrawer'
 import { useDocumentsStore } from '@/stores/documentsStore'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { KIND_LABEL, REVISION_STATUS_LABEL, REVISION_STATUS_TONE } from '@/lib/documentDisplay'
 import type { DocRevision, DocumentKind, ProjectDocument } from '@/types/documents'
+import { DateText } from '@/components/patterns/DateText'
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -51,6 +54,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
   const [query, setQuery] = useState('')
   const [docDrawer, setDocDrawer] = useState<{ mode: 'create' | 'edit'; doc?: ProjectDocument } | null>(null)
   const [revDrawer, setRevDrawer] = useState<{ doc: ProjectDocument; rev?: DocRevision } | null>(null)
+  const [viewing, setViewing] = useState<Row | null>(null)
   const [deletingRev, setDeletingRev] = useState<Row | null>(null)
   const [deletingDoc, setDeletingDoc] = useState<ProjectDocument | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -81,9 +85,25 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
 
   const revisionCount = (documentId: string) => revisions.filter((r) => r.documentId === documentId).length
 
-  const headers = isDrawing
-    ? ['Number / Rev', 'Title', 'Type', 'Aircraft', 'ATA', 'Status', 'Projects', 'Actions']
-    : ['Number / Rev', 'Title', 'Type', 'Owner', 'Due', 'Status', 'Projects', 'Actions']
+  /* Number and Rev are separate columns — a number is how a document is asked
+     for and a rev is which one of it you mean; merged, neither sorts or scans.
+     Title and Type share one, because the type only qualifies the title. */
+  const columns: { label: string; width: string }[] = isDrawing
+    ? [
+        { label: 'Number', width: '10.6%' }, { label: 'Rev', width: '4.3%' },
+        { label: 'Title / Type', width: '18.7%' }, { label: 'Aircraft', width: '9.6%' },
+        { label: 'ATA', width: '5.8%' }, { label: 'Opened', width: '7.3%' },
+        { label: 'Due', width: '7.3%' }, { label: 'Next Action', width: '9%' },
+        { label: 'Status', width: '13.3%' }, { label: 'Projects', width: '7.6%' },
+        { label: 'Actions', width: '6.5%' },
+      ]
+    : [
+        { label: 'Number', width: '10.6%' }, { label: 'Rev', width: '4.3%' },
+        { label: 'Title / Type', width: '27%' }, { label: 'Owner', width: '10%' },
+        { label: 'Opened', width: '7.3%' }, { label: 'Due', width: '7.3%' },
+        { label: 'Next Action', width: '9%' }, { label: 'Status', width: '10.4%' },
+        { label: 'Projects', width: '7.6%' }, { label: 'Actions', width: '6.5%' },
+      ]
 
   if (state === 'error') {
     return (
@@ -110,8 +130,9 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
   /** Open the file first (that's what a reader wants), then edits, then the
       two destructive rows — the house order for every Actions menu. */
   const actionsFor = ({ doc, rev }: Row) => [
-    ...(rev.url
-      ? [{ label: 'Open file', icon: <ExternalLink size={16} />, onSelect: () => window.open(rev.url, '_blank', 'noopener,noreferrer') }]
+    { label: 'View', icon: <Eye size={16} />, onSelect: () => setViewing({ doc, rev }) },
+    ...(isOpenableUrl(rev.url)
+      ? [{ label: 'Go To', icon: <ExternalLink size={16} />, onSelect: () => window.open(rev.url.trim(), '_blank', 'noopener,noreferrer') }]
       : []),
     { label: `Edit ${label.singular}`, icon: <Pencil size={16} />, onSelect: () => setDocDrawer({ mode: 'edit', doc }) },
     { label: 'Edit revision', icon: <Pencil size={16} />, onSelect: () => setRevDrawer({ doc, rev }) },
@@ -124,6 +145,9 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
     <AppShell
       title="Documents"
       activeItem="Documents"
+      description={isDrawing
+        ? 'Manage drawings and design data with revisions.'
+        : 'Manage deliverable documents with revisions.'}
       headerActions={
         <>
           <div className="min-w-0" style={{ width: 400 }}>
@@ -141,12 +165,6 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
     >
       <div className="grid gap-lg">
         {toast && <Alert tone="info" title={toast} />}
-
-        <p className="text-sm text-text-secondary">
-          {isDrawing
-            ? 'Drawings and design data are created and managed here, with every revision. Projects link to revisions from their Design Data tab. One drawing can serve several projects.'
-            : 'Deliverable documents are created and managed here, with every revision. Projects link to revisions from their Deliverables tab. One document can serve several projects.'}
-        </p>
 
         {!loading && rows.length === 0 ? (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
@@ -166,12 +184,15 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
             {tabs}
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left" style={{ minWidth: 1120 }}>
+              <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 950 }}>
                 <caption className="sr-only">{label.plural}, with the projects each revision is attached to</caption>
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
-                    {headers.map((h) => (
-                      <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                    {columns.map((c) => (
+                      <th key={c.label} scope="col" style={{ width: c.width }}
+                        className="whitespace-nowrap px-sm py-base align-middle text-xs font-semibold text-text-secondary">
+                        {c.label}
+                      </th>
                     ))}
                   </tr>
                 </thead>
@@ -179,7 +200,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                   {loading
                     ? Array.from({ length: 6 }, (_, i) => (
                         <tr key={i} className="border-b border-border-default last:border-b-0">
-                          {headers.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                          {columns.map((c) => <td key={c.label} className="px-sm py-base"><Skeleton className="h-4 w-full" /></td>)}
                         </tr>
                       ))
                     : rows.slice(0, visibleCount).map((row) => {
@@ -188,35 +209,52 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                         return (
                           <tr
                             key={rev.id}
-                            onClick={() => setRevDrawer({ doc, rev })}
+                            onClick={() => setViewing({ doc, rev })}
                             className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
                           >
-                            <td className="whitespace-nowrap px-lg py-base align-top text-sm font-semibold text-text-primary">
-                              {doc.number} · {rev.rev}
+                            <td className="px-sm py-base align-middle text-sm font-semibold text-text-primary">
+                              <span className="block truncate" title={doc.number}>{doc.number}</span>
                             </td>
-                            <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 260 }}>
-                              <Truncate>{doc.title}</Truncate>
+                            <td className="whitespace-nowrap px-sm py-base align-middle text-sm font-semibold text-text-primary">
+                              {rev.rev}
                             </td>
-                            <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{doc.type}</td>
-                            <td className="px-lg py-base align-top text-sm text-text-primary">
-                              {isDrawing ? doc.aircraft || '—' : <PersonCell name={doc.owner} />}
+                            {/* Title leads, type qualifies it underneath. */}
+                            <td className="px-sm py-base align-middle text-sm text-text-primary">
+                              <span className="block truncate" title={doc.title}>{doc.title}</span>
+                              <span className="block truncate text-xs text-text-muted">{doc.type}</span>
                             </td>
-                            <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
-                              {isDrawing ? doc.ataChapter || '—' : rev.dueDate || '—'}
+                            <td className="px-sm py-base align-middle text-sm text-text-primary">
+                              {isDrawing
+                                ? <span className="block truncate">{doc.aircraft || '—'}</span>
+                                : <PersonCell name={doc.owner} />}
                             </td>
-                            <td className="whitespace-nowrap px-lg py-base align-top">
+                            {isDrawing && (
+                              <td className="whitespace-nowrap px-sm py-base align-middle text-sm tabular-nums text-text-primary">
+                                {doc.ataChapter || '—'}
+                              </td>
+                            )}
+                            {/* Dates wrap to a second line instead of holding a
+                                column open for twelve characters. */}
+                            <td className="px-sm py-base align-middle text-sm tabular-nums text-text-primary">
+                              <DateText value={rev.openedDate} />
+                            </td>
+                            <td className="px-sm py-base align-middle text-sm tabular-nums text-text-primary">
+                              <DateText value={rev.dueDate} />
+                            </td>
+                            <td className="px-sm py-base align-middle">
+                              {rev.nextAction ? <PersonCell name={rev.nextAction} /> : <span className="text-sm text-text-muted">—</span>}
+                            </td>
+                            <td className="whitespace-nowrap px-sm py-base align-middle">
                               <Badge tone={REVISION_STATUS_TONE[rev.status]}>{REVISION_STATUS_LABEL[rev.status]}</Badge>
                             </td>
                             {/* The count is the point: it's what makes deleting
                                 a reused revision obviously dangerous. */}
-                            <td className="px-lg py-base align-top">
+                            <td className="px-sm py-base align-middle">
                               {labels.length === 0
-                                ? <span className="text-sm text-text-muted">Not linked</span>
-                                : <div className="flex flex-wrap gap-xs">
-                                    {labels.map((l) => <Badge key={l} appearance="outline">{l}</Badge>)}
-                                  </div>}
+                                ? <span className="text-sm text-text-muted">—</span>
+                                : <ChipOverflow items={labels} max={1} label="projects" onShowAll={() => setViewing({ doc, rev })} />}
                             </td>
-                            <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
+                            <td className="px-sm py-base align-middle" onClick={(e) => e.stopPropagation()}>
                               <ActionsMenu
                                 ariaLabel={`Actions for ${doc.number} rev ${rev.rev}`}
                                 items={actionsFor(row)}
@@ -242,6 +280,16 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
           initial={docDrawer.doc}
           onClose={() => setDocDrawer(null)}
           onSaved={setToast}
+        />
+      )}
+      {viewing && (
+        <RevisionViewDrawer
+          key={viewing.rev.id}
+          document={viewing.doc}
+          revision={viewing.rev}
+          projectLabels={projectsFor(viewing.rev.id)}
+          onClose={() => setViewing(null)}
+          onEdit={() => setRevDrawer({ doc: viewing.doc, rev: viewing.rev })}
         />
       )}
       {revDrawer && (

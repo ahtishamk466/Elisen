@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { useApprovalsStore } from '@/stores/approvalsStore'
 import { useLookupStore } from '@/stores/lookupStore'
 import type { Approval } from '@/types/documents'
+import { formatDate } from '@/lib/formatDate'
 
 const HEADERS = ['Number', 'Description', 'Primary', 'Aircraft', 'Current Revision', 'Actions']
 
@@ -104,7 +105,7 @@ export function ProjectApprovalsTab({ projectId }: { projectId: string }) {
                             </div>}
                       </td>
                       <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">
-                        {cr ? `Rev ${cr.revision} · ${cr.revisionDate}` : <span className="text-text-muted">Not issued yet</span>}
+                        {cr ? `Rev ${cr.revision} · ${formatDate(cr.revisionDate)}` : <span className="text-text-muted">Not issued yet</span>}
                       </td>
                       <td className="px-lg py-base">
                         <ActionsMenu

@@ -28,6 +28,7 @@ import { EMPLOYEES, PAYROLL_GROUPS, employeeByName } from '@/lib/employeeFixture
 import { PEOPLE } from '@/lib/projectFixtures'
 import type { TimesheetEntry } from '@/types/timesheet'
 import type { TimesheetEntryValues } from './useTimesheetEntryForm'
+import { formatDate } from '@/lib/formatDate'
 
 export type PageState = 'ready' | 'loading' | 'empty' | 'error'
 
@@ -167,6 +168,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
   return (
     <AppShell
       title="Hours Worked"
+      description="All logged hours, by entry and by person."
       activeItem="Time Entry"
       activeChild="Hours Worked"
       headerActions={
@@ -316,7 +318,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
       <ConfirmDialog
         open={!!deletingRow}
         title="Delete this entry?"
-        description={deletingRow ? `This timesheet entry for ${deletingRow.employeeName} on ${deletingRow.workingDate} will be permanently removed. This cannot be undone.` : ''}
+        description={deletingRow ? `This timesheet entry for ${deletingRow.employeeName} on ${formatDate(deletingRow.workingDate)} will be permanently removed. This cannot be undone.` : ''}
         confirmLabel="Delete entry"
         tone="danger"
         onConfirm={handleDeleteConfirmed}

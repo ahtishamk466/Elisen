@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { useTccaStore } from '@/stores/tccaStore'
 import { TCCA_STATUS_LABEL, TCCA_STATUS_TONE } from '@/lib/tccaDisplay'
 import type { TccaProject } from '@/types/tcca'
+import { formatDate } from '@/lib/formatDate'
 
 /**
  * Transport Canada projects this Elisen project relates to, as an association
@@ -100,7 +101,7 @@ export function ProjectTccaTab({ projectId }: { projectId: string }) {
                     </span>
                     <span className="text-sm text-text-secondary">{t.description}</span>
                     <span className="text-xs text-text-muted">
-                      Checklist {complete}/{applicable.length} complete · {docCount} document{docCount === 1 ? '' : 's'} tracked · Started {t.openedDate}
+                      Checklist {complete}/{applicable.length} complete · {docCount} document{docCount === 1 ? '' : 's'} tracked · Started {formatDate(t.openedDate)}
                     </span>
                   </button>
                   <ActionsMenu

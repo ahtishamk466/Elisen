@@ -109,6 +109,9 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
       title="Aircraft"
       activeItem="Reference Data"
       activeChild="Aircraft"
+      description={tab === 'aircraft'
+        ? 'Aircraft types, with certificates and drawing prefix.'
+        : 'Specific airframes, with their owner or operator.'}
       headerActions={
         <>
           <div className="min-w-0" style={{ width: 400 }}>
@@ -131,12 +134,6 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
     >
       <div className="grid gap-lg">
         {toast && <Alert tone="info" title={toast} />}
-
-        <p className="text-sm text-text-secondary">
-          {tab === 'aircraft'
-            ? 'Aircraft types, with their type certificates and drawing prefix. A type has no owner: specific airframes live under Serial Numbers.'
-            : 'Specific airframes, each one of an aircraft type, with the owner or operator to contact about it.'}
-        </p>
 
         {!loading && rowCount === 0 ? (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">

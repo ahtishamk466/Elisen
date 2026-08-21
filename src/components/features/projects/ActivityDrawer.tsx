@@ -84,7 +84,7 @@ export function ActivityDrawer({ mode, workPackage, usedActivityIds, initial, on
       >
         {isEdit ? (
           <FormField label="Activity" htmlFor="act-name">
-            <Input id="act-name" value={activityName(catalogActivities, initial!.activityId)} disabled />
+            <Input id="act-name" placeholder="e.g. Design Review" value={activityName(catalogActivities, initial!.activityId)} disabled />
           </FormField>
         ) : (
           <FormField label="Activity" htmlFor="act-select" required error={errors.activityId}>
@@ -99,12 +99,12 @@ export function ActivityDrawer({ mode, workPackage, usedActivityIds, initial, on
             onChange={(v) => { setResponsible(v); setErrors((p) => ({ ...p, responsible: undefined })) }} />
         </FormField>
         <FormField label="Budget Hours" htmlFor="act-budget" error={errors.budgetHours}
-          help="Entered per activity, rolled up on the package. Whether budgeting stays here or moves to the package level is pending client confirmation.">
+          help="Per activity, rolled up on the package.">
           <Input id="act-budget" value={budgetHours} error={!!errors.budgetHours} inputMode="decimal" placeholder="0"
             onChange={(e) => { setBudgetHours(e.target.value); setErrors((p) => ({ ...p, budgetHours: undefined })) }} />
         </FormField>
         <FormField label="Tasks" htmlFor="act-tasks"
-          help="From the activity's task associations, which filter the Time Entry picklist. Managed in Reference Data → Activities & Tasks, not per package.">
+          help="Set in Reference Data → Activities & Tasks.">
           <div id="act-tasks" className="flex min-h-11 flex-wrap items-center gap-xs rounded-sm border border-border-default bg-neutral-50 px-base py-sm">
             {tasks.length === 0 ? (
               <span className="text-sm text-text-muted">{activityId ? 'No tasks associated with this activity.' : 'Pick an activity to see its tasks.'}</span>

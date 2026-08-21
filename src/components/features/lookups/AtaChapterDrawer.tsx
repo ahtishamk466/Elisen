@@ -5,9 +5,9 @@ import { FormField } from '@/components/patterns/FormField'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
-import { Checkbox } from '@/components/ui/Checkbox'
 import { useLookupStore } from '@/stores/lookupStore'
 import type { AtaChapter } from '@/types/lookup'
+import { ActiveSelect } from '@/components/patterns/ActiveSelect'
 
 export interface AtaChapterDrawerProps {
   mode: 'create' | 'edit'
@@ -68,7 +68,9 @@ export function AtaChapterDrawer({ mode, initial, onClose, onSubmit }: AtaChapte
         <FormField label="Definition" htmlFor="ata-def">
           <Textarea id="ata-def" value={definition} placeholder="What this chapter covers..." onChange={(e) => setDefinition(e.target.value)} />
         </FormField>
-        <Checkbox label="Active, available in pickers across the app" checked={active} onChange={() => setActive((v) => !v)} />
+        <FormField label="Active" htmlFor="ata-active" help="Inactive stays on old drawings, out of pickers.">
+          <ActiveSelect id="ata-active" value={active} onChange={setActive} />
+        </FormField>
       </FormSection>
     </Drawer>
   )

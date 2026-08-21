@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { FileText, Link2, Pencil, Unlink, ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { PersonCell } from '@/components/patterns/PersonCell'
+import { isOpenableUrl } from '@/components/patterns/UrlField'
 import { Button } from '@/components/ui/Button'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { EmptyState } from '@/components/patterns/EmptyState'
@@ -13,6 +14,7 @@ import { useDocumentsStore } from '@/stores/documentsStore'
 import { KIND_LABEL, REVISION_STATUS_LABEL, REVISION_STATUS_TONE } from '@/lib/documentDisplay'
 import { RevisionDrawer } from './RevisionDrawer'
 import type { DocRevision, DocumentKind, ProjectDocument } from '@/types/documents'
+import { DateText } from '@/components/patterns/DateText'
 
 export interface ProjectDocumentsTabProps {
   kind: DocumentKind
@@ -99,9 +101,11 @@ export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProp
     setChoice('')
   }
 
+  /* Number and Rev stand apart, Title carries its Type underneath — the same
+     shape as the Documents workspace, so a revision reads identically on both. */
   const headers = isDrawing
-    ? ['Number / Rev', 'Title', 'Type', 'Aircraft', 'ATA', 'Next Action', 'Status', 'Actions']
-    : ['Number / Rev', 'Title', 'Type', 'Owner', 'Due', 'Next Action', 'Status', 'Actions']
+    ? ['Number', 'Rev', 'Title / Type', 'Aircraft', 'ATA', 'Opened', 'Next Action', 'Status', 'Actions']
+    : ['Number', 'Rev', 'Title / Type', 'Owner', 'Opened', 'Due', 'Next Action', 'Status', 'Actions']
 
   const openWorkspace = () => navigate(WORKSPACE_PATH[kind])
 
@@ -151,23 +155,28 @@ export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProp
               <tbody>
                 {rows.map(({ rev, doc }) => (
                   <tr key={rev.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
-                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">
-                      {doc.number} <span className="text-text-muted">rev {rev.rev}</span>
+                    <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">
+                      {doc.number}
                       {rev.initialProjectId !== projectId && (
                         <span className="ml-xs align-middle text-text-muted" title="Reused from another project"><ExternalLink size={12} aria-label="Reused from another project" /></span>
                       )}
                     </td>
-                    <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 260 }}><Truncate>{doc.title}</Truncate></td>
-                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{doc.type}</td>
+                    <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">{rev.rev}</td>
+                    <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 260 }}>
+                      <Truncate lines={1}>{doc.title}</Truncate>
+                      <span className="block truncate text-xs text-text-muted">{doc.type}</span>
+                    </td>
                     {isDrawing ? (
                       <>
                         <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{doc.aircraft || '—'}</td>
                         <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{doc.ataChapter || '—'}</td>
+                        <td className="px-lg py-base text-sm tabular-nums text-text-primary"><DateText value={rev.openedDate} /></td>
                       </>
                     ) : (
                       <>
                         <td className="px-lg py-base"><PersonCell name={doc.owner} /></td>
-                        <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{rev.dueDate || '—'}</td>
+                        <td className="px-lg py-base text-sm tabular-nums text-text-primary"><DateText value={rev.openedDate} /></td>
+                        <td className="px-lg py-base text-sm tabular-nums text-text-primary"><DateText value={rev.dueDate} /></td>
                       </>
                     )}
                     <td className="px-lg py-base"><PersonCell name={rev.nextAction} /></td>
@@ -180,6 +189,9 @@ export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProp
                       <ActionsMenu
                         ariaLabel={`Actions for ${doc.number} rev ${rev.rev}`}
                         items={[
+                          ...(isOpenableUrl(rev.url)
+                            ? [{ label: 'Go To', icon: <ExternalLink size={16} />, onSelect: () => window.open(rev.url.trim(), '_blank', 'noopener,noreferrer') }]
+                            : []),
                           { label: 'Edit revision tracking', icon: <Pencil size={16} />, onSelect: () => setEditing({ doc, rev }) },
                           { label: 'Unlink from project', icon: <Unlink size={16} />, onSelect: () => setUnlinking({ doc, rev }), tone: 'danger' },
                         ]}

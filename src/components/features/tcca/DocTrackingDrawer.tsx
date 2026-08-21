@@ -41,7 +41,7 @@ export function DocTrackingDrawer({ link, revision, onClose }: { link: TccaDocLi
       }
     >
       <FormSection title="Transport Canada tracking" subtitle="How TCCA is involved with this document, and where it stands.">
-        <FormField label="Involvement" htmlFor="doc-involvement" help="Whether TCCA wants to see, review, or approve this document.">
+        <FormField label="Involvement" htmlFor="doc-involvement" help="See, review, or approve.">
           <Select id="doc-involvement" value={involvement} onChange={(e) => setInvolvement(e.target.value as TccaInvolvement)}>
             <option value="none">No involvement</option>
             <option value="review">TCCA reviews</option>

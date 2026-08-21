@@ -8,11 +8,12 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { PersonSelect } from '@/components/ui/PersonSelect'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { UrlField } from '@/components/patterns/UrlField'
 import { useDocumentsStore } from '@/stores/documentsStore'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useTccaStore } from '@/stores/tccaStore'
 import { useLookupStore } from '@/stores/lookupStore'
-import { DOC_TYPES, KIND_LABEL } from '@/lib/documentDisplay'
+import { DOC_TYPES, KIND_LABEL, REVISION_STATUS_LABEL } from '@/lib/documentDisplay'
 import { PEOPLE } from '@/lib/projectFixtures'
 import type { DocumentKind, ProjectDocument, RevisionStatus } from '@/types/documents'
 
@@ -77,11 +78,14 @@ export function DocumentDrawer({ kind, initial, onClose, onSaved }: DocumentDraw
   const [ataChapter, setAtaChapter] = useState(initial?.ataChapter ?? '')
   // First-revision fields — create only; revisions are edited in RevisionDrawer.
   const [project, setProject] = useState('')
-  const [rev, setRev] = useState('A')
+  /* Empty with `A` as the placeholder — the box shows what it will use,
+     and a blank submit takes it, so the fast path is still one keystroke
+     less than typing it. */
+  const [rev, setRev] = useState('')
   const [openedDate, setOpenedDate] = useState(today())
   const [dueDate, setDueDate] = useState('')
   const [nextAction, setNextAction] = useState('')
-  const [status, setStatus] = useState<RevisionStatus>('wip')
+  const [status, setStatus] = useState<RevisionStatus | ''>('')
   const [url, setUrl] = useState('')
   const [tccaId, setTccaId] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -129,8 +133,7 @@ export function DocumentDrawer({ kind, initial, onClose, onSaved }: DocumentDraw
     if (!owner) e.owner = 'Owner is required.'
     if (!isEdit) {
       if (!project) e.project = 'Choose the project this first revision is created for.'
-      if (!rev.trim()) e.rev = 'Revision letter is required.'
-      if (!nextAction) e.nextAction = 'Next action person is required. It drives their to-do list.'
+      if (!status) e.status = 'Status is required.'
     }
     setErrors(e)
     if (Object.values(e).some(Boolean)) return
@@ -147,17 +150,19 @@ export function DocumentDrawer({ kind, initial, onClose, onSaved }: DocumentDraw
       return
     }
 
+    const revValue = (rev.trim() || 'A').toUpperCase()
     const docId = crypto.randomUUID()
     const revId = crypto.randomUUID()
     addDocument(
       { id: docId, ...fields },
       {
-        id: revId, documentId: docId, rev: rev.trim().toUpperCase(), initialProjectId: project,
-        openedDate, dueDate, releasedDate: '', receivedDate: '', closedDate: '', nextAction, url, status,
+        id: revId, documentId: docId, rev: revValue, initialProjectId: project,
+        openedDate, dueDate, releasedDate: '', receivedDate: '', closedDate: '', nextAction, url,
+        status: status as RevisionStatus,
       },
     )
     if (!isDrawing && tccaId) linkRevision(tccaId, revId)
-    onSaved?.(`${number.trim()} rev ${rev.trim().toUpperCase()} created.`)
+    onSaved?.(`${number.trim()} rev ${revValue} created.`)
     close()
   }
 
@@ -181,13 +186,13 @@ export function DocumentDrawer({ kind, initial, onClose, onSaved }: DocumentDraw
       >
         <FormSection
           title={isDrawing ? 'Drawing' : 'Document'}
-          subtitle="Number, title, type and owner live at the document level, everything else belongs to its revisions."
+          subtitle="Number, title, type and owner belong to the document; everything else to its revisions."
         >
           <FormField label="Number" htmlFor="doc-number" required error={errors.number} help={`e.g. ${numberHint}`}>
             <Input id="doc-number" value={number} error={!!errors.number} onChange={(e) => set(setNumber, 'number')(e.target.value)} />
           </FormField>
           <FormField label="Title" htmlFor="doc-title" required error={errors.title}>
-            <Input id="doc-title" value={title} error={!!errors.title} onChange={(e) => set(setTitle, 'title')(e.target.value)} />
+            <Input id="doc-title" placeholder="e.g. Certification Plan" value={title} error={!!errors.title} onChange={(e) => set(setTitle, 'title')(e.target.value)} />
           </FormField>
           <FormField label="Type" htmlFor="doc-type" required error={errors.type}>
             <Select id="doc-type" value={type} error={!!errors.type} placeholder="Select a type..." onChange={(e) => set(setType, 'type')(e.target.value)}>
@@ -200,11 +205,11 @@ export function DocumentDrawer({ kind, initial, onClose, onSaved }: DocumentDraw
           </FormField>
           {isDrawing && (
             <>
-              <FormField label="Aircraft Type" htmlFor="doc-aircraft" help="So the drawing can be found and reused on future projects.">
+              <FormField label="Aircraft Type" htmlFor="doc-aircraft" help="So it can be found and reused later.">
                 <Input id="doc-aircraft" value={aircraft} placeholder="e.g. King Air 350" onChange={(e) => set(setAircraft)(e.target.value)} />
               </FormField>
               <FormField label="ATA Chapter" htmlFor="doc-ata"
-                help="From Reference Data → ATA Chapters, so every drawing files under the same taxonomy.">
+                help="From Reference Data → ATA Chapters.">
                 <SearchableSelect
                   id="doc-ata" value={ataChapter}
                   onChange={(v) => set(setAtaChapter)(v)}
@@ -231,7 +236,7 @@ export function DocumentDrawer({ kind, initial, onClose, onSaved }: DocumentDraw
             {/* A revision is always created *for* a project, so it is picked
                 here — it can be linked to further projects afterwards. */}
             <FormField label="Project" htmlFor="doc-project" required error={errors.project}
-              help="The project this first revision is created for. It can be linked to other projects afterwards.">
+              help="Linkable to other projects afterwards.">
               <SearchableSelect
                 id="doc-project" value={project} onChange={set(setProject, 'project')}
                 error={!!errors.project} options={projectOptions}
@@ -239,8 +244,9 @@ export function DocumentDrawer({ kind, initial, onClose, onSaved }: DocumentDraw
                 emptyLabel="No projects exist yet."
               />
             </FormField>
-            <FormField label="Revision" htmlFor="rev-letter" required error={errors.rev}>
-              <Input id="rev-letter" value={rev} error={!!errors.rev} maxLength={2} className="w-24" onChange={(e) => set(setRev, 'rev')(e.target.value)} />
+            <FormField label="Revision" htmlFor="rev-letter" required error={errors.rev} help="First revision of a new document.">
+              <Input id="rev-letter" value={rev} error={!!errors.rev} maxLength={2} placeholder="A"
+                onChange={(e) => set(setRev, 'rev')(e.target.value)} />
             </FormField>
             <FormField label="Opened Date" htmlFor="rev-opened">
               <Input id="rev-opened" type="date" value={openedDate} onChange={(e) => set(setOpenedDate)(e.target.value)} />
@@ -248,25 +254,26 @@ export function DocumentDrawer({ kind, initial, onClose, onSaved }: DocumentDraw
             <FormField label="Due Date" htmlFor="rev-due">
               <Input id="rev-due" type="date" value={dueDate} onChange={(e) => set(setDueDate)(e.target.value)} />
             </FormField>
-            <FormField label="Next Action" htmlFor="rev-next" required error={errors.nextAction}
-              help="Whoever you pick sees this on their to-do list when they open Elisen.">
-              <PersonSelect id="rev-next" value={nextAction} error={!!errors.nextAction} people={PEOPLE}
+            <FormField label="Next Action" htmlFor="rev-next" help="Optional — they see it on their to-do list.">
+              <PersonSelect id="rev-next" value={nextAction} people={PEOPLE}
                 onChange={set(setNextAction, 'nextAction')} />
             </FormField>
-            <FormField label="Status" htmlFor="rev-status">
-              <Select id="rev-status" value={status} onChange={(e) => set(setStatus)(e.target.value as RevisionStatus)}>
-                <option value="wip">Work in Progress</option>
-                <option value="in-review">In Review</option>
-                <option value="signature">Signature Cycle</option>
-                <option value="accepted">Accepted</option>
+            <FormField label="Status" htmlFor="rev-status" required error={errors.status}>
+              <Select id="rev-status" value={status} error={!!errors.status} placeholder="Select a status..."
+                onChange={(e) => set(setStatus, 'status')(e.target.value as RevisionStatus)}>
+                {/* Labels from the one map, so the picker and the badge can
+                    never disagree about what a status is called. */}
+                {(['wip', 'in-review', 'signature', 'accepted'] as const).map((v) => (
+                  <option key={v} value={v}>{REVISION_STATUS_LABEL[v]}</option>
+                ))}
               </Select>
             </FormField>
-            <FormField label="URL" htmlFor="rev-url">
-              <Input id="rev-url" value={url} placeholder="Link to the file..." onChange={(e) => set(setUrl)(e.target.value)} />
+            <FormField label="URL" htmlFor="rev-url" help="Optional — Go To opens it in a new tab.">
+              <UrlField id="rev-url" value={url} onChange={set(setUrl)} />
             </FormField>
             {!isDrawing && linkedTcca.length > 0 && (
               <FormField label="TCCA Project" htmlFor="rev-tcca"
-                help="Optional, links this revision to the Transport Canada project it's created for.">
+                help="Optional — the TCCA project this is for.">
                 <Select id="rev-tcca" value={tccaId} placeholder="Not for a TCCA project" onChange={(e) => set(setTccaId)(e.target.value)}>
                   <option value="">Not for a TCCA project</option>
                   {linkedTcca.map((t) => <option key={t.id} value={t.id}>{t.number} — {t.description}</option>)}

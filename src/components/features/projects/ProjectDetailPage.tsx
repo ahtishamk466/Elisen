@@ -32,6 +32,7 @@ import { ProjectApprovalsTab } from './ProjectApprovalsTab'
 import type { ProjectListRow, ScopeKey } from '@/types/project'
 import type { DeliverableRevision } from '@/types/tcca'
 import type { AddProjectValues } from './useAddProjectForm'
+import { formatDate } from '@/lib/formatDate'
 
 const TABS = ['Overview', 'Work Packages', 'Team', 'Deliverables', 'Design Data', 'TCCA', 'Approvals'] as const
 type Tab = (typeof TABS)[number]
@@ -313,11 +314,11 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
               <div className="grid gap-lg">
                 <Card title="Dates">
                   <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
-                    <Field label="Project opened date">{row.openedDate || '—'}</Field>
-                    <Field label="Due date">{row.dueDate || '—'}</Field>
+                    <Field label="Project opened date">{formatDate(row.openedDate)}</Field>
+                    <Field label="Due date">{formatDate(row.dueDate)}</Field>
                     <Field label="Company Number">{row.companyNumber}</Field>
-                    <Field label="Aircraft Input Date">{row.aircraftInputDate || '—'}</Field>
-                    <Field label="Closed Date">{row.closedDate || '—'}</Field>
+                    <Field label="Aircraft Input Date">{formatDate(row.aircraftInputDate)}</Field>
+                    <Field label="Closed Date">{formatDate(row.closedDate)}</Field>
                   </div>
                 </Card>
 
@@ -346,9 +347,9 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
                 <Card title="Proposal" onEdit={() => setActiveDrawer('proposal')}>
                   <div className="grid grid-cols-2 gap-lg">
                     <Field label="Proposal Submitted">{row.proposalSubmitted === 'yes' ? 'Yes' : 'No'}</Field>
-                    <Field label="Submitted Date">{row.proposalSubmittedDate || '—'}</Field>
+                    <Field label="Submitted Date">{formatDate(row.proposalSubmittedDate)}</Field>
                     <Field label="Proposal Accepted">{row.proposalAccepted === 'yes' ? 'Yes' : 'No'}</Field>
-                    <Field label="Accepted Date">{row.proposalAcceptedDate || '—'}</Field>
+                    <Field label="Accepted Date">{formatDate(row.proposalAcceptedDate)}</Field>
                   </div>
                 </Card>
 
@@ -480,7 +481,3 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
   )
 }
 
-function formatDate(iso: string) {
-  if (!iso) return '—'
-  return new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
-}

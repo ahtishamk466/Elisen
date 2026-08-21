@@ -19,6 +19,8 @@ import { useApprovalsStore } from '@/stores/approvalsStore'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useLookupStore } from '@/stores/lookupStore'
 import type { ApprovalRevision } from '@/types/documents'
+import { formatDate } from '@/lib/formatDate'
+import { DateText } from '@/components/patterns/DateText'
 
 const TABS = ['Overview', 'Revisions', 'Aircraft', 'Serial Numbers', 'Projects'] as const
 type Tab = (typeof TABS)[number]
@@ -164,7 +166,7 @@ export function ApprovalDetailPage() {
             {latestRevision && (
               <div className="mt-lg border-t border-border-default pt-lg">
                 <Field label="Latest revision" nowrap>
-                  Rev {latestRevision.revision} · {latestRevision.revisionDate}
+                  Rev {latestRevision.revision} · {formatDate(latestRevision.revisionDate)}
                 </Field>
               </div>
             )}
@@ -215,7 +217,7 @@ export function ApprovalDetailPage() {
                     <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
                       <Field label="First issued" nowrap>{revisions[revisions.length - 1].revisionDate}</Field>
                       <Field label="Current revision" nowrap>Rev {latestRevision.revision}</Field>
-                      <Field label="Current revision date" nowrap>{latestRevision.revisionDate}</Field>
+                      <Field label="Current revision date" nowrap>{formatDate(latestRevision.revisionDate)}</Field>
                       <Field label="Latest change">{latestRevision.changeDescription}</Field>
                     </div>
                   )}
@@ -260,7 +262,7 @@ export function ApprovalDetailPage() {
                             <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 380 }}>
                               {r.changeDescription}
                             </td>
-                            <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{r.revisionDate}</td>
+                            <td className="px-lg py-base align-top text-sm text-text-primary"><DateText value={r.revisionDate} /></td>
                             <td className="px-lg py-base align-top text-sm text-text-primary">
                               {r.document
                                 ? <span className="inline-flex items-center gap-xs"><FileText size={14} aria-hidden />{r.document}</span>

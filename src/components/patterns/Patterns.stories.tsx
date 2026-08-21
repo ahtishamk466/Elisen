@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { ChevronDown, Filter as FilterIcon, FolderOpen, Plus, Search as SearchIcon, Trash2 } from 'lucide-react'
+import { ChevronDown, Copy as CopyIcon, Filter as FilterIcon, FolderOpen, Plus, Search as SearchIcon, Trash2 } from 'lucide-react'
 import { FormField } from './FormField'
 import { FormSection } from './FormSection'
 import { Stepper } from './Stepper'
@@ -11,12 +11,16 @@ import { useInfiniteReveal } from './useInfiniteReveal'
 import { TableTabs } from './TableTabs'
 import { FileDropzone } from './FileDropzone'
 import { BarChart } from './BarChart'
+import { Alert } from '@/components/ui/Alert'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { MultiSelect } from '@/components/ui/MultiSelect'
 import { BudgetInline, ProgressMeter } from './ProgressMeter'
 import { Avatar } from './Avatar'
 import { PersonCell } from './PersonCell'
 import { ChipOverflow } from './ChipOverflow'
+import { TableSelectionBar } from './TableSelectionBar'
+import { DateText } from './DateText'
+import { ActiveSelect } from './ActiveSelect'
 import { HealthSummary } from './HealthSummary'
 import { FilterChips } from './FilterChips'
 import { HEALTH_LABEL, HEALTH_TONE, formatHours, formatPct, healthOf } from '@/lib/projectHealth'
@@ -571,6 +575,70 @@ export const PersonExample: Story = {
   ),
 }
 
+/**
+ * **Every View in the app looks like this.** A `View` action — from a 3-dot
+ * menu, a row click, or a count like "3 tasks" / "+1 more" — always opens the
+ * same read-only layout: a `DetailCard` per record, `DetailField` label/value
+ * pairs in a 2- or 3-column grid, related lists as a divider-separated group
+ * underneath, and a footer with **Close** and nothing else.
+ *
+ * **Never a disabled form.** A greyed-out input renders a real value in exactly
+ * the same grey as an empty placeholder, so the reader cannot tell "no phone
+ * number" from "a phone number I can't read". `DetailField` prints an em dash
+ * for empty, which is unambiguous.
+ *
+ * **No Save in a View.** If the reader wants to change something they go to
+ * Edit; a View that can be typed into is an Edit screen wearing a disguise.
+ */
+export const ViewLayoutExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg" style={{ maxWidth: 720 }}>
+      <DetailCard title="Company">
+        <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+          <DetailField label="Name">Air Canada</DetailField>
+          <DetailField label="City">Dorval</DetailField>
+          <DetailField label="Country">Canada</DetailField>
+          <DetailField label="Address">730 Cote Vertu West, Quebec</DetailField>
+          <DetailField label="Zip Code" nowrap>H4Y 1C2</DetailField>
+          <DetailField label="Active">Inactive</DetailField>
+        </div>
+
+        {/* A related list is a divider-separated group inside the same card —
+            never a second bordered box. */}
+        <div className="mt-2xl border-t border-border-default pt-lg">
+          <h3 className="text-sm font-semibold text-text-primary">Contacts</h3>
+          <div className="mt-lg grid gap-lg">
+            {[
+              { name: 'Remi Rocheleau', phone: '' },
+              { name: 'Sylvie Tremblay', phone: '+1 514-555-0142' },
+            ].map((ct, i) => (
+              <div key={ct.name} className={i > 0 ? 'border-t border-border-default pt-lg' : ''}>
+                <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+                  <DetailField label="Full Name">{ct.name}</DetailField>
+                  {/* Empty prints an em dash, so blank is visibly not a value. */}
+                  <DetailField label="Phone No" nowrap>{ct.phone}</DetailField>
+                  <DetailField label="Status">Active</DetailField>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </DetailCard>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-danger">Never do this — a disabled form as a View</p>
+        <div className="grid gap-xs rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 360 }}>
+          <label htmlFor="bad-view" className="text-xs text-text-muted">Phone No</label>
+          <Input id="bad-view" value="" disabled />
+          <p className="text-xs text-text-muted">
+            Is this empty, or a value you are not allowed to read? A disabled input cannot say.
+          </p>
+        </div>
+      </div>
+    </div>
+  ),
+}
+
 export const TableFiguresExample: Story = {
   render: () => (
     <div className="grid gap-2xl p-lg">
@@ -912,4 +980,301 @@ export const StandardEditScreen: Story = {
       </div>
     </div>
   ),
+}
+
+/**
+ * **Page scrolling — the shell owns the viewport.**
+ *
+ * `AppShell` is exactly one screen tall and never scrolls itself. The sidebar
+ * and the page heading are always on screen; everything below them scrolls
+ * inside its own frame. Two shapes, and every page is one of them.
+ */
+export const PageScrollRule: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg" style={{ maxWidth: 760 }}>
+      <div className="grid gap-sm">
+        <h3 className="text-sm font-semibold text-text-primary">Default — the list page</h3>
+        <p className="text-sm text-text-secondary">
+          <code>{'<AppShell>'}</code> with no extra prop. <code>main</code> scrolls; the page is as
+          tall as its content. Right for anything that is one long column.
+        </p>
+        <Frame>
+          <FrameBar>sidebar + heading — fixed</FrameBar>
+          <div className="min-h-0 flex-1 overflow-y-auto bg-neutral-25 p-base">
+            <div className="grid gap-sm">
+              {Array.from({ length: 12 }, (_, i) => (
+                <div key={i} className="rounded-xs bg-neutral-100 px-sm py-xs text-xs text-text-secondary">row {i + 1}</div>
+              ))}
+            </div>
+          </div>
+        </Frame>
+      </div>
+
+      <div className="grid gap-sm">
+        <h3 className="text-sm font-semibold text-text-primary">Fill — the master–detail page</h3>
+        <p className="text-sm text-text-secondary">
+          <code>{'<AppShell fill>'}</code>. <code>main</code> stops scrolling and hands the height to
+          the page, which ends both panes at the fold with <code>min-h-0 flex-1</code> and scrolls
+          each one on its own. Never cap a rail with a fixed <code>maxHeight</code>: 520px leaves
+          dead page under it on a tall screen and clips it on a short one.
+        </p>
+        <Frame>
+          <FrameBar>sidebar + heading — fixed</FrameBar>
+          <div className="flex min-h-0 flex-1 gap-sm p-sm">
+            <div className="min-h-0 w-32 shrink-0 overflow-y-auto rounded-xs border border-border-default bg-neutral-25 p-xs">
+              <div className="grid gap-xxss">
+                {Array.from({ length: 14 }, (_, i) => (
+                  <div key={i} className="rounded-xs bg-neutral-100 px-xs py-xxss text-xs text-text-secondary">item {i + 1}</div>
+                ))}
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-xs border border-border-default bg-neutral-25 p-xs text-xs text-text-secondary">
+              detail — scrolls on its own
+            </div>
+          </div>
+        </Frame>
+      </div>
+
+      <Alert tone="info" title="sr-only inside a scrolling list needs a positioned ancestor">
+        <code>sr-only</code> is <code>position: absolute</code>. With no positioned ancestor its
+        containing block is the document, so a screen-reader label in row 50 sits 2,600px down the
+        page and gives the window a scrollbar nothing asked for. Every scroll container gets{' '}
+        <code>relative</code>.
+      </Alert>
+    </div>
+  ),
+}
+
+/** Stand-in for the app frame in the two examples above. */
+function Frame({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-50" style={{ height: 260 }}>
+      {children}
+    </div>
+  )
+}
+
+function FrameBar({ children }: { children: ReactNode }) {
+  return (
+    <div className="shrink-0 border-b border-border-default bg-primary-700 px-base py-sm text-xs font-semibold text-text-inverse">
+      {children}
+    </div>
+  )
+}
+
+/**
+ * **Selection header — the Shopify pattern.**
+ *
+ * While rows are selected, the table's column titles hand their row to the
+ * selection: the count with a Select all / Unselect all menu, and the bulk
+ * actions the page supplies. The checkbox is checked when everything is
+ * selected, shows the minus when only some rows are, and clicking it always
+ * clears. The titles return the moment the selection empties.
+ *
+ * Wiring rules: widths must live on `<colgroup>` (the selection row is one
+ * colSpan cell — under `table-fixed`, widths left on the header cells would
+ * vanish with them); "Select all" selects the whole *filtered* list, not the
+ * visible page, so the count can exceed the rows on screen.
+ */
+export const SelectionHeaderExample: Story = {
+  render: function SelectionHeaderStory() {
+    const all = ['0000-00', '0000-01', '0000-02', '3107-00', '3116-00']
+    const [selected, setSelected] = useState<string[]>(['0000-00', '0000-02'])
+    return (
+      <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25" style={{ maxWidth: 640 }}>
+        <table className="w-full table-fixed border-collapse text-left">
+          <colgroup>
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '45%' }} />
+            <col style={{ width: '45%' }} />
+          </colgroup>
+          <thead>
+            {selected.length > 0 ? (
+              <tr className="border-b border-border-default bg-neutral-50">
+                <th colSpan={3} className="px-sm py-sm">
+                  <TableSelectionBar
+                    selectedCount={selected.length}
+                    totalCount={all.length}
+                    itemLabel="projects"
+                    onSelectAll={() => setSelected([...all])}
+                    onClearAll={() => setSelected([])}
+                  >
+                    <Button size="sm" variant="secondary" leadingIcon={<Trash2 size={14} />}>Delete</Button>
+                    <Button size="sm" variant="secondary" leadingIcon={<CopyIcon size={14} />}>Duplicate</Button>
+                  </TableSelectionBar>
+                </th>
+              </tr>
+            ) : (
+              <tr className="border-b border-border-default bg-neutral-50">
+                <th className="px-sm py-base" />
+                <th className="px-sm py-base text-xs font-semibold text-text-secondary">Project</th>
+                <th className="px-sm py-base text-xs font-semibold text-text-secondary">Status</th>
+              </tr>
+            )}
+          </thead>
+          <tbody>
+            {all.map((id) => (
+              <tr key={id} className="border-b border-border-default last:border-b-0">
+                <td className="px-sm py-base">
+                  <Checkbox
+                    checked={selected.includes(id)}
+                    onChange={() => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))}
+                    aria-label={`Select ${id}`}
+                  />
+                </td>
+                <td className="px-sm py-base text-sm font-semibold text-text-primary">{id}</td>
+                <td className="px-sm py-base text-sm text-text-secondary">In Progress</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  },
+}
+
+/**
+ * **Page heading and description.**
+ *
+ * The description belongs to the heading, so it lives in the same block —
+ * `mt-xxss` (2px) under it, `text-sm text-text-secondary`. It used to be a
+ * paragraph in the page body, which put `gap-lg` (16px) between a title and
+ * the sentence explaining it and read as two unrelated things.
+ *
+ * **One clause. What the screen holds, not how it works.** The rules that
+ * govern the records ("projects link to revisions from their tab", "one drawing
+ * can serve several projects") belong in the empty state and the field help,
+ * where somebody is actually deciding something — not in a standing line every
+ * user reads past a hundred times.
+ */
+export const PageHeadingExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg" style={{ maxWidth: 640 }}>
+      <div>
+        <p className="mb-sm text-xs font-semibold uppercase tracking-wide text-success">Do</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg">
+          <h1 className="text-2xl font-bold text-text-primary">Design Package</h1>
+          <p className="mt-xxss text-sm text-text-secondary">Manage drawings and design data with revisions.</p>
+        </div>
+      </div>
+      <div>
+        <p className="mb-sm text-xs font-semibold uppercase tracking-wide text-danger">Don&rsquo;t</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg">
+          <h1 className="text-2xl font-bold text-text-primary">Design Package</h1>
+          <p className="mt-2xl text-sm text-text-secondary">
+            Drawings and design data are created and managed here, with every revision. Projects link to
+            revisions from their Design Data tab. One drawing can serve several projects.
+          </p>
+        </div>
+        <p className="mt-sm text-xs text-text-muted">
+          Three sentences, floated 16px away in the page body: the reader has to decide whether it
+          belongs to the heading before deciding whether to read it.
+        </p>
+      </div>
+      <Alert tone="info" title="Where it goes in code">
+        <code>{'<AppShell title="Documents" description="Manage drawings and design data with revisions." />'}</code> —
+        never a <code>&lt;p&gt;</code> at the top of the page body.
+      </Alert>
+    </div>
+  ),
+}
+
+/**
+ * **Dates in a table: one line, breaking after the comma only if it has to.**
+ *
+ * `<DateText />` is deliberately not `whitespace-nowrap`. The only break
+ * opportunity in a formatted date is the space before the year, so letting it
+ * wrap gives `Mar 24,` over `2026` — exactly the stacked form a starved column
+ * needs — without any table deciding in advance which it gets. A column with
+ * room reads the date as one thing; a 1280 laptop with eleven columns gets the
+ * ~30px back.
+ *
+ * `formatDate()` is still the one-line string for prose and View screens.
+ */
+export const DateCellExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg" style={{ maxWidth: 560 }}>
+      <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+        <table className="w-full border-collapse text-left">
+          <thead>
+            <tr className="border-b border-border-default bg-neutral-50">
+              {['Number', 'Opened', 'Due', 'Closed'].map((h) => (
+                <th key={h} scope="col" className="px-sm py-base text-xs font-semibold text-text-secondary">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[['0000-00', '2026-03-07', '2026-12-02', ''], ['3116-03', '2025-08-15', '2026-01-30', '2026-02-11']].map((r) => (
+              <tr key={r[0]} className="border-b border-border-default last:border-b-0">
+                <td className="px-sm py-base text-sm font-semibold text-text-primary">{r[0]}</td>
+                <td className="px-sm py-base text-sm tabular-nums text-text-primary"><DateText value={r[1]} /></td>
+                <td className="px-sm py-base text-sm tabular-nums text-text-primary"><DateText value={r[2]} /></td>
+                <td className="px-sm py-base text-sm tabular-nums text-text-primary"><DateText value={r[3]} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Alert tone="info" title="The column decides, not the table">
+        <code>{'<DateText value={iso} />'}</code> in a cell: one line where it fits, broken after the
+        comma where it doesn't. Don't put <code>whitespace-nowrap</code> on the cell — that turns the
+        break into an overflow. <code>formatDate(iso)</code> stays the one-line string for View
+        screens, drawer summaries and sentences.
+      </Alert>
+    </div>
+  ),
+}
+
+/**
+ * **Side-drawer form standard.** Every drawer in the app follows this; a new one
+ * that doesn't is a bug, not a variation.
+ *
+ * 1. **Every control is the full width of the field column.** A short value does
+ *    not earn a short box — a form reads as one column of controls, and a stub
+ *    breaks the line. (A genuinely compound field, like currency + amount, is
+ *    still one full-width row split internally.)
+ * 2. **Every field has a placeholder.** A concrete example where the value has a
+ *    format (`e.g. STC SA25-200`), a prompt where it doesn't
+ *    (`Search a person...`). Where a value can be derived, the placeholder is
+ *    the suggestion and a blank submit takes it.
+ * 3. **One short line of help, or none.** It says what the reader needs to fill
+ *    the field in — never how the system is built, never what is still pending.
+ * 4. **`active` is a dropdown, never a checkbox** — see `ActiveSelect`.
+ */
+export const DrawerFormStandard: Story = {
+  render: function DrawerFormStandardStory() {
+    const [active, setActive] = useState(true)
+    return (
+      <div className="grid gap-lg p-lg" style={{ maxWidth: 640 }}>
+        <FormSection title="Aircraft" subtitle="One short line saying what this section holds.">
+          <FormField label="Model Name" htmlFor="std-name" required help="As the manufacturer names it.">
+            <Input id="std-name" placeholder="e.g. King Air 350" />
+          </FormField>
+          <FormField label="Drawing Prefix" htmlFor="std-prefix" help="Two letters, used on every drawing.">
+            <Input id="std-prefix" maxLength={2} placeholder="e.g. KA" />
+          </FormField>
+          <FormField label="Active" htmlFor="std-active" help="Inactive stays on old records, out of pickers.">
+            <ActiveSelect id="std-active" value={active} onChange={setActive} />
+          </FormField>
+        </FormSection>
+
+        <Alert tone="info" title="Why active is a dropdown">
+          A checkbox states one option and leaves the other implied, so an unticked box reads the same
+          for &ldquo;not active yet&rdquo; and &ldquo;deliberately retired&rdquo;. Two named options say which state the
+          record is in — and it matches how <code>active</code> already reads wherever it is
+          displayed: an Active / Inactive badge, never a tick.
+        </Alert>
+
+        <div className="rounded-sm border border-danger bg-danger-subtle p-lg">
+          <p className="text-sm font-semibold text-text-primary">Counter-examples, all previously in the app</p>
+          <ul className="mt-sm grid gap-xs text-sm text-text-secondary">
+            <li>A 96px box for a 2-character prefix, in a column of 383px fields.</li>
+            <li>An empty field with no placeholder, so its format is a guess.</li>
+            <li>Help that runs to three lines and explains the data model.</li>
+            <li>&ldquo;Available to pick&rdquo; as a checkbox, where every table shows a badge.</li>
+          </ul>
+        </div>
+      </div>
+    )
+  },
 }

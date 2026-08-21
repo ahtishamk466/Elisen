@@ -1,7 +1,6 @@
 import { Drawer } from '@/components/patterns/Drawer'
-import { FormSection } from '@/components/patterns/FormSection'
+import { DetailCard, DetailField } from '@/components/patterns/DetailView'
 import { PersonCell } from '@/components/patterns/PersonCell'
-import { ProgressMeter } from '@/components/patterns/ProgressMeter'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { activityName, tasksForActivity, type Catalog } from '@/lib/catalog'
@@ -15,15 +14,6 @@ export interface ActivityViewDrawerProps {
   onClose: () => void
   onEdit: () => void
   onRemove: () => void
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="text-xs text-text-muted">{label}</p>
-      <div className="mt-xxss text-sm text-text-primary">{children}</div>
-    </div>
-  )
 }
 
 /**
@@ -54,41 +44,38 @@ export function ActivityViewDrawer({ activity, workPackage, catalog, onClose, on
         </div>
       }
     >
-      <FormSection title="Activity" subtitle="Who performs this work, and how it is tracking against its budget.">
-        <div className="grid grid-cols-2 gap-lg">
-          <Field label="Activity">{name}</Field>
-          <Field label="Work package">{workPackage.title}</Field>
-          <Field label="Responsible"><PersonCell name={activity.responsible} /></Field>
-          <Field label="Status"><Badge tone={HEALTH_TONE[health.state]}>{HEALTH_LABEL[health.state]}</Badge></Field>
-        </div>
-      </FormSection>
-
-      <FormSection title="Budget" subtitle="Hours spent against hours budgeted.">
-        <div className="grid grid-cols-3 gap-lg">
-          <Field label="Actual / Budget">
+      {/* One card, everything about the activity — the app's standard View
+          layout, the same as Company and Aircraft. */}
+      <DetailCard title="Activity">
+        <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+          <DetailField label="Activity">{name}</DetailField>
+          <DetailField label="Work package">{workPackage.title}</DetailField>
+          <DetailField label="Responsible"><PersonCell name={activity.responsible} /></DetailField>
+          <DetailField label="Actual / Budget" nowrap>
             {health.budget > 0 ? `${formatHours(health.actual)} / ${formatHours(health.budget)}` : `${formatHours(health.actual)} / no budget`}
-          </Field>
-          <Field label="Remaining">
-            <span className={health.remaining < 0 ? 'font-semibold text-danger' : ''}>
-              {health.budget > 0 ? `${health.remaining < 0 ? '−' : ''}${formatHours(Math.abs(health.remaining))}` : '—'}
-            </span>
-          </Field>
-          <Field label="Used">{formatPct(health.progressPct)}</Field>
+          </DetailField>
+          <DetailField label="Remaining" nowrap>
+            {health.budget > 0 ? `${health.remaining < 0 ? '\u2212' : ''}${formatHours(Math.abs(health.remaining))}` : undefined}
+          </DetailField>
+          <DetailField label="Used" nowrap>{formatPct(health.progressPct)}</DetailField>
+          <DetailField label="Status">
+            <Badge tone={HEALTH_TONE[health.state]}>{HEALTH_LABEL[health.state]}</Badge>
+          </DetailField>
         </div>
-        <ProgressMeter health={health} ariaLabel={`${name} budget`} />
-      </FormSection>
 
-      <FormSection title="Tasks" subtitle="Every task this activity offers in Time Entry.">
-        {tasks.length === 0 ? (
-          <p className="text-sm text-text-muted">No tasks linked to this activity.</p>
-        ) : (
-          <div className="flex flex-wrap gap-xs">
-            {tasks.map((t) => (
-              <span key={t.id} className="whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{t.name}</span>
-            ))}
-          </div>
-        )}
-      </FormSection>
+        <div className="mt-2xl border-t border-border-default pt-lg">
+          <h3 className="text-sm font-semibold text-text-primary">Tasks</h3>
+          {tasks.length === 0 ? (
+            <p className="mt-sm text-sm text-text-muted">No tasks linked to this activity.</p>
+          ) : (
+            <div className="mt-sm flex flex-wrap gap-xs">
+              {tasks.map((t) => (
+                <span key={t.id} className="whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{t.name}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </DetailCard>
     </Drawer>
   )
 }

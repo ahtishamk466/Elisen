@@ -9,6 +9,7 @@ import { useProjectsStore } from '@/stores/projectsStore'
 import { useTccaStore } from '@/stores/tccaStore'
 import { TCCA_STATUS_LABEL, TCCA_STATUS_TONE } from '@/lib/tccaDisplay'
 import type { TccaProject } from '@/types/tcca'
+import { formatDate } from '@/lib/formatDate'
 
 export interface TccaOverviewTabProps {
   tcca: TccaProject
@@ -41,8 +42,8 @@ export function TccaOverviewTab({ tcca }: TccaOverviewTabProps) {
         <div className="mt-lg grid grid-cols-2 gap-lg tablet:grid-cols-4">
           <Field label="Number">{tcca.number}</Field>
           <Field label="Status"><Badge tone={TCCA_STATUS_TONE[tcca.status]}>{TCCA_STATUS_LABEL[tcca.status]}</Badge></Field>
-          <Field label="Opened">{tcca.openedDate}</Field>
-          <Field label="Closed">{tcca.closedDate || '—'}</Field>
+          <Field label="Opened">{formatDate(tcca.openedDate)}</Field>
+          <Field label="Closed">{formatDate(tcca.closedDate)}</Field>
         </div>
         <div className="mt-lg">
           <Field label="Description">{tcca.description}</Field>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ExternalLink } from 'lucide-react'
 import { Drawer } from '@/components/patterns/Drawer'
 import { FormSection } from '@/components/patterns/FormSection'
 import { FormField } from '@/components/patterns/FormField'
@@ -8,6 +9,8 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { PersonSelect } from '@/components/ui/PersonSelect'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { UrlField, isOpenableUrl } from '@/components/patterns/UrlField'
+import { PersonCell } from '@/components/patterns/PersonCell'
 import { useDocumentsStore } from '@/stores/documentsStore'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useTccaStore } from '@/stores/tccaStore'
@@ -15,6 +18,7 @@ import { nextRevLetter, REVISION_STATUS_LABEL, REVISION_STATUS_TONE } from '@/li
 import { PEOPLE } from '@/lib/projectFixtures'
 import type { DocRevision, ProjectDocument, RevisionStatus } from '@/types/documents'
 import { useProjectLabel } from './useProjectLabel'
+import { DateText } from '@/components/patterns/DateText'
 
 export interface RevisionDrawerProps {
   document: ProjectDocument
@@ -58,40 +62,42 @@ export function RevisionDrawer({ document, projectId, initial, onClose, onSaved 
     hint: p.companyName || undefined,
   }))
 
-  const [rev, setRev] = useState(initial?.rev ?? suggested)
+  /* Blank with the suggested letter as the placeholder — the box shows
+     what it will use, and a blank submit takes it. */
+  const [rev, setRev] = useState(initial?.rev ?? '')
   const [openedDate, setOpenedDate] = useState(initial?.openedDate ?? today())
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? '')
   const [releasedDate, setReleasedDate] = useState(initial?.releasedDate ?? '')
   const [receivedDate, setReceivedDate] = useState(initial?.receivedDate ?? '')
   const [closedDate, setClosedDate] = useState(initial?.closedDate ?? '')
   const [nextAction, setNextAction] = useState(initial?.nextAction ?? '')
-  const [status, setStatus] = useState<RevisionStatus>(initial?.status ?? 'wip')
+  const [status, setStatus] = useState<RevisionStatus | ''>(initial?.status ?? '')
   const [url, setUrl] = useState(initial?.url ?? '')
   const [tccaId, setTccaId] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const submit = () => {
     const e: Record<string, string> = {}
-    if (!rev.trim()) e.rev = 'Revision letter is required.'
-    else if (!isEdit && existing.some((r) => r.rev === rev.trim().toUpperCase()))
-      e.rev = `Rev ${rev.trim().toUpperCase()} already exists, suggested next is ${suggested}.`
-    if (!nextAction && status !== 'accepted' && status !== 'superseded')
-      e.nextAction = 'Next action person is required while the revision is open.'
+    const revValue = (rev.trim() || suggested).toUpperCase()
+    if (!isEdit && existing.some((r) => r.rev === revValue))
+      e.rev = `Rev ${revValue} already exists, suggested next is ${suggested}.`
+    if (!status) e.status = 'Status is required.'
     if (!isEdit && !effectiveProject) e.project = 'Choose the project this revision is created for.'
     setErrors(e)
     if (Object.values(e).some(Boolean)) return
 
     if (isEdit) {
-      updateRevision(initial.id, { rev: rev.trim().toUpperCase(), openedDate, dueDate, releasedDate, receivedDate, closedDate, nextAction, status, url })
-      onSaved?.(`${document.number} rev ${rev.trim().toUpperCase()} saved.`)
+      updateRevision(initial.id, { rev: revValue, openedDate, dueDate, releasedDate, receivedDate, closedDate, nextAction, status: status as RevisionStatus, url })
+      onSaved?.(`${document.number} rev ${revValue} saved.`)
     } else {
       const revId = crypto.randomUUID()
       addRevision({
-        id: revId, documentId: document.id, rev: rev.trim().toUpperCase(), initialProjectId: effectiveProject,
-        openedDate, dueDate, releasedDate, receivedDate, closedDate, nextAction, url, status,
+        id: revId, documentId: document.id, rev: revValue, initialProjectId: effectiveProject,
+        openedDate, dueDate, releasedDate, receivedDate, closedDate, nextAction, url,
+        status: status as RevisionStatus,
       })
       if (document.kind === 'deliverable' && tccaId) linkRevisionToTcca(tccaId, revId)
-      onSaved?.(`${document.number} rev ${rev.trim().toUpperCase()} added.`)
+      onSaved?.(`${document.number} rev ${revValue} added.`)
     }
     onClose()
   }
@@ -115,24 +121,56 @@ export function RevisionDrawer({ document, projectId, initial, onClose, onSaved 
       }
     >
       {!isEdit && (
-        <FormSection title="Existing revisions" subtitle={`${document.title}`}>
-          <ul className="grid gap-xs">
-            {existing.map((r) => (
-              <li key={r.id} className="flex items-center justify-between gap-lg text-sm text-text-primary">
-                <span>Rev {r.rev} — opened {r.openedDate}</span>
-                <Badge tone={REVISION_STATUS_TONE[r.status]}>{REVISION_STATUS_LABEL[r.status]}</Badge>
-              </li>
-            ))}
-          </ul>
+        <FormSection title="Previous revisions" subtitle={document.title}>
+          {/* The same facts the workspace table shows, so deciding what the
+              next revision needs doesn't mean closing this and going back. */}
+          <div className="overflow-x-auto rounded-sm border border-border-default">
+            <table className="w-full border-collapse text-left">
+              <caption className="sr-only">Revisions that already exist of {document.number}</caption>
+              <thead>
+                <tr className="border-b border-border-default bg-neutral-50">
+                  {['Rev', 'Opened', 'Due', 'Closed', 'Next Action', 'Status', 'File'].map((h) => (
+                    <th key={h} scope="col" className="whitespace-nowrap px-base py-sm text-xs font-semibold text-text-secondary">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {existing.map((r) => (
+                  <tr key={r.id} className="border-b border-border-default last:border-b-0">
+                    <td className="whitespace-nowrap px-base py-sm text-sm font-semibold text-text-primary">{r.rev}</td>
+                    <td className="px-base py-sm text-sm text-text-primary"><DateText value={r.openedDate} /></td>
+                    <td className="px-base py-sm text-sm text-text-primary"><DateText value={r.dueDate} /></td>
+                    <td className="px-base py-sm text-sm text-text-primary"><DateText value={r.closedDate} /></td>
+                    <td className="px-base py-sm">
+                      {r.nextAction ? <PersonCell name={r.nextAction} /> : <span className="text-sm text-text-muted">—</span>}
+                    </td>
+                    <td className="whitespace-nowrap px-base py-sm">
+                      <Badge tone={REVISION_STATUS_TONE[r.status]}>{REVISION_STATUS_LABEL[r.status]}</Badge>
+                    </td>
+                    <td className="whitespace-nowrap px-base py-sm">
+                      {isOpenableUrl(r.url)
+                        ? (
+                          <Button variant="tertiary" size="sm" leadingIcon={<ExternalLink size={14} />}
+                            onClick={() => window.open(r.url.trim(), '_blank', 'noopener,noreferrer')}>
+                            Go To
+                          </Button>
+                        )
+                        : <span className="text-sm text-text-muted">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </FormSection>
       )}
 
-      <FormSection title={isEdit ? 'Revision' : 'New revision'} subtitle="Every revision is tracked. It's a regulatory requirement.">
+      <FormSection title={isEdit ? 'Revision' : 'New revision'} subtitle="Every revision is tracked — a regulatory requirement.">
         {/* Workspace mode: a revision is always created *for* a project, so
             with no project context it has to be picked here. */}
         {!isEdit && !projectId && (
           <FormField label="Project" htmlFor="rd-project" required error={errors.project}
-            help="The project this revision is created for. It can be linked to other projects afterwards.">
+            help="Linkable to other projects afterwards.">
             <SearchableSelect
               id="rd-project" value={project} error={!!errors.project}
               onChange={(v) => { setProject(v); setErrors((p) => ({ ...p, project: '' })) }}
@@ -142,8 +180,10 @@ export function RevisionDrawer({ document, projectId, initial, onClose, onSaved 
             />
           </FormField>
         )}
-        <FormField label="Revision" htmlFor="rd-rev" required error={errors.rev} help={isEdit ? undefined : `Suggested: ${suggested}`}>
-          <Input id="rd-rev" value={rev} error={!!errors.rev} maxLength={2} className="w-24" onChange={(e) => { setRev(e.target.value); setErrors((p) => ({ ...p, rev: '' })) }} />
+        <FormField label="Revision" htmlFor="rd-rev" required error={errors.rev}
+          help={isEdit ? undefined : `Next in sequence is ${suggested}.`}>
+          <Input id="rd-rev" value={rev} error={!!errors.rev} maxLength={2} placeholder={isEdit ? undefined : suggested}
+            onChange={(e) => { setRev(e.target.value); setErrors((p) => ({ ...p, rev: '' })) }} />
         </FormField>
         <FormField label="Opened Date" htmlFor="rd-opened">
           <Input id="rd-opened" type="date" value={openedDate} onChange={(e) => setOpenedDate(e.target.value)} />
@@ -160,21 +200,21 @@ export function RevisionDrawer({ document, projectId, initial, onClose, onSaved 
         <FormField label="Closed Date" htmlFor="rd-closed">
           <Input id="rd-closed" type="date" value={closedDate} onChange={(e) => setClosedDate(e.target.value)} />
         </FormField>
-        <FormField label="Next Action" htmlFor="rd-next" required error={errors.nextAction}
-          help="Whoever you pick sees this on their to-do list when they open Elisen.">
-          <PersonSelect id="rd-next" value={nextAction} error={!!errors.nextAction} people={PEOPLE}
+        <FormField label="Next Action" htmlFor="rd-next" help="Optional — they see it on their to-do list.">
+          <PersonSelect id="rd-next" value={nextAction} people={PEOPLE}
             onChange={(v) => { setNextAction(v); setErrors((p) => ({ ...p, nextAction: '' })) }} />
         </FormField>
-        <FormField label="Status" htmlFor="rd-status">
-          <Select id="rd-status" value={status} onChange={(e) => setStatus(e.target.value as RevisionStatus)}>
+        <FormField label="Status" htmlFor="rd-status" required error={errors.status}>
+          <Select id="rd-status" value={status} error={!!errors.status} placeholder="Select a status..."
+            onChange={(e) => { setStatus(e.target.value as RevisionStatus); setErrors((p) => ({ ...p, status: '' })) }}>
             {Object.entries(REVISION_STATUS_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </Select>
         </FormField>
-        <FormField label="URL" htmlFor="rd-url">
-          <Input id="rd-url" value={url} placeholder="Link to the file..." onChange={(e) => setUrl(e.target.value)} />
+        <FormField label="URL" htmlFor="rd-url" help="Optional — Go To opens it in a new tab.">
+          <UrlField id="rd-url" value={url} onChange={setUrl} />
         </FormField>
         {!isEdit && document.kind === 'deliverable' && linkedTcca.length > 0 && (
-          <FormField label="TCCA Project" htmlFor="rd-tcca" help="Optional, links this revision to the Transport Canada project it's created for.">
+          <FormField label="TCCA Project" htmlFor="rd-tcca" help="Optional — the TCCA project this is for.">
             <Select id="rd-tcca" value={tccaId} placeholder="Not for a TCCA project" onChange={(e) => setTccaId(e.target.value)}>
               <option value="">Not for a TCCA project</option>
               {linkedTcca.map((t) => <option key={t.id} value={t.id}>{t.number} — {t.description}</option>)}

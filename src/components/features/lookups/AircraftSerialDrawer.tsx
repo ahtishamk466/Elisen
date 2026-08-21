@@ -111,7 +111,7 @@ export function AircraftSerialDrawer({ mode, initial, aircraftId, onClose, onSav
         <>
           <FormSection title="Airframe" subtitle="Which aircraft this is one of, and how it is identified.">
             <FormField label="Aircraft Model Number" htmlFor="as-aircraft" required error={errors.aircraftId}
-              help="From the Aircraft tab. A serial is only unique within its model.">
+              help="A serial is unique within its model only.">
               <SearchableSelect
                 id="as-aircraft" value={values.aircraftId} error={!!errors.aircraftId}
                 onChange={(v) => set('aircraftId', v)}
@@ -125,15 +125,15 @@ export function AircraftSerialDrawer({ mode, initial, aircraftId, onClose, onSav
               />
             </FormField>
             <FormField label="Serial Number" htmlFor="as-serial" required error={errors.serial}>
-              <Input id="as-serial" value={values.serial} error={!!errors.serial}
+              <Input id="as-serial" placeholder="e.g. FL-1234" value={values.serial} error={!!errors.serial}
                 onChange={(e) => set('serial', e.target.value)} />
             </FormField>
             <FormField label="Registration Number" htmlFor="as-reg"
-              help="Tail number. It can change over the airframe's life; the serial does not.">
+              help="Tail number — it can change; the serial can't.">
               <Input id="as-reg" value={values.registration} placeholder="e.g. C-GTXM"
                 onChange={(e) => set('registration', e.target.value)} />
             </FormField>
-            <FormField label="Status" htmlFor="as-status" help="Inactive airframes stay on the records that already reference them.">
+            <FormField label="Status" htmlFor="as-status" help="Inactive stays on old records, out of pickers.">
               <Select id="as-status" value={values.active ? 'active' : 'inactive'}
                 onChange={(e) => set('active', e.target.value === 'active')}>
                 <option value="active">Active</option>
@@ -144,38 +144,38 @@ export function AircraftSerialDrawer({ mode, initial, aircraftId, onClose, onSav
 
           <FormSection title="Owner / Operator" subtitle="Who to contact about this airframe. All optional.">
             <FormField label="Name" htmlFor="as-owner">
-              <Input id="as-owner" value={values.ownerName} onChange={(e) => set('ownerName', e.target.value)} />
+              <Input id="as-owner" placeholder="Owner or operator name..." value={values.ownerName} onChange={(e) => set('ownerName', e.target.value)} />
             </FormField>
             <FormField label="Company" htmlFor="as-company">
-              <Input id="as-company" value={values.company} onChange={(e) => set('company', e.target.value)} />
+              <Input id="as-company" placeholder="e.g. Duncan Aviation" value={values.company} onChange={(e) => set('company', e.target.value)} />
             </FormField>
             <FormField label="Address Line 1" htmlFor="as-addr1">
-              <Input id="as-addr1" value={values.addressLine1} onChange={(e) => set('addressLine1', e.target.value)} />
+              <Input id="as-addr1" placeholder="Street address..." value={values.addressLine1} onChange={(e) => set('addressLine1', e.target.value)} />
             </FormField>
             <FormField label="Address Line 2" htmlFor="as-addr2">
-              <Input id="as-addr2" value={values.addressLine2} onChange={(e) => set('addressLine2', e.target.value)} />
+              <Input id="as-addr2" placeholder="Suite, unit, floor..." value={values.addressLine2} onChange={(e) => set('addressLine2', e.target.value)} />
             </FormField>
             <FormField label="City" htmlFor="as-city">
-              <Input id="as-city" value={values.city} onChange={(e) => set('city', e.target.value)} />
+              <Input id="as-city" placeholder="e.g. Montreal" value={values.city} onChange={(e) => set('city', e.target.value)} />
             </FormField>
             <FormField label="Prov / State" htmlFor="as-prov">
-              <Input id="as-prov" value={values.provState} onChange={(e) => set('provState', e.target.value)} />
+              <Input id="as-prov" placeholder="e.g. Quebec" value={values.provState} onChange={(e) => set('provState', e.target.value)} />
             </FormField>
             <FormField label="Country" htmlFor="as-country">
-              <Input id="as-country" value={values.country} onChange={(e) => set('country', e.target.value)} />
+              <Input id="as-country" placeholder="e.g. Canada" value={values.country} onChange={(e) => set('country', e.target.value)} />
             </FormField>
             <FormField label="Postal / Zipcode" htmlFor="as-postal">
-              <Input id="as-postal" value={values.postalZipcode} className="w-40"
+              <Input id="as-postal" placeholder="e.g. H4Y 1C2" value={values.postalZipcode} className="w-40"
                 onChange={(e) => set('postalZipcode', e.target.value)} />
             </FormField>
             <FormField label="Telephone No" htmlFor="as-tel">
-              <Input id="as-tel" value={values.telephone} onChange={(e) => set('telephone', e.target.value)} />
+              <Input id="as-tel" placeholder="e.g. +1 514 555 0100" value={values.telephone} onChange={(e) => set('telephone', e.target.value)} />
             </FormField>
             <FormField label="Email" htmlFor="as-email">
-              <Input id="as-email" type="email" value={values.email} onChange={(e) => set('email', e.target.value)} />
+              <Input id="as-email" placeholder="name@company.com" type="email" value={values.email} onChange={(e) => set('email', e.target.value)} />
             </FormField>
             <FormField label="Comment" htmlFor="as-comment">
-              <Textarea id="as-comment" value={values.comment} onChange={(e) => set('comment', e.target.value)} />
+              <Textarea id="as-comment" placeholder="Anything worth noting..." value={values.comment} onChange={(e) => set('comment', e.target.value)} />
             </FormField>
           </FormSection>
         </>

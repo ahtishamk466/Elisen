@@ -46,10 +46,12 @@ export function SortMenu<K extends string>({ label, options, sort, onChange }: S
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className={`flex items-start gap-xs rounded-sm text-left transition-colors duration-fast hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
+        /* One centred line: the arrow sits on the middle of the label, not at
+           the top of a heading that may be two words long. */
+        className={`flex items-center gap-xs whitespace-nowrap rounded-sm text-left transition-colors duration-fast hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
           ${active ? 'text-text-primary' : ''}`}
       >
-        <span>{label}</span>
+        <span className="whitespace-nowrap">{label}</span>
         {/* Which of the stacked fields is doing the sorting, so the arrow is
             never ambiguous on a column holding two numbers. */}
         {active && <span className="whitespace-nowrap text-xs font-normal text-accent">· {active.label}</span>}

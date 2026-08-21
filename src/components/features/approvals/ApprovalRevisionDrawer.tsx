@@ -3,8 +3,8 @@ import { FileText } from 'lucide-react'
 import { Drawer } from '@/components/patterns/Drawer'
 import { FormSection } from '@/components/patterns/FormSection'
 import { FormField } from '@/components/patterns/FormField'
+import { Truncate } from '@/components/patterns/Truncate'
 import { FileDropzone } from '@/components/patterns/FileDropzone'
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
@@ -12,6 +12,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { useApprovalsStore } from '@/stores/approvalsStore'
 import { nextRevisionNumber } from '@/lib/documentDisplay'
 import type { Approval, ApprovalRevision } from '@/types/documents'
+import { DateText } from '@/components/patterns/DateText'
 
 export interface ApprovalRevisionDrawerProps {
   /** Fixed certificate (opened from an approval's workspace). Omit on the
@@ -117,18 +118,35 @@ export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: 
       {/* The history is shown when raising a new one, so nobody re-describes a
           change that is already on the record. */}
       {!isEdit && existing.length > 0 && (
-        <FormSection title="Revision history" subtitle={target?.description}>
-          <ul className="grid gap-xs">
-            {existing.map((r) => (
-              <li key={r.id} className="flex items-start justify-between gap-lg text-sm">
-                <span className="min-w-0 text-text-primary">
-                  <Badge appearance="outline">Rev {r.revision}</Badge>{' '}
-                  <span className="text-text-secondary">{r.changeDescription}</span>
-                </span>
-                <span className="shrink-0 whitespace-nowrap text-xs text-text-muted">{r.revisionDate}</span>
-              </li>
-            ))}
-          </ul>
+        <FormSection title="Previous revisions" subtitle={target?.description}>
+          {/* Every field the revision carries, so nobody re-describes a change
+              that is already on the record — or re-attaches its document. */}
+          <div className="overflow-x-auto rounded-sm border border-border-default">
+            <table className="w-full border-collapse text-left">
+              <caption className="sr-only">Revisions already raised against this approval</caption>
+              <thead>
+                <tr className="border-b border-border-default bg-neutral-50">
+                  {['Rev', 'Date', 'Change', 'Document'].map((h) => (
+                    <th key={h} scope="col" className="whitespace-nowrap px-base py-sm text-xs font-semibold text-text-secondary">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {existing.map((r) => (
+                  <tr key={r.id} className="border-b border-border-default last:border-b-0">
+                    <td className="whitespace-nowrap px-base py-sm text-sm font-semibold text-text-primary">{r.revision}</td>
+                    <td className="px-base py-sm text-sm text-text-primary"><DateText value={r.revisionDate} /></td>
+                    <td className="px-base py-sm text-sm text-text-secondary"><Truncate lines={2}>{r.changeDescription}</Truncate></td>
+                    <td className="px-base py-sm text-sm text-text-primary">
+                      {r.document
+                        ? <span className="block truncate" title={r.document}>{r.document}</span>
+                        : <span className="text-text-muted">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </FormSection>
       )}
 
@@ -140,7 +158,7 @@ export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: 
             the global Revisions list. */}
         {approval ? (
           <FormField label="Approval Number" htmlFor="ar-approval">
-            <Input id="ar-approval" value={approval.number} readOnly />
+            <Input id="ar-approval" placeholder="Search approvals by number or description..." value={approval.number} readOnly />
           </FormField>
         ) : (
           <FormField label="Approval Number" htmlFor="ar-approval" required error={errors.approvalId}
@@ -162,15 +180,15 @@ export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: 
         )}
         <FormField label="Approval Revision" htmlFor="ar-revision" error={errors.revision}
           help={approvalId
-            ? `Leave blank to use the next unused number (${suggested}).`
-            : 'Select an approval first. Revisions are numbered per certificate.'}>
-          <Input id="ar-revision" type="number" min={1} value={revision} error={!!errors.revision} className="w-24"
+            ? `Blank uses the next number, ${suggested}.`
+            : 'Select an approval first.'}>
+          <Input id="ar-revision" type="number" min={1} value={revision} error={!!errors.revision}
             placeholder={approvalId ? String(suggested) : ''}
             onChange={(e) => { setRevision(e.target.value); setErrors((p) => ({ ...p, revision: '' })) }} />
         </FormField>
         <FormField label="Change Description" htmlFor="ar-change" required error={errors.changeDescription}
-          help="What this revision changed, e.g. further airframes added, or a design change.">
-          <Textarea id="ar-change" value={changeDescription} error={!!errors.changeDescription}
+          help="What changed — e.g. further airframes added.">
+          <Textarea id="ar-change" placeholder="What this revision changed..." value={changeDescription} error={!!errors.changeDescription}
             onChange={(e) => { setChangeDescription(e.target.value); setErrors((p) => ({ ...p, changeDescription: '' })) }} />
         </FormField>
         <FormField label="Revision Date" htmlFor="ar-date" required error={errors.revisionDate}>

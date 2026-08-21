@@ -34,7 +34,9 @@ export function TccaProjectDrawer({ open, mode, initial, onClose, onSubmit }: Tc
   const suggested = getNextTccaNumber(existing)
   const isEdit = mode === 'edit'
 
-  const [number, setNumber] = useState(initial?.number ?? suggested)
+  // Blank, with the suggestion as the placeholder — the box shows what it
+  // will use and a blank submit takes it, as on every other numbered record.
+  const [number, setNumber] = useState(initial?.number ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [status, setStatus] = useState<TccaStatus>(initial?.status ?? 'in-progress')
   const [projectId, setProjectId] = useState(initial?.projectIds[0] ?? '')
@@ -65,10 +67,10 @@ export function TccaProjectDrawer({ open, mode, initial, onClose, onSubmit }: Tc
   const close = () => { setConfirmClose(false); onClose() }
 
   const submit = () => {
+    const numberValue = number.trim() || suggested
     const e: typeof errors = {}
-    if (!number.trim()) e.number = 'TCCA project number is required.'
-    else if (!isEdit && existing.some((t) => t.number === number.trim()))
-      e.number = `${number.trim()} is already used. Suggested: ${suggested}.`
+    if (!isEdit && existing.some((t) => t.number === numberValue))
+      e.number = `${numberValue} is already used. Suggested: ${suggested}.`
     if (!description.trim()) e.description = 'Transport Canada needs a good description of the change.'
     if (!openedDate) e.openedDate = 'Opened date is required.'
     setErrors(e)
@@ -76,7 +78,7 @@ export function TccaProjectDrawer({ open, mode, initial, onClose, onSubmit }: Tc
     const restIds = (initial?.projectIds ?? []).slice(1)
     onSubmit({
       id: initial?.id ?? crypto.randomUUID(),
-      number: number.trim(),
+      number: numberValue,
       description: description.trim(),
       priority: priority.trim(),
       certificate: certificate.trim(),
@@ -125,23 +127,25 @@ export function TccaProjectDrawer({ open, mode, initial, onClose, onSubmit }: Tc
         )}
 
         <FormSection title="TCCA Project" subtitle="Tracks Elisen's interactions with Transport Canada toward one certificate.">
-          <FormField label="TCCA Project Number" htmlFor="tcca-number" required error={errors.number} help={`Suggested: ${suggested}`}>
-            <Input id="tcca-number" value={number} error={!!errors.number} onChange={(e) => touch(setNumber)(e.target.value)} />
+          <FormField label="TCCA Project Number" htmlFor="tcca-number" required error={errors.number}
+            help={`Blank uses the next number, ${suggested}.`}>
+            <Input id="tcca-number" value={number} error={!!errors.number} placeholder={suggested}
+              onChange={(e) => touch(setNumber)(e.target.value)} />
           </FormField>
           <FormField label="Description" htmlFor="tcca-desc" required error={errors.description}
-            help="What Elisen intends to do and certify on this change.">
-            <Textarea id="tcca-desc" value={description} error={!!errors.description} onChange={(e) => touch(setDescription)(e.target.value)} />
+            help="What Elisen will do and certify here.">
+            <Textarea id="tcca-desc" placeholder="What Elisen will do and certify..." value={description} error={!!errors.description} onChange={(e) => touch(setDescription)(e.target.value)} />
           </FormField>
           <FormField label="Priority" htmlFor="tcca-priority" help="1.0 is highest, 9.9 lowest.">
-            <Input id="tcca-priority" value={priority} className="w-28" placeholder="e.g. 3.0"
+            <Input id="tcca-priority" value={priority} placeholder="e.g. 3.0"
               onChange={(e) => touch(setPriority)(e.target.value)} />
           </FormField>
-          <FormField label="Certificate" htmlFor="tcca-cert" help="The certificate this project is working toward, once known.">
+          <FormField label="Certificate" htmlFor="tcca-cert" help="The certificate this works toward, once known.">
             <Input id="tcca-cert" value={certificate} placeholder="e.g. STC SA25-200"
               onChange={(e) => touch(setCertificate)(e.target.value)} />
           </FormField>
           <FormField label="Issue Number" htmlFor="tcca-issue">
-            <Input id="tcca-issue" value={issueNumber} className="w-28" onChange={(e) => touch(setIssueNumber)(e.target.value)} />
+            <Input id="tcca-issue" placeholder="e.g. 1" value={issueNumber} onChange={(e) => touch(setIssueNumber)(e.target.value)} />
           </FormField>
           <FormField label="Issued" htmlFor="tcca-issued">
             <Checkbox id="tcca-issued" checked={issued} onChange={(e) => touch(setIssued)(e.target.checked)}
@@ -162,7 +166,7 @@ export function TccaProjectDrawer({ open, mode, initial, onClose, onSubmit }: Tc
               <option value="closed">Closed</option>
             </Select>
           </FormField>
-          <FormField label="Project Level" htmlFor="tcca-level" required help="How much Transport Canada involvement the change needs.">
+          <FormField label="Project Level" htmlFor="tcca-level" required help="How much Transport Canada involvement is needed.">
             <Select id="tcca-level" value={projectLevel} onChange={(e) => touch(setProjectLevel)(e.target.value as TccaProjectLevel)}>
               {Object.entries(TCCA_PROJECT_LEVEL_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </Select>
@@ -189,7 +193,7 @@ export function TccaProjectDrawer({ open, mode, initial, onClose, onSubmit }: Tc
 
         <FormSection title="Link & Notes" subtitle="The Elisen project this relates to. More projects can be linked later from either side.">
           <FormField label="Elisen Project" htmlFor="tcca-project"
-            help="Almost always linked to a project. Leave unlinked only for baseline / DAO organizational work.">
+            help="Unlink only for baseline or DAO work.">
             <SearchableSelect
               id="tcca-project" value={projectId} onChange={touch(setProjectId)}
               options={projects.map((p) => ({ value: p.id, label: `${p.number}-${p.subNumber}`, hint: p.title }))}

@@ -97,6 +97,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
   return (
     <AppShell
       title="Companies"
+      description="Customers and their contacts."
       activeItem="Reference Data"
       activeChild="Companies"
       headerActions={

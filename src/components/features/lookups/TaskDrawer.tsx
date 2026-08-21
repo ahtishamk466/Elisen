@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { Drawer } from '@/components/patterns/Drawer'
+import { DetailCard, DetailField } from '@/components/patterns/DetailView'
 import { FormSection } from '@/components/patterns/FormSection'
 import { FormField } from '@/components/patterns/FormField'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
-import { Checkbox } from '@/components/ui/Checkbox'
 import { Input } from '@/components/ui/Input'
 import { MultiSelect } from '@/components/ui/MultiSelect'
 import { activitiesForTask, type Catalog } from '@/lib/catalog'
 import { taskId as slugTask } from '@/lib/catalogFixtures'
 import type { Task } from '@/types/catalog'
+import { ActiveSelect } from '@/components/patterns/ActiveSelect'
 
 export interface TaskDrawerProps {
   mode: 'create' | 'edit' | 'view'
@@ -79,9 +80,35 @@ export function TaskDrawer({ mode, catalog, initial, entryCount = 0, presetActiv
         </div>
       }
     >
+      {/* Read-only text, never dimmed inputs. */}
+      {readOnly ? (
+        <DetailCard title="Task">
+          <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+            <DetailField label="Name">{initial!.name}</DetailField>
+            <DetailField label="Active">{initial!.active ? 'Active' : 'Inactive'}</DetailField>
+            <DetailField label="Used by">
+              {entryCount === 0 ? 'No logged hours' : `${entryCount} timesheet ${entryCount === 1 ? 'entry' : 'entries'}`}
+            </DetailField>
+          </div>
+
+          <div className="mt-2xl border-t border-border-default pt-lg">
+            <h3 className="text-sm font-semibold text-text-primary">Activities</h3>
+            {activityIds.length === 0 ? (
+              <p className="mt-sm text-sm text-text-muted">Not linked to any activity yet.</p>
+            ) : (
+              <div className="mt-sm flex flex-wrap gap-xs">
+                {activitiesForTask(catalog, initial!.id).map((a) => (
+                  <span key={a.id} className="whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{a.name}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        </DetailCard>
+      ) : (
+      <>
       <FormSection title="Task" subtitle="A step below an activity. Shared: one task can sit under several activities.">
         <FormField label="Name" htmlFor="td-name" required error={errors.name}>
-          <Input id="td-name" value={name} error={!!errors.name} disabled={readOnly}
+          <Input id="td-name" placeholder="e.g. 3D Modeling" value={name} error={!!errors.name}
             onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: '' })) }} />
         </FormField>
         {/* Timesheet entries store the task by name, so a rename does not reach
@@ -92,21 +119,21 @@ export function TaskDrawer({ mode, catalog, initial, entryCount = 0, presetActiv
             Those entries keep the old name. Rename only to correct it, not to repurpose the task.
           </Alert>
         )}
-        <FormField label="Active" htmlFor="td-active"
-          help="Inactive tasks stay on old entries but disappear from the Time Entry picklist.">
-          <Checkbox id="td-active" checked={active} disabled={readOnly}
-            onChange={(e) => setActive(e.target.checked)} label="Available to pick" />
+        <FormField label="Active" htmlFor="td-active" help="Inactive stays on old entries, out of the picklist.">
+          <ActiveSelect id="td-active" value={active} onChange={setActive} inactiveLabel="Inactive (retired)" />
         </FormField>
       </FormSection>
 
       <FormSection title="Activities" subtitle="Where this task appears. Leave empty to park it until it is needed.">
         <FormField label="Linked activities" htmlFor="td-activities"
-          help="Time Entry offers this task once one of these activities is chosen.">
-          <MultiSelect id="td-activities" value={activityIds} options={activityOptions} disabled={readOnly}
+          help="Time Entry offers it under these activities.">
+          <MultiSelect id="td-activities" value={activityIds} options={activityOptions}
             placeholder="Search activities..." emptyLabel="No activities exist yet."
             onChange={setActivityIds} />
         </FormField>
       </FormSection>
+      </>
+      )}
     </Drawer>
   )
 }

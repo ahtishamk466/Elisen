@@ -186,8 +186,10 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
   return (
     <AppShell
       title="ATA Chapters"
+      description="The taxonomy drawings are filed under."
       activeItem="Reference Data"
       activeChild="ATA Chapters"
+      fill
       headerActions={
         <>
           <div className="min-w-0" style={{ width: 400 }}>
@@ -201,12 +203,12 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
         </>
       }
     >
-      <div className="grid gap-lg">
+      <div className="flex min-h-0 flex-1 flex-col gap-lg">
         {toast && <Alert tone="info" title={toast} />}
 
         {/* Same StatCard tiles as every other list page, and they follow the
             search: filter to one chapter and the counts describe that chapter. */}
-        <div className="grid gap-lg mobile:grid-cols-2 laptop:grid-cols-4">
+        <div className="grid shrink-0 gap-lg mobile:grid-cols-2 laptop:grid-cols-4">
           <StatCard value={filtered.length} label="Chapters shown" loading={loading} />
           <StatCard value={shownSubChapters} label="Sub chapters" loading={loading} />
           <StatCard value={activeCount} label="Active chapters" loading={loading} />
@@ -214,8 +216,8 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
         </div>
 
         {loading ? (
-          <div className="grid gap-lg laptop:grid-cols-[320px_minmax(0,1fr)]">
-            <div className="grid gap-sm rounded-sm border border-border-default bg-neutral-25 p-lg">
+          <div className="grid min-h-0 flex-1 gap-lg laptop:grid-cols-[320px_minmax(0,1fr)]">
+            <div className="grid gap-sm overflow-hidden rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ alignContent: 'start' }}>
               {Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-9 w-full" />)}
             </div>
             <div className="grid gap-sm rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ alignContent: 'start' }}>
@@ -234,18 +236,20 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
             />
           </div>
         ) : (
-          <div className="grid items-start gap-lg laptop:grid-cols-[320px_minmax(0,1fr)]">
+          /* Both panes end at the fold and scroll inside themselves — the rail
+             no longer stops at an arbitrary 520px with dead page under it. */
+          <div className="grid min-h-0 flex-1 gap-lg laptop:grid-cols-[320px_minmax(0,1fr)]">
             {/* ------- The chapter rail ------- */}
-            <nav aria-label="ATA chapters" className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+            <nav aria-label="ATA chapters" className="flex min-h-0 flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-25">
               {/* Labelled once at the top rather than on every row: with the
                   columns named, the code and the count stop competing to be
                   understood and the rows stay short. */}
-              <div className="flex items-center gap-sm border-b border-border-default bg-neutral-50 px-base py-sm">
+              <div className="flex shrink-0 items-center gap-sm border-b border-border-default bg-neutral-50 px-base py-sm">
                 <span className="w-8 shrink-0 text-xs font-semibold text-text-secondary">No.</span>
                 <span className="min-w-0 flex-1 text-xs font-semibold text-text-secondary">Chapter name</span>
                 <span className="shrink-0 text-xs font-semibold text-text-secondary">Sub ch.</span>
               </div>
-              <div ref={railRef} className="overflow-y-auto" style={{ maxHeight: 520 }}>
+              <div ref={railRef} className="relative min-h-0 flex-1 overflow-y-auto">
                 <ul>
                   {filtered.map((c) => {
                     const isSel = c.id === selected?.id
@@ -283,9 +287,9 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
 
             {/* ------- The selected chapter ------- */}
             {selected && (
-              <section aria-label={`Chapter ${selected.chapter}`} className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+              <section aria-label={`Chapter ${selected.chapter}`} className="flex min-h-0 flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-25">
                 {/* Actions behind the 3-dot menu, as every other row in the app. */}
-                <header className="flex flex-wrap items-center gap-sm px-lg py-base">
+                <header className="flex shrink-0 flex-wrap items-center gap-sm px-lg py-base">
                   <CodeBadge code={selected.chapter} size="lg" />
                   <div className="min-w-0 flex-1">
                     <h2 className="truncate text-sm font-semibold text-text-primary">{selected.title}</h2>
@@ -303,7 +307,7 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
                   />
                 </header>
 
-                <div className="flex items-center justify-between gap-sm border-t border-border-default px-lg py-base">
+                <div className="flex shrink-0 items-center justify-between gap-sm border-t border-border-default px-lg py-base">
                   <h3 className="text-sm font-semibold text-text-primary">Sub chapters</h3>
                   <Button size="sm" leadingIcon={<Plus size={14} />}
                     onClick={() => setSectionDrawer({ mode: 'create', chapter: selected })}>
@@ -316,7 +320,7 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
                     No sub chapters yet. Most chapters start with 00 — General.
                   </p>
                 ) : (
-                  <div className="overflow-x-auto border-t border-border-default">
+                  <div className="min-h-0 flex-1 overflow-auto border-t border-border-default">
                     <table className="w-full border-collapse text-left" style={{ minWidth: 680 }}>
                       <caption className="sr-only">Sub chapters of chapter {selected.chapter}</caption>
                       <thead>

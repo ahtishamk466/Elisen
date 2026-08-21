@@ -68,7 +68,9 @@ export function validateStep(step: number, v: AddProjectValues, isEdit = false):
     else if (!/^\d{4}$/.test(v.number.trim())) e.number = 'Use a 4-digit project number, e.g. 3206.'
     else if (!isEdit && TAKEN_NUMBERS.includes(v.number.trim()) && v.subNumber === '00')
       e.number = `Project ${v.number}-00 already exists. Use a new sub number or a different project number.`
-    if (!v.subNumber) e.subNumber = 'Sub number is required.'
+    if (!v.subNumber.trim()) e.subNumber = 'Sub number is required.'
+    else if (!/^\d{2}$/.test(v.subNumber.trim())) e.subNumber = 'Use two digits, e.g. 00 or 01.'
+    if (!v.openedDate) e.openedDate = 'Project opened date is required.'
     if (!v.type) e.type = 'Type is required.'
     if (!v.priority) e.priority = 'Priority is required.'
     if (!v.company) e.company = 'Company is required.'
@@ -77,7 +79,6 @@ export function validateStep(step: number, v: AddProjectValues, isEdit = false):
       e.contractValue = 'Enter a number, without symbols or commas.'
   }
   if (step === 1) {
-    if (!v.openedDate) e.openedDate = 'Project opened date is required.'
     if (v.dueDate && v.openedDate && v.dueDate < v.openedDate)
       e.dueDate = 'Due date cannot be before the opened date.'
     if (v.closedDate && v.openedDate && v.closedDate < v.openedDate)

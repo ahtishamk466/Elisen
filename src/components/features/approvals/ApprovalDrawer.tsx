@@ -118,10 +118,10 @@ export function ApprovalDrawer({ initial, onClose, onSave }: ApprovalDrawerProps
         subtitle="The certificate itself. Dates live on its revisions. An approval has no single date, because it changes each time it is re-issued."
       >
         <FormField label="Number" htmlFor="ap-number" required error={errors.number} help="e.g. STC SA26-102">
-          <Input id="ap-number" value={number} error={!!errors.number} onChange={(e) => { setNumber(e.target.value); setErrors((p) => ({ ...p, number: '' })) }} />
+          <Input id="ap-number" placeholder="e.g. STC SA25-200" value={number} error={!!errors.number} onChange={(e) => { setNumber(e.target.value); setErrors((p) => ({ ...p, number: '' })) }} />
         </FormField>
         <FormField label="Description" htmlFor="ap-description" required error={errors.description}>
-          <Textarea id="ap-description" value={description} error={!!errors.description}
+          <Textarea id="ap-description" placeholder="What this certificate covers..." value={description} error={!!errors.description}
             onChange={(e) => { setDescription(e.target.value); setErrors((p) => ({ ...p, description: '' })) }} />
         </FormField>
         {/* A flag, and a checkbox on the legacy screen — the "booleans are
@@ -135,7 +135,7 @@ export function ApprovalDrawer({ initial, onClose, onSave }: ApprovalDrawerProps
           </p>
         </FormField>
         <FormField label="Design Approval Holder" htmlFor="ap-holder"
-          help="The organisation holding the design approval. From Reference Data companies, plus holders already in use.">
+          help="The organisation holding the design approval.">
           <SearchableSelect
             id="ap-holder" value={holder} onChange={setHolder}
             options={holderOptions.map((h) => ({ value: h, label: h }))}
@@ -146,7 +146,7 @@ export function ApprovalDrawer({ initial, onClose, onSave }: ApprovalDrawerProps
           />
         </FormField>
         <FormField label="Comment" htmlFor="ap-comment">
-          <Textarea id="ap-comment" value={comment} onChange={(e) => setComment(e.target.value)} />
+          <Textarea id="ap-comment" placeholder="Anything worth noting..." value={comment} onChange={(e) => setComment(e.target.value)} />
         </FormField>
         <FormField label="Status" htmlFor="ap-active">
           <Select id="ap-active" value={active ? 'active' : 'inactive'} onChange={(e) => setActive(e.target.value === 'active')}>
@@ -164,7 +164,7 @@ export function ApprovalDrawer({ initial, onClose, onSave }: ApprovalDrawerProps
         title="Coverage"
         subtitle="Which aircraft this certificate covers. Both optional. An approval often names a type before any specific airframe is known."
       >
-        <FormField label="Aircraft Model Number" htmlFor="ap-aircraft" help="From Reference Data. Select as many models as the certificate covers.">
+        <FormField label="Aircraft Model Number" htmlFor="ap-aircraft" help="As many models as the certificate covers.">
           <MultiSelect
             id="ap-aircraft"
             value={aircraftIds}

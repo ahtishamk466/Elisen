@@ -74,8 +74,8 @@ export function PermissionDrawer({ mode, initial, onClose, onSubmit }: Permissio
           <Input id="perm-desc" value={description} placeholder="e.g. Activity Assign" onChange={(e) => setDescription(e.target.value)} />
         </FormField>
         {rule && (
-          <FormField label="Rule" htmlFor="perm-rule" help="Rules are code-defined conditions, managed by developers under System.">
-            <Input id="perm-rule" value={`${rule.name} (${rule.className})`} disabled />
+          <FormField label="Rule" htmlFor="perm-rule" help="Code-defined, managed under System.">
+            <Input id="perm-rule" placeholder="e.g. project/*" value={`${rule.name} (${rule.className})`} disabled />
           </FormField>
         )}
       </FormSection>

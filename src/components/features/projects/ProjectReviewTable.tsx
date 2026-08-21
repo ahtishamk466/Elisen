@@ -7,6 +7,7 @@ import { Truncate } from '@/components/patterns/Truncate'
 import { PRIORITY_LABEL, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
 import { agingDays } from '@/lib/reviewPresets'
 import type { ProjectListRow } from '@/types/project'
+import { DateText } from '@/components/patterns/DateText'
 
 /**
  * One superset column set covering every legacy Review tab, so nothing is
@@ -108,7 +109,7 @@ export function ProjectReviewTable({
                       <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 280 }}>
                         <Truncate>{row.nextAction || '—'}</Truncate>
                       </td>
-                      <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{row.dueDate || '—'}</td>
+                      <td className="px-lg py-base align-top text-sm text-text-primary"><DateText value={row.dueDate} /></td>
                       <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{aging ?? '—'}</td>
                       {canSeeFinancials && (
                         <>

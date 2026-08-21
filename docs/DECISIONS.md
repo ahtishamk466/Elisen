@@ -3220,3 +3220,637 @@ no column merged and none removed. Three things paid for it:
 Aircraft and Projects moved to `ChipOverflow`, so a certificate covering six
 airframes can never grow the row past two lines — previously they mapped every
 chip. Verified: no heading overflows, no content past a cell, rows 61–69px.
+
+## 2026-08-19 — Work Packages becomes a Projects tab of its own
+
+Projects now has four children: Projects List, **Work Packages**, Projects
+Review, TCCA Projects. The new screen answers "what work is open across
+everything?" — the cross-project counterpart to a single project's Work
+Packages tab.
+
+**Master–detail, not a wide table.** A package's own figures are a handful of
+facts, but its activities are a table in their own right, and a table inside a
+table row is unreadable. The rail carries enough to choose from — name, project,
+status, activity count, % used — and the detail carries the rest. Selection is
+URL-synced (`?wp=…`) so a package is linkable, and falls back to the first hit
+when a search filters the selected one away.
+
+**Header states hours as text, not a meter** — `2.6h / 2h used` — per the
+client's approved concept. Meters stay in the activity rows, where a reader is
+comparing many lines at once and a figure alone is slower to scan.
+
+**Facts**: Project (number over title), Status, Size (activities over people),
+Actual / Budget, Remaining, Used. Laid out with flex, not grid — a wrapped grid
+row leaves empty tracks where the missing cells would be.
+
+**`WP_STATUS_LABEL` / `WP_STATUS_TONE` extracted to `lib/workPackageDisplay.ts`**
+and adopted by `WorkPackageCard`, so the project tab and this workspace cannot
+label the same status differently.
+
+**`ChipOverflow` gained a table-row mode.** With `onShowAll` set it now lays its
+chips on **one line with truncation** instead of wrapping — a long task name was
+wrapping the cell to three lines, which is the exact failure the component
+exists to prevent. Standalone use still wraps and expands in place.
+
+**Three width bugs caught by measuring, not reading:** the Project fact ran to
+three lines until its cell got `min-w-0` (truncate never engages without it);
+`Actual / Budget` and then `Actions` were each nowrap headings wider than their
+share, overflowing into the next column. Final: 0px overflow, no heading
+overflows, activity rows uniform at 53px.
+
+## 2026-08-19 — One View layout, app-wide; Activities table fits the page
+
+**The View standard, now enforced everywhere.** A `View` action — from a 3-dot
+menu, a row click, or a count like "3 tasks" / "+1 more" — always opens the same
+read-only layout: a `DetailCard` per record, `DetailField` label/value pairs in a
+2–3 column grid, related lists as a divider-separated group inside the same card,
+and a footer with **Close** and nothing else. Companies was already the reference;
+the rest now match it.
+
+**Three surfaces were showing a disabled form instead.** `ActivityCatalogDrawer`
+and `TaskDrawer` rendered their edit form with every field `disabled`, and
+`ActivityViewDrawer` used `FormSection` with hand-rolled fields. The problem with
+a greyed-out input is not that it looks wrong — it is that **a real value and an
+empty one render in exactly the same grey**, so a reader cannot tell "no phone
+number" from "a phone number I can't read". `DetailField` prints an em dash for
+empty, which is unambiguous. All three converted; the dead `disabled={readOnly}`
+props went with them.
+
+**Audited every View surface:** Company, Aircraft, Serial Number, Timesheet
+Entry, Project Detail and Approval Detail were already conforming. Approval
+Revision and Setting drawers have no view mode at all. Verified live that both
+the Activity and Task views open with **0 inputs and a Close-only footer**.
+
+**Activities & Tasks table fits the page.** `table-fixed` with percentage shares
+and `px-sm` padding; Description gets a fixed 26% and truncates rather than
+taking the table over, and `Task Required` → **Required** (the heading was wider
+than the Yes/No under it). 0px overflow, no heading overflows.
+
+**"3 tasks" no longer jumps to the Tasks tab.** Rewriting the search box and
+switching tabs is a lot to do to someone who clicked a count; it opens that
+activity's View, where its tasks are listed in full — the same screen the 3-dot
+View opens. Verified: both paths render an identical drawer and the tab does not
+change.
+
+**Storybook**: `ViewLayoutExample` under Patterns shows the standard, the
+related-list group, the em-dash empty state, and a labelled counter-example of
+the disabled-input anti-pattern.
+
+---
+
+## 2026-08-20 — Work Packages: a roomier rail, and the detail rebuilt to the client's reference
+
+**The rail was carrying five facts in two tight lines.** Rows were 57px with no
+gap between the title and the line under it, and the title was only semibold
+when selected — so a scan down the list had nothing to catch on. Rows are now
+92px (`px-lg py-lg`, `gap-xs` between lines), the title is always semibold, and
+the rail is 328px.
+
+**The percentage under the activity count is gone.** It said the same thing as
+the hours now on line two, and it was the noisier of the two — a bare `130%`
+next to a count reads as a second count. Line two is `project name ·
+2.6h / 2h`, with the hours `shrink-0` so the **project name gives way, never the
+figure**: an hours pair truncated to `2.6h / 2…` is worse than useless.
+
+**The detail is two cards, not one.** The package's own facts used to be a strip
+of bordered `Fact` cells directly above the activities table, which read as one
+more table header. Now: a **package card** (icon tile, name, description, size
+chip, status badge, 3-dot) over a tinted `neutral-50` strip of its five figures —
+Sr #, Project, Actual / Budget, Remaining, Used — and then **Activities ( n )**
+as its own titled section with its own card and a primary **Add New Activity**.
+
+**The activity table lost its Status column.** State is already in the row twice
+(a red `−0.3h` and a red bar at 130%), and the column cost 11% of a 750px pane.
+`Used` now puts the bar and the figure on **one line**, which is what freed the
+width for the names.
+
+**`minWidth: 730` with the shares derived from it.** Each heading's share must
+cover the heading *at the minimum width*, not at 1440 — `Actual / Budget` needs
+17%, `Action` 8.5%. Below ~1400px the pane scrolls a little rather than letting
+a nowrap heading silently overflow into the next column. Verified at 1280 /
+1440 / 1680: no heading overflow, no cell spill, and at 1680 the task chips read
+in full.
+
+**Tasks show one chip then `+N more`** in this pane (not the usual two): task
+names run long and the detail pane is narrow, so two chips left both truncated
+to two characters. The count still opens the activity's View.
+
+**Follow-up, same day — matching the reference exactly.** Three corrections
+after a side-by-side check against the client's mock:
+
+- **The 3px reveal.** The tinted panel is a surface *inside* the card, not the
+  card's own top edge: the card carries `padding: 3` and the panel is
+  `rounded-xs`, so 3px of white shows on all three sides. The fills were also
+  inverted — the **header** is `neutral-100` (#F1F5F9, the mock's colour) and
+  the **facts strip is white**, not the other way round. The icon tile is solid
+  `accent` with a white glyph, not the subtle tint.
+- **Sr # / Type and Priority.** Number and type answer the same question — which
+  project is this — so they stack in one field rather than taking two, exactly as
+  the mock draws it. Priority joins the strip as its own field.
+- **The strip is a grid, not flex-wrap.** With six fields it wraps at 1440, and a
+  wrapped *flex* row stretched the two leftovers to 363px each — half the card
+  apiece. `repeat(auto-fit, minmax(120px, 1fr))` keeps every track equal so a
+  second row lines up under the first, and **Project spans two tracks**: it is
+  the only free-text value here, so it gets the most space and never truncates.
+  One row at 1680, two at 1440, no overflow down to 900.
+
+---
+
+## 2026-08-20 — Projects List: Priority / Type, Opened date, and a typed Sub Number
+
+**Priority and Type share a cell, ahead of Company.** Both answer "what am I
+looking at" in one short word, and a reader triages by them before they care
+whose project it is — so `5 - Lowest` leads with the type under it, and the
+column sits second, right after the identity. Both fields stay sortable through
+the `SortMenu`. Priority is back to one phrase per line rather than the split
+`5` / `Lowest` — the second line belongs to the type now.
+
+**Opened date is its own column**, in ISO (`2026-03-07`) like every other date
+in the app: unambiguous across locales, and it sorts as text.
+
+**Remaining and Used merged.** Eleven columns will not hold 959px of laptop, and
+of every pair left, "how much is left" and "how much is used" are the same
+question — so `−0.6h` leads with the meter and `106%` under it. That is what
+paid for the two new columns without reintroducing horizontal scroll.
+
+**Widths are derived from what each heading needs on one line at 959px**, not
+guessed: `Priority / Type` 128px, `Actual / Budget` 137px, `Status` 97px (the
+`In Progress` badge, not the word "Status", sets that one). Verified at 1280 and
+1680: every heading one line, no cell overflows its padding, no scroll.
+
+**Sub Number is typed, not picked.** A three-option dropdown (`00`/`01`/`02`) is
+a ceiling, not a help — sub numbers run as far as the change requests on a
+project do. It is a 2-digit field validated as `^\d{2}$`, and its help line is
+one line: *"00 for a new project, 01+ for a change request."*
+
+**Project Opened Date moved to step 1.** It already existed on Additional
+Details, which is why it looked missing: it is required, it is set at creation,
+and it belongs with the fields that define the project rather than the dates
+that track it. Its validation moved from step 1 to step 0 with it; Due and
+Closed still validate against it where they are.
+
+---
+
+## 2026-08-20 — The shell owns the viewport: only content scrolls
+
+**`AppShell` is exactly one screen tall and never scrolls itself.** It was
+`min-h-screen` with a `sticky` sidebar, so the *document* scrolled: on ATA
+Chapters the nav and the page heading rode off the top of the screen and the
+page ended in dead white space. Now the root is `h-screen overflow-hidden`, the
+sidebar is `h-full`, the header is `shrink-0`, and `<main>` is
+`min-h-0 flex-1 overflow-y-auto`. Sidebar and heading are always on screen;
+everything below them scrolls in its own frame.
+
+**`<AppShell fill>` for master–detail.** A list page wants `main` to scroll. A
+master–detail screen wants the opposite: `fill` makes `main`
+`flex flex-col overflow-hidden`, and the page ends both panes at the fold with
+`min-h-0 flex-1` and scrolls each on its own. ATA Chapters and Work Packages
+adopted it, which also deleted their `maxHeight: 520` / `640` rails — a fixed
+cap leaves dead page under it on a tall screen and clips it on a short one.
+
+**The bug this exposed: `sr-only` escapes a scroll container.** After the shell
+was fixed the window *still* scrolled 1,658px on ATA Chapters. Cause:
+Tailwind's `sr-only` is `position: absolute`, and with no positioned ancestor
+its containing block is the initial one — so the screen-reader label inside row
+50 of a 50-row rail was laid out 2,600px down the **document**, not inside the
+clipped rail. Diagnosed by hiding the rail's `<ul>` and watching
+`documentElement.scrollHeight` drop from 2,658 to 1,000. Fix: every scroll
+container carries `relative`. Applied to `main` and to both rails.
+
+**Verified across all 15 routes** at 1000px and 700px viewport heights: the
+window never scrolls (`scrollTo(0, 5000)` leaves `scrollY` at 0), there is no
+horizontal document scroll, and `main` scrolls internally where the content is
+long. Drawers and the 3-dot menus are unaffected — they portal to `<body>` and
+`useDropdown` already listens for scroll in the capture phase, so they follow a
+nested scroller.
+
+**Storybook**: `PageScrollRule` under Patterns shows both shapes side by side
+and the `sr-only` warning.
+
+---
+
+## 2026-08-20 — One date format, a real status mix, content-sized columns
+
+**`Aug 20, 2026` is the only date format a user sees.** `lib/formatDate.ts` is
+the single implementation; 20 call sites across Projects, Timesheet, Approvals,
+Documents and TCCA now go through it. Dates are still *stored and sorted* as ISO
+— it sorts as text and `<input type="date">` requires it — but ISO is not a
+reading format, and `20/08/2026` means two different days depending on which
+side of the Atlantic you read it on. A named month can only be read one way.
+`ProjectDetailPage` already had a private `formatDate` doing exactly this; it is
+gone, and the shared one replaced it. Dates inside the client's own transcribed
+free text (`2025-11-21 - Cert plan awaiting TR signature…`) are left alone —
+they are prose, not fields.
+
+**All seven statuses now appear in the list.** The transcribed Review rows were
+`active` / `query` / `quoted` only, and since the list sorts by number the whole
+first page read `In Progress`. The `active` rows now carry a lifecycle spread
+(9 active, 4 on-hold, 4 complete, 4 tentative, 2 cancelled) and the five `0000-*`
+internal cost centres show five different statuses — except **`0000-00`, which
+stays `active` by rule**: it is the non-chargeable project every general and
+absence timesheet row books against, so it can never be closed.
+
+**Columns are sized to their content; Project takes what is left.** Actual /
+Budget, Remaining, Priority / Type, Opened, Status and Actions are each as wide
+as the widest thing *in* them — a badge, a 12-character date, a 3-dot button —
+not as wide as their heading. **Headings wider than their data wrap to two lines
+in the header row instead of widening the column beneath them for 500 rows**;
+the header is 65px once, which is cheaper than 40px of dead width per row.
+Actions is the narrowest column in the table (64px) and Project the widest
+(144px at 1280, 204px at 1680).
+
+**Remaining reads left to right on one line:** `−0.6h` · meter · `106%`. Stacked,
+the meter sat under the figure with the percentage beside it and the cell looked
+ragged. The single widest row in the fixture set (`−395.3h 106%`) still wraps to
+two lines; widening for that one row would have cost Project its lead.
+
+Verified at 1280 and 1680: no horizontal scroll, no clipped cell
+(`scrollWidth > clientWidth` on every cell of every row: none), rows at most two
+lines.
+
+**Header row, same day.** All ten headings now sit on **one line, vertically
+centred**, with the sort arrow on the middle of its label rather than at the top
+of it — `SortMenu` was `items-start`, which parked the arrow above a two-word
+heading, and the header cells were `align-bottom`. Headings dropped to `text-xs`
+(the weight the app's other dense tables already use) and the two merged labels
+lost their spaces — **`Priority/Type`**, **`Actual/Budget`** — which is what
+bought the one-line row without taking the width off Project. Project stays the
+widest column (137px at 1280, 194px at 1680); Actions stays the narrowest
+(61px). Three of 25 Remaining cells still wrap at 1280 — the widest over-budget
+figures (`−395.3h 106%`) — and none at 1440 and up.
+
+---
+
+## 2026-08-20 — Documents: revision form, Go To, and the columns that were missing
+
+**Revision is a full-width field with a placeholder, not a pre-filled value.**
+It was a 96px box with `A` typed into it. Now it is the same width as every
+other field, and the suggested letter (`A` for a new document, the next in
+sequence for a new revision) is the **placeholder** — so the box shows what it
+will use, and submitting it blank takes exactly that. Applied in all three
+places a revision is entered: Add Deliverable / Add Drawing, Add Revision, and
+Raise Approval Revision.
+
+**Next Action is optional; Status is required.** Next Action drives someone's
+to-do list, which is useful but not a fact about the revision — a revision can
+legitimately be parked with nobody holding it. Status is a fact and now starts
+blank (`Select a status…`) rather than defaulting to Work in Progress, so it is
+a decision rather than an accident.
+
+**Every field description fits on one line.** They were sentences: *"Whoever you
+pick sees this on their to-do list when they open Elisen."* → *"Optional — they
+see it on their to-do list."* Same for the project, ATA, aircraft and TCCA
+helps.
+
+**`UrlField` — a URL input with Go To beside it.** A stored link that has to be
+copied out of a text box is not a link. The button is disabled until the value
+is openable (`isOpenableUrl`), which doubles as a validity hint. The same jump
+is in the row Actions menu on the Documents workspace and on a project's
+Deliverables / Design Data tab — **"Open file" is now "Go To"** everywhere it
+appears. Fixtures gained URLs on two revisions in three (deterministic, by
+index) — every revision had `url: ''`, so the action could never appear.
+
+**Number and Rev are separate columns.** `COM-0000 · A` merged the identity with
+which copy of it you mean; neither sorted, and neither scanned. **Title and Type
+share a column** instead, because the type only qualifies the title.
+
+**The revision lists gained the columns they were missing.** The workspace table
+now carries Opened and Next Action alongside Due and Status; the *Previous
+revisions* list inside Add Revision is a real table (Rev, Opened, Due, Closed,
+Next Action, Status, File-with-Go-To) rather than one line of text per revision;
+the approval's *Previous revisions* list likewise (Rev, Date, Change, Document).
+A project's Deliverables / Design Data tab follows the same shape, so a revision
+reads identically wherever it appears.
+
+Verified live: no horizontal scroll on either Documents tab at 1680, no clipped
+cell, `Status is required.` blocks a blank submit, a blank Revision saves as the
+placeholder letter, and Go To opens with the URL prefilled in Edit.
+
+**Remaining / Used, same day.** The column is named for both facts it carries,
+and the figure, the meter and the percentage now share **one type style** —
+same size, same colour, and the over-budget emphasis applies to the pair rather
+than to the figure alone, so the cell reads as one sentence instead of a number
+with a footnote in small grey type.
+
+**Gutters went from `px-sm` to `px-xs`.** Remaining / Used, Status and Actions
+were already at their content's minimum — a meter and two figures, a badge, a
+3-dot button — so there was nothing to take off them directly. Halving the side
+padding across the table returned 80px, which went to the columns that were
+actually truncating: Company 92 → 100px, Person Res. 92 → 95, Opened 90 → 93,
+Priority/Type 111, Actual/Budget 112. Status is down to 89 and Actions to 54 —
+both now sized to the badge and the button, not to spare room. Verified at 1280
+and 1680: no scroll, no clipped cell, no heading overflow, and **no Remaining
+cell wraps to a second line any more**, including `−395.3h 106%`.
+
+---
+
+## 2026-08-20 — Selection header: the column titles hand their row to the selection
+
+**`TableSelectionBar` replaces the header row while rows are selected** — the
+Shopify pattern the client asked for by name. Checked box (minus when only some
+rows are selected — `Checkbox` gained a real `indeterminate` state, wired to
+the native property so assistive tech reads "partially checked"), a
+**"N selected"** button opening *Select all N* / *Unselect all*, and the bulk
+actions the page supplies. Clicking the box always clears: from this bar,
+"uncheck" can only mean "stop selecting". The column titles return the moment
+the selection empties.
+
+**Widths moved to `<colgroup>`.** The selection row is one colSpan cell, and
+under `table-fixed` the widths lived on the header cells — replace the header
+and every column re-derives its width from whatever the first body row holds.
+`<colgroup>` keeps them regardless of what the header row is showing; verified
+the Project column's width is pixel-identical in both states.
+
+**Select all selects the whole filtered list**, not the visible page — the page
+passes `allIds` (115 with no filter) while only 25 rows are revealed, so the
+count can exceed what is on screen, exactly like Shopify's "Select all N+".
+
+**Bulk Delete and Duplicate are real.** Delete confirms first
+(`Delete 12 projects?`) and then removes each row; Duplicate copies each
+selected project with consecutive next-free numbers (`3370-00 to 3381-00`),
+sub `00`, zero actuals, status Quoted — the same recipe as the single-row
+Duplicate. Export moved into the bar; the accent-tinted strip that used to sit
+*above* the table is gone — two surfaces describing one selection was the bug.
+
+**Scope note:** Projects List is the app's one selectable table today, so it is
+the one wired up; the bar itself is table-agnostic and documented in Storybook
+(`SelectionHeaderExample`) for the next table that gains selection.
+
+---
+
+## 2026-08-20 — Page descriptions, narrower Documents columns, one status name
+
+**The description belongs to the heading.** It was a `<p>` at the top of the
+page body, which put `gap-lg` — 16px — between a title and the sentence
+explaining it, and read as two unrelated things. `AppShell` now takes a
+`description` and renders it `mt-xxss` (**2px**) under the `<h1>`, inside the
+same block. Applied to all 11 list pages; measured 2px on every one.
+
+**And the copy got shorter.** *"Drawings and design data are created and managed
+here, with every revision. Projects link to revisions from their Design Data
+tab. One drawing can serve several projects."* → **"Manage drawings and design
+data with revisions."** One clause: what the screen holds, not how it works. The
+rules that govern the records still exist — in the empty state and the field
+help, where somebody is actually deciding something, rather than in a standing
+line every user reads past a hundred times.
+
+**`wip` is "In Progress", not "Work in Progress".** Same words as a project's
+`active` status, so one state reads one way everywhere. The Add-document picker
+now builds its options from `REVISION_STATUS_LABEL` rather than hardcoding the
+strings, which is how it drifted in the first place.
+
+**Documents fits without scrolling — 11 columns in 950px.** Title / Type came
+down (drawings 168 → 105px, deliverables 176 → 162), Opened and Due wrap to two
+lines rather than holding a column open for twelve characters, and the space
+went to Status (a `Signature Cycle` badge needs 107px and was being clipped),
+Next Action and Projects. Verified on both tabs: **0px scroll, no clipped cell,
+no heading overflow, rows at most two lines.**
+
+**View is in the Actions menu**, first, and it is what a row click and the
+Projects "+N more" now open — the standard read-only layout
+(`RevisionViewDrawer`, three `DetailCard`s: the document, the revision, its
+projects), Close/Edit footer, plus **Go To** when the revision has a file.
+Verified: 0 inputs. A revision's facts are split across two records and the
+table can only show a slice, so this is the first place the whole thing is
+legible.
+
+**Storybook**: `PageHeadingExample` under Patterns shows the do/don't and names
+the prop.
+
+**Status and Actions trimmed to their contents, same day.** Both were carrying
+slack: Actions is a 26px 3-dot button under a 45px heading, and Status only
+needs its widest badge. Gutters came down from `px-base` to `px-sm` across the
+table, and the freed width went to Title / Type — **Deliverables 164 → 259px,
+Design Data 102 → 179px**. Status is now 100px on Deliverables (widest badge
+`In Progress`, 81) and 128px on Design Data, where `Signature Cycle` is 107 and
+was previously overflowing its own padding at 122. Actions is 62px, the heading
+plus its gutters and nothing else. Both tabs: 0px scroll, nothing overflowing,
+rows at most two lines.
+
+---
+
+## 2026-08-20 — Two-line dates, and room between the columns
+
+**`<DateText />` — a date in a table cell is `Mar 7,` over `2026`.** A date is
+the only value in these tables whose width is set by its *format* rather than
+its data: twelve characters in every row, forever. Stacking the year hands
+roughly 30px per date column back to the columns that actually vary. Applied to
+**every table date in the app** — Projects, Documents (both tabs), a project's
+Deliverables / Design Data, Projects Review, Timesheet, Hours Worked, TCCA
+Projects, TCCA Documents, Approval Revisions, and both drawer revision
+histories. `formatDate()` stays one line in prose and on View screens, where
+there is no column to save and a stacked year mid-sentence reads as a typo.
+
+**Gutters went back up to `px-sm`.** `px-xs` (4px) had bought width for the
+merged headings, but it ran Company's contact line straight into Person Res. —
+two people, two avatars, 8px apart, reading as one cell. The checkbox column
+carries `px-base` on both sides so it clears the table edge and the Project
+number. The two-line dates paid for most of it: Opened went 93 → 82px even with
+the wider gutters.
+
+**Nothing else lost width.** Priority/Type, Actual/Budget, Remaining / Used,
+Status and Actions all sit on their exact minimum — a heading's own width or its
+widest badge — so the request to shave Priority and Remaining could only be met
+by the 8px of gutter they gave back; their headings are the floor and neither
+can go below it without wrapping, which was ruled out earlier.
+
+**Two other tables got their freed width back:** Approval Revisions now fits
+with **0px scroll** (was 26). Timesheet keeps `minWidth: 1180` — dropping it to
+1150 made the `Comment` heading overflow on Hours Worked, which is a worse
+trade than 30px of scroll.
+
+Verified at 1280 across eight tables: no heading overflow, nothing overflowing
+its cell, and Documents rows got *shorter* (65 → 61px). The residual scroll on
+Timesheet (221px) and Projects Review (741px) is unchanged and pre-existing —
+both are on the audit list.
+
+**Storybook**: `DateCellExample` under Patterns.
+
+---
+
+## 2026-08-20 — Work package facts: six, three per row
+
+**Three per row, two rows.** The strip was `repeat(auto-fit, minmax(120px, 1fr))`,
+which re-flowed six facts into a ragged 5 + 1 depending on the pane; it is a
+plain `tablet:grid-cols-3` now, so the six read as a block the way the Dates
+card on Project Detail does.
+
+**Type is its own field.** It was stacked under `Sr # / Type`, where neither
+value could be read at a glance — a project's type is not a qualifier of its
+number. **Opened** joins them (the project's opened date), and **Remaining and
+Used merged** into one field carrying hours left, the meter and the percentage
+in the table's own type style. Six fields exactly: Sr #, Type, Project, Opened,
+Actual / Budget, Remaining / Used.
+
+**Priority moved into the header** beside the status badge. It is a state
+signal, like status — not a fact like a number — and keeping it in the strip
+would have made a seventh cell that breaks the 3 × 2. It also now renders from
+`PRIORITY_TONE`/`PRIORITY_LABEL` off the project's own key, rather than being
+handed a pre-formatted string.
+
+**The count chip is built like a Badge, not beside one.** It was `py-xs
+text-sm` against a Badge's `py-xxss text-xs` — 8px taller, which is what read as
+misalignment. Same padding, size and weight now; measured **20px for all three
+chips**.
+
+One cost, stated: with `Project` no longer spanning two tracks it truncates on a
+1280 laptop (it has a title tooltip) and fits from ~1400 up. Verified at 1680:
+2 rows of 3, nothing truncated, activities table 0px scroll.
+
+---
+
+## 2026-08-20 — One form standard for every side drawer
+
+**`active` is a dropdown, never a checkbox** — `ActiveSelect`. A checkbox states
+one option and leaves the other implied, so an unticked box reads the same for
+"not active yet" and "deliberately retired", and the reader has to know which.
+Two named options say which state the record is in, and it matches how `active`
+already reads everywhere it is *displayed*: an Active / Inactive badge, never a
+tick. Four drawers still used a checkbox (ATA Chapter, ATA Sub Chapter, Activity,
+Task); five already had the dropdown, which is how the inconsistency showed.
+
+**Every control is the full width of its field column.** A 96px box for a
+2-character drawing prefix, and 112px boxes for TCCA priority and issue number,
+sat in a column of 383px fields — a short value does not earn a short box; a
+form reads as one column of controls and a stub breaks the line. Verified live:
+all 17 controls in Add TCCA Project measure **383px**, and the same in the
+Aircraft (8), Company (6), Activity (4) and ATA (4) drawers. The one deliberate
+exception is a genuinely compound field — currency + amount — which is still one
+full-width row split internally.
+
+**Every field has a placeholder — 35 added.** A concrete example where the value
+has a format (`e.g. STC SA25-200`, `e.g. H4Y 1C2`, `name@company.com`), a prompt
+where it doesn't (`What this certificate covers...`). Where a value can be
+derived, the placeholder is the suggestion and a blank submit takes it — TCCA
+Project Number now works like the Revision fields.
+
+**Help is one short line — 21 rewritten.** *"From the activity's task
+associations, which filter the Time Entry picklist. Managed in Reference Data →
+Activities & Tasks, not per package."* → *"Set in Reference Data → Activities &
+Tasks."* The worst offenders explained the data model or, in one case, what was
+**pending client confirmation** — neither is something a person filling in a
+field needs. Verified: no help text wraps in any drawer audited.
+
+**Written down so it doesn't drift back:** Storybook
+`Patterns / DrawerFormStandard` (the four rules, with the app's own
+counter-examples), an `ActiveSelect` row in COMPONENTS.md, and **CLAUDE.md rule
+9**, which points at the story and is read before any new form is built.
+
+---
+
+## 2026-08-20 — Projects List: fixed columns stop growing, text columns take the rest
+
+**The bug was that every column was a percentage.** On a 1728px screen the date
+column grew to 130px to show twelve characters, `Status` to 137px to show a
+badge, and `Actions` to 100px to show a 3-dot button — while `Elisen - General
+(non-...`, `Cert Center Cana...` and `Remi Rochele...` were still cut off. A
+proportional share is the wrong model when half the columns have a **known
+maximum**: they cannot use the space, and a wider screen just adds padding
+around them.
+
+**Two kinds of column now.** `fixed` (px) for content with a ceiling — a
+two-line date 82, a badge 97, the 3-dot 61, and the merged headings whose own
+width is the floor. `flex` (a share) for the three that hold free text and
+truncate: Project 40, Company 32, Person Res. 28. Every pixel the fixed columns
+don't need goes to those three, in that ratio.
+
+| viewport | table | Project | Company | Person Res. | truncated cells |
+|---|---|---|---|---|---|
+| 1280 | 959 | 118 | 95 | 83 | names |
+| 1400 | 1079 | 166 | 133 | 116 | 19 |
+| 1728 | 1407 | 298 | 238 | 208 | 1 |
+| 1920 | 1599 | 374 | 299 | 262 | **0** |
+
+The fixed columns are identical in all four rows.
+
+**It is measured, not expressed in CSS.** A `<col>` honours `px` and it honours
+`%`, but a browser **silently ignores `calc(40% - 264px)`** on one and falls
+back to splitting the space evenly — verified in the page: `px` → 500px, `30%` →
+422px, the calc → the even-split value. So `useElementWidth` (ResizeObserver
+plus a `window.resize` listener, because an observer on a scroll container does
+not always fire when the viewport changes but the container's box is held open
+by its content) measures the wrapper and the table writes real pixels.
+
+`FLEX_FLOOR = 280` is the point below which the three would start truncating
+everything; it is set so a 1280px laptop still fits the table exactly, with no
+horizontal scroll.
+
+**Budget merged into one column, same day.** `Actual/Budget` and
+`Remaining / Used` were four figures across two columns — `7461.4h / 7800h`
+then `338.6h ▬ 96%` — and a reader had to work out which pair belonged to
+which. But it is **one question, and only two of the four numbers are
+independent**: remaining is budget minus actual, used is actual over budget. So
+it is one column now, read top to bottom as a sentence:
+
+```
+7461.4h / 7800h          spent, of what was set aside (budget muted)
+▬▬▬▬▬▬▬▬▬░  96%  338.6h left    how far through, and what is left
+```
+
+Over budget swaps the last phrase to **`395.3h over`** in danger — the word
+carries it, so nobody has to decide whether a minus sign is good news, and the
+percentage above 100 is the non-colour cue. All four sorts survive on the one
+heading through `SortMenu`. 196 → 200px replaces 259px.
+
+**Flexible columns gained `min` and `max`.** Company and Person Res. stop
+growing at 240 and 200 — the point where a company name and its contact, or a
+person's name, actually fit — and never shrink below their own heading (98, 94).
+Everything the caps free goes to Project.
+
+| viewport | Project | Company | Person Res. | Budget |
+|---|---|---|---|---|
+| 1280 | 164 | 98 *(min)* | 94 *(min)* | 200 |
+| 1728 | **418** | 209 | 176 | 200 |
+| 1920 | **556** | 240 *(max)* | 200 *(max)* | 200 |
+
+Project was 298 at 1728 before this; it is 418 now. Verified at all three: no
+scroll, no heading overflow, nothing overflowing its cell, rows at most two
+lines.
+
+**Dates back to one line, same day — but the column decides, not the table.**
+The two-line date was bought to save horizontal space; Projects List now has the
+space, so it reads as one thing again. Rather than a per-table flag, `DateText`
+simply stopped forcing `whitespace-nowrap`: the **only break opportunity in a
+formatted date is the space before the year**, so a column with room renders
+`Mar 24, 2026` and a starved one breaks to `Mar 24,` / `2026` on its own. No
+table has to decide in advance, and none can get it wrong.
+
+The cells had to stop forcing nowrap too — **13 `<td>`s** carried
+`whitespace-nowrap` around a `DateText`, which turns the break into an overflow.
+`Opened` on Projects List is now `fixed: 107` (the widest rendered date is 89px
+plus gutters), so it never wraps at any width.
+
+Verified at 1280 and 1728: **0 dates on two lines on Projects List**, and
+across Documents (both tabs), Timesheet, Hours Worked, TCCA Projects, Approval
+Revisions and Projects Review **nothing overflows its cell** — the tight ones
+break after the comma exactly as before. Rows stay at most two lines.
+
+**Also fixed here:** an earlier bulk edit had left a JSX tag inside a template
+string on Timesheet's row actions — `Actions for timesheet entry on
+$<DateText …/>` — which would have been read out literally by a screen reader.
+It uses `formatDate()` now.
+
+**Work Packages, same day — "Activities", and Priority back in the strip.**
+The rail column reads **Activities**, not `Act.` — it had been abbreviated for a
+width the rail no longer lacks.
+
+**Priority returned to the facts**, where the client wants it: it is a fact
+about the project this package belongs to, alongside its number and its type,
+not a state chip on the package's own header. Its slot was paid for by merging
+**Actual / Budget** and **Remaining / Used** into one **Budget** field, the same
+shape as the Projects List column — spent of what was set aside on line one,
+then how far through and what is left:
+
+```
+2.6h / 2h
+▬▬▬▬▬▬▬▬  130%  0.6h over
+```
+
+Six facts, still three per row over two rows: Sr # · Type · Project /
+Opened · Budget · Priority. Verified at 1280 and 1728 — 3 + 3 in both, rail
+header and rows with no overflow, nothing truncated at 1728.
+
+Not touched, and worth a decision: the Activities table below still carries
+`Actual / Budget`, `Remaining` and `Used` as three separate columns, so the same
+figures now read two ways on one screen. Merging them there would free ~100px
+and remove the residual scroll that table has below ~1400px.

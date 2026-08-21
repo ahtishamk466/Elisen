@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown, Eye, Pencil, Trash2, CheckCircle2, RotateCcw, Plus } from 'lucide-react'
-import { Badge, type BadgeTone } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ChipOverflow } from '@/components/patterns/ChipOverflow'
@@ -9,14 +9,11 @@ import { BudgetInline, ProgressMeter } from '@/components/patterns/ProgressMeter
 import { activityName, tasksForActivity } from '@/lib/catalog'
 import { useCatalogStore } from '@/stores/catalogStore'
 import { HEALTH_LABEL, HEALTH_TONE, formatHours, formatPct, healthOf, rollUpActivities } from '@/lib/projectHealth'
-import type { WorkPackage, WorkPackageActivity, WorkPackageStatus } from '@/types/workPackage'
+import { WP_STATUS_LABEL, WP_STATUS_TONE } from '@/lib/workPackageDisplay'
+import type { WorkPackage, WorkPackageActivity } from '@/types/workPackage'
 
-const STATUS_LABEL: Record<WorkPackageStatus, string> = {
-  'not-started': 'Not Started', 'in-progress': 'In Progress', complete: 'Complete',
-}
-const STATUS_TONE: Record<WorkPackageStatus, BadgeTone> = {
-  'not-started': 'neutral', 'in-progress': 'warning', complete: 'success',
-}
+const STATUS_LABEL = WP_STATUS_LABEL
+const STATUS_TONE = WP_STATUS_TONE
 
 export interface WorkPackageCardProps {
   wp: WorkPackage

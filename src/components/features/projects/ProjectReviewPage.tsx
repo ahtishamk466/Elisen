@@ -116,6 +116,7 @@ export function ProjectReviewPage({ state = 'ready', canSeeFinancials = true }: 
   return (
     <AppShell
       title="Projects Review"
+      description="Triage what needs attention."
       activeItem="Projects"
       activeChild="Projects Review"
       headerActions={

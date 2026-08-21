@@ -53,15 +53,16 @@ export function StepBasicInfo({ values, errors, setField, canSeeFinancials = tru
             placeholder={`e.g. ${NEXT_AVAILABLE_NUMBER}`} onChange={(e) => setField('number', e.target.value)}
           />
         </FormField>
+        {/* Typed, not picked: a sub number runs as far as the change requests
+            on a project do, so a three-option list is a ceiling, not a help. */}
         <FormField
           label="Sub Number" htmlFor="subNumber" required error={errors.subNumber}
-          help="Use a new sub number for a change request against an existing project."
+          help="00 for a new project, 01+ for a change request."
         >
-          <Select id="subNumber" value={values.subNumber} error={!!errors.subNumber} onChange={(e) => setField('subNumber', e.target.value)}>
-            <option value="00">00 (next available)</option>
-            <option value="01">01</option>
-            <option value="02">02</option>
-          </Select>
+          <Input
+            id="subNumber" value={values.subNumber} error={!!errors.subNumber} inputMode="numeric" maxLength={2}
+            placeholder="00" onChange={(e) => setField('subNumber', e.target.value)}
+          />
         </FormField>
         <FormField label="Type" htmlFor="type" required error={errors.type}>
           <Select id="type" value={values.type} error={!!errors.type} onChange={(e) => setField('type', e.target.value)}>
@@ -80,6 +81,11 @@ export function StepBasicInfo({ values, errors, setField, canSeeFinancials = tru
             <option value="3-med">3: Med</option>
             <option value="4-low">4: Low</option>
           </Select>
+        </FormField>
+        {/* Opened date sits with the fields that define the project, not with
+            the dates that track it — it is set at creation and never blank. */}
+        <FormField label="Project Opened Date" htmlFor="openedDate" required error={errors.openedDate}>
+          <Input id="openedDate" type="date" value={values.openedDate} error={!!errors.openedDate} onChange={(e) => setField('openedDate', e.target.value)} />
         </FormField>
         <FormField label="Description" htmlFor="description">
           <Textarea id="description" value={values.description} placeholder="Enter description..." onChange={(e) => setField('description', e.target.value)} />

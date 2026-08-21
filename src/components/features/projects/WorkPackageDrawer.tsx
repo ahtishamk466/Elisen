@@ -67,7 +67,7 @@ export function WorkPackageDrawer({ mode, projectId, initial, onClose, onSubmit 
         >
           <FormField label="Title" htmlFor="wp-title" required error={error}
             help={'e.g. "Add missing USB plug", "Seat installation", "Certification Plan"'}>
-            <Input id="wp-title" value={title} error={!!error}
+            <Input id="wp-title" placeholder="e.g. Seat installation" value={title} error={!!error}
               onChange={(e) => { setTitle(e.target.value); setError(''); setDirty(true) }} />
           </FormField>
           <FormField label="Description" htmlFor="wp-desc">

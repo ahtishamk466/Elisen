@@ -14,6 +14,7 @@ import { DOC_STATE_LABEL, DOC_STATE_TONE, INVOLVEMENT_LABEL } from '@/lib/tccaDi
 import { LinkRevisionDrawer } from './LinkRevisionDrawer'
 import { DocTrackingDrawer } from './DocTrackingDrawer'
 import type { TccaDocLink, TccaProject } from '@/types/tcca'
+import { DateText } from '@/components/patterns/DateText'
 
 const HEADERS = ['Number / Rev', 'Title', 'From Project', 'Involvement', 'Sent', 'Status', 'Actions']
 
@@ -81,7 +82,7 @@ export function TccaDocumentsTab({ tcca }: { tcca: TccaProject }) {
                       ) : '—'}
                     </td>
                     <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{INVOLVEMENT_LABEL[link.involvement]}</td>
-                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{link.sentDate || '—'}</td>
+                    <td className="px-lg py-base text-sm text-text-primary"><DateText value={link.sentDate} /></td>
                     <td className="px-lg py-base"><Badge tone={DOC_STATE_TONE[link.state]}>{DOC_STATE_LABEL[link.state]}</Badge></td>
                     <td className="px-lg py-base">
                       <ActionsMenu

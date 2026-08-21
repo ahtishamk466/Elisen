@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ProjectsListPage } from '@/components/features/projects/ProjectsListPage'
+import { WorkPackagesPage } from '@/components/features/projects/WorkPackagesPage'
 import { ProjectReviewPage } from '@/components/features/projects/ProjectReviewPage'
 import { ProjectDetailPage } from '@/components/features/projects/ProjectDetailPage'
 import { TccaProjectsListPage } from '@/components/features/tcca/TccaProjectsListPage'
@@ -33,6 +34,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/projects" replace />} />
         <Route path="/projects" element={<ProjectsListPage />} />
+        <Route path="/work-packages" element={<WorkPackagesPage />} />
         <Route path="/projects/review" element={<ProjectReviewPage />} />
         <Route path="/projects/:id" element={<ProjectDetailPage />} />
         <Route path="/approvals" element={<ApprovalsWorkspace />} />

@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { ApprovalRevisionDrawer } from './ApprovalRevisionDrawer'
 import { useApprovalsStore } from '@/stores/approvalsStore'
 import type { Approval, ApprovalRevision } from '@/types/documents'
+import { DateText } from '@/components/patterns/DateText'
 
 const HEADERS = ['Approval Number', 'Revision', 'Change Description', 'Revision Date', 'Document', 'Actions']
 
@@ -110,7 +111,7 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
             <ApprovalsTabs active="revisions" />
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left" style={{ minWidth: 1000 }}>
+              <table className="w-full border-collapse text-left" style={{ minWidth: 950 }}>
                 <caption className="sr-only">Approval revisions across all certificates</caption>
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
@@ -153,7 +154,7 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
                             <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 380 }}>
                               <Truncate>{revision.changeDescription}</Truncate>
                             </td>
-                            <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{revision.revisionDate}</td>
+                            <td className="px-lg py-base align-top text-sm text-text-primary"><DateText value={revision.revisionDate} /></td>
                             <td className="px-lg py-base align-top text-sm text-text-primary">
                               {revision.document
                                 ? <span className="inline-flex items-center gap-xs"><FileText size={14} aria-hidden />{revision.document}</span>
