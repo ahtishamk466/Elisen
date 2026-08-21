@@ -37,7 +37,6 @@ jobs:
         run: |
           test -f dist/index.html
           test -d dist/assets
-          # Fail if the bundle looks empty / incomplete
           test "$(find dist -type f | wc -l)" -ge 2
 
       - name: Upload build artifact
@@ -58,17 +57,22 @@ jobs:
           name: dist
           path: dist/
 
-      - name: Setup SSH
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Add server host key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
+          chmod 700 ~/.ssh
           ssh-keyscan -H 154.53.38.1 >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Deploy to server
         run: |
-          rsync -az --delete \
-            -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" \
+          rsync -az --delete --timeout=60 \
+            -e "ssh -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=3" \
             dist/ aqeel@154.53.38.1:/var/www/tpmsv2/
 
       - name: Smoke check live site
