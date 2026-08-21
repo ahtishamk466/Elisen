@@ -1,5 +1,5 @@
 import { useRef, type ReactNode } from 'react'
-import { ArrowDown, ArrowUp, Eye, Pencil, Copy, Trash2, Package } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Eye, Pencil, Copy, Trash2, Package } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
@@ -53,6 +53,9 @@ interface Column {
   max?: number
   /** Its own heading's width: below this the column can't label itself. */
   min?: number
+  /** Right-aligns the heading (and hands the SortMenu/headerButton trigger a
+      matching justify-end) to sit flush with a right-aligned body column. */
+  align?: 'right'
   /**
    * Fallback heading text for a flex column whose full label doesn't fit —
    * still names every field the column holds, just shorter, so a reader is
@@ -116,6 +119,7 @@ const COLUMNS: Column[] = [
   {
     label: 'Budget',
     financial: true,
+    align: 'right',
     fixed: 204,
     sorts: [
       { key: 'actual', label: 'Actual' },
@@ -201,16 +205,18 @@ export function ProjectsTable({
 
   const headerButton = (c: Column, key: SortKey) => {
     const active = sort?.key === key
-    const Icon = active && sort ? (sort.dir === 'asc' ? ArrowUp : ArrowDown) : null
+    // Neutral ⇅ marks it sortable at rest; a directional arrow only once it
+    // is the active sort — same rule as the merged-column SortMenu headings.
+    const Icon = active && sort ? (sort.dir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
     return (
       <button
         type="button"
         onClick={() => onSortChange?.({ key, dir: active && sort?.dir === 'asc' ? 'desc' : 'asc' })}
         className={`flex items-center gap-xs whitespace-nowrap rounded-sm transition-colors duration-fast hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
-          ${active ? 'text-text-primary' : ''}`}
+          ${c.align === 'right' ? 'justify-end' : ''} ${active ? 'text-text-primary' : ''}`}
       >
         {c.label}
-        {Icon && <Icon size={14} aria-hidden className="text-accent" />}
+        <Icon size={14} aria-hidden className={active ? 'text-accent' : 'text-text-muted'} />
       </button>
     )
   }
@@ -241,10 +247,10 @@ export function ProjectsTable({
                   scope="col"
                   aria-sort={sort && (c.sort === sort.key || c.sorts?.some((o) => o.key === sort.key))
                     ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
-                  className="whitespace-nowrap px-base py-base align-middle text-xs font-semibold text-text-secondary"
+                  className={`whitespace-nowrap px-base py-base align-middle text-xs font-semibold text-text-secondary ${c.align === 'right' ? 'text-right' : ''}`}
                 >
                   {c.sorts && onSortChange
-                    ? <SortMenu label={label} options={c.sorts} sort={sort} onChange={onSortChange} />
+                    ? <SortMenu label={label} options={c.sorts} sort={sort} onChange={onSortChange} align={c.align} />
                     : c.sort && onSortChange ? headerButton({ ...c, label }, c.sort) : label}
                 </th>
               )
@@ -308,8 +314,13 @@ export function ProjectsTable({
                          aside — with the budget muted so the eye lands on the
                          figure that moves. Line 2 is what they mean: how far
                          through, and what is left, in words, so nobody has to
-                         decode whether a minus sign is good news. */
-                      <td className="whitespace-nowrap px-base py-base align-middle">
+                         decode whether a minus sign is good news.
+                         Right-aligned, not left: the column is sized for the
+                         widest row's figures, and a short row's left-aligned
+                         text otherwise strands a ragged gap of empty column
+                         before Status — right-aligning means every row's
+                         content sits flush against the next column instead. */
+                      <td className="whitespace-nowrap px-base py-base align-middle text-right">
                         <span className="block text-sm tabular-nums">
                           <span className="font-semibold text-text-primary">{formatHours(health.actual)}</span>
                           <span className="text-text-muted">
@@ -319,7 +330,7 @@ export function ProjectsTable({
                         {health.progressPct === null ? (
                           <span className="mt-xxss block text-xs text-text-muted">Not budgeted</span>
                         ) : (
-                          <span className="mt-xxss flex items-center gap-xs">
+                          <span className="mt-xxss flex items-center justify-end gap-xs">
                             <span className="shrink-0" style={{ width: 44 }}>
                               <ProgressMeter health={health} size="sm" ariaLabel={`Project ${row.number}-${row.subNumber} budget`} />
                             </span>

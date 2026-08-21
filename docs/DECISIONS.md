@@ -10,11 +10,6 @@ Entries follow this format:
 **Rationale:** ...
 ```
 
-## 2026-08-21 — CI/CD deploys SPA to Apache on push to main
-**Context:** Need auto-deploy of the Elisen Vite admin app to `tpmsv2.elisen.com` on `154.53.38.1`, where existing TPMS sites already use Apache + Let’s Encrypt (not nginx).
-**Choice:** GitHub Actions builds on `main`, `rsync`s `dist/` to `/var/www/tpmsv2`, served by a dedicated Apache vhost with SPA `FallbackResource` and Certbot SSL. Auth uses a dedicated ed25519 deploy key stored only as GitHub secret `DEPLOY_SSH_KEY` (public half on the server) — never the interactive user key in the repo. Pipeline is split into `build` then `deploy` (`needs: build`): `npm ci`, typecheck, Vite build, artifact checks, then deploy + HTTPS smoke check — so missing libraries, TS errors, or empty builds never reach the server.
-**Rationale:** Matches the server’s existing Apache stack; static SPA needs no Node process; dedicated CI key limits blast radius vs reusing personal SSH keys. Separating jobs makes failure gates explicit and keeps a broken build from overwriting a good live site.
-
 ## 2026-08-07 — Radius reverted from 4px-max to 8px standard
 **Context:** Earlier the same day, the user set an explicit rule: 4px maximum
 corner radius everywhere, based on a button reference screenshot, and I
@@ -4013,3 +4008,24 @@ Verified at 1280 and 1728: **0 heading overflows, 0 clipped cells** at both;
 scroll is 0px at 1728 and 15px at 1280 (was 32px before retuning). Sorting by
 Contact correctly reorders rows by contact name; sorting by Priority/Type from
 its popup still works exactly as before, minus the overflow.
+
+**Projects List: Budget column right-aligned — 2026-08-20.** The complaint
+was too much empty space between Budget and Status. The column itself was
+already exactly content-tight (204px matches the single widest row, e.g.
+"6695.3h / 6300h" / "395.3h over" — verified live, zero slack), so the gap
+wasn't wasted column width; it was **left-aligned text inside a column sized
+for a longer row**. A short row like "10.6h / 10h · 106% 0.6h over" only
+needs ~110px of the 204px available, and left-alignment stranded the other
+~90px as visible dead space before Status.
+
+Right-aligning both lines (`text-right` on the cell, `justify-end` on the
+meter/percentage/remaining-text row) fixes it without touching any column
+width or truncating the widest row: every row's content now sits flush
+against Status, so the gap is the same **24px standard gutter** regardless of
+whether the figures are short or long. Verified across the first four visible
+rows — gap is exactly 24px on every one, where it previously ranged from 24px
+up to ~100px+ depending on the row. The `Budget` heading right-aligns to
+match (`Column.align: 'right'`, threaded through both `SortMenu` and
+`headerButton` as an optional prop so any future right-aligned numeric column
+can reuse it). No other column was touched; residual scroll at 1280 is
+unchanged (15px, documented earlier today).

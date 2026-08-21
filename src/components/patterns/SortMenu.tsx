@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom'
-import { ArrowDown, ArrowUp, Check } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Check } from 'lucide-react'
 import { useDropdown } from './useDropdown'
 
 export interface SortOption<K extends string> {
@@ -13,6 +13,8 @@ export interface SortMenuProps<K extends string> {
   options: SortOption<K>[]
   sort?: { key: K; dir: 'asc' | 'desc' }
   onChange: (sort: { key: K; dir: 'asc' | 'desc' }) => void
+  /** Right-aligns the trigger to sit flush with a right-aligned body column. */
+  align?: 'right'
 }
 
 const MENU_WIDTH = 220
@@ -25,17 +27,18 @@ const MENU_WIDTH = 220
  * them all: clicking it always opens the field picker, never sorts directly,
  * because a merged column has more than one reasonable "up".
  *
- * No icon at all until the column is actually the active sort — a resting
- * up-down glyph on every sortable heading reads as noise across a wide table,
- * and it was this heading's own "· Priority" suffix that used to overflow
- * into the next column on a narrow one. Active state is a single blue arrow
- * and nothing else: no field name, no "Selected" — the direction is the only
- * fact worth a permanent pixel here.
+ * A resting neutral glyph (⇅) marks every sortable heading so it reads as
+ * clickable at a glance; it is not itself an Ascending/Descending icon, so it
+ * stays grey rather than picking a direction nothing has chosen yet. Only once
+ * the column is the active sort does it become a single blue arrow — and nothing
+ * else beside it: no field name, no "Selected". This heading's own "· Priority"
+ * suffix used to overflow into the next column on a narrow one; that text is
+ * gone for good, independent of the icon.
  */
-export function SortMenu<K extends string>({ label, options, sort, onChange }: SortMenuProps<K>) {
+export function SortMenu<K extends string>({ label, options, sort, onChange, align }: SortMenuProps<K>) {
   const { open, setOpen, position, triggerRef, menuRef } = useDropdown<HTMLButtonElement>(MENU_WIDTH)
   const active = options.find((o) => o.key === sort?.key)
-  const Icon = active && sort ? (sort.dir === 'asc' ? ArrowUp : ArrowDown) : null
+  const Icon = active && sort ? (sort.dir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
 
   const choose = (key: K) => {
     // Re-picking the active field flips direction, as a plain sort header does.
@@ -55,10 +58,10 @@ export function SortMenu<K extends string>({ label, options, sort, onChange }: S
         /* One centred line: the arrow sits on the middle of the label, not at
            the top of a heading that may be two words long. */
         className={`flex items-center gap-xs whitespace-nowrap rounded-sm text-left transition-colors duration-fast hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
-          ${active ? 'text-text-primary' : ''}`}
+          ${align === 'right' ? 'justify-end' : ''} ${active ? 'text-text-primary' : ''}`}
       >
         <span className="whitespace-nowrap">{label}</span>
-        {Icon && <Icon size={14} aria-hidden className="text-accent" />}
+        <Icon size={14} aria-hidden className={active ? 'text-accent' : 'text-text-muted'} />
       </button>
       {open && position &&
         createPortal(

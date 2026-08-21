@@ -49,7 +49,7 @@ function ContactChips({ contacts, onOpen }: { contacts: CompanyContact[]; onOpen
   )
 }
 
-const HEADERS = ['Name', 'Contacts', 'Address', 'City', 'Zip Code', 'Status', 'Actions']
+const HEADERS = ['Name', 'Contacts', 'Address', 'City', 'Zip Code', 'Active', 'Actions']
 
 export type PageState = 'ready' | 'loading' | 'error'
 
