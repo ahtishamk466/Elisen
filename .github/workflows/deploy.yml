@@ -37,7 +37,6 @@ jobs:
         run: |
           test -f dist/index.html
           test -d dist/assets
-          # Fail if the bundle looks empty / incomplete
           test "$(find dist -type f | wc -l)" -ge 2
 
       - name: Upload build artifact
@@ -58,17 +57,25 @@ jobs:
           name: dist
           path: dist/
 
-      - name: Setup SSH
+      - name: Setup SSH key
+        env:
+          # Secret is base64 of the OpenSSH private key (avoids newline mangling)
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 700 ~/.ssh
+          echo "$DEPLOY_SSH_KEY" | base64 -d > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          # Fail fast if secret is empty/corrupt (fingerprint only — no private key leak)
+          ssh-keygen -lf ~/.ssh/deploy_key
+          ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null
           ssh-keyscan -H 154.53.38.1 >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Deploy to server
         run: |
-          rsync -az --delete \
-            -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" \
+          rsync -az --delete --timeout=60 \
+            -e "ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o PreferredAuthentications=publickey -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=3" \
             dist/ aqeel@154.53.38.1:/var/www/tpmsv2/
 
       - name: Smoke check live site

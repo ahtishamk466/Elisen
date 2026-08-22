@@ -17,12 +17,10 @@ Workflow: [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)
 
 | Secret | Value |
 |--------|--------|
-| `DEPLOY_SSH_KEY` | Private key for the CI deploy user (ed25519). Public half is in `aqeel`'s `~/.ssh/authorized_keys` on the server. |
-
-Repo admin must set it (Settings → Secrets and variables → Actions), or:
+| `DEPLOY_SSH_KEY` | **Base64** of the OpenSSH private key (ed25519). Public half is in `aqeel`'s `~/.ssh/authorized_keys` on the server. |
 
 ```bash
-gh secret set DEPLOY_SSH_KEY -R ahtishamk466/Elisen < /path/to/deploy_key
+base64 < /path/to/deploy_key | tr -d '\n' | gh secret set DEPLOY_SSH_KEY -R ahtishamk466/Elisen
 ```
 
 Never commit the private key.
@@ -44,6 +42,13 @@ npm ci && npm run build
 rsync -az --delete -e "ssh -i ~/.ssh/id_rsa" dist/ aqeel@154.53.38.1:/var/www/tpmsv2/
 ```
 
-## DNS
+## Troubleshooting
 
-`tpmsv2.elisen.com` / `tpmsV2.elisen.com` → A `154.53.38.1` (already configured).
+### Deploy fails with `Connection closed` / rsync 255
+Usually SSH never authenticated within `LoginGraceTime` (~120s):
+
+1. Confirm GitHub secret `DEPLOY_SSH_KEY` is the **full** OpenSSH private key (including `BEGIN`/`END` lines).
+2. Confirm the matching public key is in `/home/aqeel/.ssh/authorized_keys` (comment `github-actions-elisen-tpmsv2`).
+3. Clear fail2ban bans if Actions IPs were blocked: `sudo fail2ban-client unban --all`.
+
+Workflow uses `webfactory/ssh-agent` so the key is loaded correctly (avoid `echo` mangling).
