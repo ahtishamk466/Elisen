@@ -104,9 +104,14 @@ export interface BudgetInlineProps {
  * hierarchy that isn't there.
  */
 export function BudgetInline({ health, ariaLabel }: BudgetInlineProps) {
+  /* 12px medium, not 14px semibold: this sits in a **collapsed card header**
+     beside a title, a status tag and a count chip — all 12px — where a
+     heavier, larger figure read as the loudest thing in a compact row it is
+     only the summary of. Neutral 950 keeps it legible at the smaller size. */
+  const figure = 'whitespace-nowrap text-xs font-medium text-text-primary'
   return (
     <div className="flex shrink-0 items-center gap-sm">
-      <span className="whitespace-nowrap text-sm font-semibold text-text-primary">
+      <span className={figure}>
         {formatHours(health.actual)} / {formatHours(health.budget)}
       </span>
       <div className="shrink-0" style={{ width: 40 }}>
@@ -114,7 +119,7 @@ export function BudgetInline({ health, ariaLabel }: BudgetInlineProps) {
       </div>
       {/* Figures stay black: the bar signals state, and a number above 100
           already says "over" without relying on colour. */}
-      <span className="whitespace-nowrap text-sm font-semibold text-text-primary">
+      <span className={figure}>
         {/* "— used" read as a glitch on a package with nothing budgeted. */}
         {health.progressPct === null ? 'No budget' : `${formatPct(health.progressPct)} used`}
       </span>

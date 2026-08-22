@@ -17,7 +17,8 @@ import { employeeByName } from '@/lib/employeeFixtures'
 import { summarisePeople, type PersonSummary } from '@/lib/hoursByPerson'
 import { HEALTH_LABEL, HEALTH_TONE, formatHours, healthOf } from '@/lib/projectHealth'
 import { HOURS_PERIODS, inPeriod, periodRange, periodRangeLabel, toHoursPeriod } from '@/lib/hoursPeriod'
-import { Chip, Figure, PersonNonProjectPanel, PersonProjectPanel, RemainingText, UsedCell, budgetPair } from './PersonProjectPanel'
+import { Stat } from '@/components/patterns/Stat'
+import { Chip, PersonNonProjectPanel, PersonProjectPanel, RemainingText, UsedCell, budgetPair } from './PersonProjectPanel'
 
 const NON_PROJECT = 'non-project'
 
@@ -243,36 +244,36 @@ export function PersonDetailPage() {
               Three at tablet and two at mobile, so a figure never has to share a
               column with a value it isn't comparable to. */}
           <dl className="grid gap-2xl px-lg py-lg mobile:grid-cols-2 tablet:grid-cols-3 laptop:grid-cols-6">
-            <Figure roomy label="Project">{person.projectCount}</Figure>
-            <Figure roomy label="Work packages">{person.packageCount}</Figure>
-            <Figure roomy label="Activities">{person.activityCount}</Figure>
-            <Figure roomy label="Actual / Budget" hint="Regular project hours against the budget of the activities assigned to them.">
+            <Stat dl label="Project">{person.projectCount}</Stat>
+            <Stat dl label="Work packages">{person.packageCount}</Stat>
+            <Stat dl label="Activities">{person.activityCount}</Stat>
+            <Stat dl label="Actual / Budget" hint="Regular project hours against the budget of the activities assigned to them.">
               {budgetPair(person.health)}
-            </Figure>
-            <Figure roomy label="Remaining"><RemainingText health={person.health} /></Figure>
-            <Figure roomy label="Used">
+            </Stat>
+            <Stat dl label="Remaining"><RemainingText health={person.health} /></Stat>
+            <Stat dl label="Used">
               <UsedCell health={person.health} ariaLabel={`${name} budget across all projects`} inline />
-            </Figure>
-            <Figure roomy label="Over budget" hint="Activities already past their own estimate — the figure a blended average buries.">
+            </Stat>
+            <Stat dl label="Over budget" hint="Activities already past their own estimate — the figure a blended average buries.">
               {person.budgetedCount > 0
                 ? <span className={person.overCount > 0 ? 'text-danger' : undefined}>
                     {person.overCount} of {person.budgetedCount} budgeted
                   </span>
                 : '—'}
-            </Figure>
-            <Figure roomy label="Total logged" hint="Regular + overtime + non-project: everything they were at work for.">
+            </Stat>
+            <Stat dl label="Total logged" hint="Regular + overtime + non-project: everything they were at work for.">
               {formatHours(person.totalLogged)}
-            </Figure>
-            <Figure roomy label="Overtime" hint="Worked beyond regular hours. No budget covers it, so it is never inside Actual.">
+            </Stat>
+            <Stat dl label="Overtime" hint="Worked beyond regular hours. No budget covers it, so it is never inside Actual.">
               {person.overtime > 0 ? formatHours(person.overtime) : '—'}
-            </Figure>
-            <Figure roomy label="Banked" hint="Accrued to be taken as time off later, not spent on a project.">
+            </Stat>
+            <Stat dl label="Banked" hint="Accrued to be taken as time off later, not spent on a project.">
               {person.banked > 0 ? formatHours(person.banked) : '—'}
-            </Figure>
-            <Figure roomy label="Non-project" hint="Holiday, absence and training. No budget covers it either.">
+            </Stat>
+            <Stat dl label="Non-project" hint="Holiday, absence and training. No budget covers it either.">
               {person.nonProjectHours > 0 ? formatHours(person.nonProjectHours) : '—'}
-            </Figure>
-            <Figure roomy label="Time entries">{person.entries}</Figure>
+            </Stat>
+            <Stat dl label="Time entries">{person.entries}</Stat>
           </dl>
           </div>
         </section>
@@ -309,9 +310,14 @@ export function PersonDetailPage() {
              one has learned both. */
           <div className="grid min-h-0 flex-1 gap-lg laptop:grid-cols-[320px_minmax(0,1fr)]">
             <nav aria-label={`Projects ${name} worked on`} className="flex min-h-0 flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-              <div className="flex shrink-0 items-center gap-sm border-b border-border-default bg-neutral-50 px-base py-sm">
-                <span className="min-w-0 flex-1 text-xs font-semibold text-text-secondary">Project</span>
-                <span className="shrink-0 text-xs font-semibold text-text-secondary">Work Packages</span>
+              {/* The rail's own heading row — this is the "select a project"
+                  control, so its labels carry heading weight (14px semibold,
+                  Neutral 950) rather than the 12px muted a table's column
+                  headers use. Both labels move together: styling only the
+                  first would leave two mismatched labels in one row. */}
+              <div className="flex shrink-0 items-center gap-sm border-b border-border-default bg-neutral-100 px-base py-sm">
+                <span className="min-w-0 flex-1 text-sm font-semibold text-text-primary">Project</span>
+                <span className="shrink-0 text-sm font-semibold text-text-primary">Work Packages</span>
               </div>
               <div ref={railRef} className="min-h-0 flex-1 overflow-y-auto">
                 <ul>

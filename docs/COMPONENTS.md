@@ -15,7 +15,7 @@ Updated as components are added or changed.
 | PhoneInput | default, filled, error, disabled; code segment closed / open / searching | `ui/PhoneInput.tsx` | One merged field: flag + dial code \| number, our own Input/Select tokens (h-11, rounded-sm, shadow-textfield). The code segment is a `SearchableSelect variant="bare"` — same open panel as every other dropdown, with the country name as a searchable hint — so there is no native `<select>` left anywhere in the app. Fills its container so it lines up with every other field |
 | Checkbox | checked / unchecked × enabled / disabled, optional required marker | `ui/Checkbox.tsx` | Multi-select and applicability ticks |
 | RadioCard | selected / unselected / disabled | `ui/RadioCard.tsx` | Mutually exclusive choice with explanatory copy |
-| Badge | danger / warning / info / success / neutral × subtle / outline × sm / md | `ui/Badge.tsx` | Status and priority labels. `size` defaults to `sm` (20px, the table/row badge); `md` (28px, `text-sm`) is for a card heading, where a 12px badge reads as an afterthought beside a 20px title and sits shorter than the count chips next to it |
+| Badge | danger / warning / info / success / neutral × subtle / outline × sm / md | `ui/Badge.tsx` | **THE tag** — Status, Active, health, priority, count chips; never hand-roll one. **4px radius (`radius-xs`) always**, not the 8px other surfaces use (docs/DESIGN.md → "Tags"). Both sizes are 12px so two tags side by side can't differ in text size: `sm` (default, font-medium, table/row) and `md` (font-semibold, roomier padding, card heading) |
 | Alert | danger / info | `ui/Alert.tsx` | Form-level errors and inline guidance |
 | Skeleton | — | `ui/Skeleton.tsx` | Loading placeholder blocks |
 | Spinner | sizes via prop | `ui/Spinner.tsx` | Indeterminate loading indicator |
@@ -355,6 +355,7 @@ Sizes and `UI/Select` → Sizes.
 | Drawer | with/without footer | `patterns/Drawer.tsx` | Right side panel; Esc to close, focus trapped, footer actions grouped right |
 | ConfirmDialog | primary / danger | `patterns/ConfirmDialog.tsx` | Confirm destructive or state-changing actions |
 | Stepper | n steps, done / active / upcoming | `patterns/Stepper.tsx` | Multi-step form progress |
+| Stat | plain / `dl` × with-hint × empty × nowrap | `patterns/Stat.tsx` | **THE label/value pair, everywhere a figure sits under its name.** One fixed spec: label 12px regular Neutral 500, value 14px semibold Neutral 950, 2px between. Empty renders an em dash. Layout (grid, dividers, padding) belongs to the caller. Was hand-rolled five different ways before this existed — `DetailField` is now a thin alias over it |
 | StatCard | default, loading | `patterns/StatCard.tsx` | Single headline metric |
 | EmptyState | with/without action, custom icon | `patterns/EmptyState.tsx` | Zero-data and no-results states |
 | AutoLoadFooter | loading / more to load / all loaded / empty | `patterns/AutoLoadFooter.tsx` | THE table footer — replaced `Pagination` everywhere (client wanted auto-loading, not page numbers). No border/rounded/bg of its own; renders as the last child inside the same card as its table, separated by one top border, never a second box below it. Scrolling it into view loads the next batch via IntersectionObserver (200px rootMargin, so the batch is ready before you reach it) |

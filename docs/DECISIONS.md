@@ -4622,3 +4622,279 @@ table header in the app, which uses `neutral-50` (`ProjectsTable`,
 left untouched since it wasn't in the reference). Scoped the change to what
 was shown — this screen's three fills matching each other — rather than
 also changing every other table in the app to follow.
+
+## 2026-08-22 — Person Detail project card: typography and full-width stat strip
+
+Five precise typography/layout changes to `PersonProjectPanel`'s project card:
+
+- **Title**: `text-2xl font-bold` (24px) → `text-sm font-semibold` (14px).
+  Scoped to the project card only — `PersonNonProjectPanel`'s "Non-project
+  time" heading was not part of this request and stays 24px bold, so the two
+  card headings on this screen now differ in size. Flagging it rather than
+  silently also changing the untouched one.
+- **Status tag** (`Badge size="md"`): was 14px/font-medium (28px tall) →
+  now 12px/font-semibold (24px tall). `Badge`'s per-size classes now carry
+  their own font-weight instead of one fixed `font-medium` on every size, so
+  `sm` (used everywhere else) is unaffected — verified.
+- **Subtitle** ("3116-00 · 2 Work packages · 2 Activities"): `text-sm
+  text-text-secondary` (14px, Neutral 700) → `text-xs font-normal
+  text-text-muted` (12px, Neutral 500).
+- **Stat labels** (Actual / Budget, Remaining / Used, Overtime, Banked):
+  recoloured `text-text-secondary` → `text-text-muted` (Neutral 500). Size
+  unchanged (14px) — not asked. Values were already Neutral 950 semibold; no
+  change needed there.
+- **Stat strip spans the full card width**, `justify-between` distributing
+  the leftover space as equal gaps. First attempt also added `flex-1` to each
+  stat (equal *widths*), which is `justify-around`-shaped, not `space-between`
+  — and starved "Remaining / Used" (the widest, carrying a 44px meter) below
+  its content width, wrapping it onto two lines. Removed `flex-1`: each stat
+  keeps its own content width, the container spends the leftover space as
+  gaps. Verified live: 24px stat height (no wrap), last stat (Banked) lands
+  flush against the card's own padding at the right edge.
+
+## 2026-08-22 — By Person list: toolbar removed, View Details as a real CTA, columns unmerged
+
+**Toolbar removed.** The period Select and project/work-package search that sat
+in their own row above this table (added 2026-08-21) came out at the client's
+request, along with all their supporting plumbing in `HoursWorkedPage`
+(`personPeriod`/`personQuery` state, `personRows`, `personUnstartedActivities`,
+`personTotalHours` — the By Person stat tile reads the shared `totalHours`
+again). Both tabs are back to reading the same page-level filters only; a
+person's own period filter lives one click away on `PersonDetailPage`.
+
+**View Details styled as a tertiary CTA**: accent (primary) text with an
+`ArrowRight` trailing icon so it reads as navigation. One trap worth
+recording: `Button`'s tertiary variant sets `text-text-primary`, and appending
+`text-accent` through `className` does not reliably override it — same
+specificity, and Tailwind's output order decides, which came up black when
+verified live. `!text-accent` (the important modifier) is what actually made
+it render in the primary colour; computed colour verified `rgb(0, 84, 183)`.
+
+**Columns unmerged — cause found, not just nudged.** The table divided itself
+by eleven arbitrary percentage shares, so a column whose *heading* happened to
+be long ("Non-project" 82px of text in a 91px cell, "Packages" 65 in 68) had
+its text 3–9px from its neighbour's while short-headed columns floated in
+100px of space. Replaced with pixel widths, each measured live as the
+column's own widest text (heading or body) plus the two 8px pads and slack;
+`minWidth` is now derived as their sum (1128) rather than a hand-kept 1060.
+Verified: every adjacent heading-text gap is now 18–35px (was 3px at the
+worst), zero table overflow and zero page scroll at 1440. `table-fixed`
+shares any extra width out proportionally, so wider screens loosen every gap
+rather than one lucky column.
+
+## 2026-08-22 — One global `Stat` component; every stat in the app converged on it
+
+The same label/value pair was hand-rolled **five** different ways, and each
+new screen drifted a little further:
+
+| Where | Label | Value |
+|---|---|---|
+| `DetailView.DetailField` (12 call sites) | 12px muted | 14px regular |
+| `PersonProjectPanel.Figure` | 12px secondary | 14px regular |
+| `PersonProjectPanel.HeaderStat` | 14px muted | 16px semibold |
+| `ProjectWorkPackagesTab.Stat` / `ProjectTeamTab.Stat` | 12px muted | **18px bold** |
+| `WorkPackageDetail.Fact` | 14px muted | 14px semibold |
+
+Added `patterns/Stat.tsx` as the single source, to the client's spec: label
+12px / regular / Neutral 500, value 14px / semibold / Neutral 950, 2px
+between. Written up in `docs/DESIGN.md` ("Stat pair") so the spec lives with
+the tokens rather than only in this log, listed in `COMPONENTS.md`, and given
+`Patterns/Stat` in Storybook covering plain vs `dl` semantics, hint, nowrap
+and empty.
+
+Deliberately **only the pair** — layout (grid placement, divider rules,
+padding between stats) stays with each caller, so a divided strip and a flat
+card grid share one typography while keeping their own wrappers.
+
+Converged all five: `DetailField` and `Fact` are now thin aliases (their call
+sites were left untouched — twelve files in `DetailField`'s case), `Figure`
+was deleted outright with `PersonDetailPage`'s twelve usages rewritten to
+`Stat`, and the two `Stat` locals in the projects tabs became bay wrappers
+around it. Verified live at four sites (Project Overview "Dates", Work
+Packages strip, Team strip, Person Detail's person band *and* project card):
+all now compute label 12px/400/`rgb(100,116,139)`, value
+14px/600/`rgb(2,6,23)`, `margin-top: 2px`.
+
+**Bug fixed in passing**: the Work Packages and Team strips carried
+`divide-x divide-border-default`, which emits no CSS rule under Tailwind v4
+(noted 2026-08-21 when the same bug was found on the person card) — so their
+dividers had never rendered. Both now use an explicit `border-l` per bay;
+verified 1px computed.
+
+`RemainingUsedInline`'s `bold` mode also came down 16px → 14px semibold to
+match the new value spec, since it renders *as* a Stat value in the project
+card's strip.
+
+## 2026-08-22 — Tags: 4px radius as a global rule; two mismatched tags merged onto Badge
+
+**1. The two tags in the project card were different fonts** — "3 Time
+Entries" was a hand-rolled `<span>` at 14px/regular, "On Track" a `Badge` at
+12px/semibold. Root cause was the span, not the sizes: a tag built outside
+the component can drift and nothing catches it. Replaced it with
+`<Badge tone="neutral" size="md">`, which carries the same `bg-neutral-100`
+the span had. Both now render 12px/600/24px tall — verified live, identical.
+
+**2. Tags are 4px, always.** `Badge`'s radius went `rounded-sm` (8px) →
+`rounded-xs` (4px), which covers every Status, Active, health and priority
+tag in the app in one change.
+
+*Flagging a DESIGN.md conflict rather than resolving it silently (rule 12):*
+the Shape section listed "badges" under `radius-sm: 8px` and reserved
+`radius-xs` for "compact controls only (the 16px checkbox)". The client's
+rule supersedes it, so DESIGN.md is updated — badges removed from the 8px
+list, a **"Tags are 4px, always"** paragraph added with the reasoning (a tag
+is a small pill *inside* a card or cell; at that size an 8px radius reads as
+a rounded box competing with its container). The rule is also stated at the
+top of `UI/Badge` in Storybook, per the ask.
+
+**Swept the 15 hand-rolled neutral chips** (`ChipOverflow`, the task/activity
+chips in six drawers, the count chips on `WorkPackageCard`, `ProjectTeamTab`,
+`PersonWorkPackageCard`, `HoursByPersonTab`, `CompaniesPage`,
+`ProfileDetailsTab`) from `rounded-sm` to `rounded-xs` in the same pass. Not
+strictly "Status and Active", but they sit directly beside badges — leaving
+them at 8px would have created exactly the mismatch the rule exists to stop.
+
+**3. The project rail's heading row** ("Project" / "Work Packages" — the
+select-a-project control) went 12px/semibold/Neutral 700 →
+**14px/semibold/Neutral 950**, with its fill moved to `neutral-100` to match
+the screen's other tinted areas. There is no literal "Select Project" string
+in the app, so this is the heading that ask maps to; both labels moved
+together, since styling only the first would leave two mismatched labels in
+one row.
+
+## 2026-08-22 — Person Detail spacing aligned to Project Detail
+
+Measured both screens rather than eyeballing them. Project Detail is uniform:
+`main` at 24px sides / 24px bottom, one `gap-lg` (16px) between every
+section, every card `p-lg`, and — the part that matters — its two columns
+**begin on the same line** (both at y=230).
+
+Person Detail had two breaks in that:
+
+1. **The right panel's scroll container carried `p-lg`.** That inset every
+   card 16px, so the first one started at y=320 while the rail beside it
+   started at 304 — a 16px stagger with no reason a reader could see.
+   Removed the padding, so the panel is now `grid gap-lg` with cards flush
+   to the column, exactly the shape of Project Detail's right column.
+   Applied to `PersonNonProjectPanel` too, which had the same wrapper.
+2. **`fill` pages ended 16px from the window; scrolling pages ended 24px.**
+   `AppShell` set `pb-lg` for `fill` and `pb-2xl` otherwise, so Person
+   Detail and Project Detail sat differently in the same shell. Both are
+   `pb-2xl` now; only the scroll model still differs between the two modes.
+
+Verified after: rail top and first card top both 304, every section and card
+gap a uniform 16px, column gap 16px, `main` padding `0px 24px 24px` — the
+same figures Project Detail reports. Checked ATA Chapters (the other `fill`
+page) for the padding change — unaffected.
+
+Left alone deliberately: the person summary card's 3px inset stat band,
+which was an explicit earlier request (2026-08-21), and the rail's
+full-height independent scroll, which is what makes this a master–detail
+screen rather than a column of cards.
+
+## 2026-08-22 — Work package header stat 12px; activity table on one line
+
+**`BudgetInline` is 12px medium, Neutral 950** (was 14px semibold). It sits in
+a *collapsed card header* beside a title, a status tag and a count chip — all
+12px — so a larger, heavier figure was the loudest thing in a compact row it
+is only the summary of. Applied at the component, so the work package header
+on Project Detail, the Team tab's person rows and the person screen's package
+cards all follow — that's the point of it being one component.
+
+**"1 activity" → "1 Activity"** in the person screen's count chip, matching
+the Title Case every other tag on the screen uses.
+
+**The activity table stays on one line and never scrolls.** A row was 80px
+because `RemainingUsedInline` (`flex-wrap`) broke after its meter. Three
+changes, each measured live at the pane's narrowest real width (1280 viewport
+→ 640px pane, where six data-dense columns are genuinely tight):
+
+- `RemainingUsedInline` is `flex-nowrap`, gap `sm`→`xs`, meter 44px→32px. The
+  meter is the only part that can give up pixels; the two figures beside it
+  are the data.
+- Cell padding `px-base`→`px-sm`, worth 8px × 6 columns.
+- Column shares retuned against each column's real single-line content rather
+  than round numbers: 16/18/23/17/10/16. Entries is 10% because *its own
+  heading* (42px) is wider than any count it holds — at 9% it was 1px short
+  and the header itself truncated to "Entri…".
+
+`Chip` now uses `truncate` instead of `whitespace-nowrap`: in a narrow cell an
+overflowing chip was cut mid-word with a hard edge, which reads as broken,
+where an ellipsis reads as deliberate — and the full text was already on its
+`title`. Verified after: row height 56px (was 80), zero table overflow and
+zero page scroll at both 1280 and 1440, and every one of the six headers fits
+its column at 1280 with room to spare.
+
+## 2026-08-22 — Projects table: every width measured, zero scroll to 1280
+
+Two real bugs behind the client's report, both from widths that had been set
+by reasoning rather than measurement:
+
+- **Actions was 58px** — sized to its 26px 3-dot button — but its own heading
+  "Actions" needs 45px, so the header rendered clipped as "Action" and the
+  button sat hard against the table's right edge.
+- **Active was 82px** against a 62px "Inactive" badge plus a 32px gutter (94
+  needed), so the badge had been quietly spilling into the cell's padding.
+
+Re-derived every column from the rendered table rather than from intent, and
+found the table was carrying ~48px it never used: **Budget was 204px for
+172px of content** (line 1's widest pair is 106px; line 2 is 132px with the
+meter narrowed 44→36). That reclaim plus the gutter change below is what
+turned 116px of scroll at 1280 into none.
+
+**Gutter 32px → 24px, flagged as a deliberate walk-back.** The 32px gutter
+was this client's own earlier ask (2026-08-21, when they wanted ~50px and 32
+was the most that fit). Nine data-dense columns simply cannot hold 32px
+gutters *and* fit a 1280 laptop — 24px is what buys the ~72px that closes the
+gap, and it is still double the app's default. Choosing the newer, twice-
+repeated requirement (no horizontal scrolling) over the older one, rather
+than picking silently.
+
+Final widths, each its measured floor plus the 24px gutter: Priority/Type 120
+(heading-bound), Opened 124, Budget 156, Status 106, Active 86, Actions 70;
+flex mins Project 88 / Co./Contact 114 / Person Res. 94 (`FLEX_FLOOR` 296).
+Table minimum is now **958px**, down from 1083.
+
+Verified live: zero table overflow and zero page scroll at **1440 and 1280**,
+no header clipped at either, no fixed-column cell clipped across all 25
+rows, uniform 65px row height, and the Actions button now sits **32px** from
+the container's right edge (was 16px).
+
+**Honest limit**: at tablet (768px → 703px of page) nine columns need 958px,
+so the table scrolls **inside its own container** — the page itself still
+never scrolls sideways. Fitting that width would mean dropping columns, which
+is a product decision, not a spacing one.
+
+## 2026-08-22 — Documents table: measured pixel widths, one-line dates, "Revision"
+
+`DocumentsPage`'s columns were percentages — ten arbitrary shares of the
+width — and measuring the rendered table showed exactly the imbalance the
+client described: **Opened and Due sat at 81px against the 115px a one-line
+date needs**, so every date broke over two lines, while **Status held 115px
+for an 82px badge** and Number held 117 for 93. Owner and Next Action were
+truncating names at 110/99 against the 120 they need.
+
+Replaced with **pixel widths, each measured** as that column's own content
+floor (heading or widest value, whichever is wider) plus the 16px its two
+`px-sm` pads supply — the same model `HoursByPersonTab` uses. Under
+`table-fixed` the surplus beyond the sum is shared **proportionally**, so a
+wider screen loosens every column a little instead of pouring it all into
+one; that is what "distribute more evenly" needed structurally, not just
+different numbers. `minWidth` is now derived from the widths rather than a
+hand-kept `950` that could drift.
+
+Both variants sized: deliverables (10 columns, floor 950) and design data
+(11 columns, floor 950 — Title, Aircraft and ATA give up the room the two
+date columns need).
+
+Dates also carry `whitespace-nowrap` now. `DateText` is deliberately
+wrappable so a starved column can stack it, but these two columns are sized
+for the widest date they hold, so there is no longer a reason to let it fall
+back.
+
+**"Rev" → "Revision"** in both variants, per the ask; the column is 72px so
+the fuller word fits.
+
+Verified live at 1440 and 1280, both tabs: zero table overflow, zero page
+scroll, **zero dates on two lines across all 25 rows**, no header clipped,
+uniform 61px row height.

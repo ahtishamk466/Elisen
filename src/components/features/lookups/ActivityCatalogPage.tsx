@@ -300,7 +300,7 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
                                     ? <span className="text-text-muted">Not linked yet</span>
                                     : <span className="flex flex-wrap gap-xs">
                                         {owners.map((a) => (
-                                          <span key={a.id} className="whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{a.name}</span>
+                                          <span key={a.id} className="whitespace-nowrap rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{a.name}</span>
                                         ))}
                                       </span>}
                                 </td>

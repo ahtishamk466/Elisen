@@ -15,17 +15,21 @@ import { Chip, RemainingUsedInline, budgetPair } from './PersonProjectPanel'
  * that, which is most of how this table now fits its pane without scrolling.
  */
 const ACTIVITY_COLUMNS: { label: string; width: string }[] = [
-  { label: 'Activity', width: '25%' },
-  { label: 'Actual / Budget', width: '16%' },
-  { label: 'Remaining / Used', width: '19%' },
-  /* The widest column for its content, not its heading: "No budget set" is
-     the longest status a badge here ever carries, and at the pane's narrowest
-     real width (the rail+panel split's own floor, 1280px) it measured wider
-     than every other cell's content — this is sized to that, not to "Status"
-     the word, which needs far less. */
-  { label: 'Status', width: '18%' },
-  { label: 'Entries', width: '9%' },
-  { label: 'Notes', width: '13%' },
+  /* Shares tuned against each column's real single-line content, measured
+     live at the pane's narrowest width (1280 viewport → ~604px pane), so no
+     row ever breaks onto a second line and the table never scrolls:
+       Activity        truncates, so it gives up the most
+       Actual / Budget "1063.1h / 780h" — a figure, must not truncate
+       Remaining / Used the widest cell: figure + 32px meter + percentage
+       Status          "No budget set", the longest badge it carries
+       Entries         its own heading is wider than any count
+       Notes           chips truncate */
+  { label: 'Activity', width: '16%' },
+  { label: 'Actual / Budget', width: '18%' },
+  { label: 'Remaining / Used', width: '23%' },
+  { label: 'Status', width: '17%' },
+  { label: 'Entries', width: '10%' },
+  { label: 'Notes', width: '16%' },
 ]
 
 /** Everything about an activity that isn't a number: who owns it, who else is
@@ -70,9 +74,9 @@ function notesFor(line: PersonActivityLine, personName: string) {
  * (`WorkPackageCard` edits real assignments with Responsible/Tasks/Actions;
  * this one reads a person's hours, so its table carries Entries/Notes
  * instead). The chevron and the header layout are copied line for line;
- * the table trims cell padding to `px-base` — this pane runs narrower than
- * the project page's own Work Packages tab, and the extra 8px a side was
- * most of what forced this table into a horizontal scroll. Its header tint
+ * the table trims cell padding to `px-sm` — this pane runs narrower than
+ * the project page's own Work Packages tab, and the padding it saves is
+ * most of what keeps six columns on one line here. Its header tint
  * is `bg-neutral-100`, not the `bg-neutral-50` that table uses — matched
  * instead to this screen's other two tinted fills (the person summary's
  * stat band, the rail's selected row), so all three read as one colour on
@@ -83,9 +87,10 @@ function notesFor(line: PersonActivityLine, personName: string) {
  * fixed `minWidth` and let the pane scroll under it — inside a split pane
  * that is often under 700px, six or seven data-dense columns hit that floor
  * immediately. Percentage `<col>` widths mean it always renders at exactly
- * the pane's width instead; a value that doesn't fit its column truncates
- * (every cell) or wraps onto a second line (the chip row in Notes) rather than
- * pushing the table wider than its container.
+ * the pane's width instead, and every row stays **one line**: cells truncate
+ * rather than wrap, `RemainingUsedInline` is `flex-nowrap`, and the widths
+ * above are tuned against each column's real single-line content at the
+ * pane's narrowest width.
  */
 export function PersonWorkPackageCard({ pkg, personName, defaultOpen }: {
   pkg: PersonPackageGroup
@@ -105,8 +110,8 @@ export function PersonWorkPackageCard({ pkg, personName, defaultOpen }: {
           <ChevronDown size={16} className={`shrink-0 text-text-muted transition-transform duration-fast ${open ? '' : '-rotate-90'}`} aria-hidden />
           <span className="truncate text-sm font-semibold text-text-primary">{pkg.workPackageTitle}</span>
           {pkg.status && <Badge tone={WP_STATUS_TONE[pkg.status]}>{WP_STATUS_LABEL[pkg.status]}</Badge>}
-          <span className="shrink-0 whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">
-            {pkg.lines.length} {pkg.lines.length === 1 ? 'activity' : 'activities'}
+          <span className="shrink-0 whitespace-nowrap rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">
+            {pkg.lines.length} {pkg.lines.length === 1 ? 'Activity' : 'Activities'}
           </span>
         </button>
         <BudgetInline health={pkg.health} ariaLabel={`${pkg.workPackageTitle} budget for ${personName}`} />
@@ -124,7 +129,7 @@ export function PersonWorkPackageCard({ pkg, personName, defaultOpen }: {
             <thead>
               <tr className="border-b border-border-default bg-neutral-100">
                 {ACTIVITY_COLUMNS.map((c) => (
-                  <th key={c.label} scope="col" className="overflow-hidden truncate px-base py-base text-xs font-semibold text-text-secondary">{c.label}</th>
+                  <th key={c.label} scope="col" className="overflow-hidden truncate px-sm py-base text-xs font-semibold text-text-secondary">{c.label}</th>
                 ))}
               </tr>
             </thead>
@@ -137,20 +142,20 @@ export function PersonWorkPackageCard({ pkg, personName, defaultOpen }: {
                       this narrow with a badge, a chip row and a meter in it
                       needs a guarantee, not just a good guess: content clips
                       to its own cell rather than bleeding into the next one. */}
-                  <th scope="row" className="overflow-hidden px-base py-lg text-left text-sm font-normal text-text-primary">
+                  <th scope="row" className="overflow-hidden px-sm py-lg text-left text-sm font-normal text-text-primary">
                     <span className="block truncate">{line.activityTitle}</span>
                   </th>
-                  <td className="overflow-hidden px-base py-lg text-sm text-text-primary">
+                  <td className="overflow-hidden px-sm py-lg text-sm text-text-primary">
                     <span className="block truncate">{budgetPair(line.health)}</span>
                   </td>
-                  <td className="overflow-hidden px-base py-lg">
+                  <td className="overflow-hidden px-sm py-lg">
                     <RemainingUsedInline health={line.health} ariaLabel={`${line.activityTitle} budget`} />
                   </td>
-                  <td className="overflow-hidden px-base py-lg">
+                  <td className="overflow-hidden px-sm py-lg">
                     <Badge tone={HEALTH_TONE[line.health.state]}>{HEALTH_LABEL[line.health.state]}</Badge>
                   </td>
-                  <td className="overflow-hidden px-base py-lg text-sm text-text-primary">{line.entries}</td>
-                  <td className="overflow-hidden px-base py-lg">{notesFor(line, personName)}</td>
+                  <td className="overflow-hidden px-sm py-lg text-sm text-text-primary">{line.entries}</td>
+                  <td className="overflow-hidden px-sm py-lg">{notesFor(line, personName)}</td>
                 </tr>
               ))}
             </tbody>

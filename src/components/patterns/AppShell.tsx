@@ -208,8 +208,12 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
              containing block is the document — so a screen-reader label in
              row 50 of a scrolling list sits 2600px down the *page* and gives
              the window a scrollbar the design never asked for. */
-          className={`relative min-h-0 min-w-0 flex-1 px-lg tablet:px-2xl ${
-            fill ? 'flex flex-col overflow-hidden pb-lg' : 'overflow-y-auto pb-2xl'}`}
+          /* `pb-2xl` either way: a `fill` page used to end 16px from the
+             window while every scrolling page ended 24px from it, so the two
+             kinds of screen sat differently in the same shell for no reason
+             a reader could see. Only the scroll model differs now. */
+          className={`relative min-h-0 min-w-0 flex-1 px-lg pb-2xl tablet:px-2xl ${
+            fill ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'}`}
         >
           {children}
         </main>

@@ -56,7 +56,7 @@ export function WorkPackageCard({
               activity tasks use, so "count of things" reads one way everywhere.
               Zero is shown, not hidden: an empty package is the one you most
               need to notice. */}
-          <span className="shrink-0 whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">
+          <span className="shrink-0 whitespace-nowrap rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">
             {activities.length} {activities.length === 1 ? 'activity' : 'activities'}
           </span>
         </button>

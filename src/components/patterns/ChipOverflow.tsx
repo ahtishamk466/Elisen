@@ -42,7 +42,7 @@ export function ChipOverflow({ items, max = 2, label, onShowAll }: ChipOverflowP
           key={t}
           title={inRow ? t : undefined}
           style={inRow ? { maxWidth: 96 } : undefined}
-          className={`rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary ${inRow ? 'truncate' : 'whitespace-nowrap'}`}
+          className={`rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary ${inRow ? 'truncate' : 'whitespace-nowrap'}`}
         >
           {t}
         </span>

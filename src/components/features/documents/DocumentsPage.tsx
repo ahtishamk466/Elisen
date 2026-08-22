@@ -85,25 +85,40 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
 
   const revisionCount = (documentId: string) => revisions.filter((r) => r.documentId === documentId).length
 
-  /* Number and Rev are separate columns — a number is how a document is asked
-     for and a rev is which one of it you mean; merged, neither sorts or scans.
-     Title and Type share one, because the type only qualifies the title. */
-  const columns: { label: string; width: string }[] = isDrawing
+  /* Number and Revision are separate columns — a number is how a document is
+     asked for and a revision is which one of it you mean; merged, neither
+     sorts or scans. Title and Type share one, because the type only
+     qualifies the title.
+
+     **Pixels, not percentages, and every figure measured off the rendered
+     table.** Percentages split the width by ten arbitrary shares, which is
+     how "Opened" and "Due" ended up at 81px against the 115px a one-line
+     date needs (so every date broke over two lines) while Status sat at
+     115px holding an 82px badge. Each width below is its column's own
+     content floor — heading or widest value, whichever is wider — plus the
+     16px its two `px-sm` pads supply. Under `table-fixed` any width beyond
+     the sum is shared out **proportionally**, so a wider screen loosens
+     every column a little rather than pouring it all into one. */
+  const columns: { label: string; width: number }[] = isDrawing
     ? [
-        { label: 'Number', width: '10.6%' }, { label: 'Rev', width: '4.3%' },
-        { label: 'Title / Type', width: '18.7%' }, { label: 'Aircraft', width: '9.6%' },
-        { label: 'ATA', width: '5.8%' }, { label: 'Opened', width: '7.3%' },
-        { label: 'Due', width: '7.3%' }, { label: 'Next Action', width: '9%' },
-        { label: 'Status', width: '13.3%' }, { label: 'Projects', width: '7.6%' },
-        { label: 'Actions', width: '6.5%' },
+        { label: 'Number', width: 90 }, { label: 'Revision', width: 72 },
+        { label: 'Title / Type', width: 96 }, { label: 'Aircraft', width: 92 },
+        { label: 'ATA', width: 58 }, { label: 'Opened', width: 118 },
+        { label: 'Due', width: 118 }, { label: 'Next Action', width: 96 },
+        { label: 'Status', width: 82 }, { label: 'Projects', width: 68 },
+        { label: 'Actions', width: 60 },
       ]
     : [
-        { label: 'Number', width: '10.6%' }, { label: 'Rev', width: '4.3%' },
-        { label: 'Title / Type', width: '27%' }, { label: 'Owner', width: '10%' },
-        { label: 'Opened', width: '7.3%' }, { label: 'Due', width: '7.3%' },
-        { label: 'Next Action', width: '9%' }, { label: 'Status', width: '10.4%' },
-        { label: 'Projects', width: '7.6%' }, { label: 'Actions', width: '6.5%' },
+        { label: 'Number', width: 96 }, { label: 'Revision', width: 72 },
+        { label: 'Title / Type', width: 116 }, { label: 'Owner', width: 104 },
+        { label: 'Opened', width: 118 }, { label: 'Due', width: 118 },
+        { label: 'Next Action', width: 104 }, { label: 'Status', width: 86 },
+        { label: 'Projects', width: 72 }, { label: 'Actions', width: 64 },
       ]
+
+  /* Derived, so the table's declared minimum can never drift from the widths
+     above the way a hand-kept `minWidth: 950` did. */
+  const minTableWidth = columns.reduce((n, c) => n + c.width, 0)
 
   if (state === 'error') {
     return (
@@ -184,7 +199,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
             {tabs}
             <div className="overflow-x-auto">
-              <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 950 }}>
+              <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: minTableWidth }}>
                 <caption className="sr-only">{label.plural}, with the projects each revision is attached to</caption>
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
@@ -233,12 +248,13 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                                 {doc.ataChapter || '—'}
                               </td>
                             )}
-                            {/* Dates wrap to a second line instead of holding a
-                                column open for twelve characters. */}
-                            <td className="px-sm py-base align-middle text-sm tabular-nums text-text-primary">
+                            {/* One line: these two columns are now sized to the
+                                widest date they hold, so there is no reason to
+                                let `DateText` fall back to its stacked form. */}
+                            <td className="whitespace-nowrap px-sm py-base align-middle text-sm tabular-nums text-text-primary">
                               <DateText value={rev.openedDate} />
                             </td>
-                            <td className="px-sm py-base align-middle text-sm tabular-nums text-text-primary">
+                            <td className="whitespace-nowrap px-sm py-base align-middle text-sm tabular-nums text-text-primary">
                               <DateText value={rev.dueDate} />
                             </td>
                             <td className="px-sm py-base align-middle">

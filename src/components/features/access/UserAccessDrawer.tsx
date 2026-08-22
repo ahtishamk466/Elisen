@@ -120,7 +120,7 @@ export function UserAccessDrawer({ user, onClose, onSave }: UserAccessDrawerProp
                 <p className="text-xs font-semibold text-text-secondary">{moduleLabel(module)} · {ids.length}</p>
                 <div className="mt-xs flex flex-wrap gap-xs">
                   {ids.map((id) => (
-                    <span key={id} className="rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{id}</span>
+                    <span key={id} className="rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{id}</span>
                   ))}
                 </div>
               </div>

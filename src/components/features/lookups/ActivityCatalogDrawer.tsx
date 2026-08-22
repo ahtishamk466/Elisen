@@ -115,7 +115,7 @@ export function ActivityCatalogDrawer({ mode, catalog, initial, usage, onClose, 
             ) : (
               <div className="mt-sm flex flex-wrap gap-xs">
                 {tasksForActivity(catalog, initial!.id).map((t) => (
-                  <span key={t.id} className="whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{t.name}</span>
+                  <span key={t.id} className="whitespace-nowrap rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{t.name}</span>
                 ))}
               </div>
             )}

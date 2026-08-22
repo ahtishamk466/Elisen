@@ -28,7 +28,7 @@ function ContactChips({ contacts, onOpen }: { contacts: CompanyContact[]; onOpen
   if (contacts.length === 0) return <span className="text-sm text-text-muted">—</span>
   const shown = contacts.slice(0, CHIP_LIMIT)
   const extra = contacts.length - shown.length
-  const chip = 'max-w-full truncate rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary'
+  const chip = 'max-w-full truncate rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary'
   return (
     <button
       type="button"

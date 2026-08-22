@@ -3,6 +3,7 @@ import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ChipOverflow } from '@/components/patterns/ChipOverflow'
 import { PersonCell } from '@/components/patterns/PersonCell'
 import { ProgressMeter } from '@/components/patterns/ProgressMeter'
+import { Stat } from '@/components/patterns/Stat'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { activityName, tasksForActivity, type Catalog } from '@/lib/catalog'
@@ -46,14 +47,10 @@ export interface WorkPackageDetailProps {
   onRemoveActivity: (a: WorkPackageActivity) => void
 }
 
-/** One label/value pair in the summary strip under the package header. */
+/** One label/value pair in the summary strip under the package header —
+    the global `Stat` pair. */
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="min-w-0">
-      <dt className="truncate text-sm text-text-muted">{label}</dt>
-      <dd className="mt-xs text-sm font-semibold text-text-primary">{children}</dd>
-    </div>
-  )
+  return <Stat dl label={label}>{children}</Stat>
 }
 
 /**

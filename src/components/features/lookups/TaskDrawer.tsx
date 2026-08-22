@@ -98,7 +98,7 @@ export function TaskDrawer({ mode, catalog, initial, entryCount = 0, presetActiv
             ) : (
               <div className="mt-sm flex flex-wrap gap-xs">
                 {activitiesForTask(catalog, initial!.id).map((a) => (
-                  <span key={a.id} className="whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{a.name}</span>
+                  <span key={a.id} className="whitespace-nowrap rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{a.name}</span>
                 ))}
               </div>
             )}

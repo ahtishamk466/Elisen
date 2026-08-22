@@ -110,7 +110,7 @@ export function ActivityDrawer({ mode, workPackage, usedActivityIds, initial, on
               <span className="text-sm text-text-muted">{activityId ? 'No tasks associated with this activity.' : 'Pick an activity to see its tasks.'}</span>
             ) : (
               tasks.map((t) => (
-                <span key={t.id} className="rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{t.name}</span>
+                <span key={t.id} className="rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{t.name}</span>
               ))
             )}
           </div>

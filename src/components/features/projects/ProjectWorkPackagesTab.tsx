@@ -3,6 +3,7 @@ import { Plus, Package } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
+import { Stat as GlobalStat } from '@/components/patterns/Stat'
 import { useWorkPackagesStore } from '@/stores/workPackagesStore'
 import { activityName } from '@/lib/catalog'
 import { useCatalogStore } from '@/stores/catalogStore'
@@ -65,7 +66,7 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
           <div className="flex flex-wrap items-end justify-between gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg py-base">
             {/* border-default is neutral-200 — each figure gets its own bay,
                 so five numbers read as five stats rather than one long row. */}
-            <dl className="flex flex-wrap items-stretch gap-y-base divide-x divide-border-default">
+            <dl className="flex flex-wrap items-stretch gap-y-base">
               <Stat label="Work packages" value={list.length} />
               <Stat label="Activities" value={totalActivities} />
               <Stat label="Not started" value={statusCount('not-started')} />
@@ -186,14 +187,14 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
   )
 }
 
-/** One label/value pair in the structure strip. A `<dl>` because that is what
-    this is — terms and their values — and it gives screen readers the pairing
-    for free. */
+/** One label/value pair in the structure strip — the global `Stat` pair
+    (12px muted label / 14px semibold value) in this strip's own divider
+    bay. The old local version was `text-lg font-bold`, one of five drifted
+    hand-rolls of the same pair across the app. */
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="px-2xl first:pl-0 last:pr-0">
-      <dt className="text-xs text-text-muted">{label}</dt>
-      <dd className="text-lg font-bold text-text-primary">{value}</dd>
+    <div className="border-l border-border-default px-2xl first:border-l-0 first:pl-0 last:pr-0">
+      <GlobalStat dl label={label}>{value}</GlobalStat>
     </div>
   )
 }

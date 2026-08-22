@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Pencil } from 'lucide-react'
+import { Stat } from './Stat'
 
 export interface DetailCardProps {
   title: string
@@ -45,13 +46,9 @@ export interface DetailFieldProps {
 
 /** Muted label above a plain-text value — an em dash when empty, so blank
     is visibly distinct from a real value (unlike a grayed-out input, where
-    both look identical). */
+    both look identical). A thin alias over the global `Stat` now, kept only
+    so its twelve call sites didn't all need touching the day the app's
+    stat pair was standardised — new code should use `Stat` directly. */
 export function DetailField({ label, children, nowrap = false }: DetailFieldProps) {
-  const isEmpty = children === undefined || children === null || children === ''
-  return (
-    <div>
-      <p className="text-xs text-text-muted">{label}</p>
-      <p className={`mt-xxss text-sm text-text-primary ${nowrap ? 'whitespace-nowrap' : ''}`}>{isEmpty ? '—' : children}</p>
-    </div>
-  )
+  return <Stat label={label} nowrap={nowrap}>{children}</Stat>
 }

@@ -70,7 +70,7 @@ export function ActivityViewDrawer({ activity, workPackage, catalog, onClose, on
           ) : (
             <div className="mt-sm flex flex-wrap gap-xs">
               {tasks.map((t) => (
-                <span key={t.id} className="whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{t.name}</span>
+                <span key={t.id} className="whitespace-nowrap rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{t.name}</span>
               ))}
             </div>
           )}

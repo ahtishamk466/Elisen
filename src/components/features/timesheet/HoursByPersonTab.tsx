@@ -1,31 +1,41 @@
 import { useNavigate } from 'react-router-dom'
-import { Search, Users } from 'lucide-react'
+import { ArrowRight, Users } from 'lucide-react'
 import { Avatar } from '@/components/patterns/Avatar'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ProgressMeter } from '@/components/patterns/ProgressMeter'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
 import { HEALTH_LABEL, HEALTH_TONE, formatHours, formatPct } from '@/lib/projectHealth'
-import { HOURS_PERIODS, type HoursPeriod } from '@/lib/hoursPeriod'
 import type { PersonSummary } from '@/lib/hoursByPerson'
 
-/** Share of the table width per column — fixed layout, so nothing overflows
-    its own cell and the widths scale with the page. */
-const COLUMNS: { label: string; width: string }[] = [
-  { label: 'Person', width: '15%' },
-  { label: 'Projects', width: '7%' },
-  { label: 'Packages', width: '7%' },
-  { label: 'Actual / Budget', width: '14%' },
-  { label: 'Remaining', width: '8%' },
-  { label: 'Used', width: '7%' },
-  { label: 'Overtime', width: '6%' },
-  { label: 'Banked', width: '6%' },
-  { label: 'Non-project', width: '7%' },
-  { label: 'Status', width: '10%' },
-  { label: 'Actions', width: '13%' },
+/**
+ * Pixel widths, not percentages, each measured as the column's own widest
+ * text — heading or body content, whichever is wider — plus the 16px the two
+ * `px-sm` pads supply and a little slack. Percentages divided the table by
+ * eleven arbitrary shares, so a column whose heading happened to be long
+ * ("Non-project", "Packages") filled its whole cell and sat 3px from its
+ * neighbour's text while short-headed columns floated in 100px of space —
+ * the "columns merging into each other" the client flagged, twice. Under
+ * `table-fixed` any width the table has beyond the sum is shared out
+ * proportionally, so wider screens loosen every gap instead of one lucky
+ * column. */
+const COLUMNS: { label: string; width: number }[] = [
+  { label: 'Person', width: 150 },
+  { label: 'Projects', width: 74 },
+  { label: 'Packages', width: 84 },
+  { label: 'Actual / Budget', width: 138 },
+  { label: 'Remaining', width: 90 },
+  { label: 'Used', width: 70 },
+  { label: 'Overtime', width: 80 },
+  { label: 'Banked', width: 68 },
+  { label: 'Non-project', width: 100 },
+  { label: 'Status', width: 148 },
+  { label: 'Actions', width: 126 },
 ]
+
+/** The sum of every column's floor — the point below which the widths above
+    would start lying — kept derived so it can't drift when one is retuned. */
+const MIN_TABLE_WIDTH = COLUMNS.reduce((n, c) => n + c.width, 0)
 
 export interface HoursByPersonTabProps {
   people: PersonSummary[]
@@ -33,15 +43,6 @@ export interface HoursByPersonTabProps {
   /** Shown when nothing matched, so the caller owns the "clear filters" action. */
   emptyAction?: React.ReactNode
   filtered?: boolean
-  /** The period this table's own figures are scoped to — independent of the
-      page's date-range filter, and narrower: see `lib/hoursPeriod.ts`. */
-  period: HoursPeriod
-  onPeriodChange: (period: HoursPeriod) => void
-  /** Project / work package name only — the page's own search already covers
-      employee, activity and comment text, so this one stays scoped to what its
-      placeholder promises. */
-  query: string
-  onQueryChange: (query: string) => void
 }
 
 /**
@@ -62,40 +63,19 @@ export interface HoursByPersonTabProps {
  * are reported beside Actual and never inside it. `summarisePeople` in
  * lib/hoursByPerson.ts explains the attribution rules in full.
  *
- * **Its own toolbar**, not the page's. The period picker and the project/work
- * package search only ever change what this table sums — the page's search and
- * filter menu keep scoping the raw entries both tabs share, so a period picked
- * here has no effect on All Entries. Compact on purpose: a person's name is the
- * thing being scanned in this list, so the controls above it are sized to stay
- * out of the way rather than to match the page header's search field.
+ * No toolbar of its own — a period picker and a project/work-package search
+ * used to sit above this table, scoped only to it. Removed: the page's own
+ * search and filter menu already scope both tabs' rows, and a person's own
+ * period filter lives one click away on `PersonDetailPage`.
  */
 export function HoursByPersonTab({
-  people, loading = false, emptyAction, filtered = false, period, onPeriodChange, query, onQueryChange,
+  people, loading = false, emptyAction, filtered = false,
 }: HoursByPersonTabProps) {
   const navigate = useNavigate()
-
-  const toolbar = (
-    <div className="flex flex-wrap items-center gap-sm border-b border-border-default px-lg py-base">
-      <div className="min-w-0" style={{ width: 160 }}>
-        <label htmlFor="by-person-period" className="sr-only">Time period</label>
-        <Select id="by-person-period" size="sm" value={period} onChange={(e) => onPeriodChange(e.target.value as HoursPeriod)}>
-          {HOURS_PERIODS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
-        </Select>
-      </div>
-      <div className="min-w-0 flex-1" style={{ maxWidth: 280 }}>
-        <label htmlFor="by-person-search" className="sr-only">Search by project or work package</label>
-        <Input
-          size="sm" id="by-person-search" value={query} onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Search project or work package..." leadingIcon={<Search size={16} />}
-        />
-      </div>
-    </div>
-  )
 
   if (loading) {
     return (
       <div aria-busy="true">
-        {toolbar}
         <div className="grid gap-sm p-lg">
           {[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-14 animate-pulse rounded-sm bg-neutral-100" />)}
         </div>
@@ -105,27 +85,22 @@ export function HoursByPersonTab({
 
   if (people.length === 0) {
     return (
-      <div>
-        {toolbar}
-        <EmptyState
-          icon={<Users size={48} strokeWidth={1.5} />}
-          title={filtered ? 'No hours match your search' : 'No hours logged yet'}
-          description={
-            filtered
-              ? 'Try a different employee, project, work package, period or filter.'
-              : 'Once anyone logs time, their totals appear here.'
-          }
-          action={emptyAction}
-        />
-      </div>
+      <EmptyState
+        icon={<Users size={48} strokeWidth={1.5} />}
+        title={filtered ? 'No hours match your search' : 'No hours logged yet'}
+        description={
+          filtered
+            ? 'Try a different employee, project, payroll group or date range.'
+            : 'Once anyone logs time, their totals appear here.'
+        }
+        action={emptyAction}
+      />
     )
   }
 
   return (
-    <div>
-      {toolbar}
-      <div className="overflow-x-auto">
-      <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 1060 }}>
+    <div className="overflow-x-auto">
+      <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: MIN_TABLE_WIDTH }}>
         <caption className="sr-only">
           Hours per person: budget, actual and remaining across every project. View Details opens the full breakdown for that person.
         </caption>
@@ -203,7 +178,7 @@ export function HoursByPersonTab({
                     <Badge tone={HEALTH_TONE[p.health.state]}>{HEALTH_LABEL[p.health.state]}</Badge>
                     {p.unvalidated > 0 && (
                       <span title="Entries an administrator has not validated yet"
-                        className="whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">
+                        className="whitespace-nowrap rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">
                         {p.unvalidated} unvalidated
                       </span>
                     )}
@@ -215,6 +190,15 @@ export function HoursByPersonTab({
                       reveal a single item is a click this doesn't need. */}
                   <Button
                     variant="tertiary" size="sm"
+                    trailingIcon={<ArrowRight size={14} aria-hidden />}
+                    /* `!text-accent`: tertiary's own `text-text-primary` is
+                       the same Tailwind layer/specificity, so appending a
+                       plain `text-accent` after it in the class string does
+                       not reliably win — verified live (computed colour
+                       stayed black without `!`). The important-modifier is
+                       what actually makes this one CTA read in the primary
+                       colour by default, not just on hover. */
+                    className="!text-accent"
                     onClick={() => navigate(`/hours-worked/person/${encodeURIComponent(p.name)}`)}
                   >
                     View Details
@@ -225,7 +209,6 @@ export function HoursByPersonTab({
           })}
         </tbody>
       </table>
-      </div>
     </div>
   )
 }

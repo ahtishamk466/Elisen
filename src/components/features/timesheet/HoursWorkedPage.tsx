@@ -22,7 +22,6 @@ import { useWorkPackagesStore } from '@/stores/workPackagesStore'
 import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore'
 import { enrichTimesheetRows } from '@/lib/timesheetLookup'
 import { summarisePeople } from '@/lib/hoursByPerson'
-import { inPeriod, periodRange, type HoursPeriod } from '@/lib/hoursPeriod'
 import { isNonProjectActivity } from '@/lib/catalog'
 import { useCatalogStore } from '@/stores/catalogStore'
 import { EMPLOYEES, PAYROLL_GROUPS, employeeByName } from '@/lib/employeeFixtures'
@@ -80,10 +79,6 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
     const employeeName = new URLSearchParams(window.location.search).get('employee')
     return employeeName ? { ...EMPTY_FILTERS, employeeName } : EMPTY_FILTERS
   })
-  /* By Person's own toolbar — scoped to that tab's aggregation only, so a
-     period or project picked here never touches All Entries or its tiles. */
-  const [personPeriod, setPersonPeriod] = useState<HoursPeriod>('all')
-  const [personQuery, setPersonQuery] = useState('')
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; row?: TimesheetEntry } | null>(null)
   const [deletingRow, setDeletingRow] = useState<TimesheetEntry | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -136,51 +131,21 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
     })
   }, [wpActivities, workPackages, filters, query])
 
-  /* By Person layers its own period and project/work-package search on top of
-     the page's filters — narrower and independent, so switching back to All
-     Entries sees none of it. Project/work-package text only: employee is
-     already the page's own search field, and matching on it here too would
-     make "search project or work package" quietly also match names. */
-  const personPeriodRange = useMemo(() => periodRange(personPeriod), [personPeriod])
-  const personRows = useMemo(() => {
-    let list = filtered
-    if (personPeriodRange) list = list.filter((r) => inPeriod(r.workingDate, personPeriodRange))
-    const q = personQuery.trim().toLowerCase()
-    if (q) list = list.filter((r) => `${r.projectLabel} ${r.projectDescription} ${r.workPackageTitle}`.toLowerCase().includes(q))
-    return list
-  }, [filtered, personPeriodRange, personQuery])
-
-  /* Same rule the page-level filters already follow: an assignment with no
-     hours can't satisfy a period ("nothing logged in March" isn't "not
-     started"), and it obeys the project/work-package search like any other row. */
-  const personUnstartedActivities = useMemo(() => {
-    if (personPeriod !== 'all') return []
-    const q = personQuery.trim().toLowerCase()
-    if (!q) return unstartedActivities
-    const wpById = new Map(workPackages.map((w) => [w.id, w]))
-    const projectById = new Map(projects.map((p) => [p.id, p]))
-    return unstartedActivities.filter((a) => {
-      const wp = wpById.get(a.workPackageId)
-      if (!wp) return false
-      const project = projectById.get(wp.projectId)
-      const label = project ? `${project.number}-${project.subNumber}` : ''
-      return `${label} ${project?.title ?? ''} ${wp.title}`.toLowerCase().includes(q)
-    })
-  }, [unstartedActivities, personPeriod, personQuery, workPackages, projects])
-
+  /* Both tabs read the same filtered rows, which is the reason they are tabs and
+     not two pages: filter to a month and a project, then switch between the raw
+     entries and the per-person roll-up without setting the filters again. */
   const people = useMemo(() => summarisePeople({
-    rows: personRows,
+    rows: filtered,
     workPackages,
     /* Unfiltered on purpose — this is the budget/ownership lookup, so a row on a
        colleague's activity still names that colleague whatever is filtered. */
     activities: wpActivities,
     projects,
     catalogActivities,
-    unstartedActivities: personUnstartedActivities,
-  }), [personRows, workPackages, wpActivities, projects, catalogActivities, personUnstartedActivities])
+    unstartedActivities,
+  }), [filtered, workPackages, wpActivities, projects, catalogActivities, unstartedActivities])
 
   const totalHours = filtered.reduce((sum, r) => sum + r.hoursRegular, 0)
-  const personTotalHours = personRows.reduce((sum, r) => sum + r.hoursRegular, 0)
   const pendingValidation = filtered.filter((r) => !r.validated).length
   const uniqueEmployees = new Set(filtered.map((r) => r.employeeName)).size
   const peopleOverBudget = people.filter((p) => p.health.state === 'over-budget').length
@@ -257,7 +222,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
           ) : (
             <>
               <StatCard value={people.length} label="People shown" loading={loading} />
-              <StatCard value={personTotalHours.toFixed(2)} label="Total regular hours" loading={loading} />
+              <StatCard value={totalHours.toFixed(2)} label="Total regular hours" loading={loading} />
               <StatCard value={peopleOverBudget} label="People over budget" loading={loading} />
               <StatCard value={nonProjectHours.toFixed(2)} label="Non-project hours" loading={loading} />
             </>
@@ -283,19 +248,10 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
               <HoursByPersonTab
                 people={people}
                 loading={loading}
-                filtered={!!query || hasActiveFilters || !!personQuery || personPeriod !== 'all'}
-                emptyAction={(query || hasActiveFilters || personQuery || personPeriod !== 'all') && (
-                  <Button
-                    variant="secondary"
-                    onClick={() => { setQuery(''); setFilters(EMPTY_FILTERS); setPersonQuery(''); setPersonPeriod('all') }}
-                  >
-                    Clear search & filters
-                  </Button>
+                filtered={!!query || hasActiveFilters}
+                emptyAction={(query || hasActiveFilters) && (
+                  <Button variant="secondary" onClick={() => { setQuery(''); setFilters(EMPTY_FILTERS) }}>Clear search & filters</Button>
                 )}
-                period={personPeriod}
-                onPeriodChange={setPersonPeriod}
-                query={personQuery}
-                onQueryChange={setPersonQuery}
               />
             ) : showEmpty && !loading ? (
               <EmptyState

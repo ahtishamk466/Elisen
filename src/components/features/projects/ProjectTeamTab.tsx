@@ -3,6 +3,7 @@ import { ChevronDown, Users } from 'lucide-react'
 import { Avatar } from '@/components/patterns/Avatar'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { BudgetInline, ProgressMeter } from '@/components/patterns/ProgressMeter'
+import { Stat as GlobalStat } from '@/components/patterns/Stat'
 import { Badge } from '@/components/ui/Badge'
 import { useWorkPackagesStore } from '@/stores/workPackagesStore'
 import { useTimesheetStore } from '@/stores/timesheetStore'
@@ -106,7 +107,7 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
     <div className="grid gap-lg">
       {/* Same compact strip as the Work Packages tab, so the two read as a pair. */}
       <div className="flex flex-wrap items-stretch gap-y-base rounded-sm border border-border-default bg-neutral-25 px-lg py-base">
-        <dl className="flex flex-wrap items-stretch divide-x divide-border-default">
+        <dl className="flex flex-wrap items-stretch">
           <Stat label="People" value={people.length} />
           <Stat label="Activities" value={totals.activities} />
           <Stat label="Time entries" value={totals.entries} />
@@ -131,10 +132,10 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
                 <Badge tone={HEALTH_TONE[p.health.state]}>{HEALTH_LABEL[p.health.state]}</Badge>
                 {/* Counts as neutral chips, the app's one way of saying "how
                     much is inside" without expanding. */}
-                <span className="shrink-0 whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">
+                <span className="shrink-0 whitespace-nowrap rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">
                   {p.items.length} {p.items.length === 1 ? 'activity' : 'activities'}
                 </span>
-                <span className="shrink-0 whitespace-nowrap rounded-sm bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">
+                <span className="shrink-0 whitespace-nowrap rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">
                   {p.packageCount} {p.packageCount === 1 ? 'package' : 'packages'}
                 </span>
               </button>
@@ -196,12 +197,12 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
   )
 }
 
-/** One label/value pair in the summary strip. */
+/** One label/value pair in the summary strip — the global `Stat` pair in
+    this strip's own divider bay. */
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="px-2xl first:pl-0 last:pr-0">
-      <dt className="text-xs text-text-muted">{label}</dt>
-      <dd className="text-lg font-bold text-text-primary">{value}</dd>
+    <div className="border-l border-border-default px-2xl first:border-l-0 first:pl-0 last:pr-0">
+      <GlobalStat dl label={label}>{value}</GlobalStat>
     </div>
   )
 }
