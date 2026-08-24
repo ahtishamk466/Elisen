@@ -4898,3 +4898,37 @@ the fuller word fits.
 Verified live at 1440 and 1280, both tabs: zero table overflow, zero page
 scroll, **zero dates on two lines across all 25 rows**, no header clipped,
 uniform 61px row height.
+
+## 2026-08-24 — Hours Worked date range replaced with a Period picker
+**Context:** The user asked for an "All" option on the Hours Worked date
+filter, shared across the By Person and All Entries tabs, and to remove the
+raw From/To range in favor of the same period picker Person Detail already
+uses (Person Detail's own control is a plain `<select>`; the reference
+screenshot they gave was `SearchableSelect` with `indicator="radio"`, so
+that's the one built here).
+**Choice:** `TimesheetFilters.dateFrom`/`dateTo` replaced with a single
+`period: HoursPeriod` field (from the existing `lib/hoursPeriod.ts`, `'all'`
+default). `TimesheetFilterMenu`'s From/To inputs became one `SearchableSelect`
+listing All Time / This Week / Last Week / This Month / Last Month / This
+Year / Last Year. `HoursWorkedPage` and `TimesheetListPage` both filter rows
+through `periodRange`/`inPeriod` instead of raw string comparison against
+`dateFrom`/`dateTo`. `'all'` is treated as "no filter" throughout — excluded
+from the active-filter count, the chip row, and the `hasActiveFilters` check,
+the same convention `hoursPeriod.ts` already uses.
+**Rationale:** One picker vocabulary for "what time window" instead of two
+(a raw date range here, a calendar-period select on Person Detail) — and the
+raw range couldn't express "show everything" without clearing both fields.
+Reused `SearchableSelect`/`hoursPeriod.ts` rather than building a new date
+control, per the component-reuse rule.
+
+**Follow-up, same day:** Hours Worked now opens to **Last Week**, not All
+Time, on both tabs — a fresh admin load defaulting to every entry ever
+logged was a slow, noisy starting point. `DEFAULT_FILTERS` in
+`HoursWorkedPage.tsx` (`{ ...EMPTY_FILTERS, period: 'last-week' }`) seeds the
+initial filter state and every "Clear filters" action on this page.
+`EMPTY_FILTERS` itself (period `'all'`) is unchanged and still what
+`TimesheetListPage` (the personal Timesheet screen) opens to — this default
+is Hours Worked–specific, not a change to the shared filter vocabulary.
+`TimesheetFilterMenu` gained a `clearFilters` prop (defaulting to
+`EMPTY_FILTERS`) so its in-panel Clear button also lands on Last Week here,
+without hardcoding that default into the shared component itself.

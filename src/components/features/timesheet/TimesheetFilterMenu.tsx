@@ -6,16 +6,18 @@ import type { FilterChip } from '@/components/patterns/FilterChips'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { PersonSelect } from '@/components/ui/PersonSelect'
-import { Input } from '@/components/ui/Input'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import type { ProjectListRow } from '@/types/project'
+import { HOURS_PERIODS, hoursPeriodLabel, type HoursPeriod } from '@/lib/hoursPeriod'
 
 export interface TimesheetFilters {
   employeeName: string
   projectId: string
   validated: '' | 'yes' | 'no'
   active: '' | 'yes' | 'no'
-  dateFrom: string
-  dateTo: string
+  /** 'all' reads as no filter — same convention `hoursPeriod.ts` uses so this
+      and the Person Detail period picker never drift into two vocabularies. */
+  period: HoursPeriod
   /** Employee's payroll group, as in the client's Hours Worked screen. */
   payrollGroup: string
   /**
@@ -33,7 +35,7 @@ export interface TimesheetFilters {
 }
 
 export const EMPTY_FILTERS: TimesheetFilters = {
-  employeeName: '', projectId: '', validated: '', active: '', dateFrom: '', dateTo: '',
+  employeeName: '', projectId: '', validated: '', active: '', period: 'all',
   payrollGroup: '', nonProject: '', formerStaff: '',
 }
 
@@ -44,15 +46,14 @@ export function timesheetFilterChips(
   projects: ProjectListRow[],
   onChange: (filters: TimesheetFilters) => void,
 ): FilterChip[] {
-  const clear = (key: keyof TimesheetFilters) => () => onChange({ ...filters, [key]: '' })
+  const clear = (key: keyof TimesheetFilters) => () => onChange({ ...filters, [key]: key === 'period' ? 'all' : '' })
   const project = projects.find((p) => p.id === filters.projectId)
   const defs: { key: keyof TimesheetFilters; label: string; value: string }[] = [
     { key: 'employeeName', label: 'Employee', value: filters.employeeName },
     { key: 'projectId', label: 'Project', value: project ? `${project.number}-${project.subNumber}` : '' },
     { key: 'validated', label: 'Validated', value: filters.validated === 'yes' ? 'Yes' : filters.validated === 'no' ? 'No' : '' },
     { key: 'active', label: 'Active', value: filters.active === 'yes' ? 'Active' : filters.active === 'no' ? 'Inactive' : '' },
-    { key: 'dateFrom', label: 'From', value: filters.dateFrom },
-    { key: 'dateTo', label: 'To', value: filters.dateTo },
+    { key: 'period', label: 'Period', value: filters.period === 'all' ? '' : hoursPeriodLabel(filters.period) },
     { key: 'payrollGroup', label: 'Payroll group', value: filters.payrollGroup },
     { key: 'nonProject', label: 'Non-project time', value: filters.nonProject === 'only' ? 'Only' : filters.nonProject === 'exclude' ? 'Excluded' : '' },
     { key: 'formerStaff', label: 'Former employees', value: filters.formerStaff === 'hide' ? 'Hidden' : '' },
@@ -70,11 +71,15 @@ export interface TimesheetFilterMenuProps {
   payrollGroups?: string[]
   filters: TimesheetFilters
   onApply: (filters: TimesheetFilters) => void
+  /** What the in-panel "Clear" button resets to. Defaults to no filters at
+      all; Hours Worked passes its own default (Last Week) so Clear doesn't
+      land the page somewhere it never opens to on its own. */
+  clearFilters?: TimesheetFilters
 }
 
 const MENU_WIDTH = 300
 
-export function TimesheetFilterMenu({ projects, employees, payrollGroups, filters, onApply }: TimesheetFilterMenuProps) {
+export function TimesheetFilterMenu({ projects, employees, payrollGroups, filters, onApply, clearFilters = EMPTY_FILTERS }: TimesheetFilterMenuProps) {
   const { open, setOpen, position, triggerRef, menuRef } = useDropdown<HTMLButtonElement>(MENU_WIDTH)
   const [draft, setDraft] = useState(filters)
 
@@ -82,7 +87,7 @@ export function TimesheetFilterMenu({ projects, employees, payrollGroups, filter
     if (open) setDraft(filters)
   }, [open, filters])
 
-  const activeCount = Object.values(filters).filter(Boolean).length
+  const activeCount = Object.entries(filters).filter(([k, v]) => (k === 'period' ? v !== 'all' : Boolean(v))).length
 
   return (
     <>
@@ -160,22 +165,23 @@ export function TimesheetFilterMenu({ projects, employees, payrollGroups, filter
                 </Select>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-sm">
-              <div className="grid gap-xs">
-                <label htmlFor="filter-date-from" className="text-xs font-semibold text-text-secondary">From</label>
-                <Input id="filter-date-from" type="date" value={draft.dateFrom} onChange={(e) => setDraft((d) => ({ ...d, dateFrom: e.target.value }))} />
-              </div>
-              <div className="grid gap-xs">
-                <label htmlFor="filter-date-to" className="text-xs font-semibold text-text-secondary">To</label>
-                <Input id="filter-date-to" type="date" value={draft.dateTo} onChange={(e) => setDraft((d) => ({ ...d, dateTo: e.target.value }))} />
-              </div>
+            <div className="grid gap-xs">
+              <label htmlFor="filter-period" className="text-xs font-semibold text-text-secondary">Period</label>
+              <SearchableSelect
+                id="filter-period"
+                indicator="radio"
+                size="sm"
+                value={draft.period}
+                options={HOURS_PERIODS.map((p) => ({ value: p.key, label: p.label }))}
+                onChange={(v) => setDraft((d) => ({ ...d, period: v as HoursPeriod }))}
+              />
             </div>
             <div className="mt-xs flex justify-between gap-sm">
               <Button
                 variant="tertiary"
                 onClick={() => {
-                  setDraft(EMPTY_FILTERS)
-                  onApply(EMPTY_FILTERS)
+                  setDraft(clearFilters)
+                  onApply(clearFilters)
                   setOpen(false)
                 }}
               >

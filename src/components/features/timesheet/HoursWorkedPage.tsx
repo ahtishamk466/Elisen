@@ -23,6 +23,7 @@ import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore
 import { enrichTimesheetRows } from '@/lib/timesheetLookup'
 import { summarisePeople } from '@/lib/hoursByPerson'
 import { isNonProjectActivity } from '@/lib/catalog'
+import { inPeriod, periodRange } from '@/lib/hoursPeriod'
 import { useCatalogStore } from '@/stores/catalogStore'
 import { EMPLOYEES, PAYROLL_GROUPS, employeeByName } from '@/lib/employeeFixtures'
 import { PEOPLE } from '@/lib/projectFixtures'
@@ -33,6 +34,11 @@ import { formatDate } from '@/lib/formatDate'
 export type PageState = 'ready' | 'loading' | 'empty' | 'error'
 
 type Tab = 'entries' | 'by-person'
+
+/** Last Week, not All Time: an admin opening this page almost always wants
+    "what happened recently", and every entry ever logged is a slow, noisy
+    starting point. Both tabs share it since they share one filter state. */
+const DEFAULT_FILTERS: TimesheetFilters = { ...EMPTY_FILTERS, period: 'last-week' }
 
 export interface HoursWorkedPageProps {
   state?: PageState
@@ -77,7 +83,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
      writes, so the chip appears and can be cleared like any other. */
   const [filters, setFilters] = useState<TimesheetFilters>(() => {
     const employeeName = new URLSearchParams(window.location.search).get('employee')
-    return employeeName ? { ...EMPTY_FILTERS, employeeName } : EMPTY_FILTERS
+    return employeeName ? { ...DEFAULT_FILTERS, employeeName } : DEFAULT_FILTERS
   })
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; row?: TimesheetEntry } | null>(null)
   const [deletingRow, setDeletingRow] = useState<TimesheetEntry | null>(null)
@@ -85,7 +91,9 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
 
   const enriched = useMemo(() => enrichTimesheetRows(rows, projects, workPackages, deliverables, catalogActivities), [rows, projects, workPackages, deliverables, catalogActivities])
 
-  const hasActiveFilters = Object.values(filters).some(Boolean)
+  const hasActiveFilters = Object.entries(filters).some(([k, v]) => (k === 'period' ? v !== 'all' : Boolean(v)))
+
+  const periodBounds = useMemo(() => periodRange(filters.period), [filters.period])
 
   const filtered = useMemo(() => {
     let list = enriched
@@ -100,14 +108,13 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
     if (filters.projectId) list = list.filter((r) => r.projectId === filters.projectId)
     if (filters.validated) list = list.filter((r) => (filters.validated === 'yes' ? r.validated : !r.validated))
     if (filters.active) list = list.filter((r) => (filters.active === 'yes' ? r.active : !r.active))
-    if (filters.dateFrom) list = list.filter((r) => r.workingDate >= filters.dateFrom)
-    if (filters.dateTo) list = list.filter((r) => r.workingDate <= filters.dateTo)
+    if (filters.period !== 'all') list = list.filter((r) => inPeriod(r.workingDate, periodBounds))
     if (filters.payrollGroup) list = list.filter((r) => employeeByName(r.employeeName)?.payrollGroup === filters.payrollGroup)
     if (filters.formerStaff === 'hide') list = list.filter((r) => employeeByName(r.employeeName)?.active ?? true)
     if (filters.nonProject === 'only') list = list.filter((r) => isNonProjectActivity(catalogActivities, r.activityId))
     if (filters.nonProject === 'exclude') list = list.filter((r) => !isNonProjectActivity(catalogActivities, r.activityId))
     return list
-  }, [enriched, query, filters])
+  }, [enriched, query, filters, periodBounds])
 
   /* Assignments carrying no hours yet have to obey the same filters the rows
      do, or picking one project would still list every project a person is on.
@@ -115,7 +122,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
      hours: "nothing logged in July" is not "not started", and an activity with
      no entries cannot satisfy a filter on entries. */
   const unstartedActivities = useMemo(() => {
-    const periodFilter = filters.dateFrom || filters.dateTo || query.trim()
+    const periodFilter = filters.period !== 'all' || query.trim()
       || filters.validated || filters.active || filters.nonProject === 'only'
     if (periodFilter) return []
     const wpById = new Map(workPackages.map((w) => [w.id, w]))
@@ -194,6 +201,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
             payrollGroups={PAYROLL_GROUPS}
             filters={filters}
             onApply={(f) => { setFilters(f); resetVisible() }}
+            clearFilters={DEFAULT_FILTERS}
           />
           <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>
             Add Entry
@@ -206,7 +214,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
 
         <FilterChips
           chips={timesheetFilterChips(filters, projects, (f) => { setFilters(f); resetVisible() })}
-          onClearAll={() => { setFilters(EMPTY_FILTERS); resetVisible() }}
+          onClearAll={() => { setFilters(DEFAULT_FILTERS); resetVisible() }}
         />
 
         {/* Tiles follow the filters, and follow the tab: the entries view is
@@ -240,8 +248,8 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
               activeKey={tab}
               onChange={(k) => setTab(k as Tab)}
               tabs={[
-                { key: 'entries', label: 'All Entries', count: filtered.length },
                 { key: 'by-person', label: 'By Person', count: people.length },
+                { key: 'entries', label: 'All Entries', count: filtered.length },
               ]}
             />
             {tab === 'by-person' ? (
@@ -250,7 +258,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
                 loading={loading}
                 filtered={!!query || hasActiveFilters}
                 emptyAction={(query || hasActiveFilters) && (
-                  <Button variant="secondary" onClick={() => { setQuery(''); setFilters(EMPTY_FILTERS) }}>Clear search & filters</Button>
+                  <Button variant="secondary" onClick={() => { setQuery(''); setFilters(DEFAULT_FILTERS) }}>Clear search & filters</Button>
                 )}
               />
             ) : showEmpty && !loading ? (
@@ -264,7 +272,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
                 }
                 action={
                   (query || hasActiveFilters) && (
-                    <Button variant="secondary" onClick={() => { setQuery(''); setFilters(EMPTY_FILTERS) }}>Clear search & filters</Button>
+                    <Button variant="secondary" onClick={() => { setQuery(''); setFilters(DEFAULT_FILTERS) }}>Clear search & filters</Button>
                   )
                 }
               />

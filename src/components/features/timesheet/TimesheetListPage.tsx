@@ -19,6 +19,7 @@ import { useWorkPackagesStore } from '@/stores/workPackagesStore'
 import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore'
 import { enrichTimesheetRows } from '@/lib/timesheetLookup'
 import { isNonProjectActivity } from '@/lib/catalog'
+import { inPeriod, periodRange } from '@/lib/hoursPeriod'
 import { useCatalogStore } from '@/stores/catalogStore'
 import { CURRENT_EMPLOYEE } from '@/lib/timesheetFixtures'
 import type { TimesheetEntry } from '@/types/timesheet'
@@ -61,7 +62,8 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
   const ownRows = useMemo(() => rows.filter((r) => r.employeeName === CURRENT_EMPLOYEE), [rows])
   const enriched = useMemo(() => enrichTimesheetRows(ownRows, projects, workPackages, deliverables, catalogActivities), [ownRows, projects, workPackages, deliverables])
 
-  const hasActiveFilters = Object.values(filters).some(Boolean)
+  const hasActiveFilters = Object.entries(filters).some(([k, v]) => (k === 'period' ? v !== 'all' : Boolean(v)))
+  const periodBounds = useMemo(() => periodRange(filters.period), [filters.period])
 
   const filtered = useMemo(() => {
     let list = enriched
@@ -75,14 +77,13 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
     if (filters.projectId) list = list.filter((r) => r.projectId === filters.projectId)
     if (filters.validated) list = list.filter((r) => (filters.validated === 'yes' ? r.validated : !r.validated))
     if (filters.active) list = list.filter((r) => (filters.active === 'yes' ? r.active : !r.active))
-    if (filters.dateFrom) list = list.filter((r) => r.workingDate >= filters.dateFrom)
-    if (filters.dateTo) list = list.filter((r) => r.workingDate <= filters.dateTo)
+    if (filters.period !== 'all') list = list.filter((r) => inPeriod(r.workingDate, periodBounds))
     // Useful on your own timesheet too: "my project work only", or "how much
     // holiday have I actually taken".
     if (filters.nonProject === 'only') list = list.filter((r) => isNonProjectActivity(catalogActivities, r.activityId))
     if (filters.nonProject === 'exclude') list = list.filter((r) => !isNonProjectActivity(catalogActivities, r.activityId))
     return list
-  }, [enriched, query, filters])
+  }, [enriched, query, filters, periodBounds])
 
   const totalHours = filtered.reduce((sum, r) => sum + r.hoursRegular, 0)
   const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
