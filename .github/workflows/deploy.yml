@@ -69,14 +69,20 @@ jobs:
           # Fail fast if secret is empty/corrupt (fingerprint only — no private key leak)
           ssh-keygen -lf ~/.ssh/deploy_key
           ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null
-          ssh-keyscan -H 154.53.38.1 >> ~/.ssh/known_hosts
+          ssh-keyscan -T 10 -H 154.53.38.1 >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
       - name: Deploy to server
         run: |
-          rsync -az --delete --timeout=60 \
-            -e "ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o PreferredAuthentications=publickey -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=3" \
-            dist/ aqeel@154.53.38.1:/var/www/tpmsv2/
+          for i in 1 2 3; do
+            rsync -az --delete --timeout=60 \
+              -e "ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o PreferredAuthentications=publickey -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=3" \
+              dist/ aqeel@154.53.38.1:/var/www/tpmsv2/ && exit 0
+            echo "rsync attempt $i failed, retrying..."
+            sleep 5
+          done
+          echo "Deploy failed after 3 attempts"
+          exit 1
 
       - name: Smoke check live site
         run: |
