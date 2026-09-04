@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { PROJECT_ROWS } from '@/lib/projectFixtures'
+import { coreData } from '@/lib/dataset'
 import type { ProjectListRow } from '@/types/project'
 
 interface ProjectsState {
@@ -16,7 +16,7 @@ interface ProjectsState {
  * shared client state).
  */
 export const useProjectsStore = create<ProjectsState>((set) => ({
-  rows: PROJECT_ROWS,
+  rows: coreData().projects,
   addRow: (row) => set((s) => ({ rows: [row, ...s.rows] })),
   updateRow: (id, patch) => set((s) => ({ rows: s.rows.map((r) => (r.id === id ? { ...r, ...patch } : r)) })),
   removeRow: (id) => set((s) => ({ rows: s.rows.filter((r) => r.id !== id) })),

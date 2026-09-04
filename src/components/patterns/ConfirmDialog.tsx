@@ -45,7 +45,7 @@ export function ConfirmDialog({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-toast flex items-center justify-center p-lg">
+    <div className="fixed inset-0 z-dialog flex items-center justify-center p-lg">
       <div className="absolute inset-0 bg-primary-950/50" onClick={onCancel} aria-hidden />
       <div
         ref={ref}

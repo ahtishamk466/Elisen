@@ -121,6 +121,24 @@ Base unit: 4px grid.
 | 5xl | 48px |
 | 6xl | 60px |
 
+### Stat pair (label + value)
+
+Every label/value stat in the app — detail cards, summary strips, header
+stat bands — renders through `patterns/Stat.tsx`. **Fixed spec, do not
+hand-roll it:**
+
+| Part | Size | Weight | Colour |
+|---|---|---|---|
+| Label | 12px (`text-xs`) | Regular (400) | Neutral 500 (`text-text-muted`) |
+| Value | 14px (`text-sm`) | SemiBold (600) | Neutral 950 (`text-text-primary`) |
+
+Spacing between them: **2px** (`mt-xxss`).
+
+The component owns only the pair. Layout around it — grid placement,
+divider rules, padding between stats — belongs to the caller, so a divided
+strip and a plain card grid share one typography and differ only in their
+own wrapper.
+
 ### Shape & Depth
 
 Radius — **8px is the standard corner radius for rectangular surfaces**
@@ -128,11 +146,18 @@ Radius — **8px is the standard corner radius for rectangular surfaces**
 — see docs/DECISIONS.md for both entries).
 
 `radius-sm: 8px` — every rectangular surface: buttons, inputs, selects,
-textareas, cards, sections, dialogs, badges, table containers.
-`radius-xs: 4px` — compact controls only (the 16px checkbox): 8px on a
-16px box reads as a circle and becomes indistinguishable from a radio.
+textareas, cards, sections, dialogs, table containers.
+`radius-xs: 4px` — **tags** (see "Tags" below) and compact controls (the
+16px checkbox): 8px on a 16px box reads as a circle and becomes
+indistinguishable from a radio.
 `radius-full: 9999px` — circular controls only: radio, toggle track/thumb,
 step markers, status dots.
+
+**Tags are 4px, always.** Every `Badge` — Status, Active, health, priority,
+count chips — uses `radius-xs`. A tag is a small pill sitting *inside* a
+card or a table cell; at that size the 8px surface radius reads as a
+rounded box competing with its container rather than a label attached to a
+value. Revised 2026-08-22 (superseded "badges" in the 8px list above).
 
 There are deliberately no `md` / `lg` radius tokens; the scale expresses
 one rectangular radius, one compact-control radius, and full-round.
@@ -154,7 +179,14 @@ Mobile 375 · Tablet 768 · Laptop 1280 · Desktop 1440
 
 ### Z-index
 
-`dropdown: 1000` · `sticky: 1100` · `modal: 1200` · `toast: 1300` · `tooltip: 1400`
+`sticky: 1000` · `modal: 1100` · `dropdown: 1200` · `dialog: 1300` · `toast: 1400` · `tooltip: 1500`
+
+Ordered by **what can spawn what**, not by importance. Dropdowns are portal-
+rendered and are usually opened from inside a drawer, so the dropdown layer sits
+above the modal layer — reverse them and the panel paints behind the drawer and
+the control looks dead. A `ConfirmDialog` opened from a row menu covers that
+menu; a toast can fire from inside the dialog. See docs/COMPONENTS.md →
+"Layering", and the `Patterns/Overview` → DropdownLayering regression story.
 
 ---
 

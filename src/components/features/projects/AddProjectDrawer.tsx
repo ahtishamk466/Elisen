@@ -5,10 +5,9 @@ import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Stepper } from '@/components/patterns/Stepper'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
-import { useAddProjectForm, validateStep, type AddProjectValues } from './useAddProjectForm'
+import { useAddProjectForm, validateStep, validateAll, type AddProjectValues } from './useAddProjectForm'
 import { StepBasicInfo } from './StepBasicInfo'
 import { StepAdditionalDetails } from './StepAdditionalDetails'
-import { StepTccaSetup } from './StepTccaSetup'
 
 export interface AddProjectDrawerProps {
   open: boolean
@@ -18,6 +17,8 @@ export interface AddProjectDrawerProps {
   /** Edit mode prefills the form and changes copy; pass the row's known fields. */
   mode?: 'create' | 'edit'
   initialValues?: Partial<AddProjectValues>
+  /** Jump straight to a step — used by Project Detail's per-section edit buttons. */
+  initialStep?: number
 }
 
 export function AddProjectDrawer({
@@ -27,9 +28,10 @@ export function AddProjectDrawer({
   canSeeFinancials = true,
   mode = 'create',
   initialValues,
+  initialStep = 0,
 }: AddProjectDrawerProps) {
   const isEdit = mode === 'edit'
-  const form = useAddProjectForm(initialValues)
+  const form = useAddProjectForm(initialValues, initialStep)
   const { values, errors, setErrors, step, steps, isLastStep, dirty, setField, next, back, reset } = form
   const [confirmClose, setConfirmClose] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -45,7 +47,7 @@ export function AddProjectDrawer({
   }
 
   const handleSubmit = async () => {
-    const e = validateStep(step, values, isEdit)
+    const e = isEdit ? validateAll(values, isEdit) : validateStep(step, values, isEdit)
     setErrors(e)
     if (Object.keys(e).length > 0) return
     setSubmitting(true)
@@ -68,40 +70,58 @@ export function AddProjectDrawer({
         onClose={requestClose}
         title={title}
         footer={
-          <>
-            {step > 0 ? (
-              <Button variant="tertiary" onClick={back} leadingIcon={<ArrowLeft size={16} />}>
-                Back
+          isEdit ? (
+            <>
+              <Button variant="secondary" onClick={requestClose}>
+                Cancel
               </Button>
-            ) : (
-              <span />
-            )}
-            <div className="flex gap-sm">
+              <Button onClick={handleSubmit} loading={submitting}>
+                Save Changes
+              </Button>
+            </>
+          ) : (
+            <>
+              {step > 0 && (
+                <Button variant="tertiary" onClick={back} leadingIcon={<ArrowLeft size={16} />}>
+                  Back
+                </Button>
+              )}
               <Button variant="secondary" onClick={requestClose}>
                 Cancel
               </Button>
               {isLastStep ? (
                 <Button onClick={handleSubmit} loading={submitting}>
-                  {isEdit ? 'Save Changes' : 'Create Project'}
+                  Create Project
                 </Button>
               ) : (
                 <Button onClick={next}>Continue</Button>
               )}
-            </div>
-          </>
+            </>
+          )
         }
       >
-        <Stepper steps={steps} current={step} />
+        {/* Edit shows every section on one screen, like every other Edit
+            drawer in the app (Cancel + Save Changes, no step navigation) —
+            the stepper is only for progressively collecting a new record. */}
+        {!isEdit && <Stepper steps={steps} current={step} />}
 
         {hasErrors && (
           <Alert title="Please complete the required fields">
-            Fill in all fields marked with an asterisk (*) before continuing.
+            Fill in all fields marked with an asterisk (*) before {isEdit ? 'saving' : 'continuing'}.
           </Alert>
         )}
 
-        {step === 0 && <StepBasicInfo {...stepProps} />}
-        {step === 1 && <StepAdditionalDetails {...stepProps} />}
-        {step === 2 && <StepTccaSetup {...stepProps} />}
+        {isEdit ? (
+          <>
+            <StepBasicInfo {...stepProps} />
+            <StepAdditionalDetails {...stepProps} />
+          </>
+        ) : (
+          <>
+            {step === 0 && <StepBasicInfo {...stepProps} />}
+            {step === 1 && <StepAdditionalDetails {...stepProps} />}
+          </>
+        )}
       </Drawer>
 
       <ConfirmDialog

@@ -4,6 +4,11 @@ import { Plus, Search, Eye, Pencil, Trash2, ShieldCheck } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
+import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
+import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
+import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -15,8 +20,18 @@ import { useTccaStore } from '@/stores/tccaStore'
 import { TCCA_STATUS_LABEL, TCCA_STATUS_TONE } from '@/lib/tccaDisplay'
 import { TccaProjectDrawer } from './TccaProjectDrawer'
 import type { TccaProject } from '@/types/tcca'
+import { DateText } from '@/components/patterns/DateText'
 
-const HEADERS = ['Number', 'Description', 'Linked Project', 'Opened', 'Status', 'Actions']
+type SortKey = 'number' | 'description' | 'project' | 'opened' | 'status'
+
+const COLUMNS: { label: string; sort?: SortKey }[] = [
+  { label: 'Number', sort: 'number' },
+  { label: 'Description', sort: 'description' },
+  { label: 'Linked Project', sort: 'project' },
+  { label: 'Opened', sort: 'opened' },
+  { label: 'Status', sort: 'status' },
+  { label: 'Actions' },
+]
 
 export interface TccaProjectsListPageProps {
   state?: 'ready' | 'loading' | 'error'
@@ -41,6 +56,12 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
     return tccaProjects.filter((t) => `${t.number} ${t.description}`.toLowerCase().includes(q))
   }, [tccaProjects, query])
 
+  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
+
+  /* Declared above the sort hook, not below it: the sort accessors run inside
+     that hook's own render-time useMemo, so a helper defined further down the
+     component is still in its temporal dead zone when the first sorted render
+     reaches for it. */
   const projectLabel = (t: TccaProject) => {
     const p = projects.find((x) => x.id === t.projectIds[0])
     if (!p) return t.projectIds.length ? '—' : 'Baseline / DAO'
@@ -48,21 +69,36 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
     return `${p.number}-${p.subNumber}${extra > 0 ? ` +${extra}` : ''}`
   }
 
+  /* Linked Project sorts on the same label the cell prints, so a row with no
+     linked project sinks with the other blanks rather than sorting under
+     whatever placeholder text it shows. */
+  const { sorted, sort, setSort } = useTableSort(filtered, {
+    number: (t) => t.number,
+    description: (t) => t.description,
+    project: (t) => projectLabel(t),
+    opened: (t) => t.openedDate,
+    status: (t) => TCCA_STATUS_LABEL[t.status],
+  }, { onSortChange: resetVisible })
+
   const loading = state === 'loading'
 
   return (
-    <AppShell activeChild="TCCA Projects" title="TCCA Projects">
-      <div className="grid gap-lg">
-        <div className="grid gap-sm tablet:flex tablet:flex-wrap tablet:items-center">
-          <div className="min-w-0 tablet:flex-1" style={{ maxWidth: 380 }}>
+    <AppShell
+      activeChild="TCCA Projects"
+      title="TCCA Projects"
+      description="Transport Canada certification projects."
+      headerActions={
+        <>
+          <div className="min-w-0" style={{ width: 400 }}>
             <label htmlFor="tcca-search" className="sr-only">Search TCCA projects</label>
-            <Input id="tcca-search" value={query} onChange={(e) => setQuery(e.target.value)}
+            <Input size="sm" id="tcca-search" value={query} onChange={(e) => { setQuery(e.target.value); resetVisible() }}
               placeholder="Search by number or description..." leadingIcon={<Search size={16} />} />
           </div>
-          <span className="hidden tablet:block tablet:flex-1" />
-          <Button leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>Add TCCA project</Button>
-        </div>
-
+          <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>Add TCCA project</Button>
+        </>
+      }
+    >
+      <div className="grid gap-lg">
         {state === 'error' ? (
           <Alert title="We couldn't load TCCA projects">
             Something went wrong fetching the list. Refresh the page, and if it keeps happening, contact your administrator.
@@ -79,13 +115,15 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
             />
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
+          <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+          <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left" style={{ minWidth: 760 }}>
               <caption className="sr-only">TCCA projects</caption>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
-                  {HEADERS.map((h) => (
-                    <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                  {COLUMNS.map((c) => (
+                    <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                      className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                 </tr>
               </thead>
@@ -93,21 +131,25 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
                 {loading
                   ? Array.from({ length: 4 }, (_, i) => (
                       <tr key={i} className="border-b border-border-default last:border-b-0">
-                        {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                        {COLUMNS.map((c) => <td key={c.label} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                       </tr>
                     ))
-                  : filtered.map((t) => (
-                      <tr key={t.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
+                  : sorted.slice(0, visibleCount).map((t) => (
+                      <tr
+                        key={t.id}
+                        onClick={() => navigate(`/tcca-projects/${t.id}`)}
+                        className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
+                      >
                         <td className="whitespace-nowrap px-lg py-base">
                           <Link to={`/tcca-projects/${t.id}`} className="text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline">
                             {t.number}
                           </Link>
                         </td>
-                        <td className="px-lg py-base text-sm text-text-primary">{t.description}</td>
+                        <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 320 }}><Truncate>{t.description}</Truncate></td>
                         <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{projectLabel(t)}</td>
-                        <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{t.openedDate}</td>
+                        <td className="px-lg py-base text-sm text-text-primary"><DateText value={t.openedDate} /></td>
                         <td className="px-lg py-base"><Badge tone={TCCA_STATUS_TONE[t.status]}>{TCCA_STATUS_LABEL[t.status]}</Badge></td>
-                        <td className="px-lg py-base">
+                        <td className="px-lg py-base" onClick={(e) => e.stopPropagation()}>
                           <ActionsMenu
                             ariaLabel={`Actions for ${t.number}`}
                             items={[
@@ -121,6 +163,10 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
                     ))}
               </tbody>
             </table>
+          </div>
+          {!loading && (
+            <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="TCCA projects" />
+          )}
           </div>
         )}
       </div>

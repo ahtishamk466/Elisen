@@ -1,24 +1,55 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Pencil, Copy, Trash2, Users } from 'lucide-react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { ArrowLeft, Pencil, Copy, Trash2, Users, CalendarDays, DollarSign, Check, Minus } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
+import { ReportCard } from '@/components/patterns/ReportCard'
+import { DetailCard as Card, DetailField as Field } from '@/components/patterns/DetailView'
+import { Avatar } from '@/components/patterns/Avatar'
+import { HealthSummary } from '@/components/patterns/HealthSummary'
 import { Badge } from '@/components/ui/Badge'
 import { useProjectsStore } from '@/stores/projectsStore'
+import { useWorkPackagesStore } from '@/stores/workPackagesStore'
+import { useTccaStore } from '@/stores/tccaStore'
+import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore'
+import { useApprovalsStore } from '@/stores/approvalsStore'
 import { getNextProjectNumber } from '@/lib/projectFixtures'
-import { PRIORITY_LABEL, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
+import { PRIORITY_LABEL, PRIORITY_TONE, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
+import { PENDING_REPORTS } from '@/lib/pendingReports'
+import { rollUpProject } from '@/lib/projectHealth'
+import { downloadCompletionChecklist } from '@/lib/pccReport'
 import { AddProjectDrawer } from './AddProjectDrawer'
+import { ProposalEditDrawer } from './ProposalEditDrawer'
+import { NotesEditDrawer } from './NotesEditDrawer'
+import { AircraftEditDrawer } from './AircraftEditDrawer'
 import { ProjectTccaTab } from '@/components/features/tcca/ProjectTccaTab'
 import { ProjectWorkPackagesTab } from './ProjectWorkPackagesTab'
+import { ProjectTeamTab } from './ProjectTeamTab'
 import { ProjectDocumentsTab } from './ProjectDocumentsTab'
 import { ProjectApprovalsTab } from './ProjectApprovalsTab'
-import type { ProjectListRow } from '@/types/project'
+import type { ProjectListRow, ScopeKey } from '@/types/project'
+import type { DeliverableRevision } from '@/types/tcca'
 import type { AddProjectValues } from './useAddProjectForm'
+import { formatDate } from '@/lib/formatDate'
 
-const TABS = ['Overview', 'Work Packages', 'Deliverables', 'Design Data', 'TCCA', 'Approvals'] as const
+const TABS = ['Overview', 'Work Packages', 'Team', 'Deliverables', 'Design Data', 'TCCA', 'Approvals'] as const
 type Tab = (typeof TABS)[number]
+
+/** `Work Packages` <-> `work-packages`, so the URL stays readable. */
+export const tabSlug = (t: Tab) => t.toLowerCase().replace(/ /g, '-')
+
+const SCOPES: { key: ScopeKey; label: string }[] = [
+  { key: 'design', label: 'Design' },
+  { key: 'validation', label: 'Validation' },
+  { key: 'certification', label: 'Certification' },
+  { key: 'parts-kit', label: 'Parts kit' },
+  { key: 'aircraft-mod', label: 'Aircraft mod' },
+]
+
+/** The project-level actions menu opens the full edit wizard at step 1. */
+const STEP_BASIC = 0
 
 function rowToInitialValues(row: ProjectListRow): Partial<AddProjectValues> {
   return {
@@ -26,23 +57,62 @@ function rowToInitialValues(row: ProjectListRow): Partial<AddProjectValues> {
     subNumber: row.subNumber,
     type: row.type,
     priority: row.priority,
+    description: row.title,
     company: row.companyName,
     contact: row.contactName === '—' ? '' : row.contactName,
     personResponsible: row.personResponsible,
+    scope: row.scope,
+    contractCurrency: row.contractCurrency,
+    contractValue: row.contractValue,
+    status: row.status,
+    openedDate: row.openedDate,
+    dueDate: row.dueDate,
+    aircraftInputDate: row.aircraftInputDate,
+    closedDate: row.closedDate,
+    proposalSubmitted: row.proposalSubmitted,
+    proposalSubmittedDate: row.proposalSubmittedDate,
+    proposalAccepted: row.proposalAccepted,
+    proposalAcceptedDate: row.proposalAcceptedDate,
+    nextAction: row.nextAction,
+    comments: row.comments,
   }
 }
 
-export function ProjectDetailPage() {
+export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancials?: boolean }) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const rows = useProjectsStore((s) => s.rows)
+  const workPackages = useWorkPackagesStore((s) => s.workPackages)
+  const wpActivities = useWorkPackagesStore((s) => s.activities)
   const addRow = useProjectsStore((s) => s.addRow)
   const updateRow = useProjectsStore((s) => s.updateRow)
   const removeRow = useProjectsStore((s) => s.removeRow)
 
+  const tccaProjects = useTccaStore((s) => s.tccaProjects)
+  const docLinks = useTccaStore((s) => s.docLinks)
+  const documents = useDocumentsStore((s) => s.documents)
+  const docRevisions = useDocumentsStore((s) => s.revisions)
+  const projectRevisionLinks = useDocumentsStore((s) => s.links)
+  const approvals = useApprovalsStore((s) => s.approvals)
+
   const row = rows.find((r) => r.id === id)
-  const [tab, setTab] = useState<Tab>('Overview')
-  const [editing, setEditing] = useState(false)
+  /** The open tab lives in the URL, so a row action can deep-link straight to
+      Work Packages and a refresh or a shared link lands in the same place. */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab: Tab = TABS.find((t) => tabSlug(t) === searchParams.get('tab')) ?? 'Overview'
+  const setTab = (next: Tab) => {
+    const params = new URLSearchParams(searchParams)
+    if (next === 'Overview') params.delete('tab')
+    else params.set('tab', tabSlug(next))
+    // replace, not push: flicking through tabs shouldn't fill the back stack,
+    // and Back should return to wherever the project was opened from.
+    setSearchParams(params, { replace: true })
+  }
+  /** null = closed; number = open at that step. */
+  const [editStep, setEditStep] = useState<number | null>(null)
+  /** Proposal/Notes/Aircraft each get their own focused edit drawer instead
+      of the shared multi-field step. */
+  const [activeDrawer, setActiveDrawer] = useState<'proposal' | 'notes' | 'aircraft' | null>(null)
   const [deleting, setDeleting] = useState(false)
 
   if (!row) {
@@ -71,73 +141,72 @@ export function ProjectDetailPage() {
     navigate('/projects')
   }
 
-  const handleDeleteConfirmed = () => {
-    removeRow(row.id)
-    navigate('/projects')
+  const linkedTcca = tccaProjects.filter((t) => t.projectIds.includes(row.id))
+
+  /** Counts in the tab bar, so the project's shape is legible before anything
+      is clicked — "nothing feels hidden". Overview has no count: it is a
+      summary, not a collection. A tab with genuinely nothing in it still shows
+      0 rather than dropping the pill, because a missing count reads as "not
+      counted" instead of "empty". */
+  const revisionsOfKind = (kind: 'deliverable' | 'drawing') =>
+    projectRevisionLinks.filter((l) => {
+      if (l.projectId !== row.id) return false
+      const rev = docRevisions.find((r) => r.id === l.revisionId)
+      const doc = rev && documents.find((d) => d.id === rev.documentId)
+      return !!doc && doc.kind === kind
+    }).length
+
+  const projectPackageIds = new Set(workPackages.filter((w) => w.projectId === row.id).map((w) => w.id))
+  const tabCounts: Partial<Record<Tab, number>> = {
+    'Work Packages': projectPackageIds.size,
+    Team: new Set(
+      wpActivities
+        .filter((a) => projectPackageIds.has(a.workPackageId) && a.responsible)
+        .map((a) => a.responsible),
+    ).size,
+    Deliverables: revisionsOfKind('deliverable'),
+    'Design Data': revisionsOfKind('drawing'),
+    TCCA: linkedTcca.length,
+    Approvals: approvals.filter((a) => a.projectIds.includes(row.id)).length,
+  }
+  const generatePcc = () => {
+    const tcca = linkedTcca[0]
+    if (!tcca) return
+    const revisions = deliverableSummaries(documents, docRevisions)
+    const links = docLinks
+      .filter((l) => l.tccaProjectId === tcca.id)
+      .map((link) => ({ link, revision: revisions.find((r) => r.id === link.revisionId) }))
+      .filter((x): x is { link: typeof x.link; revision: DeliverableRevision } => !!x.revision)
+    downloadCompletionChecklist(tcca, [row], links)
   }
 
+  /** Same roll-up the list uses, so the two can never disagree. */
+  const health = rollUpProject(row.id, workPackages, wpActivities, {
+    budgetHours: row.budgetHours, actualHours: row.actualHours, complete: row.status === 'complete',
+  })
+
   return (
-    <AppShell title={`${row.number}-${row.subNumber}`}>
-      <div className="grid gap-lg">
+    <AppShell
+      title={`${row.number}-${row.subNumber}`}
+      headerLeft={
         <button
           type="button"
           onClick={() => navigate('/projects')}
-          className="inline-flex w-fit items-center gap-xs text-sm text-text-secondary hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+          className="inline-flex items-center gap-sm rounded-sm text-sm text-text-secondary transition-colors duration-fast hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
         >
-          <ArrowLeft size={16} aria-hidden />
-          Back to Projects
+          <ArrowLeft size={18} aria-hidden />
+          Go back to all projects
         </button>
+      }
+    >
+      <div className="grid gap-lg">
+        {/* Health first, above everything — the question "is this project in
+            trouble?" gets answered before any detail is read. */}
+        {canSeeFinancials && (
+          <HealthSummary health={health} />
+        )}
 
-        <div className="grid gap-lg laptop:grid-cols-[320px_1fr]">
-          <aside className="grid content-start gap-lg rounded-sm border border-border-default bg-neutral-25 p-lg">
-            <div>
-              <div className="flex items-center gap-xs">
-                <p className="text-2xl font-bold text-text-primary">{row.number}-{row.subNumber}</p>
-                <ActionsMenu
-                  ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
-                  items={[
-                    { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditing(true) },
-                    { label: 'Duplicate', icon: <Copy size={16} />, onSelect: handleDuplicate },
-                    { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(true), tone: 'danger' },
-                  ]}
-                />
-              </div>
-              <p className="mt-xs text-sm text-text-primary">{row.title}</p>
-              <p className="mt-xxss text-sm text-text-muted">{row.companyName} · {TYPE_LABEL[row.type]}</p>
-            </div>
-            <div className="flex flex-wrap gap-sm">
-              <span className="text-sm text-text-primary">{PRIORITY_LABEL[row.priority]}</span>
-              <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>
-            </div>
-            <div>
-              <p className="text-xs text-text-muted">Hours used</p>
-              <p className="mt-xxss text-lg font-bold text-text-primary">
-                {row.actualHours} <span className="text-sm font-normal text-text-muted">/ {row.budgetHours}h</span>
-              </p>
-              <div className="mt-sm h-sm w-full overflow-hidden rounded-sm bg-neutral-100">
-                <div
-                  className={`h-full ${row.actualHours > row.budgetHours ? 'bg-danger' : 'bg-accent'}`}
-                  style={{ width: `${Math.min(100, (row.actualHours / Math.max(1, row.budgetHours)) * 100)}%` }}
-                />
-              </div>
-            </div>
-            <div>
-              <p className="mb-sm flex items-center gap-xs text-xs text-text-muted">
-                <Users size={14} aria-hidden /> People
-              </p>
-              <p className="text-sm text-text-primary">{row.personResponsible}</p>
-              <p className="text-xs text-text-muted">Person responsible</p>
-              {row.contactName !== '—' && (
-                <>
-                  <p className="mt-sm text-sm text-text-primary">{row.contactName}</p>
-                  <p className="text-xs text-text-muted">Contact</p>
-                </>
-              )}
-            </div>
-          </aside>
-
-          <div className="grid content-start gap-lg">
-            <nav className="flex gap-lg overflow-x-auto rounded-sm border border-border-default bg-neutral-25 px-lg" aria-label="Project sections">
+<nav className="flex gap-lg overflow-x-auto rounded-sm border border-border-default bg-neutral-25 px-lg" aria-label="Project sections">
               {TABS.map((t) => (
                 <button
                   key={t}
@@ -148,62 +217,255 @@ export function ProjectDetailPage() {
                     ${tab === t ? 'border-text-primary font-semibold text-text-primary' : 'border-transparent text-text-muted hover:text-text-primary'}`}
                 >
                   {t}
+                  {tabCounts[t] !== undefined && (
+                    <span
+                      className={`ml-sm rounded-sm px-sm py-xxss text-xs font-medium ${
+                        tab === t ? 'bg-accent-subtle text-accent' : 'bg-neutral-100 text-text-secondary'
+                      }`}
+                    >
+                      {tabCounts[t]}
+                    </span>
+                  )}
                 </button>
               ))}
             </nav>
 
             {tab === 'Overview' ? (
-              <div className="grid gap-lg">
-                <section className="rounded-sm border border-border-default bg-neutral-25 p-lg">
-                  <h2 className="text-sm font-semibold text-text-primary">Details</h2>
-                  <div className="mt-lg grid grid-cols-2 gap-lg tablet:grid-cols-3">
-                    <Field label="Company">{row.companyName} ({row.companyNumber})</Field>
-                    <Field label="Type">{TYPE_LABEL[row.type]}</Field>
-                    <Field label="Contact">{row.contactName}</Field>
-                    <Field label="Person Responsible">{row.personResponsible}</Field>
-                    <Field label="Priority">{PRIORITY_LABEL[row.priority]}</Field>
-                    <Field label="Status">
-                      <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>
-                    </Field>
+              /* The identity card lives on Overview only. Every other tab gets
+                 the full page: a table beside a 320px card had ~590px to work
+                 with, which is why the Work Packages table could not breathe. */
+              <div className="grid items-start gap-lg laptop:grid-cols-[320px_minmax(0,1fr)]">
+              <aside className="h-fit rounded-sm border border-border-default bg-neutral-25 p-lg">
+            <div className="flex items-start justify-between gap-sm">
+              <p className="text-2xl font-bold leading-tight text-text-primary">{row.number}-{row.subNumber}</p>
+              <ActionsMenu
+                ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
+                items={[
+                  { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditStep(STEP_BASIC) },
+                  { label: 'Duplicate', icon: <Copy size={16} />, onSelect: handleDuplicate },
+                  { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(true), tone: 'danger' },
+                ]}
+              />
+            </div>
+
+            <p className="mt-sm text-sm text-text-secondary">{row.title}</p>
+            <p className="mt-xs text-xs text-text-muted">{row.companyName} · {TYPE_LABEL[row.type]}</p>
+
+            <div className="mt-base flex flex-wrap items-center gap-sm">
+              <Badge tone={PRIORITY_TONE[row.priority]} appearance="outline">{PRIORITY_LABEL[row.priority]}</Badge>
+              <Badge tone={STATUS_TONE[row.status]} appearance="outline">{STATUS_LABEL[row.status]}</Badge>
+            </div>
+
+            {/* Hours deliberately not repeated here — the four stat boxes at
+                the top of the page are the single place budget is read. */}
+            <div className="mt-lg border-t border-border-default pt-lg">
+              <p className="flex items-center gap-xs text-xs text-text-muted">
+                <CalendarDays size={14} aria-hidden /> Due date
+              </p>
+              <p className="mt-xs text-base font-bold text-text-primary">{formatDate(row.dueDate)}</p>
+            </div>
+
+            {canSeeFinancials && (
+              <div className="mt-lg border-t border-border-default pt-lg">
+                <p className="flex items-center gap-xs text-xs text-text-muted">
+                  <DollarSign size={14} aria-hidden /> Contract value
+                </p>
+                <p className="mt-xs text-base font-bold text-text-primary">
+                  {row.contractValue
+                    ? `${row.contractCurrency} ${Number(row.contractValue).toLocaleString()}`
+                    : '—'}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-lg border-t border-border-default pt-lg">
+              <p className="flex items-center gap-xs text-xs text-text-muted">
+                <Users size={14} aria-hidden /> People
+              </p>
+              <div className="mt-base grid gap-base">
+                {row.contactName !== '—' && (
+                  <div className="flex items-center gap-sm">
+                    <Avatar name={row.contactName} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-text-primary">{row.contactName}</p>
+                      {row.contactEmail ? (
+                        <a
+                          href={`mailto:${row.contactEmail}`}
+                          className="block truncate text-xs text-text-muted hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+                        >
+                          Contact
+                        </a>
+                      ) : (
+                        <p className="text-xs text-text-muted">Contact</p>
+                      )}
+                    </div>
                   </div>
-                </section>
-                <EmptyState
-                  title="More project data isn't wired up yet"
-                  description="Dates, aircraft, proposal, notes and reports will appear here once those sections are built against real project data."
-                />
+                )}
+                <div className="flex items-center gap-sm">
+                  <Avatar name={row.personResponsible} />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-text-primary">{row.personResponsible}</p>
+                    <p className="text-xs text-text-muted">Person responsible</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+              <div className="grid gap-lg">
+                <Card title="Dates">
+                  <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+                    <Field label="Project opened date">{formatDate(row.openedDate)}</Field>
+                    <Field label="Due date">{formatDate(row.dueDate)}</Field>
+                    <Field label="Company Number">{row.companyNumber}</Field>
+                    <Field label="Aircraft Input Date">{formatDate(row.aircraftInputDate)}</Field>
+                    <Field label="Closed Date">{formatDate(row.closedDate)}</Field>
+                  </div>
+                </Card>
+
+                <Card title="Scope">
+                  <div className="flex flex-wrap gap-sm">
+                    {SCOPES.map((s) => {
+                      const on = row.scope.includes(s.key)
+                      return (
+                        <span
+                          key={s.key}
+                          className={`inline-flex items-center gap-xs rounded-sm px-sm py-xxss text-xs font-medium
+                            ${on ? 'bg-success-subtle text-success' : 'bg-neutral-100 text-text-muted'}`}
+                        >
+                          {on ? <Check size={13} aria-hidden /> : <Minus size={13} aria-hidden />}
+                          {s.label}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </Card>
+
+                {/* Only Proposal, Notes and Aircraft pass `onEdit` — those three
+                    sections own a focused edit drawer. Dates and Scope are
+                    edited from the project-level actions menu instead, so
+                    they render without an affordance. */}
+                <Card title="Proposal" onEdit={() => setActiveDrawer('proposal')}>
+                  <div className="grid grid-cols-2 gap-lg">
+                    <Field label="Proposal Submitted">{row.proposalSubmitted === 'yes' ? 'Yes' : 'No'}</Field>
+                    <Field label="Submitted Date">{formatDate(row.proposalSubmittedDate)}</Field>
+                    <Field label="Proposal Accepted">{row.proposalAccepted === 'yes' ? 'Yes' : 'No'}</Field>
+                    <Field label="Accepted Date">{formatDate(row.proposalAcceptedDate)}</Field>
+                  </div>
+                </Card>
+
+                <Card title="Notes" onEdit={() => setActiveDrawer('notes')}>
+                  <div className="grid gap-lg">
+                    <Field label="Next Action">{row.nextAction || '—'}</Field>
+                    <Field label="Comments">{row.comments || '—'}</Field>
+                  </div>
+                </Card>
+
+                <Card title="Aircraft" onEdit={() => setActiveDrawer('aircraft')}>
+                  {row.aircraft.length === 0 ? (
+                    <p className="text-sm text-text-muted">No aircraft added yet.</p>
+                  ) : (
+                    <div className="grid gap-lg">
+                      {row.aircraft.map((a, i) => (
+                        <div key={a.id} className={i > 0 ? 'border-t border-border-default pt-lg' : ''}>
+                          <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+                            <Field label="Model Name">{a.modelName || '—'}</Field>
+                            <Field label="Model Number" nowrap>{a.modelNumber || '—'}</Field>
+                            <Field label="Manufacture">{a.manufacturer || '—'}</Field>
+                            {/* Blank until the specific airframe is assigned —
+                                the project often starts with only a type. */}
+                            <Field label="Serial No" nowrap>{a.serial || 'Not assigned yet'}</Field>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+
+                <Card title="Reports">
+                  <div className="grid gap-lg tablet:grid-cols-2">
+                    <ReportCard
+                      title="Project Completion Checklist"
+                      onDownload={generatePcc}
+                      pending={linkedTcca.length === 0}
+                      subtitle={linkedTcca.length === 0 ? 'Needs a linked TCCA project' : undefined}
+                    />
+                    {PENDING_REPORTS.map((name) => (
+                      <ReportCard key={name} title={name} pending />
+                    ))}
+                  </div>
+                </Card>
+              </div>
               </div>
             ) : tab === 'Work Packages' ? (
               <ProjectWorkPackagesTab projectId={row.id} />
+            ) : tab === 'Team' ? (
+              <ProjectTeamTab projectId={row.id} />
             ) : tab === 'Deliverables' ? (
-              <ProjectDocumentsTab kind="deliverable" projectId={row.id} projectNumber={row.number} />
+              <ProjectDocumentsTab kind="deliverable" projectId={row.id} />
             ) : tab === 'Design Data' ? (
-              <ProjectDocumentsTab kind="drawing" projectId={row.id} projectNumber={row.number} />
+              <ProjectDocumentsTab kind="drawing" projectId={row.id} />
             ) : tab === 'Approvals' ? (
               <ProjectApprovalsTab projectId={row.id} />
             ) : (
               <ProjectTccaTab projectId={row.id} />
             )}
-          </div>
-        </div>
       </div>
 
-      <AddProjectDrawer
-        key={row.id}
-        open={editing}
-        mode="edit"
-        initialValues={rowToInitialValues(row)}
-        onClose={() => setEditing(false)}
-        onSubmit={(v) =>
-          updateRow(row.id, {
-            number: v.number,
-            subNumber: v.subNumber,
-            type: v.type as ProjectListRow['type'],
-            priority: v.priority as ProjectListRow['priority'],
-            companyName: v.company,
-            contactName: v.contact || '—',
-            personResponsible: v.personResponsible,
-          })
-        }
+      {editStep !== null && (
+        <AddProjectDrawer
+          key={`${row.id}-${editStep}`}
+          open
+          mode="edit"
+          initialValues={rowToInitialValues(row)}
+          initialStep={editStep}
+          canSeeFinancials={canSeeFinancials}
+          onClose={() => setEditStep(null)}
+          onSubmit={(v) =>
+            updateRow(row.id, {
+              number: v.number,
+              subNumber: v.subNumber,
+              type: v.type as ProjectListRow['type'],
+              title: v.description || row.title,
+              priority: v.priority as ProjectListRow['priority'],
+              companyName: v.company,
+              contactName: v.contact || '—',
+              personResponsible: v.personResponsible,
+              scope: v.scope,
+              contractCurrency: v.contractCurrency,
+              contractValue: v.contractValue,
+              status: (v.status as ProjectListRow['status']) || row.status,
+              openedDate: v.openedDate,
+              dueDate: v.dueDate,
+              aircraftInputDate: v.aircraftInputDate,
+              closedDate: v.closedDate,
+              proposalSubmitted: v.proposalSubmitted as ProjectListRow['proposalSubmitted'],
+              proposalSubmittedDate: v.proposalSubmittedDate,
+              proposalAccepted: v.proposalAccepted as ProjectListRow['proposalAccepted'],
+              proposalAcceptedDate: v.proposalAcceptedDate,
+              nextAction: v.nextAction,
+              comments: v.comments,
+            })
+          }
+        />
+      )}
+
+      <ProposalEditDrawer
+        open={activeDrawer === 'proposal'}
+        row={row}
+        onClose={() => setActiveDrawer(null)}
+        onSave={(patch) => updateRow(row.id, patch)}
+      />
+      <NotesEditDrawer
+        open={activeDrawer === 'notes'}
+        row={row}
+        onClose={() => setActiveDrawer(null)}
+        onSave={(patch) => updateRow(row.id, patch)}
+      />
+      <AircraftEditDrawer
+        open={activeDrawer === 'aircraft'}
+        row={row}
+        onClose={() => setActiveDrawer(null)}
+        onSave={(aircraft) => updateRow(row.id, { aircraft })}
       />
 
       <ConfirmDialog
@@ -212,18 +474,10 @@ export function ProjectDetailPage() {
         description={`"${row.title}" (${row.number}-${row.subNumber}) will be permanently removed. This cannot be undone.`}
         confirmLabel="Delete project"
         tone="danger"
-        onConfirm={handleDeleteConfirmed}
+        onConfirm={() => { removeRow(row.id); navigate('/projects') }}
         onCancel={() => setDeleting(false)}
       />
     </AppShell>
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="text-xs text-text-muted">{label}</p>
-      <p className="mt-xxss text-sm text-text-primary">{children}</p>
-    </div>
-  )
-}

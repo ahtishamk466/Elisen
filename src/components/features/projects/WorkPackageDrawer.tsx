@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
+import { useProjectLabel } from './useProjectLabel'
 import type { WorkPackage, WorkPackageStatus } from '@/types/workPackage'
 
 export interface WorkPackageDrawerProps {
@@ -19,6 +20,7 @@ export interface WorkPackageDrawerProps {
 
 export function WorkPackageDrawer({ mode, projectId, initial, onClose, onSubmit }: WorkPackageDrawerProps) {
   const isEdit = mode === 'edit'
+  const label = useProjectLabel(projectId)
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [status, setStatus] = useState<WorkPackageStatus>(initial?.status ?? 'not-started')
@@ -49,10 +51,9 @@ export function WorkPackageDrawer({ mode, projectId, initial, onClose, onSubmit 
       <Drawer
         open
         onClose={requestClose}
-        title={isEdit ? `Edit "${initial?.title}"` : 'Add work package'}
+        title={isEdit ? `Edit Work Package “${initial?.title}”: ${label}` : `Add Work Package “${label}”`}
         footer={
           <>
-            <span />
             <div className="flex gap-sm">
               <Button variant="secondary" onClick={requestClose}>Cancel</Button>
               <Button onClick={submit}>{isEdit ? 'Save Changes' : 'Add Work Package'}</Button>
@@ -62,11 +63,11 @@ export function WorkPackageDrawer({ mode, projectId, initial, onClose, onSubmit 
       >
         <FormSection
           title="Work Package"
-          subtitle="A scope of work inside this project. Free text — packages differ on every aircraft, so there are no templates."
+          subtitle="A scope of work inside this project. Free text. Packages differ on every aircraft, so there are no templates."
         >
           <FormField label="Title" htmlFor="wp-title" required error={error}
             help={'e.g. "Add missing USB plug", "Seat installation", "Certification Plan"'}>
-            <Input id="wp-title" value={title} error={!!error}
+            <Input id="wp-title" placeholder="e.g. Seat installation" value={title} error={!!error}
               onChange={(e) => { setTitle(e.target.value); setError(''); setDirty(true) }} />
           </FormField>
           <FormField label="Description" htmlFor="wp-desc">

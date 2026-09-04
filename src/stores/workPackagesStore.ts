@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { WORK_PACKAGES, WP_ACTIVITIES } from '@/lib/workPackageFixtures'
+import { coreData } from '@/lib/dataset'
 import type { WorkPackage, WorkPackageActivity } from '@/types/workPackage'
 
 interface WorkPackagesState {
@@ -15,8 +15,8 @@ interface WorkPackagesState {
 }
 
 export const useWorkPackagesStore = create<WorkPackagesState>((set) => ({
-  workPackages: WORK_PACKAGES,
-  activities: WP_ACTIVITIES,
+  workPackages: coreData().workPackages,
+  activities: coreData().wpActivities,
 
   addWp: (wp) => set((s) => ({ workPackages: [wp, ...s.workPackages] })),
   updateWp: (id, patch) =>

@@ -8,17 +8,22 @@ export interface FormFieldProps {
   help?: string
   error?: string
   counter?: string
+  /** Stacks the label above the control at the full width of the section,
+      instead of the standard label-left/control-right split. For the rare
+      field (e.g. a comment box) that needs more room than the shared
+      two-thirds control column gives it. */
+  fullWidth?: boolean
   children: ReactNode
 }
 
-export function FormField({ label, htmlFor, required, description, help, error, counter, children }: FormFieldProps) {
+export function FormField({ label, htmlFor, required, description, help, error, counter, fullWidth = false, children }: FormFieldProps) {
   return (
-    <div className="grid gap-xs tablet:grid-cols-3 tablet:items-start tablet:gap-lg">
-      <label htmlFor={htmlFor} className="text-sm font-semibold text-text-primary tablet:pt-base">
+    <div className={fullWidth ? 'grid gap-xs' : 'grid gap-xs tablet:grid-cols-3 tablet:items-start tablet:gap-lg'}>
+      <label htmlFor={htmlFor} className={`text-sm font-semibold text-text-primary ${fullWidth ? '' : 'tablet:pt-base'}`}>
         {label}
         {required && <span className="text-danger">*</span>}
       </label>
-      <div className="grid gap-xs tablet:col-span-2">
+      <div className={fullWidth ? 'grid gap-xs' : 'grid gap-xs tablet:col-span-2'}>
         {(description || counter) && (
           <div className="flex items-baseline justify-between">
             <span className="text-xs text-text-muted">{description}</span>

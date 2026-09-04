@@ -15,26 +15,28 @@ export interface AddProjectValues {
   scope: ScopeKey[]
   contractCurrency: string
   contractValue: string
-  tccaRequired: 'yes' | 'no'
   // Step 2
   status: string
   openedDate: string
   dueDate: string
   aircraftInputDate: string
   closedDate: string
-  aircraftModelName: string
-  aircraftModelNumber: string
-  aircraftManufacturer: string
   proposalSubmitted: string
   proposalSubmittedDate: string
   proposalAccepted: string
   proposalAcceptedDate: string
   nextAction: string
   comments: string
+  /** Records this project links to, all chosen from their global lists —
+      never typed here. Ids, not free text, so the links stay real. */
+  aircraftIds: string[]
+  approvalIds: string[]
+  deliverableRevisionIds: string[]
+  designDataRevisionIds: string[]
+  aircraftSpecifics: string
   // Step 3
-  tccaNumber: string
-  tccaDescription: string
-  checklist: string[]
+  /** TCCA projects to link. Created in TCCA Projects, only linked here. */
+  tccaProjectIds: string[]
 }
 
 export type Errors = Partial<Record<keyof AddProjectValues, string>>
@@ -44,12 +46,13 @@ const today = () => new Date().toISOString().slice(0, 10)
 export const INITIAL: AddProjectValues = {
   number: '', subNumber: '00', type: 'internal', priority: '3-med', description: '',
   company: '', contact: '', personResponsible: '', scope: [],
-  contractCurrency: 'USD', contractValue: '', tccaRequired: 'no',
+  contractCurrency: 'USD', contractValue: '',
   status: '', openedDate: today(), dueDate: '', aircraftInputDate: '', closedDate: '',
-  aircraftModelName: '', aircraftModelNumber: '', aircraftManufacturer: '',
   proposalSubmitted: 'no', proposalSubmittedDate: '', proposalAccepted: 'no', proposalAcceptedDate: '',
   nextAction: '', comments: '',
-  tccaNumber: '', tccaDescription: '', checklist: [],
+  aircraftIds: [], approvalIds: [], deliverableRevisionIds: [], designDataRevisionIds: [],
+  aircraftSpecifics: '',
+  tccaProjectIds: [],
 }
 
 /**
@@ -65,7 +68,9 @@ export function validateStep(step: number, v: AddProjectValues, isEdit = false):
     else if (!/^\d{4}$/.test(v.number.trim())) e.number = 'Use a 4-digit project number, e.g. 3206.'
     else if (!isEdit && TAKEN_NUMBERS.includes(v.number.trim()) && v.subNumber === '00')
       e.number = `Project ${v.number}-00 already exists. Use a new sub number or a different project number.`
-    if (!v.subNumber) e.subNumber = 'Sub number is required.'
+    if (!v.subNumber.trim()) e.subNumber = 'Sub number is required.'
+    else if (!/^\d{2}$/.test(v.subNumber.trim())) e.subNumber = 'Use two digits, e.g. 00 or 01.'
+    if (!v.openedDate) e.openedDate = 'Project opened date is required.'
     if (!v.type) e.type = 'Type is required.'
     if (!v.priority) e.priority = 'Priority is required.'
     if (!v.company) e.company = 'Company is required.'
@@ -74,28 +79,36 @@ export function validateStep(step: number, v: AddProjectValues, isEdit = false):
       e.contractValue = 'Enter a number, without symbols or commas.'
   }
   if (step === 1) {
-    if (!v.openedDate) e.openedDate = 'Project opened date is required.'
     if (v.dueDate && v.openedDate && v.dueDate < v.openedDate)
       e.dueDate = 'Due date cannot be before the opened date.'
     if (v.closedDate && v.openedDate && v.closedDate < v.openedDate)
       e.closedDate = 'Closed date cannot be before the opened date.'
   }
   if (step === 2) {
-    if (!v.tccaNumber.trim()) e.tccaNumber = 'TCCA project number is required.'
   }
   return e
 }
 
-export function useAddProjectForm(initialValues?: Partial<AddProjectValues>) {
+/** Edit mode shows every section on one screen instead of stepping through
+    them, so Save Changes must validate all of them at once — not just
+    whichever step the stepper happened to be on. */
+export function validateAll(v: AddProjectValues, isEdit = false): Errors {
+  return {
+    ...validateStep(0, v, isEdit),
+    ...validateStep(1, v, isEdit),
+  }
+}
+
+export function useAddProjectForm(initialValues?: Partial<AddProjectValues>, initialStep = 0) {
   const [base] = useState<AddProjectValues>(() => ({ ...INITIAL, ...initialValues }))
   const [values, setValues] = useState<AddProjectValues>(base)
   const [errors, setErrors] = useState<Errors>({})
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState(initialStep)
   const [dirty, setDirty] = useState(false)
 
   const steps = useMemo(
-    () => (values.tccaRequired === 'yes' ? ['Basic Info', 'Additional Details', 'TCCA Setup'] : ['Basic Info', 'Additional Details']),
-    [values.tccaRequired],
+    () => ['Basic Info', 'Additional Details'],
+    [],
   )
 
   const setField = useCallback(<K extends keyof AddProjectValues>(key: K, value: AddProjectValues[K]) => {
@@ -116,9 +129,9 @@ export function useAddProjectForm(initialValues?: Partial<AddProjectValues>) {
   const reset = useCallback(() => {
     setValues(base)
     setErrors({})
-    setStep(0)
+    setStep(initialStep)
     setDirty(false)
-  }, [base])
+  }, [base, initialStep])
 
   const isLastStep = step === steps.length - 1
 

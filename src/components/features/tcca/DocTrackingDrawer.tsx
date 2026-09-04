@@ -11,6 +11,7 @@ import type { DeliverableRevision, TccaDocLink, TccaDocState, TccaInvolvement } 
 /** Edit the government-interaction tracking for one linked revision. */
 export function DocTrackingDrawer({ link, revision, onClose }: { link: TccaDocLink; revision?: DeliverableRevision; onClose: () => void }) {
   const updateDocLink = useTccaStore((s) => s.updateDocLink)
+  const tccaNumber = useTccaStore((s) => s.tccaProjects.find((t) => t.id === link.tccaProjectId)?.number ?? '')
   const [involvement, setInvolvement] = useState<TccaInvolvement>(link.involvement)
   const [sentDate, setSentDate] = useState(link.sentDate)
   const [state, setState] = useState<TccaDocState>(link.state)
@@ -29,10 +30,9 @@ export function DocTrackingDrawer({ link, revision, onClose }: { link: TccaDocLi
     <Drawer
       open
       onClose={onClose}
-      title={revision ? `Tracking — ${revision.number} rev ${revision.rev}` : 'Tracking'}
+      title={`Edit Tracking${revision ? ` “${revision.number} rev ${revision.rev}”` : ''}${tccaNumber ? `: TCCA ${tccaNumber}` : ''}`}
       footer={
         <>
-          <span />
           <div className="flex gap-sm">
             <Button variant="secondary" onClick={onClose}>Cancel</Button>
             <Button onClick={save}>Save Changes</Button>
@@ -41,7 +41,7 @@ export function DocTrackingDrawer({ link, revision, onClose }: { link: TccaDocLi
       }
     >
       <FormSection title="Transport Canada tracking" subtitle="How TCCA is involved with this document, and where it stands.">
-        <FormField label="Involvement" htmlFor="doc-involvement" help="Whether TCCA wants to see, review, or approve this document.">
+        <FormField label="Involvement" htmlFor="doc-involvement" help="See, review, or approve.">
           <Select id="doc-involvement" value={involvement} onChange={(e) => setInvolvement(e.target.value as TccaInvolvement)}>
             <option value="none">No involvement</option>
             <option value="review">TCCA reviews</option>

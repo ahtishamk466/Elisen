@@ -1,61 +1,18 @@
-import type { ProjectListRow } from '@/types/project'
+/* Generated from the client TPMS database export (2026-08-27).
+   People are stand-ins; business records are the client's own.
+   Regenerate with tools/ (see tools/README.md) — do not hand-edit. */
+/** Staff who can be assigned to work. */
+export const PEOPLE = ["Adrian Bergstrom", "Alma Devereaux", "Anders Hartmann", "Anika Nakamura", "Arjun Rasmussen", "Astrid Solberg", "Aurelie Whitlock", "Bilal Bergstrom", "Bram Devereaux", "Camille Hartmann", "Cato Nakamura", "Cedric Rasmussen", "Chiara Solberg", "Clara Whitlock", "Damien Bergstrom", "Dara Devereaux", "Delphine Hartmann", "Dmitri Nakamura", "Eleni Rasmussen", "Elias Solberg", "Esme Whitlock", "Ewan Bergstrom", "Fabien Devereaux", "Farida Hartmann", "Felix Nakamura", "Fiona Rasmussen", "Gabriel Solberg", "Georgia Whitlock", "Gustav Bergstrom", "Hana Devereaux", "Hugo Hartmann", "Ilya Nakamura", "Imani Rasmussen", "Ingrid Solberg", "Iris Whitlock", "Jonas Bergstrom", "Joris Devereaux", "Juliette Hartmann", "Kai Nakamura", "Karim Rasmussen", "Katya Solberg", "Lars Whitlock", "Leila Bergstrom", "Lena Devereaux", "Lucas Hartmann", "Maeve Nakamura", "Magnus Rasmussen", "Malik Solberg", "Marek Whitlock", "Mariam Bergstrom", "Mateo Devereaux", "Mira Hartmann", "Nadia Nakamura", "Nils Rasmussen", "Noor Solberg", "Olivier Whitlock", "Oskar Bergstrom", "Petra Devereaux", "Quentin Hartmann", "Rafael Nakamura", "Raisa Rasmussen", "Reza Solberg", "Rosa Whitlock", "Rune Bergstrom", "Sabine Devereaux"]
 
-/** Obviously-fake demo data for stories and the prototype shell. */
-export const PROJECT_ROWS: ProjectListRow[] = [
-  {
-    id: '1', number: '3200', subNumber: '00', type: 'internal',
-    title: 'STC — Cabin Interior Modification, Cert Program',
-    companyName: 'Northwind Aerospace', companyNumber: '246',
-    contactName: 'Nathalie Gagnon', personResponsible: 'Sofia Reyes',
-    actualHours: 44, budgetHours: 80, priority: '1-fire', status: 'quoted',
-  },
-  {
-    id: '2', number: '3201', subNumber: '00', type: 'preferred-duncan',
-    title: 'Console Map Light Addition',
-    companyName: 'Duncan Aviation', companyNumber: '118',
-    contactName: 'Priya Raman', personResponsible: 'Lloyd Pedvis',
-    actualHours: 312, budgetHours: 280, priority: '2-high', status: 'active',
-  },
-  {
-    id: '3', number: '3202', subNumber: '01', type: 'preferred-topaces',
-    title: 'Wiring Provisions — Underfloor Harness',
-    companyName: 'Top Aces', companyNumber: '092',
-    contactName: 'Marc Lefebvre', personResponsible: 'Sofia Reyes',
-    actualHours: 128, budgetHours: 400, priority: '3-med', status: 'active',
-  },
-  {
-    id: '4', number: '3203', subNumber: '00', type: 'external',
-    title: 'Galley Modification — Weight & Balance',
-    companyName: 'Abu Dhabi Aviation', companyNumber: '401',
-    contactName: 'Yusuf Haddad', personResponsible: 'Remi Rocheleau',
-    actualHours: 0, budgetHours: 160, priority: '4-low', status: 'quoted',
-  },
-  {
-    id: '5', number: '3204', subNumber: '00', type: 'external',
-    title: 'iPad Holder Installation — Cockpit',
-    companyName: 'Meridian Charter', companyNumber: '377',
-    contactName: 'Jane Doe', personResponsible: 'Kelly Osei',
-    actualHours: 96, budgetHours: 96, priority: '3-med', status: 'complete',
-  },
-  {
-    id: '6', number: '3205', subNumber: '02', type: 'internal',
-    title: 'DAO Activities — Process & Procedure Update',
-    companyName: 'Elisen', companyNumber: '001',
-    contactName: '—', personResponsible: 'Harris Bell',
-    actualHours: 58, budgetHours: 40, priority: '2-high', status: 'on-hold',
-  },
-]
+/** Project numbers already in use, for duplicate checking on the create form. */
+export const TAKEN_NUMBERS: string[] = ["0000", "0001", "0002", "0040", "0042", "0044", "0045", "0046", "0101", "0103", "0117", "0302", "0404", "0413", "0418", "0422", "0423", "0501", "0503", "0504", "0505", "0506", "0507", "0508", "0511", "0512", "0513", "0514", "0516", "0602", "0603", "0604", "0605", "0607", "0610", "0611", "0613", "0614", "0616", "0621", "0622", "0627", "0633", "0634", "0639", "0643", "0644", "0645", "0647", "0648", "0649", "0650", "0651", "0653", "0701", "0706", "0707", "0708", "0709", "0710", "0712", "0716", "0720", "0743", "0751", "0753", "0754", "0757", "0764", "0768", "0776", "0777", "0800", "0802", "0902", "0905", "1103", "1110", "1157", "1202", "1203", "1204", "1301", "1306", "1400", "1401", "1432", "1437", "1438", "1439", "1456", "1457", "1458", "1459", "1460", "1461", "1462", "1463", "1464", "1465", "1466", "1467", "1468", "1469", "1470", "1471", "1472", "1473", "1474", "1475", "1476", "1477", "1478", "1479", "1480", "1481", "1482", "1483", "1484", "1485", "1486", "1487", "1488", "1489", "1490", "1491", "1492", "1493", "1494", "1495", "1496", "1497", "1498", "1499", "1500", "1501", "1502", "1503", "1504", "1505", "1506", "1507", "1508", "1509", "1510", "1511", "1512", "1513", "1514", "1515", "1516", "1517", "1518", "1519", "1520", "1521", "1522", "1523", "1524", "1525", "1526", "1527", "1528", "1529", "1530", "1531", "1532", "1533", "1534", "1535", "1536", "1537", "1538", "1539", "1540", "1541", "1542", "1543", "1544", "1545", "1546", "1547", "1548", "1549", "1550", "1551", "1552", "1553", "1554", "1555", "1556", "1557", "1558", "1559", "1561", "1562", "1563", "1564", "1565", "1566", "1567", "1568", "1569", "1570", "1571", "1572", "1573", "1574", "1575", "1576", "1577", "1578", "1579", "1580", "1581", "1582", "1583", "1584", "1585", "1586", "1587", "1588", "1589", "1590", "1591", "1592", "1593", "1595", "1596", "1597", "1598", "1599", "1600", "1601", "1602", "1603", "1604", "1606", "1607", "1608", "1609", "1610", "1611", "1612", "1613", "1614", "1615", "1616", "1617", "1618", "1619", "1620", "1621", "1622", "1623", "1624", "1625", "1626", "1627", "1628", "1629", "1630", "1631", "1632", "1633", "1634", "1635", "1636", "1637", "1639", "1640", "1641", "1642", "1643", "1644", "1645", "1646", "1647", "1648", "1649", "1650", "1651", "1652", "1653", "1654", "1655", "1656", "1657", "1658", "1659", "1660", "1661", "1662", "1663", "1664", "1665", "1666", "1667", "1668", "1669", "1670", "1671", "1672", "1673", "1674", "1675", "1676", "1677", "1678", "1679", "1681", "1682", "1683", "1684", "1685", "1686", "1687", "1688", "1689", "1690", "1691", "1693", "1694", "1695", "1696", "1697", "1700", "1708", "1800", "1801", "1806", "1809", "1810", "1813", "1824", "1903", "1904", "1913", "1917", "1925", "1926", "1926-1", "1927", "1938", "1939", "1947", "1948", "1950", "1951", "1960", "1961", "2002", "2007", "2103", "2109", "2114", "2115", "2118", "2119", "2125", "2128", "2129", "2133", "2134", "2203", "2204", "2301", "2307", "2400", "2406", "2407", "2408", "3001", "3002", "3003", "3004", "3005", "3006", "3007", "3008", "3009", "3010", "3011", "3012", "3013", "3014", "3016", "3017", "3018", "3019", "3020", "3021", "3022", "3023", "3024", "3025", "3026", "3027", "3028", "3029", "3030", "3031", "3032", "3033", "3034", "3035", "3036", "3037", "3038", "3039", "3040", "3041", "3042", "3043", "3044", "3045", "3046", "3047", "3048", "3049", "3050", "3051", "3052", "3053", "3054", "3055", "3056", "3057", "3058", "3059", "3060", "3061", "3062", "3063", "3064", "3065", "3066", "3067", "3068", "3069", "3070", "3071", "3072", "3073", "3074", "3075", "3076", "3077", "3078", "3079", "3080", "3081", "3082", "3083", "3084", "3085", "3086", "3087", "3088", "3089", "3090", "3091", "3092", "3093", "3094", "3095", "3096", "3097", "3098", "3099", "3100", "3101", "3102", "3103", "3104", "3105", "3106", "3107", "3108", "3109", "3110", "3111", "3112", "3113", "3114", "3115", "3116", "3117", "3118", "3119", "3120", "3121", "3122", "3123", "3124", "3125", "3126", "3127", "3128", "3129", "3130", "3131", "3132", "3133", "3134", "3135", "3136", "3137", "3138", "3139", "3140", "3141", "3142", "3143", "3144", "3145", "3146", "3147", "3148", "3149", "3150", "3151", "3152", "3153", "3154", "3155", "3156", "3157", "3158", "3159", "3160", "3161", "3162", "3163", "3164", "3165", "3166", "3167", "3168", "3169", "3170", "3171", "3172", "3173", "3174", "3175", "3176", "3177", "3178", "3179", "3180", "3181", "3182", "3183", "3184", "3185", "3186", "3187", "3188", "3189", "3190", "3191", "3192", "3193", "3194", "3195", "3196", "3197", "3198", "3199", "3200", "3201", "3202", "3203", "3204", "3205", "3206", "3207", "3208", "3209", "3210", "3211", "3212", "3213", "3214", "3215", "3216", "3217", "3218", "3219", "3220", "3221", "3222", "3223", "3224", "3225", "3226", "3227", "3228", "3229", "3230", "3231", "3232", "3233", "3234", "3235", "3236", "3237", "3238", "3239", "3240", "3241", "3242", "3243", "3244", "3245", "3246", "3247", "3248", "3249", "3250", "3251", "3252", "3253", "3254", "3255", "3256", "3257", "3258", "3259", "3260", "3261", "3262", "3263", "3264", "3265", "3266", "3267", "3268", "3269", "3270", "3271", "3272", "3273", "3274", "3275", "3276", "3277", "3278", "3279", "3280", "3281", "3282", "3283", "3284", "3285", "3286", "3287", "3288", "3289", "3290", "3291", "3292", "3293", "3294", "3295", "3296", "3297", "3298", "3299", "3300", "3301", "3302", "3303", "3304", "3305", "3306", "3307", "3308", "3309", "3310", "3311", "3312", "3313", "3314", "3315", "3316", "3317", "3318", "3319", "3320", "3321", "3322"]
 
-export const COMPANIES = ['Northwind Aerospace', 'Duncan Aviation', 'Top Aces', 'Abu Dhabi Aviation', 'Meridian Charter', 'Elisen']
-export const CONTACTS = ['Nathalie Gagnon', 'Priya Raman', 'Marc Lefebvre', 'Yusuf Haddad', 'Jane Doe']
-export const PEOPLE = ['Sofia Reyes', 'Lloyd Pedvis', 'Remi Rocheleau', 'Kelly Osei', 'Harris Bell']
+export const NEXT_AVAILABLE_NUMBER = '3323'
 
-/** Numbers already used — drives the duplicate-number validation. */
-export const TAKEN_NUMBERS = ['3200', '3201', '3202', '3203', '3204', '3205']
-export const NEXT_AVAILABLE_NUMBER = '3206'
-
-/** Next unused 4-digit project number, given the current row set. */
-export function getNextProjectNumber(rows: ProjectListRow[]): string {
-  const max = rows.reduce((m, r) => Math.max(m, Number(r.number) || 0), Number(NEXT_AVAILABLE_NUMBER) - 1)
-  return String(max + 1)
+/** Lowest unused 4-digit number at or above the highest on record. */
+export function getNextProjectNumber(rows: { number: string }[]): string {
+  const taken = new Set([...TAKEN_NUMBERS, ...rows.map((r) => r.number)])
+  let n = Number(NEXT_AVAILABLE_NUMBER)
+  while (taken.has(String(n).padStart(4, '0'))) n += 1
+  return String(n).padStart(4, '0')
 }

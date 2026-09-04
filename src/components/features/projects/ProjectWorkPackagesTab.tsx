@@ -3,11 +3,14 @@ import { Plus, Package } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
+import { Stat as GlobalStat } from '@/components/patterns/Stat'
 import { useWorkPackagesStore } from '@/stores/workPackagesStore'
-import { activityName } from '@/lib/activityCatalog'
+import { activityName } from '@/lib/catalog'
+import { useCatalogStore } from '@/stores/catalogStore'
 import { WorkPackageCard } from './WorkPackageCard'
 import { WorkPackageDrawer } from './WorkPackageDrawer'
 import { ActivityDrawer } from './ActivityDrawer'
+import { ActivityViewDrawer } from './ActivityViewDrawer'
 import type { WorkPackage, WorkPackageActivity } from '@/types/workPackage'
 
 /**
@@ -20,6 +23,9 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
   const workPackages = useWorkPackagesStore((s) => s.workPackages)
   const activities = useWorkPackagesStore((s) => s.activities)
   const { addWp, updateWp, removeWp, addActivity, updateActivity, removeActivity } = useWorkPackagesStore()
+  const catalogActivities = useCatalogStore((s) => s.activities)
+  const catalogTasks = useCatalogStore((s) => s.tasks)
+  const catalogLinks = useCatalogStore((s) => s.links)
 
   const [adding, setAdding] = useState(false)
   const [editingWp, setEditingWp] = useState<WorkPackage | null>(null)
@@ -28,10 +34,14 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
   const [addingActivityTo, setAddingActivityTo] = useState<WorkPackage | null>(null)
   const [editingActivity, setEditingActivity] = useState<{ wp: WorkPackage; activity: WorkPackageActivity } | null>(null)
   const [removingActivity, setRemovingActivity] = useState<WorkPackageActivity | null>(null)
+  const [viewingActivity, setViewingActivity] = useState<{ wp: WorkPackage; activity: WorkPackageActivity } | null>(null)
 
   const list = workPackages.filter((w) => w.projectId === projectId)
   const activitiesOf = (wpId: string) => activities.filter((a) => a.workPackageId === wpId)
   const loggedHours = (wpId: string) => activitiesOf(wpId).reduce((s, a) => s + a.actualHours, 0)
+
+  const totalActivities = list.reduce((n, wp) => n + activitiesOf(wp.id).length, 0)
+  const statusCount = (status: WorkPackage['status']) => list.filter((wp) => wp.status === status).length
 
   const deleteBlocked = deletingWp ? loggedHours(deletingWp.id) > 0 : false
   const removeActivityBlocked = removingActivity ? removingActivity.actualHours > 0 : false
@@ -43,20 +53,31 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
           <EmptyState
             icon={<Package size={48} strokeWidth={1.5} />}
             title="No work packages yet"
-            description="Break this project into its scopes of work — anything from adding a USB plug to a full seat installation — then assign activities and budget hours to each."
+            description="Break this project into its scopes of work, anything from adding a USB plug to a full seat installation, then assign activities and budget hours to each."
             action={<Button leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>Add Work Package</Button>}
           />
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between gap-lg">
-            <p className="text-sm text-text-secondary">
-              {list.length} work package{list.length === 1 ? '' : 's'} · budget is entered per activity and rolled up per package
-            </p>
+          {/* The project's structure at a glance. Deliberately a single short
+              row, not another band of stat cards: the four budget tiles above
+              already own that weight, and this answers a smaller question —
+              how much is in here, and where does it stand. */}
+          <div className="flex flex-wrap items-end justify-between gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg py-base">
+            {/* border-default is neutral-200 — each figure gets its own bay,
+                so five numbers read as five stats rather than one long row. */}
+            <dl className="flex flex-wrap items-stretch gap-y-base">
+              <Stat label="Work packages" value={list.length} />
+              <Stat label="Activities" value={totalActivities} />
+              <Stat label="Not started" value={statusCount('not-started')} />
+              <Stat label="In progress" value={statusCount('in-progress')} />
+              <Stat label="Complete" value={statusCount('complete')} />
+            </dl>
             <Button leadingIcon={<Plus size={16} />} onClick={() => setAdding(true)}>
               Add Work Package
             </Button>
           </div>
+
           {list.map((wp, i) => (
             <WorkPackageCard
               key={wp.id}
@@ -69,6 +90,7 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
               onAddActivity={() => setAddingActivityTo(wp)}
               onEditActivity={(a) => setEditingActivity({ wp, activity: a })}
               onRemoveActivity={setRemovingActivity}
+              onViewActivity={(a) => setViewingActivity({ wp, activity: a })}
             />
           ))}
         </>
@@ -121,7 +143,7 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
         title={deleteBlocked ? "This work package can't be deleted" : 'Delete this work package?'}
         description={
           deleteBlocked
-            ? `"${deletingWp?.title}" has ${deletingWp ? loggedHours(deletingWp.id) : 0} logged hours against its activities. Deleting it would orphan those time records — mark it complete instead.`
+            ? `"${deletingWp?.title}" has ${deletingWp ? loggedHours(deletingWp.id) : 0} logged hours against its activities. Deleting it would orphan those time records, mark it complete instead.`
             : `"${deletingWp?.title}" and its activity assignments will be permanently removed. This cannot be undone.`
         }
         confirmLabel={deleteBlocked ? 'Understood' : 'Delete work package'}
@@ -133,13 +155,25 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
         onCancel={() => setDeletingWp(null)}
       />
 
+      {viewingActivity && (
+        <ActivityViewDrawer
+          key={viewingActivity.activity.id}
+          activity={viewingActivity.activity}
+          workPackage={viewingActivity.wp}
+          catalog={{ activities: catalogActivities, tasks: catalogTasks, links: catalogLinks }}
+          onClose={() => setViewingActivity(null)}
+          onEdit={() => setEditingActivity({ wp: viewingActivity.wp, activity: viewingActivity.activity })}
+          onRemove={() => setRemovingActivity(viewingActivity.activity)}
+        />
+      )}
+
       <ConfirmDialog
         open={!!removingActivity}
         title={removeActivityBlocked ? "This activity can't be removed" : 'Remove this activity?'}
         description={
           removeActivityBlocked
-            ? `${removingActivity ? activityName(removingActivity.activityId) : ''} has ${removingActivity?.actualHours}h logged in Time Entry. Removing it would orphan those records.`
-            : `${removingActivity ? activityName(removingActivity.activityId) : ''} and its budget will be removed from this package.`
+            ? `${removingActivity ? activityName(catalogActivities, removingActivity.activityId) : ''} has ${removingActivity?.actualHours}h logged in Time Entry. Removing it would orphan those records.`
+            : `${removingActivity ? activityName(catalogActivities, removingActivity.activityId) : ''} and its budget will be removed from this package.`
         }
         confirmLabel={removeActivityBlocked ? 'Understood' : 'Remove activity'}
         tone={removeActivityBlocked ? 'primary' : 'danger'}
@@ -149,6 +183,18 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
         }}
         onCancel={() => setRemovingActivity(null)}
       />
+    </div>
+  )
+}
+
+/** One label/value pair in the structure strip — the global `Stat` pair
+    (12px muted label / 14px semibold value) in this strip's own divider
+    bay. The old local version was `text-lg font-bold`, one of five drifted
+    hand-rolls of the same pair across the app. */
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="border-l border-border-default px-2xl first:border-l-0 first:pl-0 last:pr-0">
+      <GlobalStat dl label={label}>{value}</GlobalStat>
     </div>
   )
 }

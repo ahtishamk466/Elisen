@@ -52,20 +52,60 @@ export interface ProjectRevisionLink {
   revisionId: string
 }
 
-export type ApprovalAuthority = 'tcca' | 'faa' | 'easa'
-export type ApprovalType = 'stc' | 'stc-amendment' | 'minor'
-
-/** An issued certificate (e.g. an STC). Projects tie to approvals — a
-    change project references the original certificate it modifies. */
+/**
+ * An issued certificate. Fields mirror the legacy `approval` table exactly —
+ * the previous shape (authority / type / issued date) was invented, and the
+ * client's verdict on it was blunt: "This form is also wrong."
+ *
+ * Note what is NOT here: no issue date. An approval has no single date; its
+ * revisions carry them, because that is how the certificate actually evolves —
+ * "The first two aircraft got approved. Then another two or three aircraft
+ * were added inside it through an issue file."
+ */
 export interface Approval {
   id: string
   number: string
-  title: string
-  authority: ApprovalAuthority
-  type: ApprovalType
-  aircraft: string
-  issuedDate: string
+  /** `description` — what the certificate covers. */
+  description: string
+  /** `primary_approval` — an original certificate in its own right, as opposed
+      to one that only exists as a change against another. */
+  primary: boolean
+  /** `design_approval_holder` — the organisation that holds the design approval. */
+  designApprovalHolder: string
+  comment: string
+  active: boolean
+  /** `project_approval` — many-to-many, and linkable from either side: "Or a
+      project, we can link a project from there as well. We can link from here
+      too." */
   projectIds: string[]
-  /** The TCCA project that produced it, when tracked in this system. */
-  tccaProjectId?: string
+  /** `approval_aircraft` — the aircraft models this certificate covers. */
+  aircraftIds: string[]
+  /** `approval_serialnumber` — the specific airframes it covers. A flat list on
+      the approval, not nested under each aircraft, exactly as the legacy join
+      table has it: an approval can name a type without naming a tail. */
+  serialIds: string[]
+}
+
+/**
+ * A revision of an approval — the paperwork that changes a certificate, and
+ * what authorises adding further aircraft to it: "another two or three aircraft
+ * were added inside it through an issue file."
+ *
+ * The legacy app names these "Issues" (`approvalissue`), and the call went back
+ * and forth on it — "We should also use the revision terminology as an issue, or
+ * keep it as Revision… Now its name is Revision, right?" — before settling on
+ * **Revision**, which is what the UI says throughout. The DB column names are
+ * left alone in the comments below so the mapping stays findable.
+ */
+export interface ApprovalRevision {
+  id: string
+  approvalId: string
+  /** `approval_issue` — sequential revision number: 1, 2, 3… */
+  revision: number
+  /** `change_description` — what this revision changed. */
+  changeDescription: string
+  /** `issue_date` */
+  revisionDate: string
+  /** `approval_document` — the revision file, a PDF in practice. */
+  document: string
 }

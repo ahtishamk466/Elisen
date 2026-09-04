@@ -118,9 +118,10 @@ export default {
         exit: 'var(--ease-exit)',
       },
       zIndex: {
-        dropdown: 'var(--z-dropdown)',
         sticky: 'var(--z-sticky)',
         modal: 'var(--z-modal)',
+        dropdown: 'var(--z-dropdown)',
+        dialog: 'var(--z-dialog)',
         toast: 'var(--z-toast)',
         tooltip: 'var(--z-tooltip)',
       },

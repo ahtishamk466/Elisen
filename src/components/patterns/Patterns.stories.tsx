@@ -1,27 +1,58 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { FolderOpen, Plus } from 'lucide-react'
+import { ChevronDown, Copy as CopyIcon, Filter as FilterIcon, FolderOpen, Plus, Search as SearchIcon, Trash2 } from 'lucide-react'
+import { SortableTh } from './SortableTh'
+import { useTableSort } from './useTableSort'
 import { FormField } from './FormField'
 import { FormSection } from './FormSection'
 import { Stepper } from './Stepper'
 import { StatCard } from './StatCard'
 import { EmptyState } from './EmptyState'
-import { Pagination } from './Pagination'
+import { AutoLoadFooter } from './AutoLoadFooter'
+import { useInfiniteReveal } from './useInfiniteReveal'
+import { TableTabs } from './TableTabs'
+import { FileDropzone } from './FileDropzone'
+import { BarChart } from './BarChart'
+import { Alert } from '@/components/ui/Alert'
+import { Textarea } from '@/components/ui/Textarea'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { MultiSelect } from '@/components/ui/MultiSelect'
+import { BudgetInline, ProgressMeter } from './ProgressMeter'
+import { Avatar } from './Avatar'
+import { PersonCell } from './PersonCell'
+import { ChipOverflow } from './ChipOverflow'
+import { TableSelectionBar } from './TableSelectionBar'
+import { DateText } from './DateText'
+import { ActiveSelect } from './ActiveSelect'
+import { HealthSummary } from './HealthSummary'
+import { FilterChips } from './FilterChips'
+import { HEALTH_LABEL, HEALTH_TONE, formatHours, formatPct, healthOf } from '@/lib/projectHealth'
 import { AccordionSection } from './AccordionSection'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Drawer } from './Drawer'
+import { DetailCard, DetailField } from './DetailView'
+import { Truncate } from './Truncate'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Checkbox'
+import { Badge } from '@/components/ui/Badge'
+import { Select } from '@/components/ui/Select'
+import { PhoneInput } from '@/components/ui/PhoneInput'
 
 const meta: Meta = { title: 'Patterns/Overview' }
 export default meta
 type Story = StoryObj
 
+/** The standard Edit state: existing data always renders inside a real
+    input/textarea, in normal (non-muted) text — never a disabled field,
+    which dims real values to the same gray as an empty placeholder. */
 export const FormBuildingBlocks: Story = {
   render: () => (
     <div className="grid gap-lg p-lg" style={{ maxWidth: 720 }}>
       <FormSection title="Identification" subtitle="Basic details that identify this project.">
+        <FormField label="Project Number" htmlFor="pn-filled" required help="Editing an existing record. The value is real, not a placeholder.">
+          <Input id="pn-filled" defaultValue="3200" />
+        </FormField>
         <FormField label="Project Number" htmlFor="pn" required help="Next available is 3206.">
           <Input id="pn" placeholder="e.g. 3206" />
         </FormField>
@@ -29,6 +60,36 @@ export const FormBuildingBlocks: Story = {
           <Input id="t" error placeholder="Enter title" />
         </FormField>
       </FormSection>
+    </div>
+  ),
+}
+
+/** The standard View (read-only) state: DetailCard + DetailField, plain
+    label-over-value text, no input borders. Use this for every read-only
+    screen — never a disabled form input standing in for a view. Empty
+    fields show an em dash, so blank is visibly distinct from a real value.
+    Short codes (Serial No, Reg. No, Model No, IDs) always pass `nowrap` —
+    a wrapped code reads as broken, never truncate/clamp one. */
+export const ReadOnlyDetail: Story = {
+  render: () => (
+    <div className="grid gap-lg p-lg" style={{ maxWidth: 720 }}>
+      <DetailCard title="Aircraft">
+        <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+          <DetailField label="Serial No" nowrap>9033</DetailField>
+          <DetailField label="Reg. No" nowrap>M-YGJL</DetailField>
+          <DetailField label="Model Number" nowrap>A320</DetailField>
+          <DetailField label="Model Name">Airbus A320</DetailField>
+          <DetailField label="Manufacture">Airbus</DetailField>
+          <DetailField label="TCCA TC" />
+          <DetailField label="Active">Active</DetailField>
+        </div>
+      </DetailCard>
+      <DetailCard title="Editable via header action" onEdit={() => {}}>
+        <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+          <DetailField label="Company">Air Canada</DetailField>
+          <DetailField label="Contact">Adrian Bergstrom</DetailField>
+        </div>
+      </DetailCard>
     </div>
   ),
 }
@@ -64,11 +125,609 @@ export const StatsAndEmpty: Story = {
   ),
 }
 
-function PaginationDemo() {
-  const [page, setPage] = useState(1)
-  return <Pagination page={page} pageCount={3} summary="Showing 1 to 11 of 781 projects" onChange={setPage} />
+const PAGINATION_ROW_HEADERS = ['No. / Type', 'Project', 'Company Name', 'Contact Name', 'Person Res.', 'Hours (Act/Bud)', 'Priority', 'Status', 'Actions']
+
+/** AutoLoadFooter is a table's footer, not a second card below it — always
+    render it as the last child inside the same bordered wrapper as the
+    table, sharing one border/corner-radius. Never give it its own box.
+    Pair with useInfiniteReveal for the visibleCount/loading/onLoadMore
+    state; scrolling the footer into view triggers the next batch itself —
+    there's no page-number control to click. */
+function AutoLoadFooterDemo() {
+  const { visibleCount, loadingMore, loadMore } = useInfiniteReveal(781, 10)
+  return (
+    <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-left" style={{ minWidth: 900 }}>
+          <thead>
+            <tr className="border-b border-border-default bg-neutral-50">
+              {PAGINATION_ROW_HEADERS.map((h) => (
+                <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-border-default last:border-b-0">
+              <td className="whitespace-nowrap px-lg py-base">
+                <p className="text-sm font-semibold text-text-primary">3200-00</p>
+                <p className="text-xs text-text-muted">Internal</p>
+              </td>
+              <td className="px-lg py-base text-sm text-text-primary">STC: Cabin Interior Modification, Cert Program</td>
+              <td className="whitespace-nowrap px-lg py-base">
+                <p className="text-sm text-text-primary">Northwind Aerospace</p>
+                <p className="text-xs text-text-muted">246</p>
+              </td>
+              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">Nathalie Gagnon</td>
+              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">Arjun Blanchard</td>
+              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">44 / 80h</td>
+              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">2 – High</td>
+              <td className="whitespace-nowrap px-lg py-base"><Badge>On Hold</Badge></td>
+              <td className="px-lg py-base text-text-secondary">⋮</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <AutoLoadFooter total={781} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="items" />
+    </div>
+  )
 }
-export const PaginationExample: Story = { render: () => <div className="p-lg"><PaginationDemo /></div> }
+export const AutoLoadFooterExample: Story = { render: () => <div className="p-lg"><AutoLoadFooterDemo /></div> }
+
+/** Tabs belong to the table, not above it: they render as the first child of
+    the same bordered card, and the active tab's accent underline sits on the
+    card's dividing line so the selection joins the rows below. Counts stay
+    beside each label. Never render them as standalone pills floating over
+    the table. Arrow keys move between tabs (real ARIA tabs); the strip
+    scrolls when the tabs outgrow a narrow viewport. */
+function TableTabsDemo() {
+  const [active, setActive] = useState('priorities')
+  const { visibleCount, loadingMore, loadMore } = useInfiniteReveal(26, 10)
+  return (
+    <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+      <TableTabs
+        ariaLabel="Review presets"
+        activeKey={active}
+        onChange={setActive}
+        tabs={[
+          { key: 'all', label: 'All', count: 45 },
+          { key: 'priorities', label: 'Priorities', count: 26 },
+          { key: 'outstanding', label: 'Outstanding RFQs', count: 6 },
+          { key: 'completed', label: 'Completed RFQs', count: 12 },
+          { key: 'internal', label: 'Internal', count: 6 },
+        ]}
+      />
+      <div className="overflow-x-auto" role="tabpanel" aria-labelledby={`tab-${active}`} tabIndex={0}>
+        <table className="w-full border-collapse text-left" style={{ minWidth: 700 }}>
+          <thead>
+            <tr className="border-b border-border-default bg-neutral-50">
+              {['Number', 'Company Name', 'Priority', 'Status'].map((h) => (
+                <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-border-default last:border-b-0">
+              <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">3292-00</td>
+              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">A.I.M.S.</td>
+              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">1 – Fire</td>
+              <td className="whitespace-nowrap px-lg py-base"><Badge tone="warning">In Progress</Badge></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <AutoLoadFooter total={26} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="projects" />
+    </div>
+  )
+}
+export const TableTabsExample: Story = { render: () => <div className="p-lg"><TableTabsDemo /></div> }
+
+/** THE file picker for the whole app — every upload uses this, never a bare
+    `<input type="file">` and never a FormField/FormSection wrapper around it.
+    It carries its own label, hint, selected-file row and error message, so
+    drop it straight into a drawer or page. The "Upload File" button inside
+    the zone is the real keyboard-reachable control; dropping a file, or
+    clicking anywhere in the zone, are conveniences on top of it. */
+function FileDropzoneDemo() {
+  const [file, setFile] = useState<File | null>(null)
+  return (
+    <div className="grid gap-3xl">
+      <FileDropzone
+        label="Upload File" required accept=".sql" hint="SQL backup files only (.sql)"
+        file={file} onSelect={setFile}
+      />
+      <FileDropzone
+        label="Upload File" required accept=".sql" hint="SQL backup files only (.sql)"
+        file={null} onSelect={() => {}} error="Choose a .sql backup file to upload."
+      />
+    </div>
+  )
+}
+export const FileDropzoneExample: Story = { render: () => <div className="p-lg"><FileDropzoneDemo /></div> }
+
+/** One series per chart, always. A second measure means a second scale, so it
+    goes in its own chart beside this one — never a second y-axis. The axis is
+    built from a round step (0/2,000/4,000/6,000), bars are thin with a 2px
+    gap and a 4px rounded top anchored to the baseline, gridlines stay
+    recessive, and an all-zero series says so instead of drawing an empty
+    plot. `tone="danger"` is only for series that *are* a fault count, so the
+    color repeats what the title already said. Every chart carries an
+    sr-only data table — values never depend on reading a bar height. */
+/** THE applied-filters row — required on every screen that has a Filters
+    menu, from client feedback. Three parts, always together:
+    1. the trigger counts what's applied — `Filters (2)`;
+    2. each applied filter appears below the header as a chip reading
+       "Field: Value", with an × that removes only that one;
+    3. `Clear filters (n)` removes the lot.
+    It renders nothing when no filter is applied, so an unfiltered page keeps
+    its full height. Chips are built by a `…FilterChips()` helper that lives
+    next to each filter menu's own type, so the labels can't drift from the
+    fields they describe. */
+function FilterChipsDemo() {
+  const [filters, setFilters] = useState<Record<string, string>>({
+    Priority: '1 – Fire', Company: 'Duncan Aviation', 'Budget health': 'Over budget',
+  })
+  const chips = Object.entries(filters).map(([label, value]) => ({
+    key: label, label, value,
+    onRemove: () => setFilters((f) => { const n = { ...f }; delete n[label]; return n }),
+  }))
+  return (
+    <div className="grid gap-lg p-lg">
+      <div className="flex justify-end">
+        <Button variant="secondary" size="md" leadingIcon={<FilterIcon size={16} />}>
+          Filters{chips.length ? ` (${chips.length})` : ''}
+        </Button>
+      </div>
+      <FilterChips chips={chips} onClearAll={() => setFilters({})} />
+      <div className="rounded-sm border border-border-default bg-neutral-25 p-2xl text-center text-sm text-text-muted">
+        Table goes here, the chip row sits between the page header and the table.
+      </div>
+    </div>
+  )
+}
+export const FilterChipsExample: Story = { render: () => <FilterChipsDemo /> }
+
+/** Budget health, computed once in `lib/projectHealth.ts` and rendered the
+    same way at project, work-package and activity level. The bar's colour
+    comes from the health state and is ALWAYS paired with the percentage in
+    text, so state is never carried by colour alone. Past 100% the bar fills
+    and turns danger — it never grows past its own track, because a bar that
+    rescales or spills hides the overrun. A row with no budget is its own
+    state ("No budget set", em dashes), never "0%, on track". */
+/** THE picker for every "link an existing record" flow — Aircraft,
+    Approvals, Deliverables, Design Data. A plain Select stops being usable
+    once its catalog passes a couple of dozen rows, and all of those will.
+    Type to filter on both lines; already-linked rows are disabled with a
+    reason rather than hidden, so the user isn't left wondering where a record
+    went. Portal-rendered so drawers and overflow containers can't clip it. */
+function SearchableSelectDemo() {
+  const [value, setValue] = useState('')
+  return (
+    <div className="grid gap-lg" style={{ maxWidth: 420 }}>
+      <div className="grid gap-xs">
+        <label htmlFor="ss-demo" className="text-sm font-semibold text-text-primary">Select an aircraft to link</label>
+        <SearchableSelect
+          id="ss-demo"
+          value={value}
+          onChange={setValue}
+          placeholder="Search aircraft by model or manufacturer..."
+          options={[
+            { value: 'a', label: 'BE350: King Air 350', hint: 'Beechcraft' },
+            { value: 'b', label: 'DHC-8-402: Dash 8-400', hint: 'De Havilland' },
+            { value: 'c', label: 'CL-600-2B19: CRJ200', hint: 'Bombardier', disabled: true, disabledReason: 'Already linked to this project' },
+            { value: 'd', label: 'A330: A330-300', hint: 'Airbus' },
+          ]}
+        />
+      </div>
+      <div className="grid gap-xs">
+        <label htmlFor="ss-empty" className="text-sm font-semibold text-text-primary">Empty catalog</label>
+        <SearchableSelect id="ss-empty" value="" onChange={() => {}} options={[]} emptyLabel="No aircraft in Reference Data yet." />
+      </div>
+    </div>
+  )
+}
+export const SearchableSelectExample: Story = { render: () => <div className="p-lg"><SearchableSelectDemo /></div> }
+
+/**
+ * THE selection standard. Two components, one pattern — never a bespoke
+ * dropdown anywhere else:
+ *
+ * - **Single choice** → `SearchableSelect`. `indicator="radio"` for a form
+ *   field picking one of a few alternatives; the default `indicator="check"`
+ *   for filters and lookups, where the list is a catalog rather than a small
+ *   fixed set.
+ * - **Many choices** → `MultiSelect`. Checkboxes, `"n selected"` on the
+ *   trigger, and chips underneath naming each pick with an × to drop it.
+ *   The chips matter: a count answers "how many", never "which" — which is
+ *   exactly what a user wants to know after the menu closes.
+ *
+ * Both search on label + hint, are portal-rendered so drawers can't clip
+ * them, disable rather than hide unavailable options (with a reason), and
+ * share the same keyboard model (↑/↓ skipping disabled rows, Enter, Esc).
+ */
+function SelectionStandardDemo() {
+  const [single, setSingle] = useState('active')
+  const [lookup, setLookup] = useState('')
+  const [many, setMany] = useState<string[]>(['b', 'd'])
+  const statuses = [
+    { value: 'query', label: 'Query' },
+    { value: 'quoted', label: 'Quoted' },
+    { value: 'active', label: 'Active' },
+    { value: 'complete', label: 'Complete' },
+  ]
+  const aircraft = [
+    { value: 'a', label: 'BE350: King Air 350', hint: 'Beechcraft' },
+    { value: 'b', label: 'DHC-8-402: Dash 8-400', hint: 'De Havilland' },
+    { value: 'c', label: 'CL-600-2B19: CRJ200', hint: 'Bombardier', disabled: true, disabledReason: 'Already linked to this project' },
+    { value: 'd', label: 'A330: A330-300', hint: 'Airbus' },
+  ]
+  return (
+    <div className="grid gap-2xl p-lg" style={{ maxWidth: 460 }}>
+      <div className="grid gap-xs">
+        <label htmlFor="sel-radio" className="text-sm font-semibold text-text-primary">Single select, radio</label>
+        <p className="text-xs text-text-muted">One of a few alternatives, in a form.</p>
+        <SearchableSelect id="sel-radio" indicator="radio" value={single} onChange={setSingle} options={statuses} placeholder="Select status..." />
+      </div>
+      <div className="grid gap-xs">
+        <label htmlFor="sel-check" className="text-sm font-semibold text-text-primary">Single select, check</label>
+        <p className="text-xs text-text-muted">Picking one record out of a catalog.</p>
+        <SearchableSelect id="sel-check" value={lookup} onChange={setLookup} options={aircraft} placeholder="Search aircraft..." />
+      </div>
+      <div className="grid gap-xs">
+        <label htmlFor="sel-multi" className="text-sm font-semibold text-text-primary">Multi select, checkbox + chips</label>
+        <p className="text-xs text-text-muted">Count on the trigger, chips naming each pick below.</p>
+        <MultiSelect id="sel-multi" value={many} onChange={setMany} options={aircraft} placeholder="Select aircraft..." />
+      </div>
+    </div>
+  )
+}
+export const SelectionStandard: Story = { render: () => <SelectionStandardDemo /> }
+
+/**
+ * THE toolbar row. Every control that sits in a horizontal row with a button —
+ * page-header search, a Filters trigger, an Export menu, a primary CTA, an
+ * inline "pick a record → Link" row — is **36px tall**. Buttons are already
+ * 36px at their default `md` size, so fields in these rows take `size="sm"`.
+ *
+ * Stacked form fields keep the 44px default: nothing sits beside them to
+ * disagree with, and the extra height is the comfortable target for typing.
+ * The rule is about *rows*, not about fields in general.
+ *
+ * Getting this wrong is quietly expensive — a 44px input next to a 36px button
+ * has 4px of visual offset top and bottom, which reads as a rendering bug
+ * rather than a style choice, and it shows up on every screen at once.
+ */
+function ToolbarRowStandardDemo() {
+  const [q, setQ] = useState('')
+  const [pick, setPick] = useState('')
+  return (
+    <div className="grid gap-2xl p-lg">
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Page header: search · filters · export · CTA, all 36px</p>
+        <div className="flex flex-wrap items-center gap-sm rounded-sm border border-border-default bg-neutral-25 p-base">
+          <div className="min-w-0" style={{ width: 320 }}>
+            <label htmlFor="tb-search" className="sr-only">Search projects</label>
+            <Input id="tb-search" size="sm" value={q} onChange={(e) => setQ(e.target.value)}
+              placeholder="Search by number, project, company..." leadingIcon={<SearchIcon size={16} />} />
+          </div>
+          <Button variant="secondary" leadingIcon={<FilterIcon size={16} />}>Filters</Button>
+          <Button variant="secondary">Export</Button>
+          <Button leadingIcon={<Plus size={16} />}>Add new project</Button>
+        </div>
+      </div>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Inline link row: select + action, both 36px</p>
+        <div className="grid gap-sm rounded-sm border border-border-default bg-neutral-25 p-base">
+          <label htmlFor="tb-attach" className="text-sm font-semibold text-text-primary">Select an aircraft to link</label>
+          <div className="flex flex-wrap items-center gap-sm">
+            <div className="min-w-0 flex-1" style={{ minWidth: 240 }}>
+              <SearchableSelect
+                id="tb-attach" size="sm" value={pick} onChange={setPick}
+                placeholder="Search aircraft by model or manufacturer..."
+                options={[
+                  { value: 'a', label: 'BE350: King Air 350', hint: 'Beechcraft' },
+                  { value: 'b', label: 'DHC-8-402: Dash 8-400', hint: 'De Havilland' },
+                ]}
+              />
+            </div>
+            <Button disabled={!pick}>Link to project</Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Stacked form field, 44px, unchanged</p>
+        <div className="grid gap-xs rounded-sm border border-border-default bg-neutral-25 p-base" style={{ maxWidth: 380 }}>
+          <label htmlFor="tb-form" className="text-sm font-semibold text-text-primary">Model No</label>
+          <Input id="tb-form" placeholder="e.g. RV-14A" />
+        </div>
+      </div>
+    </div>
+  )
+}
+export const ToolbarRowStandard: Story = { render: () => <ToolbarRowStandardDemo /> }
+
+export const ProjectHealthExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg">
+      <HealthSummary health={healthOf(87, 61)} />
+      <HealthSummary health={healthOf(40, 58)} />
+      <HealthSummary health={healthOf(0, 304.3)} />
+      {/* The labelled meter: percentage plus all four figures, which is what a
+          reader needs. "used", never "done": the percentage is hours spent
+          against hours budgeted, not work completed. */}
+      <div className="grid gap-lg rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 420 }}>
+        <p className="text-xs font-semibold text-text-secondary">Labelled meter (showLabel)</p>
+        {[healthOf(5, 4.4), healthOf(3, 3.6), healthOf(0, 12)].map((h, i) => (
+          <ProgressMeter key={i} health={h} showLabel ariaLabel={`Labelled example ${i + 1}`} />
+        ))}
+      </div>
+      <div className="grid gap-lg rounded-sm border border-border-default bg-neutral-25 p-lg">
+        {[healthOf(80, 20), healthOf(80, 74), healthOf(80, 96), healthOf(80, 80, true), healthOf(0, 12)].map((h, i) => (
+          <div key={i} className="flex items-center gap-lg">
+            <div className="min-w-0 flex-1"><ProgressMeter health={h} size="sm" ariaLabel={`Example ${i + 1}`} /></div>
+            <span className="w-12 shrink-0 text-xs font-semibold text-text-secondary">{formatPct(h.progressPct)}</span>
+            <span className="w-32 shrink-0"><Badge tone={HEALTH_TONE[h.state]}>{HEALTH_LABEL[h.state]}</Badge></span>
+          </div>
+        ))}
+      </div>
+    </div>
+  ),
+}
+
+/**
+ * Two rules that hold for every table in the app, shown together because they
+ * are usually broken together.
+ *
+ * **Columns are left-aligned — all of them, headings and values.** Numbers
+ * included. Right-aligned figures were pulling the eye away from the label that
+ * names them, and in a table this wide the reader loses which column they are
+ * in. Decimal alignment would be the reason to right-align, and these are
+ * one-decimal hours, so there is nothing to gain against the cost.
+ *
+ * **The summary trio reads hours, bar, percentage.** The percentage owns the
+ * right edge because it is what a reader scans down a stack of rows; the bar is
+ * the glanceable pip beside it. Both figures share one size and weight.
+ */
+/**
+ * **A person is drawn one way everywhere in the app**: an `accent-subtle` disc
+ * of `accent` initials, then the name. Person responsible, customer contact,
+ * document owner, next action, timesheet employee — all the same.
+ *
+ * `Avatar` has **no tone prop**, deliberately. Colour-coding people by role (a
+ * green avatar for the person responsible, grey for a contact) rendered the
+ * same person two different ways on two screens, and made the colour look like
+ * it carried meaning it didn't. One fill, one text colour.
+ *
+ * Use `PersonCell` rather than assembling the avatar and name by hand — that is
+ * what keeps the rule structural. `secondary` shrinks only the *label*, for a
+ * person on a cell's second line under a company; the avatar never changes.
+ */
+/**
+ * **A chip list in a table cell shows at most 2 chips, then `+N more`.**
+ *
+ * This is how the two-line row rule survives real data: a cell that renders
+ * every chip grows with its content — eight task chips once stacked a row nine
+ * lines tall. The count is a button: clicking expands the full list in place
+ * and offers "Show less", so nothing is hidden, only folded.
+ *
+ * Use `ChipOverflow` for every chip list in a table — tasks on an activity,
+ * aircraft on an approval, projects on a document — never a bare `.map()`.
+ */
+export const ChipOverflowExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg">
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Two or fewer — no count shown</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 340 }}>
+          <ChipOverflow items={['River Jones', 'Ron Swanson']} label="people" />
+        </div>
+      </div>
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">More than two — “+N more” expands in place</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 340 }}>
+          <ChipOverflow items={['3D Modeling', 'Assembly Design', 'Bracket and fitting design', 'Conceptual Design', 'Design Checking', 'Detail Design']} label="tasks" />
+        </div>
+      </div>
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Empty</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 340 }}>
+          <ChipOverflow items={[]} label="tasks" />
+        </div>
+      </div>
+    </div>
+  ),
+}
+
+export const PersonExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg">
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">PersonCell — the table and list form</p>
+        <div className="grid gap-xs rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 320 }}>
+          {['Anika Nakamura', 'Arjun Blanchard', 'Astrid Caldwell', 'Adrian Bergstrom', 'Aurelie Chevalier'].map((n) => (
+            <div key={n} className="border-b border-border-default py-sm last:border-b-0"><PersonCell name={n} /></div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Company over contact — `secondary` shrinks the label only</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 320 }}>
+          <span className="block truncate text-sm text-text-primary">Air Niugini</span>
+          <PersonCell name="Anders Hartmann" variant="secondary" />
+        </div>
+      </div>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Empty, and the two Avatar sizes</p>
+        <div className="flex items-center gap-2xl rounded-sm border border-border-default bg-neutral-25 p-lg">
+          <PersonCell name="" />
+          <span className="flex items-center gap-sm"><Avatar name="Aurelie Chevalier" size="sm" /><span className="text-xs text-text-muted">sm — table rows</span></span>
+          <span className="flex items-center gap-sm"><Avatar name="Aurelie Chevalier" /><span className="text-xs text-text-muted">md — cards & detail</span></span>
+        </div>
+      </div>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Truncation keeps the avatar inside the cell</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 150 }}>
+          <PersonCell name="Grégoire Lambert-Rousseau" />
+        </div>
+      </div>
+    </div>
+  ),
+}
+
+/**
+ * **Every View in the app looks like this.** A `View` action — from a 3-dot
+ * menu, a row click, or a count like "3 tasks" / "+1 more" — always opens the
+ * same read-only layout: a `DetailCard` per record, `DetailField` label/value
+ * pairs in a 2- or 3-column grid, related lists as a divider-separated group
+ * underneath, and a footer with **Close** and nothing else.
+ *
+ * **Never a disabled form.** A greyed-out input renders a real value in exactly
+ * the same grey as an empty placeholder, so the reader cannot tell "no phone
+ * number" from "a phone number I can't read". `DetailField` prints an em dash
+ * for empty, which is unambiguous.
+ *
+ * **No Save in a View.** If the reader wants to change something they go to
+ * Edit; a View that can be typed into is an Edit screen wearing a disguise.
+ */
+export const ViewLayoutExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg" style={{ maxWidth: 720 }}>
+      <DetailCard title="Company">
+        <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+          <DetailField label="Name">Air Canada</DetailField>
+          <DetailField label="City">Dorval</DetailField>
+          <DetailField label="Country">Canada</DetailField>
+          <DetailField label="Address">730 Cote Vertu West, Quebec</DetailField>
+          <DetailField label="Zip Code" nowrap>H4Y 1C2</DetailField>
+          <DetailField label="Active">Inactive</DetailField>
+        </div>
+
+        {/* A related list is a divider-separated group inside the same card —
+            never a second bordered box. */}
+        <div className="mt-2xl border-t border-border-default pt-lg">
+          <h3 className="text-sm font-semibold text-text-primary">Contacts</h3>
+          <div className="mt-lg grid gap-lg">
+            {[
+              { name: 'Adrian Bergstrom', phone: '' },
+              { name: 'Sylvie Tremblay', phone: '+1 514-555-0142' },
+            ].map((ct, i) => (
+              <div key={ct.name} className={i > 0 ? 'border-t border-border-default pt-lg' : ''}>
+                <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+                  <DetailField label="Full Name">{ct.name}</DetailField>
+                  {/* Empty prints an em dash, so blank is visibly not a value. */}
+                  <DetailField label="Phone No" nowrap>{ct.phone}</DetailField>
+                  <DetailField label="Status">Active</DetailField>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </DetailCard>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-danger">Never do this — a disabled form as a View</p>
+        <div className="grid gap-xs rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 360 }}>
+          <label htmlFor="bad-view" className="text-xs text-text-muted">Phone No</label>
+          <Input id="bad-view" value="" disabled />
+          <p className="text-xs text-text-muted">
+            Is this empty, or a value you are not allowed to read? A disabled input cannot say.
+          </p>
+        </div>
+      </div>
+    </div>
+  ),
+}
+
+export const TableFiguresExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg">
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Summary row: hours, bar, % used</p>
+        <div className="grid gap-xs rounded-sm border border-border-default bg-neutral-25 p-lg">
+          {[healthOf(4, 4), healthOf(2, 2.4), healthOf(2, 1.7), healthOf(0, 3)].map((h, i) => (
+            <div key={i} className="flex items-center gap-sm border-b border-border-default py-sm last:border-b-0">
+              <span className="flex-1 truncate text-sm font-semibold text-text-primary">Person {i + 1}</span>
+              <Badge tone={HEALTH_TONE[h.state]}>{HEALTH_LABEL[h.state]}</Badge>
+              <BudgetInline health={h} ariaLabel={`Person ${i + 1} budget`} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">Table columns: left-aligned, figures included</p>
+        <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+          <table className="w-full border-collapse text-left">
+            <caption className="sr-only">Column alignment reference</caption>
+            <thead>
+              <tr className="border-b border-border-default">
+                {['Activity', 'Budget', 'Actual', 'Remaining', 'Budget used', 'Status'].map((h) => (
+                  <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-xs font-semibold text-text-secondary">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[healthOf(1, 1.3), healthOf(3, 2.7), healthOf(12, 4)].map((h, i) => {
+                const over = h.remaining < 0
+                return (
+                  <tr key={i} className="border-b border-border-default last:border-b-0">
+                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">Activity {i + 1}</td>
+                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{formatHours(h.budget)}</td>
+                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{formatHours(h.actual)}</td>
+                    {/* The one figure that keeps colour: the minus sign carries
+                        the meaning first, so it is never colour-only. */}
+                    <td className={`whitespace-nowrap px-lg py-base text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
+                      {over ? '\u2212' : ''}{formatHours(Math.abs(h.remaining))}
+                    </td>
+                    <td className="px-lg py-base" style={{ minWidth: 120 }}>
+                      <div className="flex items-center gap-sm">
+                        <div className="min-w-0 flex-1"><ProgressMeter health={h} size="sm" ariaLabel={`Activity ${i + 1} budget`} /></div>
+                        <span className="w-9 shrink-0 text-xs font-semibold text-text-primary">{formatPct(h.progressPct)}</span>
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap px-lg py-base"><Badge tone={HEALTH_TONE[h.state]}>{HEALTH_LABEL[h.state]}</Badge></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  ),
+}
+
+export const BarChartExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg">
+      <BarChart
+        caption="Entries per day"
+        data={[
+          { label: 'Thu, Aug 06', value: 820 }, { label: 'Fri, Aug 07', value: 1450 },
+          { label: 'Sat, Aug 08', value: 2380 }, { label: 'Sun, Aug 09', value: 5210 },
+          { label: 'Mon, Aug 10', value: 3140 }, { label: 'Tue, Aug 11', value: 260 },
+          { label: 'Wed, Aug 12', value: 180 },
+        ]}
+        format={(v) => v.toLocaleString('en-CA')}
+      />
+      <BarChart
+        caption="Errors per day"
+        tone="danger"
+        height={140}
+        data={[
+          { label: 'Mon', value: 2100 }, { label: 'Tue', value: 1500 }, { label: 'Wed', value: 9500 },
+          { label: 'Thu', value: 3400 }, { label: 'Fri', value: 800 },
+        ]}
+        format={(v) => v.toLocaleString('en-CA')}
+      />
+      <BarChart caption="Mails per day" height={140} data={[{ label: 'Mon', value: 0 }, { label: 'Tue', value: 0 }]} emptyLabel="No mails in the last 7 days" />
+    </div>
+  ),
+}
 
 export const Accordion: Story = {
   render: () => (
@@ -135,3 +794,585 @@ function OverlayDemo() {
   )
 }
 export const Overlays: Story = { render: () => <OverlayDemo /> }
+
+/**
+ * Layering — a dropdown must paint above whatever opened it.
+ *
+ * This story is a regression guard, not a showcase. Most dropdowns in this app
+ * are opened from inside a drawer (Add new project, every entry drawer), and
+ * they are portal-rendered to `document.body` so the drawer's `overflow` can't
+ * clip them. That only works if the dropdown layer sits **above** the modal
+ * layer — otherwise the panel renders behind the drawer and the control looks
+ * dead: no open state, no error, nothing.
+ *
+ * The scale is therefore ordered by what can spawn what:
+ * `sticky 1000 → modal 1100 → dropdown 1200 → dialog 1300 → toast 1400 →
+ * tooltip 1500`. A confirm dialog opened from a row menu sits above that menu;
+ * a toast can fire from inside the dialog. Nothing in this order is about
+ * importance — it is about which surface can open which.
+ *
+ * Open the drawer below and open both dropdowns, including the nested one in
+ * the filter-style panel. If any panel is invisible, the scale has regressed.
+ */
+function DropdownLayeringDemo() {
+  const [open, setOpen] = useState(false)
+  const [status, setStatus] = useState('active')
+  const [many, setMany] = useState<string[]>([])
+  const aircraft = [
+    { value: 'a', label: 'BE350: King Air 350', hint: 'Beechcraft' },
+    { value: 'b', label: 'DHC-8-402: Dash 8-400', hint: 'De Havilland' },
+    { value: 'c', label: 'A330: A330-300', hint: 'Airbus' },
+  ]
+  return (
+    <div className="p-lg">
+      <Button onClick={() => setOpen(true)}>Open drawer with dropdowns</Button>
+      <Drawer
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Dropdowns inside a drawer"
+        footer={
+          <>
+            <span />
+            <div className="flex gap-sm">
+              <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button onClick={() => setOpen(false)}>Save</Button>
+            </div>
+          </>
+        }
+      >
+        <div className="grid gap-2xl">
+          <div className="grid gap-xs">
+            <label htmlFor="layer-status" className="text-sm font-semibold text-text-primary">Status</label>
+            <SearchableSelect
+              id="layer-status" indicator="radio" value={status} onChange={setStatus}
+              options={[
+                { value: 'query', label: 'Query' },
+                { value: 'active', label: 'Active' },
+                { value: 'complete', label: 'Complete' },
+              ]}
+            />
+          </div>
+          <div className="grid gap-xs">
+            <label htmlFor="layer-aircraft" className="text-sm font-semibold text-text-primary">Aircraft</label>
+            <MultiSelect id="layer-aircraft" value={many} onChange={setMany} options={aircraft} placeholder="Select aircraft..." />
+          </div>
+          <div className="grid gap-xs">
+            <label htmlFor="layer-phone" className="text-sm font-semibold text-text-primary">Phone No</label>
+            <PhoneInput id="layer-phone" countryCode="+1" onCountryCodeChange={() => {}} number="514-555-0142" onNumberChange={() => {}} />
+          </div>
+        </div>
+      </Drawer>
+    </div>
+  )
+}
+export const DropdownLayering: Story = { render: () => <DropdownLayeringDemo /> }
+
+/** The standard for any table cell that can hold long free text (titles,
+    descriptions, comments, model names): clip at 2 lines instead of
+    stretching the whole row, full text on hover via the native title
+    tooltip. Never let one long cell blow out every row's height. */
+export const TruncatedTableText: Story = {
+  render: () => (
+    <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25" style={{ maxWidth: 900 }}>
+      <table className="w-full border-collapse text-left">
+        <thead>
+          <tr className="border-b border-border-default bg-neutral-50">
+            <th scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Serial No</th>
+            <th scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Reg. No</th>
+            <th scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Model Number</th>
+            <th scope="col" className="px-lg py-base text-sm font-semibold text-text-secondary">Model Name</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="border-b border-border-default last:border-b-0">
+            {/* Short codes: whitespace-nowrap, never truncate/clamp — a
+                wrapped serial or registration reads as broken data. */}
+            <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">9033</td>
+            <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">M-YGJL</td>
+            <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">Astra SPX</td>
+            {/* Long free text: line-clamp-2 + title tooltip via Truncate. */}
+            <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 260 }}>
+              <Truncate>Israel Aircraft Astra SPX / Gulfsream 100: Long-Range Variant, Extended Cabin Configuration</Truncate>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  ),
+}
+
+const EDIT_ENTRIES = [
+  { id: 'e1', name: 'Adrian Bergstrom' },
+  { id: 'e2', name: 'Alma Devereaux' },
+]
+
+/**
+ * THE standard Edit screen. Every edit drawer in the app looks like this —
+ * Companies, Aircraft, Projects, Work Packages, all of them:
+ *
+ *  - Fields are ALWAYS stacked `FormField` rows (label left, control right),
+ *    never a horizontal table of bare inputs with column headers.
+ *  - Repeated children (contacts, serials, aircraft) are collapsible entries
+ *    inside their own `FormSection`: chevron + entry name as the toggle,
+ *    trash on the right, divider between entries, "+ Add Another X" last.
+ *  - Footer is exactly Cancel (secondary) + Save Changes (primary).
+ *  - Every control is full width so the whole form shares one right edge.
+ *
+ * A multi-step Stepper is for CREATING a record only — never for editing.
+ */
+export const StandardEditScreen: Story = {
+  render: () => (
+    <div className="grid gap-lg p-lg" style={{ maxWidth: 720 }}>
+      <FormSection title="Company" subtitle="The record's own fields, one stacked FormField each.">
+        <FormField label="Name" htmlFor="std-name" required>
+          <Input id="std-name" defaultValue="Air Canada" />
+        </FormField>
+        <FormField label="City" htmlFor="std-city">
+          <Input id="std-city" defaultValue="Dorval" />
+        </FormField>
+        <FormField label="Phone No" htmlFor="std-phone">
+          <PhoneInput id="std-phone" countryCode="+1" onCountryCodeChange={() => {}} number="514-555-0142" onNumberChange={() => {}} />
+        </FormField>
+        <Checkbox label="Active, available in pickers across the app" defaultChecked />
+      </FormSection>
+
+      <FormSection title="Contacts" subtitle="Repeated children: collapsible entries, never a horizontal row of bare inputs.">
+        {EDIT_ENTRIES.map((e, i) => (
+          <div key={e.id} className={i > 0 ? 'border-t border-border-default pt-lg' : ''}>
+            <div className="flex items-center justify-between gap-lg">
+              <button
+                type="button"
+                aria-expanded
+                className="flex items-center gap-xs rounded-sm text-sm font-semibold text-text-primary transition-colors duration-fast hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+              >
+                <span aria-hidden className="text-text-muted"><ChevronDown size={16} /></span>
+                {e.name}
+              </button>
+              <button
+                type="button"
+                aria-label={`Remove ${e.name}`}
+                className="rounded-sm p-xs text-text-secondary transition-colors duration-fast hover:bg-neutral-100 hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+              >
+                <Trash2 size={16} aria-hidden />
+              </button>
+            </div>
+            <div className="mt-lg grid gap-lg">
+              <FormField label="Full Name" htmlFor={`std-ct-${e.id}`}>
+                <Input id={`std-ct-${e.id}`} defaultValue={e.name} />
+              </FormField>
+              <FormField label="Status" htmlFor={`std-st-${e.id}`}>
+                <Select id={`std-st-${e.id}`} defaultValue="active">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </Select>
+              </FormField>
+            </div>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="flex w-fit items-center gap-xs rounded-sm text-sm font-semibold text-text-primary transition-colors duration-fast hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+        >
+          <Plus size={16} aria-hidden /> Add Another Contact
+        </button>
+      </FormSection>
+
+      <div className="flex justify-end gap-sm border-t border-border-default pt-lg">
+        <Button variant="secondary">Cancel</Button>
+        <Button>Save Changes</Button>
+      </div>
+    </div>
+  ),
+}
+
+/**
+ * **Page scrolling — the shell owns the viewport.**
+ *
+ * `AppShell` is exactly one screen tall and never scrolls itself. The sidebar
+ * and the page heading are always on screen; everything below them scrolls
+ * inside its own frame. Two shapes, and every page is one of them.
+ */
+export const PageScrollRule: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg" style={{ maxWidth: 760 }}>
+      <div className="grid gap-sm">
+        <h3 className="text-sm font-semibold text-text-primary">Default — the list page</h3>
+        <p className="text-sm text-text-secondary">
+          <code>{'<AppShell>'}</code> with no extra prop. <code>main</code> scrolls; the page is as
+          tall as its content. Right for anything that is one long column.
+        </p>
+        <Frame>
+          <FrameBar>sidebar + heading — fixed</FrameBar>
+          <div className="min-h-0 flex-1 overflow-y-auto bg-neutral-25 p-base">
+            <div className="grid gap-sm">
+              {Array.from({ length: 12 }, (_, i) => (
+                <div key={i} className="rounded-xs bg-neutral-100 px-sm py-xs text-xs text-text-secondary">row {i + 1}</div>
+              ))}
+            </div>
+          </div>
+        </Frame>
+      </div>
+
+      <div className="grid gap-sm">
+        <h3 className="text-sm font-semibold text-text-primary">Fill — the master–detail page</h3>
+        <p className="text-sm text-text-secondary">
+          <code>{'<AppShell fill>'}</code>. <code>main</code> stops scrolling and hands the height to
+          the page, which ends both panes at the fold with <code>min-h-0 flex-1</code> and scrolls
+          each one on its own. Never cap a rail with a fixed <code>maxHeight</code>: 520px leaves
+          dead page under it on a tall screen and clips it on a short one.
+        </p>
+        <Frame>
+          <FrameBar>sidebar + heading — fixed</FrameBar>
+          <div className="flex min-h-0 flex-1 gap-sm p-sm">
+            <div className="min-h-0 w-32 shrink-0 overflow-y-auto rounded-xs border border-border-default bg-neutral-25 p-xs">
+              <div className="grid gap-xxss">
+                {Array.from({ length: 14 }, (_, i) => (
+                  <div key={i} className="rounded-xs bg-neutral-100 px-xs py-xxss text-xs text-text-secondary">item {i + 1}</div>
+                ))}
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-xs border border-border-default bg-neutral-25 p-xs text-xs text-text-secondary">
+              detail — scrolls on its own
+            </div>
+          </div>
+        </Frame>
+      </div>
+
+      <Alert tone="info" title="sr-only inside a scrolling list needs a positioned ancestor">
+        <code>sr-only</code> is <code>position: absolute</code>. With no positioned ancestor its
+        containing block is the document, so a screen-reader label in row 50 sits 2,600px down the
+        page and gives the window a scrollbar nothing asked for. Every scroll container gets{' '}
+        <code>relative</code>.
+      </Alert>
+    </div>
+  ),
+}
+
+/** Stand-in for the app frame in the two examples above. */
+function Frame({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-50" style={{ height: 260 }}>
+      {children}
+    </div>
+  )
+}
+
+function FrameBar({ children }: { children: ReactNode }) {
+  return (
+    <div className="shrink-0 border-b border-border-default bg-primary-700 px-base py-sm text-xs font-semibold text-text-inverse">
+      {children}
+    </div>
+  )
+}
+
+/**
+ * **Selection header — the Shopify pattern.**
+ *
+ * While rows are selected, the table's column titles hand their row to the
+ * selection: the count with a Select all / Unselect all menu, and the bulk
+ * actions the page supplies. The checkbox is checked when everything is
+ * selected, shows the minus when only some rows are, and clicking it always
+ * clears. The titles return the moment the selection empties.
+ *
+ * Wiring rules: widths must live on `<colgroup>` (the selection row is one
+ * colSpan cell — under `table-fixed`, widths left on the header cells would
+ * vanish with them); "Select all" selects the whole *filtered* list, not the
+ * visible page, so the count can exceed the rows on screen.
+ */
+export const SelectionHeaderExample: Story = {
+  render: function SelectionHeaderStory() {
+    const all = ['0000-00', '0000-01', '0000-02', '3107-00', '3116-00']
+    const [selected, setSelected] = useState<string[]>(['0000-00', '0000-02'])
+    return (
+      <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25" style={{ maxWidth: 640 }}>
+        <table className="w-full table-fixed border-collapse text-left">
+          <colgroup>
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '45%' }} />
+            <col style={{ width: '45%' }} />
+          </colgroup>
+          <thead>
+            {selected.length > 0 ? (
+              <tr className="border-b border-border-default bg-neutral-50">
+                <th colSpan={3} className="px-sm py-sm">
+                  <TableSelectionBar
+                    selectedCount={selected.length}
+                    totalCount={all.length}
+                    itemLabel="projects"
+                    onSelectAll={() => setSelected([...all])}
+                    onClearAll={() => setSelected([])}
+                  >
+                    <Button size="sm" variant="secondary" leadingIcon={<Trash2 size={14} />}>Delete</Button>
+                    <Button size="sm" variant="secondary" leadingIcon={<CopyIcon size={14} />}>Duplicate</Button>
+                  </TableSelectionBar>
+                </th>
+              </tr>
+            ) : (
+              <tr className="border-b border-border-default bg-neutral-50">
+                <th className="px-sm py-base" />
+                <th className="px-sm py-base text-xs font-semibold text-text-secondary">Project</th>
+                <th className="px-sm py-base text-xs font-semibold text-text-secondary">Status</th>
+              </tr>
+            )}
+          </thead>
+          <tbody>
+            {all.map((id) => (
+              <tr key={id} className="border-b border-border-default last:border-b-0">
+                <td className="px-sm py-base">
+                  <Checkbox
+                    checked={selected.includes(id)}
+                    onChange={() => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))}
+                    aria-label={`Select ${id}`}
+                  />
+                </td>
+                <td className="px-sm py-base text-sm font-semibold text-text-primary">{id}</td>
+                <td className="px-sm py-base text-sm text-text-secondary">In Progress</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  },
+}
+
+/**
+ * **Page heading and description.**
+ *
+ * The description belongs to the heading, so it lives in the same block —
+ * `mt-xxss` (2px) under it, `text-sm text-text-secondary`. It used to be a
+ * paragraph in the page body, which put `gap-lg` (16px) between a title and
+ * the sentence explaining it and read as two unrelated things.
+ *
+ * **One clause. What the screen holds, not how it works.** The rules that
+ * govern the records ("projects link to revisions from their tab", "one drawing
+ * can serve several projects") belong in the empty state and the field help,
+ * where somebody is actually deciding something — not in a standing line every
+ * user reads past a hundred times.
+ */
+export const PageHeadingExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg" style={{ maxWidth: 640 }}>
+      <div>
+        <p className="mb-sm text-xs font-semibold uppercase tracking-wide text-success">Do</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg">
+          <h1 className="text-2xl font-bold text-text-primary">Design Package</h1>
+          <p className="mt-xxss text-sm text-text-secondary">Manage drawings and design data with revisions.</p>
+        </div>
+      </div>
+      <div>
+        <p className="mb-sm text-xs font-semibold uppercase tracking-wide text-danger">Don&rsquo;t</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg">
+          <h1 className="text-2xl font-bold text-text-primary">Design Package</h1>
+          <p className="mt-2xl text-sm text-text-secondary">
+            Drawings and design data are created and managed here, with every revision. Projects link to
+            revisions from their Design Data tab. One drawing can serve several projects.
+          </p>
+        </div>
+        <p className="mt-sm text-xs text-text-muted">
+          Three sentences, floated 16px away in the page body: the reader has to decide whether it
+          belongs to the heading before deciding whether to read it.
+        </p>
+      </div>
+      <Alert tone="info" title="Where it goes in code">
+        <code>{'<AppShell title="Documents" description="Manage drawings and design data with revisions." />'}</code> —
+        never a <code>&lt;p&gt;</code> at the top of the page body.
+      </Alert>
+    </div>
+  ),
+}
+
+/**
+ * **Dates in a table: one line, breaking after the comma only if it has to.**
+ *
+ * `<DateText />` is deliberately not `whitespace-nowrap`. The only break
+ * opportunity in a formatted date is the space before the year, so letting it
+ * wrap gives `Mar 24,` over `2026` — exactly the stacked form a starved column
+ * needs — without any table deciding in advance which it gets. A column with
+ * room reads the date as one thing; a 1280 laptop with eleven columns gets the
+ * ~30px back.
+ *
+ * `formatDate()` is still the one-line string for prose and View screens.
+ */
+export const DateCellExample: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-lg" style={{ maxWidth: 560 }}>
+      <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+        <table className="w-full border-collapse text-left">
+          <thead>
+            <tr className="border-b border-border-default bg-neutral-50">
+              {['Number', 'Opened', 'Due', 'Closed'].map((h) => (
+                <th key={h} scope="col" className="px-sm py-base text-xs font-semibold text-text-secondary">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[['0000-00', '2026-03-07', '2026-12-02', ''], ['3116-03', '2025-08-15', '2026-01-30', '2026-02-11']].map((r) => (
+              <tr key={r[0]} className="border-b border-border-default last:border-b-0">
+                <td className="px-sm py-base text-sm font-semibold text-text-primary">{r[0]}</td>
+                <td className="px-sm py-base text-sm tabular-nums text-text-primary"><DateText value={r[1]} /></td>
+                <td className="px-sm py-base text-sm tabular-nums text-text-primary"><DateText value={r[2]} /></td>
+                <td className="px-sm py-base text-sm tabular-nums text-text-primary"><DateText value={r[3]} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Alert tone="info" title="The column decides, not the table">
+        <code>{'<DateText value={iso} />'}</code> in a cell: one line where it fits, broken after the
+        comma where it doesn't. Don't put <code>whitespace-nowrap</code> on the cell — that turns the
+        break into an overflow. <code>formatDate(iso)</code> stays the one-line string for View
+        screens, drawer summaries and sentences.
+      </Alert>
+    </div>
+  ),
+}
+
+/**
+ * **Side-drawer form standard.** Every drawer in the app follows this; a new one
+ * that doesn't is a bug, not a variation.
+ *
+ * 1. **Every control is the full width of the field column.** A short value does
+ *    not earn a short box — a form reads as one column of controls, and a stub
+ *    breaks the line. (A genuinely compound field, like currency + amount, is
+ *    still one full-width row split internally.)
+ * 2. **Every field has a placeholder.** A concrete example where the value has a
+ *    format (`e.g. STC SA25-200`), a prompt where it doesn't
+ *    (`Search a person...`). Where a value can be derived, the placeholder is
+ *    the suggestion and a blank submit takes it.
+ * 3. **One short line of help, or none.** It says what the reader needs to fill
+ *    the field in — never how the system is built, never what is still pending.
+ * 4. **`active` is a dropdown, never a checkbox** — see `ActiveSelect`.
+ */
+export const DrawerFormStandard: Story = {
+  render: function DrawerFormStandardStory() {
+    const [active, setActive] = useState(true)
+    return (
+      <div className="grid gap-lg p-lg" style={{ maxWidth: 640 }}>
+        <FormSection title="Aircraft" subtitle="One short line saying what this section holds.">
+          <FormField label="Model Name" htmlFor="std-name" required help="As the manufacturer names it.">
+            <Input id="std-name" placeholder="e.g. King Air 350" />
+          </FormField>
+          <FormField label="Drawing Prefix" htmlFor="std-prefix" help="Two letters, used on every drawing.">
+            <Input id="std-prefix" maxLength={2} placeholder="e.g. KA" />
+          </FormField>
+          <FormField label="Active" htmlFor="std-active" help="Inactive stays on old records, out of pickers.">
+            <ActiveSelect id="std-active" value={active} onChange={setActive} />
+          </FormField>
+          <FormField label="Comment" htmlFor="std-comment" fullWidth help="fullWidth: label above a control spanning the section, for the rare field that needs more room than the shared 2/3 column.">
+            <Textarea id="std-comment" placeholder="Enter comment..." />
+          </FormField>
+        </FormSection>
+
+        <Alert tone="info" title="Why active is a dropdown">
+          A checkbox states one option and leaves the other implied, so an unticked box reads the same
+          for &ldquo;not active yet&rdquo; and &ldquo;deliberately retired&rdquo;. Two named options say which state the
+          record is in — and it matches how <code>active</code> already reads wherever it is
+          displayed: an Active / Inactive badge, never a tick.
+        </Alert>
+
+        <div className="rounded-sm border border-danger bg-danger-subtle p-lg">
+          <p className="text-sm font-semibold text-text-primary">Counter-examples, all previously in the app</p>
+          <ul className="mt-sm grid gap-xs text-sm text-text-secondary">
+            <li>A 96px box for a 2-character prefix, in a column of 383px fields.</li>
+            <li>An empty field with no placeholder, so its format is a guess.</li>
+            <li>Help that runs to three lines and explains the data model.</li>
+            <li>&ldquo;Available to pick&rdquo; as a checkbox, where every table shows a badge.</li>
+          </ul>
+        </div>
+      </div>
+    )
+  },
+}
+
+/** THE sortable column heading, on every table in the app.
+ *
+ *  All four states side by side: a resting neutral ⇅ that marks a heading as
+ *  clickable, the accent ↑/↓ that only the active column shows, and a plain
+ *  heading for Actions. Clicking a heading sorts ascending, clicking it again
+ *  flips to descending — and blank cells sink to the bottom in *both*
+ *  directions, since an em dash is the absence of a value rather than a value
+ *  lower than every other one.
+ *
+ *  A cell holding two stacked fields uses `SortMenu` inside a `SortableTh`
+ *  instead: it offers each field rather than guessing which one the reader
+ *  meant by "up". The cell still reports `aria-sort` through `ownsKeys`.
+ */
+export const SortableHeaderExample: Story = {
+  render: function SortableHeaderStory() {
+    type Row = { model: string; maker: string; airframes: number; note: string }
+    const ROWS: Row[] = [
+      { model: 'CL-600-2B16', maker: 'Bombardier', airframes: 12, note: 'Cabin interior' },
+      { model: 'DHC-8-402', maker: 'De Havilland', airframes: 3, note: '' },
+      { model: 'B737-800', maker: 'Boeing', airframes: 27, note: 'Antenna doubler' },
+      { model: 'A220-300', maker: 'Airbus', airframes: 8, note: '' },
+    ]
+    const { sorted, sort, setSort } = useTableSort(ROWS, {
+      model: (r) => r.model,
+      maker: (r) => r.maker,
+      airframes: (r) => r.airframes,
+      note: (r) => r.note,
+    })
+    const COLS = [
+      { label: 'Model', sort: 'model' as const },
+      { label: 'Manufacturer', sort: 'maker' as const },
+      { label: 'Airframes', sort: 'airframes' as const },
+      { label: 'Note', sort: 'note' as const },
+      { label: 'Actions' },
+    ]
+    return (
+      <div className="grid gap-lg p-lg" style={{ maxWidth: 720 }}>
+        <p className="text-sm text-text-secondary">
+          Sort by <b className="text-text-primary">Note</b> to see blank rows sink to the bottom in
+          either direction. Sort by <b className="text-text-primary">Airframes</b> to see numbers
+          compared as numbers, not as text.
+        </p>
+        <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+          <table className="w-full border-collapse text-left">
+            <caption className="sr-only">Aircraft models, sortable by any column</caption>
+            <thead>
+              <tr className="border-b border-border-default bg-neutral-50">
+                {COLS.map((c) => (
+                  <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                    className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">
+                    {c.label}
+                  </SortableTh>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((r) => (
+                <tr key={r.model} className="border-b border-border-default last:border-b-0">
+                  <td className="px-lg py-base text-sm font-semibold text-text-primary">{r.model}</td>
+                  <td className="px-lg py-base text-sm text-text-primary">{r.maker}</td>
+                  <td className="px-lg py-base text-sm tabular-nums text-text-primary">{r.airframes}</td>
+                  <td className="px-lg py-base text-sm text-text-primary">
+                    {r.note || <span className="text-text-muted">—</span>}
+                  </td>
+                  <td className="px-lg py-base text-sm text-text-muted">⋮</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg">
+          <p className="text-sm font-semibold text-text-primary">The four heading states</p>
+          <table className="mt-sm w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-border-default bg-neutral-50">
+                <SortableTh sortKey="a" sort={{ key: 'b', dir: 'asc' }} onSortChange={() => {}}
+                  className="px-lg py-base text-sm font-semibold text-text-secondary">Idle</SortableTh>
+                <SortableTh sortKey="a" sort={{ key: 'a', dir: 'asc' }} onSortChange={() => {}}
+                  className="px-lg py-base text-sm font-semibold text-text-secondary">Ascending</SortableTh>
+                <SortableTh sortKey="a" sort={{ key: 'a', dir: 'desc' }} onSortChange={() => {}}
+                  className="px-lg py-base text-sm font-semibold text-text-secondary">Descending</SortableTh>
+                <SortableTh className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div>
+    )
+  },
+}

@@ -1,0 +1,203 @@
+import type { ReactNode } from 'react'
+import { Eye, Pencil, Package } from 'lucide-react'
+import { Badge } from '@/components/ui/Badge'
+import { Skeleton } from '@/components/ui/Skeleton'
+import { ActionsMenu } from '@/components/patterns/ActionsMenu'
+import { SortMenu } from '@/components/patterns/SortMenu'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
+import { Truncate } from '@/components/patterns/Truncate'
+import { PRIORITY_LABEL, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
+import { agingDays } from '@/lib/reviewPresets'
+import type { ProjectListRow } from '@/types/project'
+import { DateText } from '@/components/patterns/DateText'
+
+/**
+ * One superset column set covering every legacy Review tab, so nothing is
+ * hidden behind "which tab was it on again?". Columns that only apply to
+ * part of the list (Aging pre-award, hours post-award) show an em dash
+ * rather than disappearing — a column set that changes shape under a
+ * merged table reads as broken, not simplified.
+ */
+type SortKey = 'number' | 'company' | 'description' | 'priority' | 'status' | 'comments'
+  | 'nextAction' | 'dueDate' | 'aging' | 'actual' | 'budget' | 'active'
+
+interface Column {
+  label: string
+  sort?: SortKey
+  /** Two figures in one cell; the heading offers both. */
+  sorts?: { key: SortKey; label: string }[]
+  /** Budget/actual hours are financial data — hidden below manager. */
+  financial?: boolean
+}
+
+const COLUMNS: Column[] = [
+  { label: 'Number', sort: 'number' },
+  { label: 'Company Name', sort: 'company' },
+  { label: 'Description', sort: 'description' },
+  { label: 'Priority', sort: 'priority' },
+  { label: 'Status', sort: 'status' },
+  { label: 'Comments', sort: 'comments' },
+  { label: 'Next Action', sort: 'nextAction' },
+  { label: 'Due Date', sort: 'dueDate' },
+  { label: 'Aging', sort: 'aging' },
+  {
+    label: 'Actual / Budget',
+    financial: true,
+    sorts: [{ key: 'actual', label: 'Actual' }, { key: 'budget', label: 'Budget' }],
+  },
+  { label: 'Active', sort: 'active' },
+  { label: 'Actions' },
+]
+
+const HOURS = new Intl.NumberFormat('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+export interface ProjectReviewTableProps {
+  rows: ProjectListRow[]
+  loading?: boolean
+  /** Budget/actual hours are financial data — hidden below manager. */
+  canSeeFinancials?: boolean
+  onView: (row: ProjectListRow) => void
+  /** Straight to the project's Work Packages tab. */
+  onOpenWorkPackages?: (row: ProjectListRow) => void
+  onEdit: (row: ProjectListRow) => void
+  /** Preset tabs, rendered as the card's own header above the columns. */
+  tabs?: ReactNode
+  /** Active tab's key — makes the table the labelled tabpanel for it. */
+  activeTabKey?: string
+  pagination?: ReactNode
+}
+
+export function ProjectReviewTable({
+  rows, loading = false, canSeeFinancials = true, onView, onOpenWorkPackages, onEdit, tabs, activeTabKey, pagination,
+}: ProjectReviewTableProps) {
+  const columns = canSeeFinancials ? COLUMNS : COLUMNS.filter((c) => !c.financial)
+
+  /* Aging sorts on the computed day count, not the "34 d" string, and
+     Priority on its numeric rank so 1 - Fire leads rather than sorting
+     alphabetically under 3 - Med. */
+  const { sorted, sort, setSort } = useTableSort(rows, {
+    number: (r) => `${r.number}-${r.subNumber}`,
+    company: (r) => r.companyName,
+    description: (r) => r.title,
+    priority: (r) => r.priority,
+    status: (r) => STATUS_LABEL[r.status],
+    comments: (r) => r.comments,
+    nextAction: (r) => r.nextAction,
+    dueDate: (r) => r.dueDate,
+    /* Only pre-award rows show an age; the rest print an em dash and sink,
+       matching what the cell itself decides to render. */
+    aging: (r) => (r.status === 'query' || r.status === 'quoted' ? agingDays(r.openedDate) : null),
+    actual: (r) => r.actualHours,
+    budget: (r) => r.budgetHours,
+    active: (r) => r.active,
+  })
+
+  return (
+    // Tabs, columns and pagination share one bordered card — the tabs are the
+    // table's header, not a control floating above it.
+    <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+      {tabs}
+      {/* The scroll container is the tabpanel, and is itself a tab stop so it
+          can be scrolled from the keyboard. */}
+      <div
+        className="overflow-x-auto"
+        {...(activeTabKey
+          ? { role: 'tabpanel', 'aria-labelledby': `tab-${activeTabKey}`, tabIndex: 0 }
+          : {})}
+      >
+        <table className="w-full border-collapse text-left" style={{ minWidth: 1700 }}>
+          <caption className="sr-only">Projects review</caption>
+          <thead>
+            <tr className="border-b border-border-default bg-neutral-50">
+              {columns.map((c) => (
+                <SortableTh key={c.label} sortKey={c.sort} ownsKeys={c.sorts?.map((o) => o.key)}
+                  sort={sort} onSortChange={setSort}
+                  className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">
+                  {c.sorts
+                    ? <SortMenu label={c.label} options={c.sorts} sort={sort} onChange={setSort} />
+                    : c.label}
+                </SortableTh>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading
+              ? Array.from({ length: 8 }, (_, i) => (
+                  <tr key={i} className="border-b border-border-default last:border-b-0">
+                    {columns.map((c) => <td key={c.label} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                  </tr>
+                ))
+              : sorted.map((row) => {
+                  // Aging is only meaningful before award — exactly the two
+                  // RFQ statuses the legacy Aging column appeared on.
+                  const aging = row.status === 'query' || row.status === 'quoted' ? agingDays(row.openedDate) : null
+                  return (
+                    <tr
+                      key={row.id}
+                      onClick={() => onView(row)}
+                      className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
+                    >
+                      <td className="whitespace-nowrap px-lg py-base align-top">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onView(row) }}
+                          className="text-left text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+                        >
+                          {row.number}-{row.subNumber}
+                        </button>
+                        <span className="block text-xs text-text-muted">{TYPE_LABEL[row.type]}</span>
+                      </td>
+                      <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 180 }}>
+                        <Truncate lines={1}>{row.companyName || '—'}</Truncate>
+                      </td>
+                      <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 260 }}>
+                        <Truncate>{row.title}</Truncate>
+                      </td>
+                      <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{PRIORITY_LABEL[row.priority]}</td>
+                      <td className="whitespace-nowrap px-lg py-base align-top">
+                        <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>
+                      </td>
+                      <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 280 }}>
+                        <Truncate>{row.comments || '—'}</Truncate>
+                      </td>
+                      <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 280 }}>
+                        <Truncate>{row.nextAction || '—'}</Truncate>
+                      </td>
+                      <td className="px-lg py-base align-top text-sm text-text-primary"><DateText value={row.dueDate} /></td>
+                      <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{aging ?? '—'}</td>
+                      {canSeeFinancials && (
+                        <>
+                          <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
+                            {row.budgetHours > 0
+                              ? `${HOURS.format(row.actualHours)} / ${HOURS.format(row.budgetHours)}`
+                              : `${HOURS.format(row.actualHours)} / no budget`}
+                            {row.budgetHours > 0 && row.actualHours > row.budgetHours && (
+                              <span className="ml-xs text-xs text-danger">over</span>
+                            )}
+                          </td>
+                        </>
+                      )}
+                      <td className="whitespace-nowrap px-lg py-base align-top">
+                        <Badge tone={row.active ? 'success' : 'neutral'}>{row.active ? 'Active' : 'Inactive'}</Badge>
+                      </td>
+                      <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
+                        <ActionsMenu
+                          ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
+                          items={[
+                            { label: 'View', icon: <Eye size={16} />, onSelect: () => onView(row) },
+                            { label: 'Work Packages', icon: <Package size={16} />, onSelect: () => onOpenWorkPackages?.(row) },
+                            { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => onEdit(row) },
+                          ]}
+                        />
+                      </td>
+                    </tr>
+                  )
+                })}
+          </tbody>
+        </table>
+      </div>
+      {pagination}
+    </div>
+  )
+}

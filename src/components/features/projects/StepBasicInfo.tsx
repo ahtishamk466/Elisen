@@ -2,10 +2,11 @@ import { FormSection } from '@/components/patterns/FormSection'
 import { FormField } from '@/components/patterns/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { PersonSelect } from '@/components/ui/PersonSelect'
 import { Textarea } from '@/components/ui/Textarea'
 import { Checkbox } from '@/components/ui/Checkbox'
-import { RadioCard } from '@/components/ui/RadioCard'
-import { COMPANIES, CONTACTS, PEOPLE, NEXT_AVAILABLE_NUMBER } from '@/lib/projectFixtures'
+import { PEOPLE, NEXT_AVAILABLE_NUMBER } from '@/lib/projectFixtures'
+import { useLookupStore } from '@/stores/lookupStore'
 import type { ScopeKey } from '@/types/project'
 import type { AddProjectValues, Errors } from './useAddProjectForm'
 
@@ -26,6 +27,17 @@ export interface StepProps {
 }
 
 export function StepBasicInfo({ values, errors, setField, canSeeFinancials = true }: StepProps) {
+  // Company/Contact options come from the Lookup Tables (Admin), not
+  // hardcoded lists — inactive records are hidden, contacts follow the
+  // chosen company.
+  const companies = useLookupStore((s) => s.companies)
+  const lookupContacts = useLookupStore((s) => s.contacts)
+  const activeCompanies = [...companies.filter((c) => c.active)].sort((a, b) => a.name.localeCompare(b.name))
+  const selectedCompany = companies.find((c) => c.name === values.company)
+  const companyContacts = selectedCompany
+    ? lookupContacts.filter((ct) => ct.companyId === selectedCompany.id && ct.active)
+    : []
+
   const toggleScope = (key: ScopeKey) =>
     setField('scope', values.scope.includes(key) ? values.scope.filter((s) => s !== key) : [...values.scope, key])
 
@@ -41,31 +53,39 @@ export function StepBasicInfo({ values, errors, setField, canSeeFinancials = tru
             placeholder={`e.g. ${NEXT_AVAILABLE_NUMBER}`} onChange={(e) => setField('number', e.target.value)}
           />
         </FormField>
+        {/* Typed, not picked: a sub number runs as far as the change requests
+            on a project do, so a three-option list is a ceiling, not a help. */}
         <FormField
           label="Sub Number" htmlFor="subNumber" required error={errors.subNumber}
-          help="Use a new sub number for a change request against an existing project."
+          help="00 for a new project, 01+ for a change request."
         >
-          <Select id="subNumber" value={values.subNumber} error={!!errors.subNumber} onChange={(e) => setField('subNumber', e.target.value)}>
-            <option value="00">00 (next available)</option>
-            <option value="01">01</option>
-            <option value="02">02</option>
-          </Select>
+          <Input
+            id="subNumber" value={values.subNumber} error={!!errors.subNumber} inputMode="numeric" maxLength={2}
+            placeholder="00" onChange={(e) => setField('subNumber', e.target.value)}
+          />
         </FormField>
         <FormField label="Type" htmlFor="type" required error={errors.type}>
           <Select id="type" value={values.type} error={!!errors.type} onChange={(e) => setField('type', e.target.value)}>
             <option value="internal">Internal</option>
-            <option value="preferred-duncan">Preferred — Duncan Aviation</option>
-            <option value="preferred-topaces">Preferred — Top Aces</option>
+            <option value="preferred">Preferred</option>
+            <option value="preferred-duncan">Preferred: Duncan Aviation</option>
+            <option value="preferred-topaces">Preferred: Top Aces</option>
             <option value="external">External</option>
+            <option value="other">Other</option>
           </Select>
         </FormField>
         <FormField label="Priority" htmlFor="priority" required error={errors.priority}>
           <Select id="priority" value={values.priority} error={!!errors.priority} onChange={(e) => setField('priority', e.target.value)}>
-            <option value="1-fire">1 — Fire</option>
-            <option value="2-high">2 — High</option>
-            <option value="3-med">3 — Med</option>
-            <option value="4-low">4 — Low</option>
+            <option value="1-fire">1: Fire</option>
+            <option value="2-high">2: High</option>
+            <option value="3-med">3: Med</option>
+            <option value="4-low">4: Low</option>
           </Select>
+        </FormField>
+        {/* Opened date sits with the fields that define the project, not with
+            the dates that track it — it is set at creation and never blank. */}
+        <FormField label="Project Opened Date" htmlFor="openedDate" required error={errors.openedDate}>
+          <Input id="openedDate" type="date" value={values.openedDate} error={!!errors.openedDate} onChange={(e) => setField('openedDate', e.target.value)} />
         </FormField>
         <FormField label="Description" htmlFor="description">
           <Textarea id="description" value={values.description} placeholder="Enter description..." onChange={(e) => setField('description', e.target.value)} />
@@ -73,20 +93,28 @@ export function StepBasicInfo({ values, errors, setField, canSeeFinancials = tru
       </FormSection>
 
       <FormSection title="Company & Profile" subtitle="Who this project is for, and who owns it internally.">
-        <FormField label="Company" htmlFor="company" required error={errors.company}>
-          <Select id="company" value={values.company} error={!!errors.company} placeholder="Select a company..." onChange={(e) => setField('company', e.target.value)}>
-            {COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        <FormField label="Company" htmlFor="company" required error={errors.company} help="Managed under Admin → Companies.">
+          <Select
+            id="company" value={values.company} error={!!errors.company} placeholder="Select a company..."
+            onChange={(e) => { setField('company', e.target.value); setField('contact', '') }}
+          >
+            {activeCompanies.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
           </Select>
         </FormField>
-        <FormField label="Contact" htmlFor="contact">
-          <Select id="contact" value={values.contact} placeholder="Select a contact..." onChange={(e) => setField('contact', e.target.value)}>
-            {CONTACTS.map((c) => <option key={c} value={c}>{c}</option>)}
-          </Select>
+        <FormField
+          label="Contact" htmlFor="contact"
+          help={!values.company ? 'Select a company first.' : companyContacts.length === 0 ? 'This company has no active contacts yet.' : undefined}
+        >
+          <PersonSelect
+            id="contact" value={values.contact} disabled={!values.company || companyContacts.length === 0}
+            placeholder="Select a contact..." emptyLabel="This company has no active contacts yet."
+            people={companyContacts.map((ct) => ct.fullName)}
+            onChange={(v) => setField('contact', v)}
+          />
         </FormField>
         <FormField label="Person Responsible" htmlFor="personResponsible" required error={errors.personResponsible}>
-          <Select id="personResponsible" value={values.personResponsible} error={!!errors.personResponsible} placeholder="Select a person..." onChange={(e) => setField('personResponsible', e.target.value)}>
-            {PEOPLE.map((p) => <option key={p} value={p}>{p}</option>)}
-          </Select>
+          <PersonSelect id="personResponsible" value={values.personResponsible} error={!!errors.personResponsible}
+            people={PEOPLE} onChange={(v) => setField('personResponsible', v)} />
         </FormField>
       </FormSection>
 
@@ -102,7 +130,7 @@ export function StepBasicInfo({ values, errors, setField, canSeeFinancials = tru
       </FormSection>
 
       {canSeeFinancials && (
-        <FormSection title="Financial" subtitle="Optional at quote stage — fill in once the contract value is known.">
+        <FormSection title="Financial" subtitle="Optional at quote stage, fill in once the contract value is known.">
           <FormField label="Contract Value" htmlFor="contractValue" error={errors.contractValue}>
             <div className="flex gap-sm">
               <Select aria-label="Currency" value={values.contractCurrency} className="w-24 shrink-0" onChange={(e) => setField('contractCurrency', e.target.value)}>
@@ -116,26 +144,6 @@ export function StepBasicInfo({ values, errors, setField, canSeeFinancials = tru
         </FormSection>
       )}
 
-      <FormSection title="Transport Canada approval" subtitle="Choose whether Elisen will manage government approval.">
-        <fieldset>
-          <legend className="sr-only">Is TCCA approval required?</legend>
-          <div className="grid gap-lg tablet:grid-cols-2">
-            <RadioCard
-              name="tccaRequired" value="yes" checked={values.tccaRequired === 'yes'}
-              onChange={() => setField('tccaRequired', 'yes')}
-              title="Yes, approval is required" description="Adds a TCCA setup step and creates a linked TCCA project."
-            />
-            <RadioCard
-              name="tccaRequired" value="no" checked={values.tccaRequired === 'no'}
-              onChange={() => setField('tccaRequired', 'no')}
-              title="No approval required" description="The customer handles it, or it isn't needed."
-            />
-          </div>
-          <p className="mt-sm text-xs text-text-muted">
-            You can add a TCCA project later from the project's TCCA tab if this changes.
-          </p>
-        </fieldset>
-      </FormSection>
     </>
   )
 }

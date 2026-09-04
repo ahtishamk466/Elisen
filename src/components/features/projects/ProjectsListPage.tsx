@@ -1,18 +1,29 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, SlidersHorizontal, FolderOpen } from 'lucide-react'
+import { Plus, Search, FolderOpen } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { StatCard } from '@/components/patterns/StatCard'
 import { EmptyState } from '@/components/patterns/EmptyState'
-import { Pagination } from '@/components/patterns/Pagination'
+import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { FilterChips } from '@/components/patterns/FilterChips'
+import { useTableSort } from '@/components/patterns/useTableSort'
+import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
-import { ProjectsTable } from './ProjectsTable'
+import { ProjectsTable, type ProjectRowWithHealth, type SortKey } from './ProjectsTable'
 import { AddProjectDrawer } from './AddProjectDrawer'
 import { ExportMenu } from './ExportMenu'
+import { ProjectFilterMenu, EMPTY_PROJECT_FILTERS, projectFilterChips, type ProjectFilters } from './ProjectFilterMenu'
 import { useProjectsStore } from '@/stores/projectsStore'
+import { useWorkPackagesStore } from '@/stores/workPackagesStore'
+import { useLookupStore } from '@/stores/lookupStore'
+import { useApprovalsStore } from '@/stores/approvalsStore'
+import { useDocumentsStore } from '@/stores/documentsStore'
+import { PEOPLE } from '@/lib/projectFixtures'
+import { STATUS_LABEL, TYPE_LABEL } from '@/lib/projectDisplay'
+import { HEALTH_LABEL, rollUpProject, type HealthState } from '@/lib/projectHealth'
 import { useTccaStore } from '@/stores/tccaStore'
 import { getNextProjectNumber } from '@/lib/projectFixtures'
 import type { ProjectListRow } from '@/types/project'
@@ -44,33 +55,114 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
   const addRow = useProjectsStore((s) => s.addRow)
   const updateRow = useProjectsStore((s) => s.updateRow)
   const removeRow = useProjectsStore((s) => s.removeRow)
-  const addTcca = useTccaStore((s) => s.addTcca)
+  const linkTccaToProject = useTccaStore((s) => s.linkProject)
+  const workPackages = useWorkPackagesStore((s) => s.workPackages)
+  const catalogAircraft = useLookupStore((s) => s.aircraft)
+  const linkApprovalToProject = useApprovalsStore((s) => s.linkToProject)
+  const linkRevisionToProject = useDocumentsStore((s) => s.linkRevisionToProject)
+  const activities = useWorkPackagesStore((s) => s.activities)
 
   const [query, setQuery] = useState('')
-  const [page, setPage] = useState(1)
+  const [filters, setFilters] = useState<ProjectFilters>(EMPTY_PROJECT_FILTERS)
+  // Newest project first by default — a higher number is a later project,
+  // and every number is a zero-padded 4-digit string, so lexicographic order
+  // matches numeric order.
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [editingRow, setEditingRow] = useState<ProjectListRow | null>(null)
   const [deletingRow, setDeletingRow] = useState<ProjectListRow | null>(null)
 
+  const companies = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.companyName).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [rows],
+  )
+  const people = useMemo(
+    () => Array.from(new Set([...PEOPLE, ...rows.map((r) => r.personResponsible)].filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [rows],
+  )
+
+  /** Health is rolled up from work-package activities — the level hours are
+      actually booked at — so the list and the detail page can never disagree. */
+  const withHealth = useMemo(
+    () => rows.map((row) => ({
+      row,
+      health: rollUpProject(row.id, workPackages, activities, {
+        budgetHours: row.budgetHours, actualHours: row.actualHours, complete: row.status === 'complete',
+      }),
+    })),
+    [rows, workPackages, activities],
+  )
+
   const filtered = useMemo(() => {
-    if (!query.trim()) return rows
-    const q = query.toLowerCase()
-    return rows.filter((r) =>
-      [r.number, r.subNumber, r.title, r.companyName, r.contactName, r.personResponsible]
-        .join(' ').toLowerCase().includes(q),
-    )
-  }, [rows, query])
+    const q = query.toLowerCase().trim()
+    return withHealth.filter(({ row: r, health }) => {
+      if (filters.company && r.companyName !== filters.company) return false
+      if (filters.personResponsible && r.personResponsible !== filters.personResponsible) return false
+      if (filters.priority && r.priority !== filters.priority) return false
+      if (filters.status && r.status !== filters.status) return false
+      if (filters.type && r.type !== filters.type) return false
+      if (filters.active && (filters.active === 'yes') !== r.active) return false
+      if (filters.health && health.state !== filters.health) return false
+      if (!q) return true
+      return [r.number, r.subNumber, r.title, r.companyName, r.contactName, r.personResponsible]
+        .join(' ').toLowerCase().includes(q)
+    })
+  }, [withHealth, query, filters])
+
+
+  /* Keyed off `filtered`, not `sorted`: sorting never changes the row
+     count, and this way the reveal is declared before the sort hook that
+     resets it. */
+  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
+
+  /* One comparator for the whole app now (`useTableSort`): blanks park last
+     in either direction, and the accessors below say only what each column
+     sorts on. Rows with no budget have no progress to compare, so they
+     return null rather than sorting as zero. */
+  const { sorted, sort, setSort } = useTableSort<ProjectRowWithHealth, SortKey>(filtered, {
+    number: ({ row }) => `${row.number}-${row.subNumber}`,
+    company: ({ row }) => row.companyName,
+    /* '—' is the fixture placeholder for "no contact" — treated as absent so
+       contact-less rows park last, like every other optional field here. */
+    contact: ({ row }) => (row.contactName && row.contactName !== '—' ? row.contactName : null),
+    priority: ({ row }) => row.priority,
+    type: ({ row }) => TYPE_LABEL[row.type],
+    person: ({ row }) => row.personResponsible,
+    opened: ({ row }) => row.openedDate || null,
+    budget: ({ health }) => health.budget,
+    actual: ({ health }) => health.actual,
+    remaining: ({ health }) => (health.budget > 0 ? health.remaining : null),
+    progress: ({ health }) => health.progressPct,
+    status: ({ row }) => STATUS_LABEL[row.status],
+    active: ({ row }) => row.active,
+  }, { initial: { key: 'number', dir: 'desc' }, onSortChange: resetVisible })
 
   const loading = state === 'loading'
-  const showEmpty = state === 'empty' || (state === 'ready' && filtered.length === 0)
+  const showEmpty = state === 'empty' || (state === 'ready' && sorted.length === 0)
+  const hasFilters = Object.values(filters).some(Boolean)
 
-  const stats = [
-    { value: rows.length, label: 'Total projects' },
-    { value: rows.filter((r) => r.status === 'active').length, label: 'In progress' },
-    { value: rows.filter((r) => r.status === 'complete').length, label: 'Completed projects' },
-    { value: rows.filter((r) => r.priority === '1-fire').length, label: 'Priority 1 — Fire' },
-  ]
+  /**
+   * Stats describe **what is on screen**, so they move with search and filters
+   * and read 0 when nothing matches. Counting the whole table while the list
+   * showed a filtered slice made the tiles contradict the rows beneath them.
+   *
+   * Health counts lead: "how many need attention" is the question the old
+   * Total/In-progress/Completed tiles couldn't answer.
+   */
+  const countOf = (s: HealthState) => sorted.filter((x) => x.health.state === s).length
+  const stats = canSeeFinancials
+    ? [
+        { value: sorted.length, label: 'Projects shown' },
+        { value: countOf('on-track'), label: HEALTH_LABEL['on-track'] },
+        { value: countOf('at-risk'), label: HEALTH_LABEL['at-risk'] },
+        { value: countOf('over-budget'), label: HEALTH_LABEL['over-budget'] },
+      ]
+    : [
+        { value: sorted.length, label: 'Projects shown' },
+        { value: sorted.filter(({ row }) => row.status === 'active').length, label: 'In progress' },
+        { value: sorted.filter(({ row }) => row.status === 'complete').length, label: 'Completed projects' },
+        { value: sorted.filter(({ row }) => row.priority === '1-fire').length, label: 'Priority 1: Fire' },
+      ]
 
   const handleDuplicate = (row: ProjectListRow) => {
     const number = getNextProjectNumber(rows)
@@ -86,40 +178,48 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
   }
 
   return (
-    <AppShell title="Projects — List">
+    <AppShell
+      title="Projects List"
+      description="Every project, with its budget health."
+      headerActions={
+        <>
+          <div className="min-w-0" style={{ width: 400 }}>
+            <label htmlFor="project-search" className="sr-only">Search projects</label>
+            <Input size="sm"
+              id="project-search"
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); resetVisible() }}
+              placeholder="Search by number, project, company or person..."
+              leadingIcon={<Search size={16} />}
+            />
+          </div>
+          <ProjectFilterMenu
+            ariaLabel="Filter projects"
+            companies={companies} people={people} filters={filters}
+            onApply={(f) => { setFilters(f); resetVisible() }}
+          />
+          <ExportMenu
+            rows={sorted.map(({ row }) => row)}
+            onUnavailableFormat={(format) => setToast(`${format} export isn't wired up yet: HTML, CSV and Text are ready now.`)}
+          />
+          <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setDrawerOpen(true)}>
+            Add new project
+          </Button>
+        </>
+      }
+    >
       <div className="grid gap-lg">
         {toast && <Alert tone="info" title={toast} />}
+
+        <FilterChips
+          chips={projectFilterChips(filters, (f) => { setFilters(f); resetVisible() })}
+          onClearAll={() => { setFilters(EMPTY_PROJECT_FILTERS); resetVisible() }}
+        />
 
         <div className="grid gap-lg mobile:grid-cols-2 laptop:grid-cols-4">
           {stats.map((s) => (
             <StatCard key={s.label} value={s.value} label={s.label} loading={loading} />
           ))}
-        </div>
-
-        <div className="grid gap-sm tablet:flex tablet:flex-wrap tablet:items-center">
-          <div className="min-w-0 tablet:flex-1" style={{ maxWidth: 380 }}>
-            <label htmlFor="project-search" className="sr-only">Search projects</label>
-            <Input
-              id="project-search"
-              value={query}
-              onChange={(e) => { setQuery(e.target.value); setPage(1) }}
-              placeholder="Search by number, project, company or person..."
-              leadingIcon={<Search size={16} />}
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-sm">
-            <Button variant="secondary" leadingIcon={<SlidersHorizontal size={16} />} aria-label="Filter projects">
-              Filter
-            </Button>
-            <ExportMenu
-              rows={filtered}
-              onUnavailableFormat={(format) => setToast(`${format} export isn't wired up yet — HTML, CSV and Text are ready now.`)}
-            />
-          </div>
-          <span className="hidden tablet:block tablet:flex-1" />
-          <Button leadingIcon={<Plus size={16} />} onClick={() => setDrawerOpen(true)}>
-            Add new project
-          </Button>
         </div>
 
         {state === 'error' ? (
@@ -130,15 +230,15 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
           <div className="rounded-sm border border-border-default bg-neutral-25">
             <EmptyState
               icon={<FolderOpen size={48} strokeWidth={1.5} />}
-              title={query ? 'No projects match your search' : 'No projects yet'}
+              title={query || hasFilters ? 'No projects match your search' : 'No projects yet'}
               description={
-                query
-                  ? 'Try a different project number, company or person.'
+                query || hasFilters
+                  ? 'Try a different project number, company or person, or clear the filters.'
                   : 'Create your first project to start tracking work packages, deliverables and TCCA approvals.'
               }
               action={
-                query ? (
-                  <Button variant="secondary" onClick={() => setQuery('')}>Clear search</Button>
+                query || hasFilters ? (
+                  <Button variant="secondary" onClick={() => { setQuery(''); setFilters(EMPTY_PROJECT_FILTERS) }}>Clear search &amp; filters</Button>
                 ) : (
                   <Button leadingIcon={<Plus size={16} />} onClick={() => setDrawerOpen(true)}>Add new project</Button>
                 )
@@ -146,25 +246,21 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
             />
           </div>
         ) : (
-          <>
-            <ProjectsTable
-              rows={filtered}
-              loading={loading}
-              canSeeFinancials={canSeeFinancials}
-              onView={(row) => navigate(`/projects/${row.id}`)}
-              onEdit={setEditingRow}
-              onDuplicate={handleDuplicate}
-              onDelete={setDeletingRow}
-            />
-            {!loading && (
-              <Pagination
-                page={page}
-                pageCount={3}
-                summary={`Showing 1 to ${filtered.length} of ${filtered.length} projects`}
-                onChange={setPage}
-              />
+          <ProjectsTable
+            rows={sorted.slice(0, visibleCount)}
+            loading={loading}
+            canSeeFinancials={canSeeFinancials}
+            sort={sort}
+            onSortChange={setSort}
+            onView={(row) => navigate(`/projects/${row.id}`)}
+            onOpenWorkPackages={(row) => navigate(`/projects/${row.id}?tab=work-packages`)}
+            onEdit={setEditingRow}
+            onDuplicate={handleDuplicate}
+            onDelete={setDeletingRow}
+            pagination={!loading && (
+              <AutoLoadFooter total={sorted.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="projects" />
             )}
-          </>
+          />
         )}
       </div>
 
@@ -183,29 +279,47 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
             companyName: v.company,
             companyNumber: '—',
             contactName: v.contact || '—',
+            contactEmail: '',
             personResponsible: v.personResponsible,
             actualHours: 0,
             budgetHours: 0,
             priority: v.priority as ProjectListRow['priority'],
             status: (v.status as ProjectListRow['status']) || 'quoted',
+            active: true,
+            openedDate: v.openedDate,
+            dueDate: v.dueDate,
+            aircraftInputDate: v.aircraftInputDate,
+            closedDate: v.closedDate,
+            scope: v.scope,
+            contractCurrency: v.contractCurrency,
+            contractValue: v.contractValue,
+            proposalSubmitted: v.proposalSubmitted as ProjectListRow['proposalSubmitted'],
+            proposalSubmittedDate: v.proposalSubmittedDate,
+            proposalAccepted: v.proposalAccepted as ProjectListRow['proposalAccepted'],
+            proposalAcceptedDate: v.proposalAcceptedDate,
+            nextAction: v.nextAction,
+            comments: v.comments,
+            // Snapshot the chosen catalog aircraft so the project row can be
+            // rendered without a second lookup; aircraftId keeps the link real.
+            aircraft: v.aircraftIds.flatMap((aircraftId) => {
+              const a = catalogAircraft.find((x) => x.id === aircraftId)
+              return a ? [{
+                id: crypto.randomUUID(), aircraftId: a.id,
+                modelName: a.modelName || a.modelNumber, modelNumber: a.modelNumber, manufacturer: a.manufacturer,
+              }] : []
+            }),
           })
-          if (v.tccaRequired === 'yes') {
-            addTcca({
-              id: crypto.randomUUID(),
-              number: v.tccaNumber,
-              description: v.tccaDescription || v.description || `Certification for project ${v.number}-${v.subNumber}`,
-              status: 'in-progress',
-              openedDate: v.openedDate,
-              closedDate: '',
-              nextAction: '',
-              comments: '',
-              projectIds: [projectId],
-              checklist: Object.fromEntries(v.checklist.map((itemId) => [itemId, ''])),
-            })
-          }
+          // Links chosen on the form are created against the global records —
+          // the project references them, it doesn't own copies.
+          v.approvalIds.forEach((approvalId) => linkApprovalToProject(approvalId, projectId))
+          ;[...v.deliverableRevisionIds, ...v.designDataRevisionIds]
+            .forEach((revisionId) => linkRevisionToProject(projectId, revisionId))
+          // TCCA projects are opened in TCCA Projects; a new project only links
+          // to the ones that already exist.
+          v.tccaProjectIds.forEach((tccaId) => linkTccaToProject(tccaId, projectId))
           setToast(
-            v.tccaRequired === 'yes'
-              ? `Project ${v.number}-${v.subNumber} created, with TCCA project ${v.tccaNumber} linked.`
+            v.tccaProjectIds.length > 0
+              ? `Project ${v.number}-${v.subNumber} created, with ${v.tccaProjectIds.length} TCCA project${v.tccaProjectIds.length === 1 ? '' : 's'} linked.`
               : `Project ${v.number}-${v.subNumber} created.`,
           )
         }}
