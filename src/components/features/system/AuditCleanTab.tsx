@@ -3,6 +3,8 @@ import { Trash2 } from 'lucide-react'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Select } from '@/components/ui/Select'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -39,6 +41,14 @@ export function AuditCleanTab({ loading = false, onCleaned }: AuditCleanTabProps
     }),
     [days, cleaned],
   )
+
+  /* Record type sorts on the label a reader sees beside the checkbox, not on
+     the internal series key. */
+  const { sorted, sort, setSort } = useTableSort(rows, {
+    type: (r) => AUDIT_SERIES_LABEL[r.key],
+    stored: (r) => r.total,
+    purgeable: (r) => (r.purgeable > 0 ? r.purgeable : null),
+  })
 
   const toPurge = rows.filter((r) => selected.includes(r.key) && r.purgeable > 0)
   const totalToPurge = toPurge.reduce((sum, r) => sum + r.purgeable, 0)
@@ -82,13 +92,16 @@ export function AuditCleanTab({ loading = false, onCleaned }: AuditCleanTabProps
             <caption className="sr-only">Audit record types, how many are stored, and how many are old enough to delete</caption>
             <thead>
               <tr className="border-b border-border-default bg-neutral-50">
-                <th scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Record type</th>
-                <th scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Stored</th>
-                <th scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Older than {days} days</th>
+                <SortableTh sortKey="type" sort={sort} onSortChange={setSort}
+                  className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Record type</SortableTh>
+                <SortableTh sortKey="stored" sort={sort} onSortChange={setSort}
+                  className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Stored</SortableTh>
+                <SortableTh sortKey="purgeable" sort={sort} onSortChange={setSort}
+                  className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Older than {days} days</SortableTh>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {sorted.map((r) => (
                 <tr key={r.key} className="border-b border-border-default last:border-b-0">
                   <td className="px-lg py-base align-top">
                     <Checkbox

@@ -3,6 +3,9 @@ import { Eye, Pencil, Package } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
+import { SortMenu } from '@/components/patterns/SortMenu'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { Truncate } from '@/components/patterns/Truncate'
 import { PRIORITY_LABEL, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
 import { agingDays } from '@/lib/reviewPresets'
@@ -16,9 +19,35 @@ import { DateText } from '@/components/patterns/DateText'
  * rather than disappearing — a column set that changes shape under a
  * merged table reads as broken, not simplified.
  */
-const HEADERS = [
-  'Number', 'Company Name', 'Description', 'Priority', 'Status', 'Comments', 'Next Action',
-  'Due Date', 'Aging', 'Actual / Budget', 'Active', 'Actions',
+type SortKey = 'number' | 'company' | 'description' | 'priority' | 'status' | 'comments'
+  | 'nextAction' | 'dueDate' | 'aging' | 'actual' | 'budget' | 'active'
+
+interface Column {
+  label: string
+  sort?: SortKey
+  /** Two figures in one cell; the heading offers both. */
+  sorts?: { key: SortKey; label: string }[]
+  /** Budget/actual hours are financial data — hidden below manager. */
+  financial?: boolean
+}
+
+const COLUMNS: Column[] = [
+  { label: 'Number', sort: 'number' },
+  { label: 'Company Name', sort: 'company' },
+  { label: 'Description', sort: 'description' },
+  { label: 'Priority', sort: 'priority' },
+  { label: 'Status', sort: 'status' },
+  { label: 'Comments', sort: 'comments' },
+  { label: 'Next Action', sort: 'nextAction' },
+  { label: 'Due Date', sort: 'dueDate' },
+  { label: 'Aging', sort: 'aging' },
+  {
+    label: 'Actual / Budget',
+    financial: true,
+    sorts: [{ key: 'actual', label: 'Actual' }, { key: 'budget', label: 'Budget' }],
+  },
+  { label: 'Active', sort: 'active' },
+  { label: 'Actions' },
 ]
 
 const HOURS = new Intl.NumberFormat('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -42,7 +71,27 @@ export interface ProjectReviewTableProps {
 export function ProjectReviewTable({
   rows, loading = false, canSeeFinancials = true, onView, onOpenWorkPackages, onEdit, tabs, activeTabKey, pagination,
 }: ProjectReviewTableProps) {
-  const headers = canSeeFinancials ? HEADERS : HEADERS.filter((h) => h !== 'Actual / Budget')
+  const columns = canSeeFinancials ? COLUMNS : COLUMNS.filter((c) => !c.financial)
+
+  /* Aging sorts on the computed day count, not the "34 d" string, and
+     Priority on its numeric rank so 1 - Fire leads rather than sorting
+     alphabetically under 3 - Med. */
+  const { sorted, sort, setSort } = useTableSort(rows, {
+    number: (r) => `${r.number}-${r.subNumber}`,
+    company: (r) => r.companyName,
+    description: (r) => r.title,
+    priority: (r) => r.priority,
+    status: (r) => STATUS_LABEL[r.status],
+    comments: (r) => r.comments,
+    nextAction: (r) => r.nextAction,
+    dueDate: (r) => r.dueDate,
+    /* Only pre-award rows show an age; the rest print an em dash and sink,
+       matching what the cell itself decides to render. */
+    aging: (r) => (r.status === 'query' || r.status === 'quoted' ? agingDays(r.openedDate) : null),
+    actual: (r) => r.actualHours,
+    budget: (r) => r.budgetHours,
+    active: (r) => r.active,
+  })
 
   return (
     // Tabs, columns and pagination share one bordered card — the tabs are the
@@ -61,8 +110,14 @@ export function ProjectReviewTable({
           <caption className="sr-only">Projects review</caption>
           <thead>
             <tr className="border-b border-border-default bg-neutral-50">
-              {headers.map((h) => (
-                <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+              {columns.map((c) => (
+                <SortableTh key={c.label} sortKey={c.sort} ownsKeys={c.sorts?.map((o) => o.key)}
+                  sort={sort} onSortChange={setSort}
+                  className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">
+                  {c.sorts
+                    ? <SortMenu label={c.label} options={c.sorts} sort={sort} onChange={setSort} />
+                    : c.label}
+                </SortableTh>
               ))}
             </tr>
           </thead>
@@ -70,10 +125,10 @@ export function ProjectReviewTable({
             {loading
               ? Array.from({ length: 8 }, (_, i) => (
                   <tr key={i} className="border-b border-border-default last:border-b-0">
-                    {headers.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                    {columns.map((c) => <td key={c.label} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                   </tr>
                 ))
-              : rows.map((row) => {
+              : sorted.map((row) => {
                   // Aging is only meaningful before award — exactly the two
                   // RFQ statuses the legacy Aging column appeared on.
                   const aging = row.status === 'query' || row.status === 'quoted' ? agingDays(row.openedDate) : null

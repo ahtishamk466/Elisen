@@ -1,80 +1,169 @@
+/* Generated from the client TPMS database export (2026-08-27).
+   People are stand-ins; business records are the client's own.
+   Regenerate with tools/ (see tools/README.md) — do not hand-edit. */
 import type { Activity, ActivityTask, Task } from '@/types/catalog'
 
-/**
- * Obviously-fake demo catalog. **Ids are load-bearing** — `WorkPackageActivity`
- * and `TimesheetEntry` both store `activityId`, so these must not be renumbered.
- */
 export const ACTIVITIES: Activity[] = [
-  { id: 'airworthiness', name: 'Airworthiness', description: 'Compliance planning and continuing airworthiness work.', taskRequired: true, isDefault: true, nonProject: false, active: true },
-  { id: 'delegate', name: 'Delegate', description: 'Independent check and sign-off by a design approval delegate.', taskRequired: true, isDefault: true, nonProject: false, active: true },
-  { id: 'mech-design', name: 'Mechanical Design', description: 'Layout, installation and detail design of mechanical parts.', taskRequired: true, isDefault: true, nonProject: false, active: true },
-  { id: 'elec-design', name: 'Electrical Design', description: 'Wiring, bonding and electrical installation design.', taskRequired: true, isDefault: true, nonProject: false, active: true },
-  { id: 'struct-validation', name: 'Structural Validation', description: 'Static strength and stress substantiation.', taskRequired: true, isDefault: true, nonProject: false, active: true },
-  { id: 'elec-validation', name: 'Electrical Validation', description: 'Load analysis and electrical qualification testing.', taskRequired: true, isDefault: true, nonProject: false, active: true },
-  { id: 'project-mgmt', name: 'Project Management', description: 'Scheduling, progress tracking and customer reporting.', taskRequired: false, isDefault: true, nonProject: false, active: true },
-  { id: 'manuals', name: 'Manuals & Publications', description: 'Flight and maintenance manual supplements.', taskRequired: true, isDefault: false, nonProject: false, active: true },
-  { id: 'general-cert', name: 'General Certification', description: 'Certification plans and design compliance reporting.', taskRequired: true, isDefault: true, nonProject: false, active: true },
-  { id: 'rfq-response', name: 'RFQ Response', description: 'Estimating and quoting work not yet won.', taskRequired: false, isDefault: false, nonProject: false, active: true },
-  { id: 'customer-support', name: 'Customer Support', description: 'Technical queries and on-site support after delivery.', taskRequired: false, isDefault: false, nonProject: false, active: true },
-  // Non-project time. Never budgeted, never assigned to a work package.
-  { id: 'gen-holiday', name: 'GEN - Holiday', description: 'Statutory and company holidays.', taskRequired: false, isDefault: false, nonProject: true, active: true },
-  { id: 'gen-paid-absence', name: 'GEN - Paid Absence', description: 'Approved paid absence.', taskRequired: false, isDefault: false, nonProject: true, active: true },
-  { id: 'gen-sick', name: 'GEN - Sick Leave', description: 'Sick days.', taskRequired: false, isDefault: false, nonProject: true, active: true },
-  { id: 'gen-training', name: 'GEN - Training', description: 'Recurrent and role training.', taskRequired: false, isDefault: false, nonProject: true, active: true },
-  { id: 'gen-internal', name: 'GEN - Internal Meetings', description: 'Internal meetings and administration.', taskRequired: false, isDefault: false, nonProject: true, active: true },
-  // Retired, kept to prove that deactivating hides an activity from the pickers
-  // without disturbing records that already reference it.
-  { id: 'legacy-drafting', name: 'Board Drafting', description: 'Superseded by Mechanical Design.', taskRequired: false, isDefault: false, nonProject: false, active: false },
+  { id: "act-67", name: "Project Management", description: "", taskRequired: false, isDefault: true, nonProject: false, active: true },
+  { id: "act-68", name: "Av / Elec System Design", description: "", taskRequired: true, isDefault: true, nonProject: false, active: true },
+  { id: "act-69", name: "Mech / Struct Design", description: "", taskRequired: true, isDefault: true, nonProject: false, active: true },
+  { id: "act-70", name: "Mech / Struct Validation", description: "", taskRequired: true, isDefault: true, nonProject: false, active: true },
+  { id: "act-71", name: "Av / Elec System Validation", description: "", taskRequired: true, isDefault: true, nonProject: false, active: true },
+  { id: "act-72", name: "Aircraft Ground Testing", description: "", taskRequired: false, isDefault: true, nonProject: false, active: true },
+  { id: "act-73", name: "Aircraft Flight Testing", description: "", taskRequired: false, isDefault: true, nonProject: false, active: true },
+  { id: "act-74", name: "Certification", description: "", taskRequired: true, isDefault: true, nonProject: false, active: true },
+  { id: "act-75", name: "Publications", description: "", taskRequired: true, isDefault: true, nonProject: false, active: true },
+  { id: "act-76", name: "Production Support", description: "", taskRequired: false, isDefault: true, nonProject: false, active: true },
+  { id: "act-77", name: "Hyd / Mech System Validation", description: "", taskRequired: false, isDefault: true, nonProject: false, active: true },
+  { id: "act-78", name: "Hyd / Mech System Design", description: "", taskRequired: false, isDefault: true, nonProject: false, active: true },
+  { id: "act-79", name: "GEN - Unpaid Absence", description: "", taskRequired: false, isDefault: false, nonProject: true, active: true },
+  { id: "act-80", name: "GEN - Paid Absence / Sick", description: "", taskRequired: false, isDefault: false, nonProject: true, active: true },
+  { id: "act-81", name: "GEN - Vacation", description: "", taskRequired: false, isDefault: false, nonProject: true, active: true },
+  { id: "act-82", name: "GEN - Admin", description: "", taskRequired: false, isDefault: false, nonProject: true, active: true },
+  { id: "act-83", name: "GEN - Supervision / Management", description: "", taskRequired: false, isDefault: false, nonProject: true, active: true },
+  { id: "act-84", name: "GEN - Idle Time", description: "", taskRequired: false, isDefault: false, nonProject: true, active: true },
+  { id: "act-86", name: "GEN - Holiday", description: "", taskRequired: false, isDefault: false, nonProject: true, active: true },
+  { id: "act-87", name: "GEN - Training", description: "", taskRequired: false, isDefault: false, nonProject: true, active: true },
+  { id: "act-88", name: "GEN - Office Admin", description: "", taskRequired: false, isDefault: false, nonProject: true, active: true },
+  { id: "act-89", name: "GEN - Management Meeting", description: "", taskRequired: false, isDefault: false, nonProject: true, active: true },
+  { id: "act-90", name: "GEN - R & D Reporting", description: "", taskRequired: false, isDefault: false, nonProject: true, active: true },
+  { id: "act-91", name: "GEN - Paid from Banked Time", description: "", taskRequired: false, isDefault: false, nonProject: true, active: true },
+  { id: "act-92", name: "RFQ Response", description: "", taskRequired: false, isDefault: true, nonProject: false, active: true },
+  { id: "act-93", name: "Sales Support", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-94", name: "Customer Support", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-95", name: "Media Marketing", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-96", name: "Job Description", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-97", name: "Advertising", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-98", name: "Job Fair", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-99", name: "Candidate Review", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-100", name: "Software Maintenance", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-101", name: "Hardware Maintenance", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-102", name: "Technology Update", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-103", name: "Coordination / Management support", description: "", taskRequired: false, isDefault: true, nonProject: false, active: true },
+  { id: "act-104", name: "Travel", description: "", taskRequired: false, isDefault: true, nonProject: false, active: true },
+  { id: "act-105", name: "TCCA Project Management", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-106", name: "Managment of APs", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-107", name: "ACC", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-108", name: "Self Audit", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-109", name: "TCCA PVI", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-110", name: "Process development / review", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-111", name: "Customer Inquiries / Audits", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-112", name: "Quality Control / Control of Product", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-114", name: "Transfer Banked Hours - Adjustment Entry", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-116", name: "Component Testing", description: "", taskRequired: false, isDefault: true, nonProject: false, active: true },
+  { id: "act-117", name: "Performance Management Program / Performance Review", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-118", name: "Conference / Trade Show", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-119", name: "Customer Visit", description: "", taskRequired: false, isDefault: false, nonProject: false, active: true },
+  { id: "act-121", name: "Airworthiness", description: "Airworthiness Group Tasks", taskRequired: false, isDefault: true, nonProject: false, active: true },
+  { id: "act-122", name: "Occ Safety Design", description: "", taskRequired: false, isDefault: true, nonProject: false, active: true },
+  { id: "act-123", name: "Occ Safety Validation", description: "", taskRequired: false, isDefault: true, nonProject: false, active: true },
 ]
-
-const TASK_NAMES = [
-  // Shared across the two design activities, as in the client's own list.
-  'Conceptual Design', 'Design Checking', '3D Modeling', 'Detail Design',
-  'Installation Design', 'Assembly Design',
-  'Compliance plan drafting', 'Continuing airworthiness (ICA)',
-  'Document check & sign-off', 'Witness testing',
-  'Static strength analysis', 'Stress analysis report',
-  'Electrical load analysis', 'Burn test procedure',
-  'Flight manual supplement', 'Maintenance manual update',
-  'Certification plan', 'Design compliance report',
-  'Prepare estimate sheet', 'Quote review',
-  'Layout & installation drawings', 'Bracket and fitting design',
-  'Wiring diagram', 'Load and bonding schedule',
-  'Schedule & progress tracking', 'Customer status reporting',
-  'Technical query response', 'On-site support visit',
-  'Coordination with Authorities',
-]
-
-/** `3D Modeling` → `task-3d-modeling`. Stable, and readable in a URL. */
-export const taskId = (name: string) =>
-  `task-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
 
 export const TASKS: Task[] = [
-  ...TASK_NAMES.map((name) => ({ id: taskId(name), name, active: true })),
-  // Unlinked on purpose: a task can exist before anyone associates it, which is
-  // the state the Tasks tab has to render without looking broken.
-  { id: taskId('Vibration Survey'), name: 'Vibration Survey', active: true },
+  { id: "tsk-51", name: "Conceptual Design", active: true },
+  { id: "tsk-52", name: "3D Modeling", active: false },
+  { id: "tsk-53", name: "Detail Design", active: true },
+  { id: "tsk-54", name: "Installation Design", active: true },
+  { id: "tsk-55", name: "Design Checking", active: false },
+  { id: "tsk-57", name: "Coordination with Vendors", active: false },
+  { id: "tsk-60", name: "Global FEM", active: false },
+  { id: "tsk-62", name: "Static Strength Analysis", active: true },
+  { id: "tsk-64", name: "W&B Analysis", active: false },
+  { id: "tsk-65", name: "Static Strength Test", active: true },
+  { id: "tsk-66", name: "Fatigue / Damage Tolerance Test", active: true },
+  { id: "tsk-67", name: "M&P", active: false },
+  { id: "tsk-68", name: "Report Checking", active: false },
+  { id: "tsk-72", name: "Avionics System Compliance", active: true },
+  { id: "tsk-83", name: "R&D Journal", active: false },
+  { id: "tsk-90", name: "Coordination with Authorities", active: false },
+  { id: "tsk-92", name: "Burn Test Procedure", active: false },
+  { id: "tsk-97", name: "Flight Test Procedure", active: false },
+  { id: "tsk-141", name: "Production Liaison", active: true },
+  { id: "tsk-142", name: "Assembly Design", active: true },
+  { id: "tsk-143", name: "Component Acceptance Test Procedure", active: true },
+  { id: "tsk-144", name: "Design Support", active: true },
+  { id: "tsk-145", name: "Detail FEM", active: true },
+  { id: "tsk-146", name: "Electrical Load Analysis", active: true },
+  { id: "tsk-147", name: "Fatigue / Damage Tolerance Analysis", active: true },
+  { id: "tsk-148", name: "Failure Modes and Effect Analysis", active: true },
+  { id: "tsk-149", name: "Functional Test Procedure", active: true },
+  { id: "tsk-150", name: "Fluid Flow Analysis", active: true },
+  { id: "tsk-151", name: "Functional Hazard Assessment", active: true },
+  { id: "tsk-152", name: "Ground Test procedure", active: true },
+  { id: "tsk-153", name: "Qualification Test Procedure", active: true },
+  { id: "tsk-154", name: "System Safety Assessment", active: true },
+  { id: "tsk-156", name: "System Certification review", active: true },
+  { id: "tsk-157", name: "Flight Operations review", active: true },
+  { id: "tsk-158", name: "General Certification Compliance", active: true },
+  { id: "tsk-159", name: "Interiors Certification review", active: true },
+  { id: "tsk-160", name: "Technical Publications review", active: true },
+  { id: "tsk-161", name: "Test Procedures review", active: true },
+  { id: "tsk-162", name: "Structural Certification review", active: true },
+  { id: "tsk-163", name: "Continuing Airworthiness", active: true },
+  { id: "tsk-164", name: "Aircraft Operating publication", active: true },
+  { id: "tsk-165", name: "Aircraft Maintenance publication", active: true },
+  { id: "tsk-166", name: "Technical Instructions for Production", active: true },
+  { id: "tsk-167", name: "Project Estimating", active: true },
+  { id: "tsk-168", name: "Proposal Prep & Review", active: true },
 ]
 
-/** activity id → task names. The many-to-many source. */
-const ASSOCIATIONS: Record<string, string[]> = {
-  'mech-design': ['Conceptual Design', 'Design Checking', '3D Modeling', 'Detail Design', 'Installation Design', 'Assembly Design', 'Layout & installation drawings', 'Bracket and fitting design'],
-  'elec-design': ['Conceptual Design', 'Design Checking', '3D Modeling', 'Installation Design', 'Wiring diagram', 'Load and bonding schedule'],
-  airworthiness: ['Compliance plan drafting', 'Continuing airworthiness (ICA)', 'Coordination with Authorities'],
-  delegate: ['Document check & sign-off', 'Witness testing'],
-  'struct-validation': ['Static strength analysis', 'Stress analysis report'],
-  'elec-validation': ['Electrical load analysis', 'Burn test procedure'],
-  manuals: ['Flight manual supplement', 'Maintenance manual update'],
-  'general-cert': ['Certification plan', 'Design compliance report', 'Coordination with Authorities'],
-  'rfq-response': ['Prepare estimate sheet', 'Quote review'],
-  'project-mgmt': ['Schedule & progress tracking', 'Customer status reporting'],
-  'customer-support': ['Technical query response', 'On-site support visit'],
-}
+export const ACTIVITY_TASK_LINKS: ActivityTask[] = [
+  { id: "at-42", activityId: "act-69", taskId: "tsk-55", active: true },
+  { id: "at-43", activityId: "act-69", taskId: "tsk-52", active: true },
+  { id: "at-44", activityId: "act-69", taskId: "tsk-51", active: true },
+  { id: "at-45", activityId: "act-69", taskId: "tsk-54", active: true },
+  { id: "at-46", activityId: "act-69", taskId: "tsk-53", active: true },
+  { id: "at-47", activityId: "act-69", taskId: "tsk-142", active: true },
+  { id: "at-48", activityId: "act-68", taskId: "tsk-51", active: true },
+  { id: "at-49", activityId: "act-68", taskId: "tsk-55", active: true },
+  { id: "at-50", activityId: "act-68", taskId: "tsk-54", active: true },
+  { id: "at-51", activityId: "act-68", taskId: "tsk-53", active: true },
+  { id: "at-60", activityId: "act-71", taskId: "tsk-72", active: true },
+  { id: "at-61", activityId: "act-71", taskId: "tsk-143", active: true },
+  { id: "at-62", activityId: "act-71", taskId: "tsk-144", active: true },
+  { id: "at-63", activityId: "act-71", taskId: "tsk-146", active: true },
+  { id: "at-64", activityId: "act-71", taskId: "tsk-148", active: true },
+  { id: "at-65", activityId: "act-71", taskId: "tsk-97", active: true },
+  { id: "at-66", activityId: "act-71", taskId: "tsk-151", active: true },
+  { id: "at-67", activityId: "act-71", taskId: "tsk-149", active: true },
+  { id: "at-68", activityId: "act-71", taskId: "tsk-152", active: true },
+  { id: "at-69", activityId: "act-71", taskId: "tsk-153", active: true },
+  { id: "at-70", activityId: "act-71", taskId: "tsk-154", active: true },
+  { id: "at-71", activityId: "act-70", taskId: "tsk-144", active: true },
+  { id: "at-72", activityId: "act-70", taskId: "tsk-145", active: true },
+  { id: "at-73", activityId: "act-70", taskId: "tsk-147", active: true },
+  { id: "at-74", activityId: "act-70", taskId: "tsk-66", active: true },
+  { id: "at-75", activityId: "act-70", taskId: "tsk-60", active: true },
+  { id: "at-76", activityId: "act-70", taskId: "tsk-153", active: true },
+  { id: "at-77", activityId: "act-70", taskId: "tsk-62", active: true },
+  { id: "at-78", activityId: "act-70", taskId: "tsk-65", active: true },
+  { id: "at-79", activityId: "act-74", taskId: "tsk-90", active: true },
+  { id: "at-80", activityId: "act-74", taskId: "tsk-158", active: true },
+  { id: "at-81", activityId: "act-74", taskId: "tsk-159", active: true },
+  { id: "at-82", activityId: "act-74", taskId: "tsk-162", active: true },
+  { id: "at-83", activityId: "act-74", taskId: "tsk-156", active: true },
+  { id: "at-84", activityId: "act-74", taskId: "tsk-160", active: true },
+  { id: "at-85", activityId: "act-74", taskId: "tsk-161", active: true },
+  { id: "at-86", activityId: "act-74", taskId: "tsk-163", active: true },
+  { id: "at-87", activityId: "act-75", taskId: "tsk-165", active: true },
+  { id: "at-88", activityId: "act-75", taskId: "tsk-164", active: true },
+  { id: "at-89", activityId: "act-92", taskId: "tsk-167", active: true },
+  { id: "at-90", activityId: "act-92", taskId: "tsk-168", active: true },
+  { id: "at-91", activityId: "act-121", taskId: "tsk-164", active: true },
+  { id: "at-92", activityId: "act-121", taskId: "tsk-158", active: true },
+  { id: "at-93", activityId: "act-123", taskId: "tsk-159", active: true },
+  { id: "at-94", activityId: "act-123", taskId: "tsk-92", active: true },
+  { id: "at-95", activityId: "act-123", taskId: "tsk-158", active: true },
+  { id: "at-96", activityId: "act-123", taskId: "tsk-156", active: true },
+]
 
-export const ACTIVITY_TASK_LINKS: ActivityTask[] = Object.entries(ASSOCIATIONS)
-  .flatMap(([activityId, names]) => names.map((name) => ({
-    id: `at-${activityId}-${taskId(name)}`,
-    activityId,
-    taskId: taskId(name),
-    active: true,
-  })))
+const TASK_BY_ID = new Map(TASKS.map((t) => [t.id, t]))
+
+/** Task name for a catalog id — the app stores task *names* on entries. */
+export const taskId = (name: string) =>
+  TASKS.find((t) => t.name === name)?.id ?? ''
+
+export const tasksOfActivity = (activityId: string) =>
+  ACTIVITY_TASK_LINKS.filter((l) => l.activityId === activityId && l.active)
+    .map((l) => TASK_BY_ID.get(l.taskId))
+    .filter(Boolean) as Task[]

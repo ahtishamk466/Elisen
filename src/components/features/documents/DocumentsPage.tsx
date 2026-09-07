@@ -5,6 +5,8 @@ import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { TableTabs } from '@/components/patterns/TableTabs'
@@ -28,6 +30,9 @@ import { DateText } from '@/components/patterns/DateText'
 export type PageState = 'ready' | 'loading' | 'error'
 
 type Row = { doc: ProjectDocument; rev: DocRevision }
+
+type SortKey = 'number' | 'revision' | 'title' | 'aircraft' | 'ata' | 'owner'
+  | 'opened' | 'due' | 'nextAction' | 'status' | 'projects'
 
 /**
  * The Documents workspace. Deliverables and Design Data are one entity in the
@@ -85,6 +90,24 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
 
   const revisionCount = (documentId: string) => revisions.filter((r) => r.documentId === documentId).length
 
+  /* Title / Type sorts on the title, the line the cell leads with. Projects
+     sorts on how many the revision is attached to — the count is the whole
+     point of that column. Both date columns sort on the stored ISO value, so
+     they order chronologically rather than by the "Aug 20, 2026" text. */
+  const { sorted, sort, setSort } = useTableSort(rows, {
+    number: (r) => r.doc.number,
+    revision: (r) => r.rev.rev,
+    title: (r) => r.doc.title,
+    aircraft: (r) => r.doc.aircraft,
+    ata: (r) => r.doc.ataChapter,
+    owner: (r) => r.doc.owner,
+    opened: (r) => r.rev.openedDate,
+    due: (r) => r.rev.dueDate,
+    nextAction: (r) => r.rev.nextAction,
+    status: (r) => r.rev.status,
+    projects: (r) => projectsFor(r.rev.id).length,
+  }, { onSortChange: resetVisible })
+
   /* Number and Revision are separate columns — a number is how a document is
      asked for and a revision is which one of it you mean; merged, neither
      sorts or scans. Title and Type share one, because the type only
@@ -99,21 +122,21 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
      16px its two `px-sm` pads supply. Under `table-fixed` any width beyond
      the sum is shared out **proportionally**, so a wider screen loosens
      every column a little rather than pouring it all into one. */
-  const columns: { label: string; width: number }[] = isDrawing
+  const columns: { label: string; width: number; sort?: SortKey }[] = isDrawing
     ? [
-        { label: 'Number', width: 90 }, { label: 'Revision', width: 72 },
-        { label: 'Title / Type', width: 96 }, { label: 'Aircraft', width: 92 },
-        { label: 'ATA', width: 58 }, { label: 'Opened', width: 118 },
-        { label: 'Due', width: 118 }, { label: 'Next Action', width: 96 },
-        { label: 'Status', width: 82 }, { label: 'Projects', width: 68 },
+        { label: 'Number', width: 90, sort: 'number' }, { label: 'Revision', width: 72, sort: 'revision' },
+        { label: 'Title / Type', width: 96, sort: 'title' }, { label: 'Aircraft', width: 92, sort: 'aircraft' },
+        { label: 'ATA', width: 58, sort: 'ata' }, { label: 'Opened', width: 118, sort: 'opened' },
+        { label: 'Due', width: 118, sort: 'due' }, { label: 'Next Action', width: 96, sort: 'nextAction' },
+        { label: 'Status', width: 82, sort: 'status' }, { label: 'Projects', width: 68, sort: 'projects' },
         { label: 'Actions', width: 60 },
       ]
     : [
-        { label: 'Number', width: 96 }, { label: 'Revision', width: 72 },
-        { label: 'Title / Type', width: 116 }, { label: 'Owner', width: 104 },
-        { label: 'Opened', width: 118 }, { label: 'Due', width: 118 },
-        { label: 'Next Action', width: 104 }, { label: 'Status', width: 86 },
-        { label: 'Projects', width: 72 }, { label: 'Actions', width: 64 },
+        { label: 'Number', width: 96, sort: 'number' }, { label: 'Revision', width: 72, sort: 'revision' },
+        { label: 'Title / Type', width: 116, sort: 'title' }, { label: 'Owner', width: 104, sort: 'owner' },
+        { label: 'Opened', width: 118, sort: 'opened' }, { label: 'Due', width: 118, sort: 'due' },
+        { label: 'Next Action', width: 104, sort: 'nextAction' }, { label: 'Status', width: 86, sort: 'status' },
+        { label: 'Projects', width: 72, sort: 'projects' }, { label: 'Actions', width: 64 },
       ]
 
   /* Derived, so the table's declared minimum can never drift from the widths
@@ -204,10 +227,11 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
                     {columns.map((c) => (
-                      <th key={c.label} scope="col" style={{ width: c.width }}
+                      <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                        style={{ width: c.width }}
                         className="whitespace-nowrap px-sm py-base align-middle text-xs font-semibold text-text-secondary">
                         {c.label}
-                      </th>
+                      </SortableTh>
                     ))}
                   </tr>
                 </thead>
@@ -218,7 +242,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                           {columns.map((c) => <td key={c.label} className="px-sm py-base"><Skeleton className="h-4 w-full" /></td>)}
                         </tr>
                       ))
-                    : rows.slice(0, visibleCount).map((row) => {
+                    : sorted.slice(0, visibleCount).map((row) => {
                         const { doc, rev } = row
                         const labels = projectsFor(rev.id)
                         return (

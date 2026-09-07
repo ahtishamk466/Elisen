@@ -10,6 +10,8 @@ import { Select } from '@/components/ui/Select'
 import { PersonSelect } from '@/components/ui/PersonSelect'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { UrlField, isOpenableUrl } from '@/components/patterns/UrlField'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { PersonCell } from '@/components/patterns/PersonCell'
 import { useDocumentsStore } from '@/stores/documentsStore'
 import { useProjectsStore } from '@/stores/projectsStore'
@@ -37,6 +39,18 @@ const today = () => new Date().toISOString().slice(0, 10)
 /** Add the next revision to an existing document (with its revision history
     visible — "you should be able to see that revisions already exist"), or
     edit one revision's tracking. */
+type RevisionSortKey = 'rev' | 'opened' | 'due' | 'closed' | 'nextAction' | 'status' | 'file'
+
+const REVISION_COLUMNS: { label: string; sort?: RevisionSortKey }[] = [
+  { label: 'Rev', sort: 'rev' },
+  { label: 'Opened', sort: 'opened' },
+  { label: 'Due', sort: 'due' },
+  { label: 'Closed', sort: 'closed' },
+  { label: 'Next Action', sort: 'nextAction' },
+  { label: 'Status', sort: 'status' },
+  { label: 'File', sort: 'file' },
+]
+
 export function RevisionDrawer({ document, projectId, initial, onClose, onSaved }: RevisionDrawerProps) {
   const label = useProjectLabel(projectId ?? '')
   const revisions = useDocumentsStore((s) => s.revisions)
@@ -48,6 +62,16 @@ export function RevisionDrawer({ document, projectId, initial, onClose, onSaved 
 
   const isEdit = !!initial
   const existing = revisions.filter((r) => r.documentId === document.id)
+
+  const { sorted: sortedRevisions, sort, setSort } = useTableSort(existing, {
+    rev: (r) => r.rev,
+    opened: (r) => r.openedDate,
+    due: (r) => r.dueDate,
+    closed: (r) => r.closedDate,
+    nextAction: (r) => r.nextAction,
+    status: (r) => REVISION_STATUS_LABEL[r.status],
+    file: (r) => (isOpenableUrl(r.url) ? r.url : null),
+  })
   const suggested = nextRevLetter(existing.map((r) => r.rev))
 
   // Workspace mode has no project context; default to whichever project the
@@ -129,13 +153,14 @@ export function RevisionDrawer({ document, projectId, initial, onClose, onSaved 
               <caption className="sr-only">Revisions that already exist of {document.number}</caption>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
-                  {['Rev', 'Opened', 'Due', 'Closed', 'Next Action', 'Status', 'File'].map((h) => (
-                    <th key={h} scope="col" className="whitespace-nowrap px-base py-sm text-xs font-semibold text-text-secondary">{h}</th>
+                  {REVISION_COLUMNS.map((c) => (
+                    <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                      className="whitespace-nowrap px-base py-sm text-xs font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {existing.map((r) => (
+                {sortedRevisions.map((r) => (
                   <tr key={r.id} className="border-b border-border-default last:border-b-0">
                     <td className="whitespace-nowrap px-base py-sm text-sm font-semibold text-text-primary">{r.rev}</td>
                     <td className="px-base py-sm text-sm text-text-primary"><DateText value={r.openedDate} /></td>

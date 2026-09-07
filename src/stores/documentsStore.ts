@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { DOCUMENTS, DOC_REVISIONS, PROJECT_REVISION_LINKS } from '@/lib/documentFixtures'
+import { coreData } from '@/lib/dataset'
 import type { DocRevision, ProjectDocument, ProjectRevisionLink } from '@/types/documents'
 import type { DeliverableRevision } from '@/types/tcca'
 
@@ -25,9 +25,9 @@ interface DocumentsState {
 }
 
 export const useDocumentsStore = create<DocumentsState>((set) => ({
-  documents: DOCUMENTS,
-  revisions: DOC_REVISIONS,
-  links: PROJECT_REVISION_LINKS,
+  documents: coreData().documents,
+  revisions: coreData().docRevisions,
+  links: coreData().projectRevisionLinks,
 
   addDocument: (doc, firstRevision) =>
     set((s) => ({

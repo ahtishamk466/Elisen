@@ -71,6 +71,8 @@ export function PersonDetailPage() {
   const railRef = useRef<HTMLDivElement>(null)
 
   const allRows = useTimesheetStore((s) => s.rows)
+  const ensureTimesheet = useTimesheetStore((s) => s.ensureLoaded)
+  useEffect(ensureTimesheet, [ensureTimesheet])
   const projects = useProjectsStore((s) => s.rows)
   const workPackages = useWorkPackagesStore((s) => s.workPackages)
   const wpActivities = useWorkPackagesStore((s) => s.activities)
@@ -220,7 +222,9 @@ export function PersonDetailPage() {
                 {
                   label: 'View time entries',
                   icon: <ListChecks size={16} />,
-                  onSelect: () => navigate(`/hours-worked?employee=${encodeURIComponent(name)}`),
+                  // Explicit tab=entries: By Person is Hours Worked's default
+                  // landing tab, but this hand-off means the raw rows.
+                  onSelect: () => navigate(`/hours-worked?tab=entries&employee=${encodeURIComponent(name)}`),
                 },
               ]}
             />

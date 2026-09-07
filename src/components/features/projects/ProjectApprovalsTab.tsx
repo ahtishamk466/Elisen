@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { EmptyState } from '@/components/patterns/EmptyState'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -13,7 +15,16 @@ import { useLookupStore } from '@/stores/lookupStore'
 import type { Approval } from '@/types/documents'
 import { formatDate } from '@/lib/formatDate'
 
-const HEADERS = ['Number', 'Description', 'Primary', 'Aircraft', 'Current Revision', 'Actions']
+type SortKey = 'number' | 'description' | 'primary' | 'aircraft' | 'revision'
+
+const COLUMNS: { label: string; sort?: SortKey }[] = [
+  { label: 'Number', sort: 'number' },
+  { label: 'Description', sort: 'description' },
+  { label: 'Primary', sort: 'primary' },
+  { label: 'Aircraft', sort: 'aircraft' },
+  { label: 'Current Revision', sort: 'revision' },
+  { label: 'Actions' },
+]
 
 /**
  * Certificates this project relates to — an *association*, nothing more.
@@ -40,6 +51,18 @@ export function ProjectApprovalsTab({ projectId }: { projectId: string }) {
     revisions.filter((r) => r.approvalId === approvalId).sort((a, b) => b.revision - a.revision)[0]
   const aircraftLabels = (a: Approval) =>
     a.aircraftIds.map((id) => catalog.find((m) => m.id === id)?.modelNumber).filter(Boolean) as string[]
+
+  /* Current Revision sorts on the revision date, not the "Rev 3 · Aug 2026"
+     string the cell prints: a reader ordering this column wants the most
+     recently re-issued certificate, and "Rev 10" sorts under "Rev 2" as text.
+     Never-issued rows carry no date, so they sink. */
+  const { sorted, sort, setSort } = useTableSort(linked, {
+    number: (a) => a.number,
+    description: (a) => a.description,
+    primary: (a) => a.primary,
+    aircraft: (a) => aircraftLabels(a).join(', '),
+    revision: (a) => currentRevision(a.id)?.revisionDate,
+  })
 
   const linkChosen = () => {
     if (!choice) return
@@ -80,13 +103,14 @@ export function ProjectApprovalsTab({ projectId }: { projectId: string }) {
               <caption className="sr-only">Approvals tied to this project</caption>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
-                  {HEADERS.map((h) => (
-                    <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                  {COLUMNS.map((c) => (
+                    <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                      className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {linked.map((a) => {
+                {sorted.map((a) => {
                   const cr = currentRevision(a.id)
                   return (
                     <tr key={a.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">

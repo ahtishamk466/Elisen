@@ -109,6 +109,43 @@ weight** (`text-sm font-semibold`): they are two halves of one sentence, and
 making either louder implied a hierarchy that isn't there. With no budget set
 the tail reads `No budget`, never `— used`.
 
+### The data is the client's own, fetched not bundled
+
+Every record on screen comes from the client's TPMS export, served as static
+JSON from `public/data/` and loaded by `lib/dataset.ts` — core before the app
+module is imported, the 31k timesheet rows on their own. Stores seed from
+`coreData()`; nothing imports a hand-written row any more. `PEOPLE`,
+`EMPLOYEES`, the activity/task catalog, settings and RBAC stay as generated TS
+because they are small and read at module scope.
+
+**People in the data are stand-ins, and must stay that way.** The prototype is
+served publicly with no backend, so every imported byte is public. Credential
+and pay columns are never imported; names, emails and phone numbers are
+replaced deterministically, including inside free-text comments. Re-import
+with `tools/` and re-run its checks before shipping new data.
+
+**Column widths are measured against real content, and the real content is now
+long.** Client project titles, deliverable numbers and TCCA descriptions are
+far longer than the invented ones were — a width tuned against a fixture is
+not a width tuned against this data.
+
+### Every table heading sorts, and they all look the same doing it
+
+Every table in the app — list pages, tabs, cards, drawer sub-tables — renders
+its headings through `SortableTh`, and only the **Actions** column is plain.
+There is one icon vocabulary and it never varies: a neutral ⇅ at rest, a
+single accent ↑/↓ on the active column, nothing else. The heading's weight and
+colour do not change when it becomes active; the arrow already says which
+column is sorted, and darkening the label read as a second, heavier font
+beside its grey neighbours.
+
+Sorting is `useTableSort` everywhere — never a hand-rolled comparator, so a
+blank cell can't sink on one screen and lead on another. Two rules it fixes
+centrally: blanks park last in **both** directions, and numeric-looking codes
+compare as numbers (`3200-00` before `3300-01`). A column whose cell stacks two
+fields keeps a `SortMenu` inside its `SortableTh` rather than picking one of
+them.
+
 ### Table columns are left-aligned — all of them
 
 Headings **and** values, figures included: Budget, Actual, Remaining, Entries,
@@ -350,7 +387,7 @@ Sizes and `UI/Select` → Sizes.
 
 | Component | Variants | Location | Purpose |
 |-----------|----------|----------|---------|
-| FormField | required, description, help, error, counter | `patterns/FormField.tsx` | Label + control + help/error, responsive 1→3 col |
+| FormField | required, description, help, error, counter, fullWidth | `patterns/FormField.tsx` | Label + control + help/error, responsive 1→3 col. `fullWidth` stacks label above a control spanning the whole section instead of the 1/3-2/3 split — for the rare field (e.g. a comment box) that needs more room than a shared control column gives it |
 | FormSection | with/without subtitle | `patterns/FormSection.tsx` | Titled card grouping related fields |
 | Drawer | with/without footer | `patterns/Drawer.tsx` | Right side panel; Esc to close, focus trapped, footer actions grouped right |
 | ConfirmDialog | primary / danger | `patterns/ConfirmDialog.tsx` | Confirm destructive or state-changing actions |
@@ -370,7 +407,9 @@ Sizes and `UI/Select` → Sizes.
 | Avatar | sm (20px) / md (36px) / lg (44px) | `patterns/Avatar.tsx` | Initials only, **one fill and one text colour, no tone prop** — colour-coding people by role rendered the same person differently on different screens. `lg` heads a detail page (PersonDetailPage) |
 | ChipOverflow | ≤max / overflowed / expanded / empty | `patterns/ChipOverflow.tsx` | THE chip list for table cells: at most 2 chips then **+N more**. Exists to enforce the two-line row rule structurally — a bare `.map()` grows with its data. Expands in place by default; pass `onShowAll` in a table row so the count opens a view instead of growing the cell. See `ChipOverflowExample` story |
 | DetailCard / DetailField | read-only record; empty field | `patterns/DetailView.tsx` | THE View layout, used by every View action app-wide: bordered card, label/value grid, em dash when empty. **Never** a disabled form — a greyed input renders a real value in the same grey as an empty one. See `ViewLayoutExample` |
-| SortMenu | idle / active-asc / active-desc | `patterns/SortMenu.tsx` | A column heading that sorts by any field stacked in its cell, so merging columns to kill horizontal scroll costs no sort. Names the active field beside the arrow ("· Used ↓") |
+| SortableTh | idle / active-asc / active-desc / not-sortable | `patterns/SortableTh.tsx` | **THE sortable column heading** — every table in the app uses it, never a hand-rolled `<th>` + button. Owns the `<th>`, `scope="col"`, `aria-sort` and the icon button; the calling table keeps its own padding/width classes. A resting neutral ⇅ marks a heading as clickable; only the active column shows a single accent ↑/↓, and the label keeps the header row's own weight and colour either way. Omit `sortKey` for a plain heading (Actions). For a cell whose control is a `SortMenu`, pass `ownsKeys` so the cell still reports `aria-sort`. Storybook: `Patterns/Overview` → SortableHeaderExample |
+| useTableSort | — (hook) | `patterns/useTableSort.ts` | Sort state + sorted rows for one table: `useTableSort(rows, accessors, { initial, onSortChange })` → `{ sorted, sort, setSort }`. One accessor per column saying what it sorts on (rarely the string in the cell — a badge sorts by its underlying status, a two-line cell by whichever line the heading names). Numbers compare numerically, strings through an `Intl.Collator` with `numeric: true` (so `3200-00` sorts before `3300-01`) and `sensitivity: 'base'`, booleans false-then-true. **Blanks sink in both directions** — an em dash is the absence of a value, not a value below every other one. Sort runs on the whole filtered set, before `slice(0, visibleCount)`; pass `useInfiniteReveal`'s `reset` as `onSortChange` |
+| SortMenu | idle / active-asc / active-desc | `patterns/SortMenu.tsx` | A column heading that sorts by any field stacked in its cell, so merging columns to kill horizontal scroll costs no sort. Clicking always opens the field picker, never sorts directly — a merged column has more than one reasonable "up". The arrow alone carries the state; no field name sits beside it (that suffix used to overflow into the next column). Render it *inside* a `SortableTh` with `ownsKeys` |
 | AtaChaptersPage | ready / loading / error | `features/lookups/AtaChaptersPage.tsx` | Master–detail over the ATA taxonomy: chapter rail (code badge, sub chapter count, URL-synced selection) → selected chapter's sub chapters table. StatCard tiles follow the search; chapter actions sit in a 3-dot menu; delete of anything drawings are filed under becomes **Retire it instead** |
 | ActivityCatalogPage | ready / loading / error; 2 tabs | `features/lookups/ActivityCatalogPage.tsx` | Reference Data → Activities & Tasks. Two tabs over one workspace (as Aircraft / Serial Numbers). Delete is refused for anything in use and the dialog's action becomes **Retire it instead**; a banner counts activities that require a task but have none linked |
 | ActivityCatalogDrawer | create / edit / view | `features/lookups/ActivityCatalogDrawer.tsx` | An activity **and its task links in one form**, where the client's system needs two screens. Validates the unfillable combinations: task-required with no tasks, non-project with tasks |
@@ -431,7 +470,7 @@ Sizes and `UI/Select` → Sizes.
 |-----------|----------|----------|---------|
 | TimesheetListPage | ready / loading / empty / error | `features/timesheet/TimesheetListPage.tsx` | Self-service timesheet list at `/timesheet`, scoped to the signed-in employee |
 | HoursWorkedPage | ready / loading / empty / error | `features/timesheet/HoursWorkedPage.tsx` | Admin, cross-employee list at `/hours-worked` over the same records |
-| TimesheetTable | self (locked once validated) / admin (`canValidate`, full control) | `features/timesheet/TimesheetTable.tsx` | Shared table; Validated/Active as Badge, 3-dot row actions; `pagination` prop renders inside the same card as its table's footer |
+| TimesheetTable | self (locked once validated) / admin (`canValidate`, full control), `showComment` (default on, off on Hours Worked → All Entries) | `features/timesheet/TimesheetTable.tsx` | Shared table; Validated/Active as Badge, 3-dot row actions; `pagination` prop renders inside the same card as its table's footer. With `showComment={false}` the Comment column is dropped (not hidden) — the field lives in the row's own View/Edit drawer, full width via `FormField`'s `fullWidth`. **Widths are measured pixels + a shared `GUTTER`, never percentages:** once every heading gained a sort icon, nine of twelve headings were wider than their own cell and the header row read as one merged run. `minWidth` is derived from the widths so it cannot drift |
 | TimesheetEntryDrawer | create / edit / view; employee fixed / selectable | `features/timesheet/TimesheetEntryDrawer.tsx` | Orchestrator — form vs. read-only view, cascade state, submit |
 | TimesheetEntryFormFields | — | `features/timesheet/TimesheetEntryFormFields.tsx` | Add/Edit form body: Project → Work Package → Activity → Task → Deliverable cascade |
 | TimesheetEntryView | — | `features/timesheet/TimesheetEntryView.tsx` | Read-only label/value detail layout for View mode (no form controls) |
@@ -454,8 +493,10 @@ Sizes and `UI/Select` → Sizes.
 
 | Component | Variants | Location | Purpose |
 |-----------|----------|----------|---------|
-| ReportsPage | ready / loading / error; empty w/ clear action | `features/reports/ReportsPage.tsx` | `/reports` — all 14 reports in three sections; global search + category dropdown (All default); pending cards carry reasons |
-| RunReportDrawer | date / select params; range validation | `features/reports/RunReportDrawer.tsx` | Collects a report's parameters, then Generate Report |
+| ReportsPage | ready / loading / error; no-selection / rail-empty | `features/reports/ReportsPage.tsx` | `/reports` — **master–detail, same shape as AtaChaptersPage**: every report on a rail at the left (name + one-line description, grouped by category, Pending badges), the selected one opened out at the right. Search + category dropdown filter the rail but never clear the selection; `?report=` deep-links it. Replaced the card grid + `RunReportDrawer` (deleted) — parameters moved into the detail pane |
+| ReportDetailPanel | pending / gate (date vs. non-date copy) / preview / empty results | `features/reports/ReportDetailPanel.tsx` | The selected report's applied parameters, preview and download. Holds the **applied** values (`ReportParamsBar` holds the draft); nothing previews or downloads until Apply, so a half-typed date never regenerates the table. Reports with no parameters apply on open — there is nothing to confirm. An **applied-range strip** under the controls reads `Aug 21, 2026 – Aug 28, 2026 · 8 days · 20 entries`, taken from `result.range` so the screen and the file's own header are the same string. Preview table sorts via `SortableTh`, rows at `px-lg py-lg`. Gate and empty-state copy adapt to whether the report is date-scoped |
+| ReportParamsBar | pre-filled / edited (Apply armed) / applied / missing / invalid range | `features/reports/ReportParamsBar.tsx` | A report's parameters with **Apply** and **Clear**. Owns the draft; `onApply` hands it up, `onClear` empties both. Apply is disabled while invalid *or* unchanged; Clear only while something is set. Fields arrive pre-filled with last week so the first Apply is one click, but the default is **shown, not assumed**. One status line under the controls (always present, so no layout shift) says what's missing, that Apply is pending, or that preview and file both cover the applied range |
+| DownloadMenu | enabled / disabled (reason on `title`) | `features/reports/DownloadMenu.tsx` | The 5-format menu: Excel, CSV, PDF ("Via the print dialog"), HTML, Text. Local to features/reports — the projects `ExportMenu` is welded to `ProjectListRow` and the import-direction rule forbids reaching sideways for it. Excel is a zero-dependency HTML-workbook `.xls`; PDF prints a paper-styled copy through the browser's own Save-as-PDF (`lib/reportExport.ts`) |
 
 ## /components/features/access — feature-specific (User Access Control)
 

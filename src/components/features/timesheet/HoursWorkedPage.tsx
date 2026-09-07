@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Plus, Search, Users } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
@@ -57,6 +57,9 @@ function rowToValues(row: TimesheetEntry): Partial<TimesheetEntryValues> {
     scoped to one person — see docs/DECISIONS.md ("Timesheet & Hours Worked"). */
 export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
   const rows = useTimesheetStore((s) => s.rows)
+  const timesheetLoaded = useTimesheetStore((s) => s.loaded)
+  const ensureTimesheet = useTimesheetStore((s) => s.ensureLoaded)
+  useEffect(ensureTimesheet, [ensureTimesheet])
   const addRow = useTimesheetStore((s) => s.addRow)
   const updateRow = useTimesheetStore((s) => s.updateRow)
   const removeRow = useTimesheetStore((s) => s.removeRow)
@@ -69,10 +72,14 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
   const deliverables = useMemo(() => deliverableSummaries(documents, docRevisions), [documents, docRevisions])
 
   const [searchParams, setSearchParams] = useSearchParams()
-  const tab: Tab = searchParams.get('tab') === 'by-person' ? 'by-person' : 'entries'
+  /* By Person is the default landing tab — an admin opening this page wants
+     "who's tracking how" before "show me every row". `?tab=entries` still
+     deep-links straight to All Entries (e.g. from Person Detail's own
+     "View time entries" action). */
+  const tab: Tab = searchParams.get('tab') === 'entries' ? 'entries' : 'by-person'
   const setTab = (next: Tab) => {
     const p = new URLSearchParams(searchParams)
-    if (next === 'entries') p.delete('tab')
+    if (next === 'by-person') p.delete('tab')
     else p.set('tab', next)
     setSearchParams(p, { replace: true })
   }
@@ -160,7 +167,10 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
   const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
   const pageRows = filtered.slice(0, visibleCount)
 
-  const loading = state === 'loading'
+  /* The 31k entries load on their own (lib/dataset.ts), so this screen
+     stays in its loading state until they arrive rather than flashing an
+     empty table. */
+  const loading = state === 'loading' || !timesheetLoaded
   const showEmpty = state === 'empty' || (state === 'ready' && filtered.length === 0)
 
   const handleDuplicate = (row: TimesheetEntry) => {
@@ -282,6 +292,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
                 loading={loading}
                 showEmployee
                 canValidate
+                showComment={false}
                 bare
                 onView={(row) => setDrawer({ mode: 'view', row })}
                 onEdit={(row) => setDrawer({ mode: 'edit', row })}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Plus, Search, CalendarClock } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { StatCard } from '@/components/patterns/StatCard'
@@ -43,6 +43,9 @@ function rowToValues(row: TimesheetEntry): Partial<TimesheetEntryValues> {
 
 export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
   const rows = useTimesheetStore((s) => s.rows)
+  const timesheetLoaded = useTimesheetStore((s) => s.loaded)
+  const ensureTimesheet = useTimesheetStore((s) => s.ensureLoaded)
+  useEffect(ensureTimesheet, [ensureTimesheet])
   const addRow = useTimesheetStore((s) => s.addRow)
   const updateRow = useTimesheetStore((s) => s.updateRow)
   const removeRow = useTimesheetStore((s) => s.removeRow)
@@ -89,7 +92,10 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
   const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
   const pageRows = filtered.slice(0, visibleCount)
 
-  const loading = state === 'loading'
+  /* The 31k entries load on their own (lib/dataset.ts), so this screen
+     stays in its loading state until they arrive rather than flashing an
+     empty table. */
+  const loading = state === 'loading' || !timesheetLoaded
   const showEmpty = state === 'empty' || (state === 'ready' && filtered.length === 0)
 
   const handleDuplicate = (row: TimesheetEntry) => {

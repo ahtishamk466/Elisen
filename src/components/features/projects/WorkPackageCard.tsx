@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { ChevronDown, Eye, Pencil, Trash2, CheckCircle2, RotateCcw, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { SortMenu } from '@/components/patterns/SortMenu'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ChipOverflow } from '@/components/patterns/ChipOverflow'
 import { PersonCell } from '@/components/patterns/PersonCell'
@@ -29,6 +32,20 @@ export interface WorkPackageCardProps {
   onViewActivity: (a: WorkPackageActivity) => void
 }
 
+type ActivitySortKey = 'activity' | 'responsible' | 'actual' | 'budget' | 'remaining'
+  | 'used' | 'status' | 'tasks'
+
+const ACTIVITY_COLUMNS: { label: string; sort?: ActivitySortKey; sorts?: { key: ActivitySortKey; label: string }[] }[] = [
+  { label: 'Activity', sort: 'activity' },
+  { label: 'Responsible', sort: 'responsible' },
+  { label: 'Actual / Budget', sorts: [{ key: 'actual', label: 'Actual' }, { key: 'budget', label: 'Budget' }] },
+  { label: 'Remaining', sort: 'remaining' },
+  { label: 'Used', sort: 'used' },
+  { label: 'Status', sort: 'status' },
+  { label: 'Tasks', sort: 'tasks' },
+  { label: 'Actions' },
+]
+
 export function WorkPackageCard({
   wp, activities, defaultOpen = false,
   onEdit, onDelete, onToggleComplete, onAddActivity, onEditActivity, onRemoveActivity, onViewActivity,
@@ -39,6 +56,18 @@ export function WorkPackageCard({
   const links = useCatalogStore((s) => s.links)
   const catalog = { activities: activities_, tasks, links }
   const health = rollUpActivities(activities, wp.status === 'complete')
+
+  const activityHealth = (a: WorkPackageActivity) => healthOf(a.budgetHours, a.actualHours, wp.status === 'complete')
+  const { sorted: sortedActivities, sort, setSort } = useTableSort(activities, {
+    activity: (a) => activityName(activities_, a.activityId),
+    responsible: (a) => a.responsible,
+    actual: (a) => activityHealth(a).actual,
+    budget: (a) => activityHealth(a).budget,
+    remaining: (a) => (activityHealth(a).budget > 0 ? activityHealth(a).remaining : null),
+    used: (a) => activityHealth(a).progressPct,
+    status: (a) => activityHealth(a).state,
+    tasks: (a) => tasksForActivity(catalog, a.activityId, true).length,
+  })
 
   return (
     <section className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
@@ -96,19 +125,24 @@ export function WorkPackageCard({
                       alone read as one more inter-row line rather than a
                       boundary between titles and data. */}
                   <tr className="border-b border-border-default bg-neutral-50">
-                    {['Activity', 'Responsible', 'Actual / Budget', 'Remaining', 'Used', 'Status', 'Tasks', 'Actions'].map((h) => (
-                      <th
-                        key={h}
-                        scope="col"
+                    {ACTIVITY_COLUMNS.map((c) => (
+                      <SortableTh
+                        key={c.label}
+                        sortKey={c.sort}
+                        ownsKeys={c.sorts?.map((o) => o.key)}
+                        sort={sort}
+                        onSortChange={setSort}
                         className="whitespace-nowrap px-lg py-base text-xs font-semibold text-text-secondary"
                       >
-                        {h}
-                      </th>
+                        {c.sorts
+                          ? <SortMenu label={c.label} options={c.sorts} sort={sort} onChange={setSort} />
+                          : c.label}
+                      </SortableTh>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {activities.map((a) => {
+                  {sortedActivities.map((a) => {
                     const ah = healthOf(a.budgetHours, a.actualHours, wp.status === 'complete')
                     const over = ah.remaining < 0
                     return (

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { ActionsMenu, type ActionsMenuItem } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -10,7 +12,17 @@ import { useAccessStore } from '@/stores/accessStore'
 import { roleMembers, rolePermissionClosure } from '@/lib/accessDisplay'
 import type { AccessRole } from '@/types/access'
 
-const HEADERS = ['Role', 'Description', 'Rule Name', 'Inherits', 'Permissions', 'Members', 'Actions']
+type SortKey = 'role' | 'description' | 'rule' | 'inherits' | 'permissions' | 'members'
+
+const COLUMNS: { label: string; sort?: SortKey }[] = [
+  { label: 'Role', sort: 'role' },
+  { label: 'Description', sort: 'description' },
+  { label: 'Rule Name', sort: 'rule' },
+  { label: 'Inherits', sort: 'inherits' },
+  { label: 'Permissions', sort: 'permissions' },
+  { label: 'Members', sort: 'members' },
+  { label: 'Actions' },
+]
 
 export interface RolesTabProps {
   onToast: (msg: string) => void
@@ -27,7 +39,19 @@ export function RolesTab({ onToast, adding, setAdding }: RolesTabProps) {
   const updateRole = useAccessStore((s) => s.updateRole)
   const removeRole = useAccessStore((s) => s.removeRole)
 
-  const { visibleCount, loadingMore, loadMore } = useInfiniteReveal(roles.length, 25)
+  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(roles.length, 25)
+
+  /* Inherits and Permissions sort by their counts, which is what the cell
+     leads with — the joined role names underneath are the detail, not the
+     figure a reader is ordering by. */
+  const { sorted, sort, setSort } = useTableSort(roles, {
+    role: (r) => r.name,
+    description: (r) => r.description,
+    rule: (r) => rules.find((x) => x.id === r.ruleId)?.name,
+    inherits: (r) => r.childRoleIds.length,
+    permissions: (r) => r.permissionIds.length,
+    members: (r) => roleMembers(r.id, users).length,
+  }, { onSortChange: resetVisible })
   const [editing, setEditing] = useState<AccessRole | null>(null)
   const [deleting, setDeleting] = useState<AccessRole | null>(null)
 
@@ -52,13 +76,14 @@ export function RolesTab({ onToast, adding, setAdding }: RolesTabProps) {
           <caption className="sr-only">Roles</caption>
           <thead>
             <tr className="border-b border-border-default bg-neutral-50">
-              {HEADERS.map((h) => (
-                <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+              {COLUMNS.map((c) => (
+                <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                  className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
               ))}
             </tr>
           </thead>
           <tbody>
-            {roles.slice(0, visibleCount).map((role) => (
+            {sorted.slice(0, visibleCount).map((role) => (
               <tr
                 key={role.id}
                 onClick={() => setEditing(role)}

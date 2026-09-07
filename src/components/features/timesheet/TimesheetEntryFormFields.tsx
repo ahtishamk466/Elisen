@@ -135,7 +135,7 @@ export function TimesheetEntryFormFields({
         <FormField label="Bank Regular Hours" htmlFor="bankHoursRegular" error={errors.bankHoursRegular}>
           <Input id="bankHoursRegular" inputMode="decimal" placeholder="0" value={values.bankHoursRegular} error={!!errors.bankHoursRegular} onChange={(e) => setField('bankHoursRegular', e.target.value)} />
         </FormField>
-        <FormField label="Comment" htmlFor="comment">
+        <FormField label="Comment" htmlFor="comment" fullWidth>
           <Textarea id="comment" value={values.comment} placeholder="Enter comment..." onChange={(e) => setField('comment', e.target.value)} />
         </FormField>
       </FormSection>

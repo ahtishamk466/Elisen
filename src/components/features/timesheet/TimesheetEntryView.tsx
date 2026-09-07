@@ -32,6 +32,10 @@ export function TimesheetEntryView({ values, projects, workPackages, deliverable
           <Field label="Activity">{activity?.name}</Field>
           <Field label="Task">{values.task}</Field>
           <Field label="Deliverable">{deliverable ? `${deliverable.number}: ${deliverable.title}` : '—'}</Field>
+        </div>
+        {/* Full width of the card, not another cell in the stat grid above —
+            comment text runs longer than a model number or a date. */}
+        <div className="mt-lg">
           <Field label="Comment">{values.comment}</Field>
         </div>
       </Card>

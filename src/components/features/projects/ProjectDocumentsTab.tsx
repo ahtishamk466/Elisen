@@ -7,6 +7,8 @@ import { isOpenableUrl } from '@/components/patterns/UrlField'
 import { Button } from '@/components/ui/Button'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { EmptyState } from '@/components/patterns/EmptyState'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -42,6 +44,9 @@ const WORKSPACE_PATH: Record<DocumentKind, string> = {
  *
  * Same shape as ProjectApprovalsTab, deliberately: link, unlink, list.
  */
+type SortKey = 'number' | 'revision' | 'title' | 'aircraft' | 'ata' | 'owner'
+  | 'opened' | 'due' | 'nextAction' | 'status'
+
 export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProps) {
   const navigate = useNavigate()
   const documents = useDocumentsStore((s) => s.documents)
@@ -103,9 +108,36 @@ export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProp
 
   /* Number and Rev stand apart, Title carries its Type underneath — the same
      shape as the Documents workspace, so a revision reads identically on both. */
-  const headers = isDrawing
-    ? ['Number', 'Rev', 'Title / Type', 'Aircraft', 'ATA', 'Opened', 'Next Action', 'Status', 'Actions']
-    : ['Number', 'Rev', 'Title / Type', 'Owner', 'Opened', 'Due', 'Next Action', 'Status', 'Actions']
+  const columns: { label: string; sort?: SortKey }[] = isDrawing
+    ? [
+        { label: 'Number', sort: 'number' }, { label: 'Rev', sort: 'revision' },
+        { label: 'Title / Type', sort: 'title' }, { label: 'Aircraft', sort: 'aircraft' },
+        { label: 'ATA', sort: 'ata' }, { label: 'Opened', sort: 'opened' },
+        { label: 'Next Action', sort: 'nextAction' }, { label: 'Status', sort: 'status' },
+        { label: 'Actions' },
+      ]
+    : [
+        { label: 'Number', sort: 'number' }, { label: 'Rev', sort: 'revision' },
+        { label: 'Title / Type', sort: 'title' }, { label: 'Owner', sort: 'owner' },
+        { label: 'Opened', sort: 'opened' }, { label: 'Due', sort: 'due' },
+        { label: 'Next Action', sort: 'nextAction' }, { label: 'Status', sort: 'status' },
+        { label: 'Actions' },
+      ]
+
+  /* The project's own tracking fields (dates, next action, status) live on
+     the revision; identity fields live on the document. */
+  const { sorted, sort, setSort } = useTableSort(rows, {
+    number: (r) => r.doc.number,
+    revision: (r) => r.rev.rev,
+    title: (r) => r.doc.title,
+    aircraft: (r) => r.doc.aircraft,
+    ata: (r) => r.doc.ataChapter,
+    owner: (r) => r.doc.owner,
+    opened: (r) => r.rev.openedDate,
+    due: (r) => r.rev.dueDate,
+    nextAction: (r) => r.rev.nextAction,
+    status: (r) => r.rev.status,
+  })
 
   const openWorkspace = () => navigate(WORKSPACE_PATH[kind])
 
@@ -147,13 +179,14 @@ export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProp
               <caption className="sr-only">{label.plural} linked to this project</caption>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
-                  {headers.map((h) => (
-                    <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                  {columns.map((c) => (
+                    <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                      className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {rows.map(({ rev, doc }) => (
+                {sorted.map(({ rev, doc }) => (
                   <tr key={rev.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
                     <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">
                       {doc.number}

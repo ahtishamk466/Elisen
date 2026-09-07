@@ -159,7 +159,7 @@ export function CompanyDrawer({ mode, initial, initialContacts = [], onClose, on
                     <div className="mt-lg grid gap-lg">
                       <FormField label="Full Name" htmlFor={`ct-name-${ct.id}`}>
                         <Input
-                          id={`ct-name-${ct.id}`} value={ct.fullName} placeholder="e.g. Remi Rocheleau"
+                          id={`ct-name-${ct.id}`} value={ct.fullName} placeholder="e.g. Adrian Bergstrom"
                           onChange={(e) => setContact(ct.id, 'fullName', e.target.value)}
                         />
                       </FormField>

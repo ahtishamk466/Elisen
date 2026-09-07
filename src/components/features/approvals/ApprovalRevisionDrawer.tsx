@@ -3,6 +3,8 @@ import { FileText } from 'lucide-react'
 import { Drawer } from '@/components/patterns/Drawer'
 import { FormSection } from '@/components/patterns/FormSection'
 import { FormField } from '@/components/patterns/FormField'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { Truncate } from '@/components/patterns/Truncate'
 import { FileDropzone } from '@/components/patterns/FileDropzone'
 import { Button } from '@/components/ui/Button'
@@ -37,6 +39,15 @@ const today = () => new Date().toISOString().slice(0, 10)
  * Change Description, Revision Date, Document); only the wording moved from
  * "Issue" to "Revision" — where the call landed.
  */
+type RevisionSortKey = 'rev' | 'date' | 'change' | 'document'
+
+const REVISION_COLUMNS: { label: string; sort?: RevisionSortKey }[] = [
+  { label: 'Rev', sort: 'rev' },
+  { label: 'Date', sort: 'date' },
+  { label: 'Change', sort: 'change' },
+  { label: 'Document', sort: 'document' },
+]
+
 export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: ApprovalRevisionDrawerProps) {
   const approvals = useApprovalsStore((s) => s.approvals)
   const allRevisions = useApprovalsStore((s) => s.revisions)
@@ -54,6 +65,13 @@ export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: 
     [allRevisions, approvalId],
   )
   const suggested = nextRevisionNumber(existing.map((r) => r.revision))
+
+  const { sorted: sortedRevisions, sort, setSort } = useTableSort(existing, {
+    rev: (r) => r.revision,
+    date: (r) => r.revisionDate,
+    change: (r) => r.changeDescription,
+    document: (r) => r.document,
+  })
 
   const [revision, setRevision] = useState(String(initial?.revision ?? ''))
   const [changeDescription, setChangeDescription] = useState(initial?.changeDescription ?? '')
@@ -126,13 +144,14 @@ export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: 
               <caption className="sr-only">Revisions already raised against this approval</caption>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
-                  {['Rev', 'Date', 'Change', 'Document'].map((h) => (
-                    <th key={h} scope="col" className="whitespace-nowrap px-base py-sm text-xs font-semibold text-text-secondary">{h}</th>
+                  {REVISION_COLUMNS.map((c) => (
+                    <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                      className="whitespace-nowrap px-base py-sm text-xs font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {existing.map((r) => (
+                {sortedRevisions.map((r) => (
                   <tr key={r.id} className="border-b border-border-default last:border-b-0">
                     <td className="whitespace-nowrap px-base py-sm text-sm font-semibold text-text-primary">{r.revision}</td>
                     <td className="px-base py-sm text-sm text-text-primary"><DateText value={r.revisionDate} /></td>

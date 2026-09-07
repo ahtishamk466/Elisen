@@ -6,12 +6,13 @@ import { StatCard } from '@/components/patterns/StatCard'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
 import { FilterChips } from '@/components/patterns/FilterChips'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
-import { ProjectsTable, type ProjectRowWithHealth, type Sort } from './ProjectsTable'
+import { ProjectsTable, type ProjectRowWithHealth, type SortKey } from './ProjectsTable'
 import { AddProjectDrawer } from './AddProjectDrawer'
 import { ExportMenu } from './ExportMenu'
 import { ProjectFilterMenu, EMPTY_PROJECT_FILTERS, projectFilterChips, type ProjectFilters } from './ProjectFilterMenu'
@@ -21,7 +22,7 @@ import { useLookupStore } from '@/stores/lookupStore'
 import { useApprovalsStore } from '@/stores/approvalsStore'
 import { useDocumentsStore } from '@/stores/documentsStore'
 import { PEOPLE } from '@/lib/projectFixtures'
-import { TYPE_LABEL } from '@/lib/projectDisplay'
+import { STATUS_LABEL, TYPE_LABEL } from '@/lib/projectDisplay'
 import { HEALTH_LABEL, rollUpProject, type HealthState } from '@/lib/projectHealth'
 import { useTccaStore } from '@/stores/tccaStore'
 import { getNextProjectNumber } from '@/lib/projectFixtures'
@@ -66,7 +67,6 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
   // Newest project first by default — a higher number is a later project,
   // and every number is a zero-padded 4-digit string, so lexicographic order
   // matches numeric order.
-  const [sort, setSort] = useState<Sort>({ key: 'number', dir: 'desc' })
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [editingRow, setEditingRow] = useState<ProjectListRow | null>(null)
@@ -109,37 +109,33 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
     })
   }, [withHealth, query, filters])
 
-  const sorted = useMemo(() => {
-    const dir = sort.dir === 'asc' ? 1 : -1
-    // Rows with no budget have no progress to compare — park them last in
-    // either direction rather than letting null sort as zero.
-    const value = ({ row, health }: ProjectRowWithHealth) => {
-      switch (sort.key) {
-        case 'number': return `${row.number}-${row.subNumber}`
-        case 'company': return row.companyName
-        // '—' is the fixture placeholder for "no contact" — treat it as
-        // absent so contact-less rows park last, like every other optional
-        // field here, rather than sorting as if "—" were a real name.
-        case 'contact': return row.contactName && row.contactName !== '—' ? row.contactName : null
-        case 'priority': return row.priority
-        case 'type': return TYPE_LABEL[row.type]
-        case 'opened': return row.openedDate || null
-        case 'budget': return health.budget
-        case 'actual': return health.actual
-        case 'remaining': return health.budget > 0 ? health.remaining : null
-        case 'progress': return health.progressPct
-      }
-    }
-    return [...filtered].sort((a, b) => {
-      const av = value(a), bv = value(b)
-      if (av === null || av === undefined) return 1
-      if (bv === null || bv === undefined) return -1
-      if (typeof av === 'string' && typeof bv === 'string') return av.localeCompare(bv) * dir
-      return ((av as number) - (bv as number)) * dir
-    })
-  }, [filtered, sort])
 
-  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(sorted.length, 25)
+  /* Keyed off `filtered`, not `sorted`: sorting never changes the row
+     count, and this way the reveal is declared before the sort hook that
+     resets it. */
+  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
+
+  /* One comparator for the whole app now (`useTableSort`): blanks park last
+     in either direction, and the accessors below say only what each column
+     sorts on. Rows with no budget have no progress to compare, so they
+     return null rather than sorting as zero. */
+  const { sorted, sort, setSort } = useTableSort<ProjectRowWithHealth, SortKey>(filtered, {
+    number: ({ row }) => `${row.number}-${row.subNumber}`,
+    company: ({ row }) => row.companyName,
+    /* '—' is the fixture placeholder for "no contact" — treated as absent so
+       contact-less rows park last, like every other optional field here. */
+    contact: ({ row }) => (row.contactName && row.contactName !== '—' ? row.contactName : null),
+    priority: ({ row }) => row.priority,
+    type: ({ row }) => TYPE_LABEL[row.type],
+    person: ({ row }) => row.personResponsible,
+    opened: ({ row }) => row.openedDate || null,
+    budget: ({ health }) => health.budget,
+    actual: ({ health }) => health.actual,
+    remaining: ({ health }) => (health.budget > 0 ? health.remaining : null),
+    progress: ({ health }) => health.progressPct,
+    status: ({ row }) => STATUS_LABEL[row.status],
+    active: ({ row }) => row.active,
+  }, { initial: { key: 'number', dir: 'desc' }, onSortChange: resetVisible })
 
   const loading = state === 'loading'
   const showEmpty = state === 'empty' || (state === 'ready' && sorted.length === 0)
@@ -255,7 +251,7 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
             loading={loading}
             canSeeFinancials={canSeeFinancials}
             sort={sort}
-            onSortChange={(s) => { setSort(s); resetVisible() }}
+            onSortChange={setSort}
             onView={(row) => navigate(`/projects/${row.id}`)}
             onOpenWorkPackages={(row) => navigate(`/projects/${row.id}?tab=work-packages`)}
             onEdit={setEditingRow}

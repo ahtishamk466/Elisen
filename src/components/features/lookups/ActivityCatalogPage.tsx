@@ -5,6 +5,8 @@ import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { TableTabs } from '@/components/patterns/TableTabs'
@@ -28,21 +30,24 @@ export type PageState = 'ready' | 'loading' | 'error'
    whole table if left to its own devices, so it gets a fixed portion and
    truncates. "Task Required" shortened — the heading was wider than the Yes/No
    under it. */
-const ACTIVITY_COLUMNS: { label: string; width: string }[] = [
-  { label: 'Activity', width: '18%' },
-  { label: 'Description', width: '26%' },
-  { label: 'Tasks', width: '10%' },
-  { label: 'Required', width: '9%' },
-  { label: 'Default', width: '9%' },
-  { label: 'Type', width: '12%' },
-  { label: 'Active', width: '9%' },
+type ActivitySortKey = 'name' | 'description' | 'tasks' | 'required' | 'default' | 'type' | 'active'
+type TaskSortKey = 'name' | 'activities' | 'used' | 'active'
+
+const ACTIVITY_COLUMNS: { label: string; width: string; sort?: ActivitySortKey }[] = [
+  { label: 'Activity', width: '18%', sort: 'name' },
+  { label: 'Description', width: '26%', sort: 'description' },
+  { label: 'Tasks', width: '10%', sort: 'tasks' },
+  { label: 'Required', width: '9%', sort: 'required' },
+  { label: 'Default', width: '9%', sort: 'default' },
+  { label: 'Type', width: '12%', sort: 'type' },
+  { label: 'Active', width: '9%', sort: 'active' },
   { label: 'Actions', width: '7%' },
 ]
-const TASK_COLUMNS: { label: string; width: string }[] = [
-  { label: 'Task', width: '26%' },
-  { label: 'Activities', width: '40%' },
-  { label: 'Used', width: '12%' },
-  { label: 'Active', width: '11%' },
+const TASK_COLUMNS: { label: string; width: string; sort?: TaskSortKey }[] = [
+  { label: 'Task', width: '26%', sort: 'name' },
+  { label: 'Activities', width: '40%', sort: 'activities' },
+  { label: 'Used', width: '12%', sort: 'used' },
+  { label: 'Active', width: '11%', sort: 'active' },
   { label: 'Actions', width: '11%' },
 ]
 
@@ -123,6 +128,26 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
   const rowCount = tab === 'activities' ? shownActivities.length : shownTasks.length
   const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(rowCount, 25)
 
+  /* One sort per tab, both hooks always called so the order never changes
+     between renders. Tasks and Activities count their links; a non-project
+     activity has no task list at all, so it sorts as a blank rather than 0. */
+  const activitySort = useTableSort(shownActivities, {
+    name: (a) => a.name,
+    description: (a) => a.description,
+    tasks: (a) => (a.nonProject ? null : tasksForActivity(catalog, a.id).length),
+    required: (a) => a.taskRequired,
+    default: (a) => a.isDefault,
+    type: (a) => (a.nonProject ? 'Non-project' : 'Project work'),
+    active: (a) => a.active,
+  }, { onSortChange: resetVisible })
+
+  const taskSort = useTableSort(shownTasks, {
+    name: (t) => t.name,
+    activities: (t) => activitiesForTask(catalog, t.id).length,
+    used: (t) => taskUsage(t.name),
+    active: (t) => t.active,
+  }, { onSortChange: resetVisible })
+
   /** Activities that demand a task but have none — unfillable at Time Entry. */
   const brokenCount = activities.filter((a) => isMisconfigured(catalog, a)).length
 
@@ -175,6 +200,7 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
   }
 
   const columns = tab === 'activities' ? ACTIVITY_COLUMNS : TASK_COLUMNS
+  const { sort, setSort } = tab === 'activities' ? activitySort : taskSort
   const blockedActivity = deletingActivity ? activityUsage(deletingActivity.id) : null
   const blockedActivityCount = blockedActivity ? blockedActivity.assignments + blockedActivity.entries : 0
   const blockedTaskCount = deletingTask ? taskUsage(deletingTask.name) : 0
@@ -235,8 +261,11 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
                   <thead>
                     <tr className="border-b border-border-default bg-neutral-50">
                       {columns.map((c) => (
-                        <th key={c.label} scope="col" style={{ width: c.width }}
-                          className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-secondary">{c.label}</th>
+                        <SortableTh key={c.label} sortKey={c.sort as string | undefined}
+                          sort={sort as { key: string; dir: 'asc' | 'desc' } | undefined}
+                          onSortChange={setSort as (s: { key: string; dir: 'asc' | 'desc' }) => void}
+                          style={{ width: c.width }}
+                          className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                       ))}
                     </tr>
                   </thead>
@@ -248,7 +277,7 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
                           </tr>
                         ))
                       : tab === 'activities'
-                        ? shownActivities.slice(0, visibleCount).map((a) => {
+                        ? activitySort.sorted.slice(0, visibleCount).map((a) => {
                             const linked = tasksForActivity(catalog, a.id)
                             const broken = isMisconfigured(catalog, a)
                             return (
@@ -288,7 +317,7 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
                               </tr>
                             )
                           })
-                        : shownTasks.slice(0, visibleCount).map((t) => {
+                        : taskSort.sorted.slice(0, visibleCount).map((t) => {
                             const owners = activitiesForTask(catalog, t.id)
                             const used = taskUsage(t.name)
                             return (

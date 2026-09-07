@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import { BookOpen, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { StatCard } from '@/components/patterns/StatCard'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -20,7 +22,15 @@ import type { AtaChapter, AtaSubChapter } from '@/types/lookup'
 
 export type PageState = 'ready' | 'loading' | 'error'
 
-const SUB_CHAPTER_HEADERS = ['Code', 'Title', 'Definition', 'Active', 'Actions']
+type SubSortKey = 'code' | 'title' | 'definition' | 'active'
+
+const SUB_CHAPTER_COLUMNS: { label: string; sort?: SubSortKey }[] = [
+  { label: 'Code', sort: 'code' },
+  { label: 'Title', sort: 'title' },
+  { label: 'Definition', sort: 'definition' },
+  { label: 'Active', sort: 'active' },
+  { label: 'Actions' },
+]
 
 /**
  * The two-digit chapter code — the taxonomy's own identity, so it gets one
@@ -142,6 +152,16 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
   }, [selected?.id])
 
   const selectedSubChapters = selected ? subChaptersOf(selected.id) : []
+
+  /* Code sorts on the section alone — every row in this table shares the
+     same chapter prefix, so sorting the printed "21-30" string would just
+     compare identical leading digits. */
+  const { sorted: sortedSubChapters, sort, setSort } = useTableSort(selectedSubChapters, {
+    code: (s) => s.section,
+    title: (s) => s.title,
+    definition: (s) => s.definition,
+    active: (s) => s.active,
+  })
   const shownSubChapters = filtered.reduce((n, c) => n + subChaptersOf(c.id).length, 0)
 
   const activeCount = filtered.filter((c) => c.active).length
@@ -325,13 +345,14 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
                       <caption className="sr-only">Sub chapters of chapter {selected.chapter}</caption>
                       <thead>
                         <tr className="border-b border-border-default bg-neutral-50">
-                          {SUB_CHAPTER_HEADERS.map((h) => (
-                            <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                          {SUB_CHAPTER_COLUMNS.map((c) => (
+                            <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                              className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedSubChapters.map((s) => (
+                        {sortedSubChapters.map((s) => (
                             <tr key={s.id} className="border-b border-border-default last:border-b-0">
                               <td className="whitespace-nowrap px-lg py-base text-sm font-semibold tabular-nums text-text-primary">
                                 {selected.chapter}-{s.section}

@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { ChevronDown, Copy as CopyIcon, Filter as FilterIcon, FolderOpen, Plus, Search as SearchIcon, Trash2 } from 'lucide-react'
+import { SortableTh } from './SortableTh'
+import { useTableSort } from './useTableSort'
 import { FormField } from './FormField'
 import { FormSection } from './FormSection'
 import { Stepper } from './Stepper'
@@ -12,6 +14,7 @@ import { TableTabs } from './TableTabs'
 import { FileDropzone } from './FileDropzone'
 import { BarChart } from './BarChart'
 import { Alert } from '@/components/ui/Alert'
+import { Textarea } from '@/components/ui/Textarea'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { MultiSelect } from '@/components/ui/MultiSelect'
 import { BudgetInline, ProgressMeter } from './ProgressMeter'
@@ -84,7 +87,7 @@ export const ReadOnlyDetail: Story = {
       <DetailCard title="Editable via header action" onEdit={() => {}}>
         <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
           <DetailField label="Company">Air Canada</DetailField>
-          <DetailField label="Contact">Remi Rocheleau</DetailField>
+          <DetailField label="Contact">Adrian Bergstrom</DetailField>
         </div>
       </DetailCard>
     </div>
@@ -155,7 +158,7 @@ function AutoLoadFooterDemo() {
                 <p className="text-xs text-text-muted">246</p>
               </td>
               <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">Nathalie Gagnon</td>
-              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">Sofia Reyes</td>
+              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">Arjun Blanchard</td>
               <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">44 / 80h</td>
               <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">2 – High</td>
               <td className="whitespace-nowrap px-lg py-base"><Badge>On Hold</Badge></td>
@@ -542,7 +545,7 @@ export const PersonExample: Story = {
       <div className="grid gap-sm">
         <p className="text-xs font-semibold text-text-secondary">PersonCell — the table and list form</p>
         <div className="grid gap-xs rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 320 }}>
-          {['Harris Bell', 'Sofia Reyes', 'Lloyd Pedvis', 'Remi Rocheleau', 'Kelly Osei'].map((n) => (
+          {['Anika Nakamura', 'Arjun Blanchard', 'Astrid Caldwell', 'Adrian Bergstrom', 'Aurelie Chevalier'].map((n) => (
             <div key={n} className="border-b border-border-default py-sm last:border-b-0"><PersonCell name={n} /></div>
           ))}
         </div>
@@ -552,7 +555,7 @@ export const PersonExample: Story = {
         <p className="text-xs font-semibold text-text-secondary">Company over contact — `secondary` shrinks the label only</p>
         <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ maxWidth: 320 }}>
           <span className="block truncate text-sm text-text-primary">Air Niugini</span>
-          <PersonCell name="Tahawar Durrani" variant="secondary" />
+          <PersonCell name="Anders Hartmann" variant="secondary" />
         </div>
       </div>
 
@@ -560,8 +563,8 @@ export const PersonExample: Story = {
         <p className="text-xs font-semibold text-text-secondary">Empty, and the two Avatar sizes</p>
         <div className="flex items-center gap-2xl rounded-sm border border-border-default bg-neutral-25 p-lg">
           <PersonCell name="" />
-          <span className="flex items-center gap-sm"><Avatar name="Kelly Osei" size="sm" /><span className="text-xs text-text-muted">sm — table rows</span></span>
-          <span className="flex items-center gap-sm"><Avatar name="Kelly Osei" /><span className="text-xs text-text-muted">md — cards & detail</span></span>
+          <span className="flex items-center gap-sm"><Avatar name="Aurelie Chevalier" size="sm" /><span className="text-xs text-text-muted">sm — table rows</span></span>
+          <span className="flex items-center gap-sm"><Avatar name="Aurelie Chevalier" /><span className="text-xs text-text-muted">md — cards & detail</span></span>
         </div>
       </div>
 
@@ -609,7 +612,7 @@ export const ViewLayoutExample: Story = {
           <h3 className="text-sm font-semibold text-text-primary">Contacts</h3>
           <div className="mt-lg grid gap-lg">
             {[
-              { name: 'Remi Rocheleau', phone: '' },
+              { name: 'Adrian Bergstrom', phone: '' },
               { name: 'Sylvie Tremblay', phone: '+1 514-555-0142' },
             ].map((ct, i) => (
               <div key={ct.name} className={i > 0 ? 'border-t border-border-default pt-lg' : ''}>
@@ -899,8 +902,8 @@ export const TruncatedTableText: Story = {
 }
 
 const EDIT_ENTRIES = [
-  { id: 'e1', name: 'Remi Rocheleau' },
-  { id: 'e2', name: 'Louise Flornoy' },
+  { id: 'e1', name: 'Adrian Bergstrom' },
+  { id: 'e2', name: 'Alma Devereaux' },
 ]
 
 /**
@@ -1256,6 +1259,9 @@ export const DrawerFormStandard: Story = {
           <FormField label="Active" htmlFor="std-active" help="Inactive stays on old records, out of pickers.">
             <ActiveSelect id="std-active" value={active} onChange={setActive} />
           </FormField>
+          <FormField label="Comment" htmlFor="std-comment" fullWidth help="fullWidth: label above a control spanning the section, for the rare field that needs more room than the shared 2/3 column.">
+            <Textarea id="std-comment" placeholder="Enter comment..." />
+          </FormField>
         </FormSection>
 
         <Alert tone="info" title="Why active is a dropdown">
@@ -1273,6 +1279,98 @@ export const DrawerFormStandard: Story = {
             <li>Help that runs to three lines and explains the data model.</li>
             <li>&ldquo;Available to pick&rdquo; as a checkbox, where every table shows a badge.</li>
           </ul>
+        </div>
+      </div>
+    )
+  },
+}
+
+/** THE sortable column heading, on every table in the app.
+ *
+ *  All four states side by side: a resting neutral ⇅ that marks a heading as
+ *  clickable, the accent ↑/↓ that only the active column shows, and a plain
+ *  heading for Actions. Clicking a heading sorts ascending, clicking it again
+ *  flips to descending — and blank cells sink to the bottom in *both*
+ *  directions, since an em dash is the absence of a value rather than a value
+ *  lower than every other one.
+ *
+ *  A cell holding two stacked fields uses `SortMenu` inside a `SortableTh`
+ *  instead: it offers each field rather than guessing which one the reader
+ *  meant by "up". The cell still reports `aria-sort` through `ownsKeys`.
+ */
+export const SortableHeaderExample: Story = {
+  render: function SortableHeaderStory() {
+    type Row = { model: string; maker: string; airframes: number; note: string }
+    const ROWS: Row[] = [
+      { model: 'CL-600-2B16', maker: 'Bombardier', airframes: 12, note: 'Cabin interior' },
+      { model: 'DHC-8-402', maker: 'De Havilland', airframes: 3, note: '' },
+      { model: 'B737-800', maker: 'Boeing', airframes: 27, note: 'Antenna doubler' },
+      { model: 'A220-300', maker: 'Airbus', airframes: 8, note: '' },
+    ]
+    const { sorted, sort, setSort } = useTableSort(ROWS, {
+      model: (r) => r.model,
+      maker: (r) => r.maker,
+      airframes: (r) => r.airframes,
+      note: (r) => r.note,
+    })
+    const COLS = [
+      { label: 'Model', sort: 'model' as const },
+      { label: 'Manufacturer', sort: 'maker' as const },
+      { label: 'Airframes', sort: 'airframes' as const },
+      { label: 'Note', sort: 'note' as const },
+      { label: 'Actions' },
+    ]
+    return (
+      <div className="grid gap-lg p-lg" style={{ maxWidth: 720 }}>
+        <p className="text-sm text-text-secondary">
+          Sort by <b className="text-text-primary">Note</b> to see blank rows sink to the bottom in
+          either direction. Sort by <b className="text-text-primary">Airframes</b> to see numbers
+          compared as numbers, not as text.
+        </p>
+        <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+          <table className="w-full border-collapse text-left">
+            <caption className="sr-only">Aircraft models, sortable by any column</caption>
+            <thead>
+              <tr className="border-b border-border-default bg-neutral-50">
+                {COLS.map((c) => (
+                  <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                    className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">
+                    {c.label}
+                  </SortableTh>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((r) => (
+                <tr key={r.model} className="border-b border-border-default last:border-b-0">
+                  <td className="px-lg py-base text-sm font-semibold text-text-primary">{r.model}</td>
+                  <td className="px-lg py-base text-sm text-text-primary">{r.maker}</td>
+                  <td className="px-lg py-base text-sm tabular-nums text-text-primary">{r.airframes}</td>
+                  <td className="px-lg py-base text-sm text-text-primary">
+                    {r.note || <span className="text-text-muted">—</span>}
+                  </td>
+                  <td className="px-lg py-base text-sm text-text-muted">⋮</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg">
+          <p className="text-sm font-semibold text-text-primary">The four heading states</p>
+          <table className="mt-sm w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-border-default bg-neutral-50">
+                <SortableTh sortKey="a" sort={{ key: 'b', dir: 'asc' }} onSortChange={() => {}}
+                  className="px-lg py-base text-sm font-semibold text-text-secondary">Idle</SortableTh>
+                <SortableTh sortKey="a" sort={{ key: 'a', dir: 'asc' }} onSortChange={() => {}}
+                  className="px-lg py-base text-sm font-semibold text-text-secondary">Ascending</SortableTh>
+                <SortableTh sortKey="a" sort={{ key: 'a', dir: 'desc' }} onSortChange={() => {}}
+                  className="px-lg py-base text-sm font-semibold text-text-secondary">Descending</SortableTh>
+                <SortableTh className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
+              </tr>
+            </thead>
+          </table>
         </div>
       </div>
     )

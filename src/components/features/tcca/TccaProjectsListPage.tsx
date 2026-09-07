@@ -5,6 +5,8 @@ import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -20,7 +22,16 @@ import { TccaProjectDrawer } from './TccaProjectDrawer'
 import type { TccaProject } from '@/types/tcca'
 import { DateText } from '@/components/patterns/DateText'
 
-const HEADERS = ['Number', 'Description', 'Linked Project', 'Opened', 'Status', 'Actions']
+type SortKey = 'number' | 'description' | 'project' | 'opened' | 'status'
+
+const COLUMNS: { label: string; sort?: SortKey }[] = [
+  { label: 'Number', sort: 'number' },
+  { label: 'Description', sort: 'description' },
+  { label: 'Linked Project', sort: 'project' },
+  { label: 'Opened', sort: 'opened' },
+  { label: 'Status', sort: 'status' },
+  { label: 'Actions' },
+]
 
 export interface TccaProjectsListPageProps {
   state?: 'ready' | 'loading' | 'error'
@@ -47,12 +58,27 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
 
   const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
 
+  /* Declared above the sort hook, not below it: the sort accessors run inside
+     that hook's own render-time useMemo, so a helper defined further down the
+     component is still in its temporal dead zone when the first sorted render
+     reaches for it. */
   const projectLabel = (t: TccaProject) => {
     const p = projects.find((x) => x.id === t.projectIds[0])
     if (!p) return t.projectIds.length ? '—' : 'Baseline / DAO'
     const extra = t.projectIds.length - 1
     return `${p.number}-${p.subNumber}${extra > 0 ? ` +${extra}` : ''}`
   }
+
+  /* Linked Project sorts on the same label the cell prints, so a row with no
+     linked project sinks with the other blanks rather than sorting under
+     whatever placeholder text it shows. */
+  const { sorted, sort, setSort } = useTableSort(filtered, {
+    number: (t) => t.number,
+    description: (t) => t.description,
+    project: (t) => projectLabel(t),
+    opened: (t) => t.openedDate,
+    status: (t) => TCCA_STATUS_LABEL[t.status],
+  }, { onSortChange: resetVisible })
 
   const loading = state === 'loading'
 
@@ -95,8 +121,9 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
               <caption className="sr-only">TCCA projects</caption>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
-                  {HEADERS.map((h) => (
-                    <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                  {COLUMNS.map((c) => (
+                    <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                      className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                 </tr>
               </thead>
@@ -104,10 +131,10 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
                 {loading
                   ? Array.from({ length: 4 }, (_, i) => (
                       <tr key={i} className="border-b border-border-default last:border-b-0">
-                        {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                        {COLUMNS.map((c) => <td key={c.label} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                       </tr>
                     ))
-                  : filtered.slice(0, visibleCount).map((t) => (
+                  : sorted.slice(0, visibleCount).map((t) => (
                       <tr
                         key={t.id}
                         onClick={() => navigate(`/tcca-projects/${t.id}`)}

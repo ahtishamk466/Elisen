@@ -1,25 +1,32 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
 # Dependencies
 node_modules/
 
-# Build
+# Build output
 dist/
-storybook-static/
+.storybook-out/
 
-# Env / secrets
-.env
-.env.*
-!.env.example
+# Testing & Coverage
+.coverage/
+*.lcov
 
-# Logs / OS / IDE
-*.log
-.DS_Store
-.idea/
+# IDE
 .vscode/
+.idea/
 *.swp
 *.swo
+*~
 
-# TypeScript
-*.tsbuildinfo
+# OS
+.DS_Store
+Thumbs.db
 
-# Test / coverage
-coverage/
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

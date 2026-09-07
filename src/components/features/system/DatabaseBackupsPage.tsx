@@ -4,6 +4,8 @@ import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Truncate } from '@/components/patterns/Truncate'
@@ -15,7 +17,15 @@ import { useBackupStore } from '@/stores/backupStore'
 import { formatBackupSize, formatRelativeTime } from '@/lib/backupFixtures'
 import type { DatabaseBackup } from '@/types/backup'
 
-const HEADERS = ['Name', 'Size', 'Create Time', 'Modified Time', 'Actions']
+type SortKey = 'name' | 'size' | 'created' | 'modified'
+
+const COLUMNS: { label: string; sort?: SortKey }[] = [
+  { label: 'Name', sort: 'name' },
+  { label: 'Size', sort: 'size' },
+  { label: 'Create Time', sort: 'created' },
+  { label: 'Modified Time', sort: 'modified' },
+  { label: 'Actions' },
+]
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -31,7 +41,17 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
   const uploadBackup = useBackupStore((s) => s.uploadBackup)
   const removeBackup = useBackupStore((s) => s.removeBackup)
 
-  const { visibleCount, loadingMore, loadMore } = useInfiniteReveal(backups.length, 25)
+  const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(backups.length, 25)
+
+  /* Size and Modified sort on the raw bytes and timestamp, never on the
+     formatted string — "9.8 MB" sorts before "10 KB" as text, and a relative
+     time ("2 hours ago") has no order at all. */
+  const { sorted, sort, setSort } = useTableSort(backups, {
+    name: (b) => b.name,
+    size: (b) => b.bytes,
+    created: (b) => b.createdAt,
+    modified: (b) => b.modifiedAt,
+  }, { onSortChange: resetVisible })
   const [uploading, setUploading] = useState(false)
   const [restoring, setRestoring] = useState<DatabaseBackup | null>(null)
   const [deleting, setDeleting] = useState<DatabaseBackup | null>(null)
@@ -92,8 +112,9 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
                 <caption className="sr-only">Database backup files</caption>
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
-                    {HEADERS.map((h) => (
-                      <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                    {COLUMNS.map((c) => (
+                      <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                        className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                     ))}
                   </tr>
                 </thead>
@@ -101,10 +122,10 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
                   {loading
                     ? Array.from({ length: 4 }, (_, i) => (
                         <tr key={i} className="border-b border-border-default last:border-b-0">
-                          {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                          {COLUMNS.map((c) => <td key={c.label} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                         </tr>
                       ))
-                    : backups.slice(0, visibleCount).map((b) => (
+                    : sorted.slice(0, visibleCount).map((b) => (
                         <tr key={b.id} className="border-b border-border-default last:border-b-0">
                           {/* Filenames are long but meaningful — clamp with
                               the full name on hover rather than wrapping. */}

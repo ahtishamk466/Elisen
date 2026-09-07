@@ -1,7 +1,5 @@
 import { create } from 'zustand'
-import {
-  AIRCRAFT_MODELS, AIRCRAFT_SERIALS, ATA_CHAPTERS, ATA_SUB_CHAPTERS, COMPANIES_LOOKUP, COMPANY_CONTACTS,
-} from '@/lib/lookupFixtures'
+import { coreData } from '@/lib/dataset'
 import type { AircraftModel, AircraftSerial, AtaChapter, AtaSubChapter, Company, CompanyContact } from '@/types/lookup'
 
 interface LookupState {
@@ -40,12 +38,12 @@ const upsert = <T extends { id: string }>(list: T[], item: T) =>
   list.some((x) => x.id === item.id) ? list.map((x) => (x.id === item.id ? item : x)) : [...list, item]
 
 export const useLookupStore = create<LookupState>((set) => ({
-  companies: COMPANIES_LOOKUP,
-  contacts: COMPANY_CONTACTS,
-  aircraft: AIRCRAFT_MODELS,
-  serials: AIRCRAFT_SERIALS,
-  chapters: ATA_CHAPTERS,
-  subChapters: ATA_SUB_CHAPTERS,
+  companies: coreData().companies,
+  contacts: coreData().contacts,
+  aircraft: coreData().aircraft,
+  serials: coreData().serials,
+  chapters: coreData().ataChapters,
+  subChapters: coreData().ataSubChapters,
 
   saveCompany: (company, contacts) =>
     set((s) => ({

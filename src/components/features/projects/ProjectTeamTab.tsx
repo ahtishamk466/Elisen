@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { ChevronDown, Users } from 'lucide-react'
 import { Avatar } from '@/components/patterns/Avatar'
 import { EmptyState } from '@/components/patterns/EmptyState'
-import { BudgetInline, ProgressMeter } from '@/components/patterns/ProgressMeter'
+import { BudgetInline } from '@/components/patterns/ProgressMeter'
 import { Stat as GlobalStat } from '@/components/patterns/Stat'
 import { Badge } from '@/components/ui/Badge'
 import { useWorkPackagesStore } from '@/stores/workPackagesStore'
@@ -10,18 +10,10 @@ import { useTimesheetStore } from '@/stores/timesheetStore'
 import { activityName } from '@/lib/catalog'
 import { useCatalogStore } from '@/stores/catalogStore'
 import {
-  HEALTH_LABEL, HEALTH_TONE, formatHours, formatPct, healthOf, rollUpActivities,
+  HEALTH_LABEL, HEALTH_TONE, rollUpActivities,
 } from '@/lib/projectHealth'
-import type { WorkPackage, WorkPackageActivity } from '@/types/workPackage'
-
-/** One activity a person holds, plus the package it sits in. The same
-    activity name can appear twice under different packages. */
-interface PersonActivity {
-  activity: WorkPackageActivity
-  workPackage: WorkPackage
-  /** Timesheet rows this person filed against this activity on this project. */
-  entries: number
-}
+import type { WorkPackageActivity } from '@/types/workPackage'
+import { TeamActivityTable, type PersonActivity } from './TeamActivityTable'
 
 /**
  * Who is working on this project, and how each of them is tracking.
@@ -143,52 +135,7 @@ export function ProjectTeamTab({ projectId }: { projectId: string }) {
             </header>
 
             {isOpen && (
-              <div className="overflow-x-auto border-t border-border-default p-lg">
-                <table className="w-full border-collapse text-left" style={{ minWidth: 740 }}>
-                  <caption className="sr-only">Activities held by {p.name} on this project</caption>
-                  <thead>
-                    <tr className="border-b border-border-default">
-                      {['Work Package', 'Activity', 'Actual / Budget', 'Remaining', 'Used', 'Status', 'Time Entries'].map((h) => (
-                        <th
-                          key={h}
-                          scope="col"
-                          className="whitespace-nowrap px-sm py-sm text-xs font-semibold text-text-secondary"
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {p.items.map(({ activity, workPackage, entries }) => {
-                      const h = healthOf(activity.budgetHours, activity.actualHours, workPackage.status === 'complete')
-                      const over = h.remaining < 0
-                      return (
-                        <tr key={activity.id} className="border-b border-border-default last:border-b-0">
-                          <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">{workPackage.title}</td>
-                          <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">{activityName(catalogActivities, activity.activityId)}</td>
-                          <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">
-                            {h.budget > 0 ? `${formatHours(h.actual)} / ${formatHours(h.budget)}` : `${formatHours(h.actual)} / no budget`}
-                          </td>
-                          <td className={`whitespace-nowrap px-sm py-sm text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
-                            {h.budget > 0 ? `${over ? '−' : ''}${formatHours(Math.abs(h.remaining))}` : '—'}
-                          </td>
-                          <td className="whitespace-nowrap px-sm py-sm">
-                            <span className="block text-sm text-text-primary">{formatPct(h.progressPct)}</span>
-                            <span className="mt-xxss block" style={{ width: 44 }}>
-                              <ProgressMeter health={h} size="sm" ariaLabel={`${activityName(catalogActivities, activity.activityId)} budget`} />
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap px-sm py-sm">
-                            <Badge tone={HEALTH_TONE[h.state]}>{HEALTH_LABEL[h.state]}</Badge>
-                          </td>
-                          <td className="whitespace-nowrap px-sm py-sm text-sm text-text-primary">{entries}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <TeamActivityTable personName={p.name} items={p.items} catalogActivities={catalogActivities} />
             )}
           </section>
         )

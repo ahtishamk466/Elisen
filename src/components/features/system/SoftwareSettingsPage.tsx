@@ -5,6 +5,8 @@ import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
 import { FilterChips } from '@/components/patterns/FilterChips'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Truncate } from '@/components/patterns/Truncate'
@@ -17,7 +19,18 @@ import { SoftwareSettingsFilterMenu, EMPTY_SETTING_FILTERS, settingFilterChips, 
 import { useSettingsStore } from '@/stores/settingsStore'
 import type { SoftwareSetting } from '@/types/setting'
 
-const HEADERS = ['#', 'Type', 'Section', 'Key', 'Value', 'Status', 'Description', 'Actions']
+type SortKey = 'number' | 'type' | 'section' | 'key' | 'value' | 'status' | 'description'
+
+const COLUMNS: { label: string; sort?: SortKey }[] = [
+  { label: '#', sort: 'number' },
+  { label: 'Type', sort: 'type' },
+  { label: 'Section', sort: 'section' },
+  { label: 'Key', sort: 'key' },
+  { label: 'Value', sort: 'value' },
+  { label: 'Status', sort: 'status' },
+  { label: 'Description', sort: 'description' },
+  { label: 'Actions' },
+]
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -59,6 +72,16 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
   }, [numbered, filters])
 
   const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
+
+  const { sorted, sort, setSort } = useTableSort(filtered, {
+    number: (r) => r.number,
+    type: (r) => r.setting.type,
+    section: (r) => r.setting.section,
+    key: (r) => r.setting.key,
+    value: (r) => r.setting.value,
+    status: (r) => r.setting.active,
+    description: (r) => r.setting.description,
+  }, { onSortChange: resetVisible })
 
   const loading = state === 'loading'
 
@@ -121,8 +144,9 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
                 <caption className="sr-only">Software settings</caption>
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
-                    {HEADERS.map((h) => (
-                      <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                    {COLUMNS.map((c) => (
+                      <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                        className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                     ))}
                   </tr>
                 </thead>
@@ -130,10 +154,10 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
                   {loading
                     ? Array.from({ length: 8 }, (_, i) => (
                         <tr key={i} className="border-b border-border-default last:border-b-0">
-                          {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                          {COLUMNS.map((c) => <td key={c.label} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                         </tr>
                       ))
-                    : filtered.slice(0, visibleCount).map(({ setting: s, number }) => (
+                    : sorted.slice(0, visibleCount).map(({ setting: s, number }) => (
                         <tr
                           key={s.id}
                           onClick={() => setDrawer({ mode: 'edit', setting: s })}

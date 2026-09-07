@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { TCCA_DOC_LINKS, TCCA_PROJECTS } from '@/lib/tccaFixtures'
+import { coreData } from '@/lib/dataset'
 import type { TccaDocLink, TccaProject } from '@/types/tcca'
 
 // The document revision pool itself lives in documentsStore (single source
@@ -23,8 +23,8 @@ interface TccaState {
 }
 
 export const useTccaStore = create<TccaState>((set) => ({
-  tccaProjects: TCCA_PROJECTS,
-  docLinks: TCCA_DOC_LINKS,
+  tccaProjects: coreData().tccaProjects,
+  docLinks: coreData().tccaDocLinks,
 
   addTcca: (t) => set((s) => ({ tccaProjects: [t, ...s.tccaProjects] })),
   updateTcca: (id, patch) =>

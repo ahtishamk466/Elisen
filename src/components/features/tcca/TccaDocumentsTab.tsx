@@ -4,6 +4,8 @@ import { Plus, Pencil, Trash2, FileText } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/patterns/EmptyState'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -16,7 +18,17 @@ import { DocTrackingDrawer } from './DocTrackingDrawer'
 import type { TccaDocLink, TccaProject } from '@/types/tcca'
 import { DateText } from '@/components/patterns/DateText'
 
-const HEADERS = ['Number / Rev', 'Title', 'From Project', 'Involvement', 'Sent', 'Status', 'Actions']
+type SortKey = 'number' | 'title' | 'project' | 'involvement' | 'sent' | 'status'
+
+const COLUMNS: { label: string; sort?: SortKey }[] = [
+  { label: 'Number / Rev', sort: 'number' },
+  { label: 'Title', sort: 'title' },
+  { label: 'From Project', sort: 'project' },
+  { label: 'Involvement', sort: 'involvement' },
+  { label: 'Sent', sort: 'sent' },
+  { label: 'Status', sort: 'status' },
+  { label: 'Actions' },
+]
 
 export function TccaDocumentsTab({ tcca }: { tcca: TccaProject }) {
   const projects = useProjectsStore((s) => s.rows)
@@ -33,6 +45,21 @@ export function TccaDocumentsTab({ tcca }: { tcca: TccaProject }) {
   const links = docLinks.filter((l) => l.tccaProjectId === tcca.id)
   const revisionOf = (id: string) => revisions.find((r) => r.id === id)
   const projectOf = (id: string) => projects.find((p) => p.id === id)
+
+  /* Every column reaches through the link to the revision it points at, so
+     the table sorts on what the row shows rather than on link ids. */
+  const { sorted, sort, setSort } = useTableSort(links, {
+    number: (l) => revisionOf(l.revisionId)?.number,
+    title: (l) => revisionOf(l.revisionId)?.title,
+    project: (l) => {
+      const rev = revisionOf(l.revisionId)
+      const project = rev && projectOf(rev.projectId)
+      return project && `${project.number}-${project.subNumber}`
+    },
+    involvement: (l) => INVOLVEMENT_LABEL[l.involvement],
+    sent: (l) => l.sentDate,
+    status: (l) => DOC_STATE_LABEL[l.state],
+  })
 
   return (
     <div className="grid gap-lg">
@@ -60,13 +87,14 @@ export function TccaDocumentsTab({ tcca }: { tcca: TccaProject }) {
             <caption className="sr-only">Documents tracked with Transport Canada</caption>
             <thead>
               <tr className="border-b border-border-default bg-neutral-50">
-                {HEADERS.map((h) => (
-                  <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                {COLUMNS.map((c) => (
+                  <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                    className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {links.map((link) => {
+              {sorted.map((link) => {
                 const rev = revisionOf(link.revisionId)
                 if (!rev) return null
                 const project = projectOf(rev.projectId)

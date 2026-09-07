@@ -4,6 +4,8 @@ import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Truncate } from '@/components/patterns/Truncate'
@@ -49,7 +51,18 @@ function ContactChips({ contacts, onOpen }: { contacts: CompanyContact[]; onOpen
   )
 }
 
-const HEADERS = ['Name', 'Contacts', 'Address', 'City', 'Zip Code', 'Active', 'Actions']
+type SortKey = 'name' | 'contacts' | 'address' | 'city' | 'postal' | 'active'
+
+/** Actions is the one heading with nothing to order by. */
+const COLUMNS: { label: string; sort?: SortKey }[] = [
+  { label: 'Name', sort: 'name' },
+  { label: 'Contacts', sort: 'contacts' },
+  { label: 'Address', sort: 'address' },
+  { label: 'City', sort: 'city' },
+  { label: 'Zip Code', sort: 'postal' },
+  { label: 'Active', sort: 'active' },
+  { label: 'Actions' },
+]
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -83,6 +96,15 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
   }, [companies, contacts, query]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
+
+  const { sorted, sort, setSort } = useTableSort(filtered, {
+    name: (r) => r.company.name,
+    contacts: (r) => contactsOf(r.company.id).length,
+    address: (r) => r.company.address,
+    city: (r) => r.company.city,
+    postal: (r) => r.company.postal,
+    active: (r) => r.company.active,
+  }, { onSortChange: resetVisible })
 
   const loading = state === 'loading'
 
@@ -134,8 +156,9 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
               <caption className="sr-only">Companies and their contacts</caption>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
-                  {HEADERS.map((h) => (
-                    <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                  {COLUMNS.map((c) => (
+                    <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                      className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                 </tr>
               </thead>
@@ -143,10 +166,10 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
                 {loading
                   ? Array.from({ length: 6 }, (_, i) => (
                       <tr key={i} className="border-b border-border-default last:border-b-0">
-                        {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                        {COLUMNS.map((c) => <td key={c.label} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                       </tr>
                     ))
-                  : filtered.slice(0, visibleCount).map(({ company: c, matchedContact }) => (
+                  : sorted.slice(0, visibleCount).map(({ company: c, matchedContact }) => (
                       <tr
                         key={c.id}
                         onClick={() => setDrawer({ mode: 'edit', company: c })}

@@ -4932,3 +4932,260 @@ is Hours Worked–specific, not a change to the shared filter vocabulary.
 `TimesheetFilterMenu` gained a `clearFilters` prop (defaulting to
 `EMPTY_FILTERS`) so its in-panel Clear button also lands on Last Week here,
 without hardcoding that default into the shared component itself.
+
+## 2026-08-24 — Comment column dropped from Hours Worked → All Entries
+**Context:** The user asked to remove the Comment column from the Hours
+Worked → All Entries table only (not the personal Timesheet table it
+shares a component with), so the table fits at 1280px with zero horizontal
+scroll — Comment was the narrowest, least load-bearing column competing for
+space against 11 others. The field still needs to be reachable per row.
+**Choice:** `TimesheetTable` gained a `showComment` prop (default `true`).
+When `false` (set only on the `HoursWorkedPage` → All Entries usage), the
+column is dropped entirely from a second column set (`COLUMNS_NO_COMMENT`),
+not just hidden — its 7% width is redistributed to Project/Work
+Package/Activity/Deliverable/Date, and the table's `minWidth` drops from
+1180 to 900 to match, verified at 1280px with zero overflow. The personal
+Timesheet table (`TimesheetListPage`) is untouched and still shows Comment.
+The field itself moved into the row's own View/Edit drawer at full width:
+`FormField` gained a `fullWidth` prop (stacks label above a control
+spanning the whole section, instead of the standard 1/3-label + 2/3-control
+split) for `TimesheetEntryFormFields`' Comment field; `TimesheetEntryView`
+pulled Comment out of its 3-column stat grid into its own full-width row
+below, for the same reason.
+**Rationale:** Dropping the column (not hiding the cell) avoids an
+orphaned, oddly-narrow empty column; redistributing its width to the
+busiest columns was a better use of the freed space than leaving it blank.
+`fullWidth` on `FormField` is a small, narrowly-scoped addition (one new
+prop, opt-in) rather than a new component, since every other field on this
+form still wants the standard split.
+
+## 2026-08-27 — Sortable headings on every table in the app
+**Context:** Only `ProjectsTable` had sortable column headings; the other 28
+tables in the app rendered plain `<th>` text. Same reader, same kind of table,
+and no way to reorder any of them — and the pattern that did exist (a neutral
+⇅ at rest, a single accent arrow on the active column, `aria-sort` on the
+cell) was trapped inside that one file as a local `headerButton` helper. The
+user asked for the icons everywhere, fully functional.
+**Choice:** Extracted the existing visuals into two shared pieces rather than
+inventing anything new, so nothing changed on screen:
+- `patterns/SortableTh.tsx` — owns the `<th>`, `scope="col"`, `aria-sort` and
+  the icon button. Each table keeps its own padding/width classes. No
+  `sortKey` renders a plain heading, which is how Actions stays inert.
+  `ownsKeys` lets a cell whose control is a `SortMenu` still report
+  `aria-sort` for whichever of its stacked fields is active.
+- `patterns/useTableSort.ts` — `(rows, accessors, { initial, onSortChange })`
+  → `{ sorted, sort, setSort }`. One accessor per column, naming what that
+  column sorts on rather than what its cell prints.
+
+Applied to all 28 tables. Every column holding a real value sorts; only
+Actions is plain. Merged cells (Actual / Budget, Priority/Type,
+Company/Contact, Activity / Task, Remaining / Used) keep a `SortMenu` inside
+their `SortableTh` — a merged column has more than one reasonable "up".
+`ProjectsTable` and `ProjectsListPage` were migrated onto the shared pieces
+too, deleting the local `headerButton` and a hand-rolled comparator, and
+picking up Status, Active and Person Res. as sortable columns on the way.
+
+**Three rules the shared comparator fixes centrally**, each of which was a
+judgement call a per-screen comparator would have got differently:
+1. **Blanks sink in both directions.** An em dash is the absence of a value,
+   not a value below every other one, so a column of them arriving first on a
+   descending sort buries the rows the reader sorted for.
+2. **Numeric-looking codes compare as numbers** (`Intl.Collator` with
+   `numeric: true`), so `3200-00` sorts before `3300-01` rather than after
+   `32000`. Project, approval and document numbers all read as digits.
+3. **Sort on the value, never the formatted string.** Size sorts on bytes, not
+   "9.8 MB"; dates on the stored ISO value, not "Aug 20, 2026"; a badge on its
+   underlying status; Aging on the computed day count. `sensitivity: 'base'`
+   keeps lower-case entries from sorting into their own block after the
+   capitals.
+
+**Rationale:** One implementation means a blank can't sink on one screen and
+lead on another, and a new table inherits the behaviour instead of relying on
+someone remembering it. Sorting runs on the whole filtered set before
+`slice(0, visibleCount)`, and `useInfiniteReveal`'s `reset` is passed as
+`onSortChange`, so a re-sort shows the new first page rather than the old row
+count.
+
+**Two traps worth recording:**
+- **Sort accessors run inside the hook's render-time `useMemo`**, so a helper
+  declared *below* the hook in the same component is still in its temporal
+  dead zone the first time a sorted render reaches for it. Bit
+  `TccaProjectsListPage` (`projectLabel`) and `ApprovalsPage`
+  (`projectLabels`); both now sit above their hook. Same reason
+  `ApprovalDetailPage`'s hook sits above its `if (!approval) return`.
+- **`useInfiniteReveal` must be declared before the sort hook that resets it**
+  — the natural order (`useInfiniteReveal(sorted.length)`) makes `reset`
+  unavailable to `useTableSort`'s options. Keying the reveal off `filtered.length`
+  instead breaks the cycle, and sorting never changes the row count anyway.
+
+**Two components came out of this**, both because a hook cannot run inside the
+`.map()` that renders the cards they sit in: `TeamActivityTable` (out of
+`ProjectTeamTab`, which also brought that file from 208 to 155 lines) and
+`NotesCell` (out of `PersonWorkPackageCard`'s `notesFor`, which returned JSX
+and so could not be counted for sorting; it now returns the chip array and the
+cell wraps it).
+
+## 2026-08-28 — Reports rebuilt as a master–detail with live preview and 5-format download
+**Context:** The Reports page was a card grid: pick a card, fill a params
+drawer, and an HTML file downloaded sight-unseen — no preview, no format
+choice, no descriptions. The user asked for a select → date range → preview →
+download flow with a category filter, one-line descriptions on the left,
+preview on the right, the same range driving preview and file, and Excel /
+PDF / CSV / Text / HTML downloads, with explicit states for every step.
+**Choice:**
+- **Master–detail, the app's existing shape** (AtaChaptersPage rail pattern,
+  `?report=` URL-synced like `?chapter=`): rail of all 14 reports grouped by
+  category with one-line descriptions; category dropdown + search filter the
+  rail but never clear the selection. Pending reports stay listed with a
+  badge and explain themselves in the pane — nothing from the old system is
+  silently missing, and no dead buttons.
+- **Generators return data, not files.** Every `run*` became `build*`
+  returning `ReportResult { title, filenameBase, meta, columns, rows }`. The
+  preview renders that object and `lib/reportExport.ts` serializes the same
+  object per format, so the file can never disagree with the preview.
+- **The date range is the gate, not a Run button.** Generation is instant
+  and client-side, so the preview appears the moment required params are
+  valid; until then the preview area says exactly what's missing, and
+  Download is disabled with the same reason on its tooltip. End-before-start
+  gets an inline error. No-param reports preview on selection.
+- **Excel and PDF are zero-dependency** (SECURITY.md rule 7 — no new
+  packages without proposal): Excel downloads an HTML-workbook `.xls`
+  (`application/vnd.ms-excel`) — Excel opens it with a one-time extension
+  notice; PDF prints a paper-styled copy via a hidden iframe through the
+  browser's own Save-as-PDF, and its menu row says "Via the print dialog" so
+  the different flow is never a surprise. Both are swappable for real
+  `.xlsx`/`.pdf` writers later inside `reportExport.ts` alone — proposed as
+  the reversible alternative to blocking on a library approval.
+- **Preview table uses `SortableTh`/`useTableSort`** (index accessors over
+  the string rows, em dashes as blanks), keyed by report id so sort state
+  never leaks between reports.
+- `RunReportDrawer` deleted; `ReportCard` kept (ProjectDetailPage still uses
+  it). States covered: page loading/error, no selection, pending report,
+  params-missing gate, invalid range, empty results (with "widen the range"),
+  preview, and a download toast naming report + format.
+**Rationale:** The four-step flow reads left to right in one screen with no
+modal in the way, and every dead end says what to do next. Reusing the rail
+pattern means someone who has used ATA Chapters or Person Detail already
+knows this screen.
+
+## 2026-08-28 — Reports: Apply/Clear, an applied-range strip, and looser spacing
+**Context:** Follow-up on the Reports rebuild. The client asked whether
+Reports should inherit Hours Worked's selection, asked for Apply/Clear CTAs
+instead of the range applying as you type, and said the pane felt congested
+with rows too tight.
+
+**Should Reports follow Hours Worked's selection? No — shared default, not
+shared state.** `defaultDateValues()` in `ReportsPage` computes last week via
+`periodRange('last-week')`, the same window Hours Worked opens on, but reads
+nothing from that page's live filter. Reasons, in order:
+1. A report is a document someone hands on. If a filter set on another screen
+   silently changed what a downloaded report contained, that is a correctness
+   trap, not a convenience — and it would be invisible at the moment of
+   download.
+2. The vocabularies don't match: Hours Worked filters by whole calendar
+   periods, Reports needs an explicit from/to.
+3. Five of the fourteen reports aren't date-scoped at all, so there would be
+   nothing to inherit for them.
+4. "All data" as the default is wrong for time reports — Detailed Time across
+   all history is a huge export nobody asked for.
+
+**Draft vs. applied.** `ReportParamsBar` owns the draft the reader edits;
+`ReportDetailPanel` owns the applied set, and only the applied set builds the
+`ReportResult` that feeds both preview and download. Beyond honouring the
+request, this fixes a real defect in the previous build: typing a date
+regenerated the whole preview on every keystroke, so `2026-08-0` was a
+render. Apply is disabled while invalid *or* unchanged, so the button also
+reports whether anything is pending. Reports with no parameters apply on open
+— there is nothing to confirm, and gating them behind a button would be
+ceremony.
+
+**Clear means empty, not "back to default".** It blanks the fields and drops
+the preview to the gate. A Clear that silently re-applied last week would be
+a second, hidden Apply.
+
+**The applied range became a first-class field.** `ReportResult.range` holds
+it already formatted (`Aug 21, 2026 – Aug 28, 2026`), separate from `meta`
+(counts and totals). Three things fall out: the on-screen strip and the
+downloaded file's header are the *same string* rather than two constructions
+of it; the range stops being buried mid-sentence in `meta`; and the raw ISO
+range that used to read `2026-08-21 to 2026-08-28` on screen is gone, which
+was a plain violation of the app's own date rule (`lib/formatDate.ts` —
+`Aug 20, 2026` is the only format a user reads). The strip adds an inclusive
+day count, since "8 days" is the sanity check on a range someone is about to
+export.
+
+**Spacing.** Pane header, params bar and range strip moved to `px-2xl py-lg`;
+preview rows to `px-lg py-lg` (from `px-base py-sm`) with a hover tint; rail
+rows to `px-lg py-base`. Table headers gained `z-sticky` so they layer over
+scrolled rows correctly.
+
+**Still ISO in the preview's own Date cells**, deliberately: formatting them
+would break `useTableSort` (it compares the displayed string, and `Apr` sorts
+before `Aug`), and fixing that properly needs per-column sort keys on
+`ReportResult`. ISO sorts correctly, is unambiguous internationally, and
+keeps CSV/Excel machine-readable. Flagged as reversible if the client wants
+formatted dates in the body — the cost is that sort-key plumbing.
+
+## 2026-08-28 — The client's real TPMS data replaces every fixture
+**Context:** The client supplied a 323 MB mysqldump of the live TPMS database
+(`pmtts_latest_2026-08-27`) and asked for it to be used on every page in place
+of the invented fixtures.
+
+**What was found before importing anything.** `https://tpmsv2.elisen.com/`
+returns HTTP 200 with no authentication, and the app is a static SPA with no
+backend — so every byte of imported data is public. The dump contains
+`user.password_hash` / `auth_key` / `password_reset_token` for 65 accounts,
+`hourly_rate` on 65 staff profiles *and on all 31,127 timesheet rows*, plus
+266 contacts and 53 aircraft owners with names, emails, phones and home
+addresses. Loading that as-is would have published salaries and password
+hashes to an indexable URL. Raised with the user before writing any code; they
+chose to pseudonymise people and keep business data real.
+
+**Choice:**
+- **Business records verbatim** — 793 projects, 793 work packages, 4,685
+  activity assignments, 205 approvals + 260 revisions, 2,213 deliverables and
+  4,391 design-data records with 3,738 revisions, 328 TCCA projects, 3,198
+  TCCA doc links, 128 aircraft, 116 ATA chapters + 615 sub chapters, 220
+  companies, 53 activities, 45 tasks, 10 settings, and the real 9-role RBAC
+  tree with 326 permissions.
+- **People replaced with stable stand-ins**, mapped deterministically so
+  counts and relationships are identical and a re-run is byte-identical.
+  Credential and pay columns are never read at all.
+- **Free text is scrubbed.** Comments and next-action notes are prose written
+  by staff, and a first pass leaked colleague names through them. Every string
+  reaching the output now goes through a scrubber that swaps known real names
+  (118 hits), name-shaped bigrams (29) and email addresses (624).
+- Enum mappings come from the legacy app's own `dictionaires/*.php`, not
+  guesswork — `project.type` 3 is *External*, not "preferred", which a
+  reasonable guess would have got wrong for 516 of 793 projects.
+
+**Data is fetched, not bundled.** As TypeScript the fixtures came to 4.7 MB
+before the timesheet; as static JSON the whole set gzips to 1.29 MB. So
+`public/data/*.json` is fetched at runtime by `lib/dataset.ts`:
+- **Core** (450 KB gzipped) is loaded in `main.tsx` *before* the app module is
+  imported — stores seed from `coreData()` when their module evaluates, and a
+  static import would be hoisted above the await, seeding them from empty
+  arrays. Hence the dynamic `import('@/app/App')`.
+- **Timesheet** (31,126 rows, 840 KB gzipped) loads on its own via
+  `timesheetStore.ensureLoaded()`; the four screens that read it show their
+  existing loading state until it lands.
+
+The JS bundle *shrank* from 1,012 KB to 196 KB + a 665 KB app chunk, because
+the invented fixtures left with it.
+
+**Two things the real data exposes, both accurate and worth knowing:**
+1. **Budgets are almost entirely unset** — 20 of 4,685 activity rows carry a
+   budget, so most screens read "no budget". That is the client's data, not a
+   mapping bug; the budget/health features have had nothing to show all along.
+2. **Work packages are a formality** — all 793 are a single auto-created
+   "Default Work Package" per project, status Open. The feature exists in the
+   schema but is unused in practice.
+
+**Also fixed here:** `HoursByPersonTab` called `useTableSort` *below* an
+`if (loading) return`, so the first render with real data crashed on
+"Rendered more hooks than during the previous render". The hook moved above
+every early return, and all fourteen call sites were re-checked for the same
+shape.
+
+**Regenerating** is three scripts in `tools/` — see `tools/README.md`, which
+also lists what must never appear in the output.

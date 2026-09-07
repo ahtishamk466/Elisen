@@ -6,6 +6,8 @@ import { ApprovalsTabs } from './ApprovalsTabs'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Truncate } from '@/components/patterns/Truncate'
@@ -19,7 +21,16 @@ import { useApprovalsStore } from '@/stores/approvalsStore'
 import type { Approval, ApprovalRevision } from '@/types/documents'
 import { DateText } from '@/components/patterns/DateText'
 
-const HEADERS = ['Approval Number', 'Revision', 'Change Description', 'Revision Date', 'Document', 'Actions']
+type SortKey = 'number' | 'revision' | 'change' | 'date' | 'document'
+
+const COLUMNS: { label: string; sort?: SortKey }[] = [
+  { label: 'Approval Number', sort: 'number' },
+  { label: 'Revision', sort: 'revision' },
+  { label: 'Change Description', sort: 'change' },
+  { label: 'Revision Date', sort: 'date' },
+  { label: 'Document', sort: 'document' },
+  { label: 'Actions' },
+]
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -59,6 +70,16 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
   }, [allRevisions, approvals, query])
 
   const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(rows.length, 25)
+
+  /* The newest-first order built above stays the default; picking a heading
+     replaces it rather than layering on top. */
+  const { sorted, sort, setSort } = useTableSort(rows, {
+    number: (r) => r.approval?.number,
+    revision: (r) => r.revision.revision,
+    change: (r) => r.revision.changeDescription,
+    date: (r) => r.revision.revisionDate,
+    document: (r) => r.revision.document,
+  }, { onSortChange: resetVisible })
   const loading = state === 'loading'
 
   if (state === 'error') {
@@ -115,8 +136,9 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
                 <caption className="sr-only">Approval revisions across all certificates</caption>
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
-                    {HEADERS.map((h) => (
-                      <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                    {COLUMNS.map((c) => (
+                      <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                        className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                     ))}
                   </tr>
                 </thead>
@@ -124,10 +146,10 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
                   {loading
                     ? Array.from({ length: 6 }, (_, i) => (
                         <tr key={i} className="border-b border-border-default last:border-b-0">
-                          {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                          {COLUMNS.map((c) => <td key={c.label} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                         </tr>
                       ))
-                    : rows.slice(0, visibleCount).map((row) => {
+                    : sorted.slice(0, visibleCount).map((row) => {
                         const { revision, approval } = row
                         return (
                           <tr

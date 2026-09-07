@@ -6,6 +6,8 @@ import {
 import { AppShell } from '@/components/patterns/AppShell'
 import { StatCard } from '@/components/patterns/StatCard'
 import { EmptyState } from '@/components/patterns/EmptyState'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { DetailCard as Card, DetailField as Field } from '@/components/patterns/DetailView'
@@ -25,7 +27,15 @@ import { DateText } from '@/components/patterns/DateText'
 const TABS = ['Overview', 'Revisions', 'Aircraft', 'Serial Numbers', 'Projects'] as const
 type Tab = (typeof TABS)[number]
 
-const REVISION_HEADERS = ['Revision', 'Change Description', 'Revision Date', 'Document', 'Actions']
+type RevisionSortKey = 'revision' | 'change' | 'date' | 'document'
+
+const REVISION_COLUMNS: { label: string; sort?: RevisionSortKey }[] = [
+  { label: 'Revision', sort: 'revision' },
+  { label: 'Change Description', sort: 'change' },
+  { label: 'Revision Date', sort: 'date' },
+  { label: 'Document', sort: 'document' },
+  { label: 'Actions' },
+]
 
 /**
  * The Approval workspace — "keep Approval separate… Approval itself should have
@@ -68,6 +78,15 @@ export function ApprovalDetailPage() {
     () => allRevisions.filter((r) => r.approvalId === id).sort((a, b) => b.revision - a.revision),
     [allRevisions, id],
   )
+
+  /* Above the early return, so the hook runs on every render of this
+     component regardless of whether the approval was found. */
+  const { sorted: sortedRevisions, sort, setSort } = useTableSort(revisions, {
+    revision: (r) => r.revision,
+    change: (r) => r.changeDescription,
+    date: (r) => r.revisionDate,
+    document: (r) => r.document,
+  })
 
   if (!approval) {
     return (
@@ -248,13 +267,14 @@ export function ApprovalDetailPage() {
                       <caption className="sr-only">Revisions of {approval.number}</caption>
                       <thead>
                         <tr className="border-b border-border-default bg-neutral-50">
-                          {REVISION_HEADERS.map((h) => (
-                            <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                          {REVISION_COLUMNS.map((c) => (
+                            <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                              className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {revisions.map((r) => (
+                        {sortedRevisions.map((r) => (
                           <tr key={r.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
                             <td className="whitespace-nowrap px-lg py-base align-top">
                               <Badge appearance="outline">Rev {r.revision}</Badge>

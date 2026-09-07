@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { SortMenu } from '@/components/patterns/SortMenu'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { BudgetInline } from '@/components/patterns/ProgressMeter'
 import { Badge } from '@/components/ui/Badge'
 import { HEALTH_LABEL, HEALTH_TONE, formatHours } from '@/lib/projectHealth'
@@ -14,7 +17,9 @@ import { Chip, RemainingUsedInline, budgetPair } from './PersonProjectPanel'
  * left, and how far in are we") — now it's one column, and a narrower one at
  * that, which is most of how this table now fits its pane without scrolling.
  */
-const ACTIVITY_COLUMNS: { label: string; width: string }[] = [
+type LineSortKey = 'activity' | 'actual' | 'budget' | 'remaining' | 'used' | 'status' | 'entries' | 'notes'
+
+const ACTIVITY_COLUMNS: { label: string; width: string; sort?: LineSortKey; sorts?: { key: LineSortKey; label: string }[] }[] = [
   /* Shares tuned against each column's real single-line content, measured
      live at the pane's narrowest width (1280 viewport → ~604px pane), so no
      row ever breaks onto a second line and the table never scrolls:
@@ -24,12 +29,20 @@ const ACTIVITY_COLUMNS: { label: string; width: string }[] = [
        Status          "No budget set", the longest badge it carries
        Entries         its own heading is wider than any count
        Notes           chips truncate */
-  { label: 'Activity', width: '16%' },
-  { label: 'Actual / Budget', width: '18%' },
-  { label: 'Remaining / Used', width: '23%' },
-  { label: 'Status', width: '17%' },
-  { label: 'Entries', width: '10%' },
-  { label: 'Notes', width: '16%' },
+  { label: 'Activity', width: '16%', sort: 'activity' },
+  {
+    label: 'Actual / Budget',
+    width: '18%',
+    sorts: [{ key: 'actual', label: 'Actual' }, { key: 'budget', label: 'Budget' }],
+  },
+  {
+    label: 'Remaining / Used',
+    width: '23%',
+    sorts: [{ key: 'remaining', label: 'Remaining' }, { key: 'used', label: 'Used' }],
+  },
+  { label: 'Status', width: '17%', sort: 'status' },
+  { label: 'Entries', width: '10%', sort: 'entries' },
+  { label: 'Notes', width: '16%', sort: 'notes' },
 ]
 
 /** Everything about an activity that isn't a number: who owns it, who else is
@@ -62,7 +75,16 @@ function notesFor(line: PersonActivityLine, personName: string) {
   if (line.entries === 0 && line.budget > 0) {
     out.push(<Chip key="none" title="Assigned, but no hours logged yet">Not started</Chip>)
   }
-  return out.length > 0 ? <span className="flex flex-wrap gap-xs">{out}</span> : <span className="text-sm text-text-muted">—</span>
+  return out
+}
+
+/** The chips as a cell. Split from `notesFor` so the Notes column can sort on
+    how many flags a line carries without rendering them first. */
+function NotesCell({ line, personName }: { line: PersonActivityLine; personName: string }) {
+  const notes = notesFor(line, personName)
+  return notes.length > 0
+    ? <span className="flex flex-wrap gap-xs">{notes}</span>
+    : <span className="text-sm text-text-muted">—</span>
 }
 
 /**
@@ -98,6 +120,20 @@ export function PersonWorkPackageCard({ pkg, personName, defaultOpen }: {
   defaultOpen: boolean
 }) {
   const [open, setOpen] = useState(defaultOpen)
+
+  /* Notes is a chip list; it sorts by how many flags a line carries, so the
+     lines needing attention group together. */
+  const { sorted: sortedLines, sort, setSort } = useTableSort(pkg.lines, {
+    activity: (l) => l.activityTitle,
+    actual: (l) => l.actual,
+    budget: (l) => l.budget,
+    remaining: (l) => (l.health.budget > 0 ? l.health.remaining : null),
+    used: (l) => l.health.progressPct,
+    status: (l) => l.health.state,
+    entries: (l) => l.entries,
+    notes: (l) => notesFor(l, personName).length,
+  })
+
   return (
     <section className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
       <header className="flex flex-wrap items-center gap-sm px-lg py-base">
@@ -129,12 +165,18 @@ export function PersonWorkPackageCard({ pkg, personName, defaultOpen }: {
             <thead>
               <tr className="border-b border-border-default bg-neutral-100">
                 {ACTIVITY_COLUMNS.map((c) => (
-                  <th key={c.label} scope="col" className="overflow-hidden truncate px-sm py-base text-xs font-semibold text-text-secondary">{c.label}</th>
+                  <SortableTh key={c.label} sortKey={c.sort} ownsKeys={c.sorts?.map((o) => o.key)}
+                    sort={sort} onSortChange={setSort}
+                    className="overflow-hidden truncate px-sm py-base text-xs font-semibold text-text-secondary">
+                    {c.sorts
+                      ? <SortMenu label={c.label} options={c.sorts} sort={sort} onChange={setSort} />
+                      : c.label}
+                  </SortableTh>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {pkg.lines.map((line) => (
+              {sortedLines.map((line) => (
                 <tr key={line.key} className="border-b border-border-default last:border-b-0">
                   {/* `overflow-hidden` on every cell — the fixed layout's real
                       backstop against a horizontal scrollbar. Percentages are
@@ -155,7 +197,7 @@ export function PersonWorkPackageCard({ pkg, personName, defaultOpen }: {
                     <Badge tone={HEALTH_TONE[line.health.state]}>{HEALTH_LABEL[line.health.state]}</Badge>
                   </td>
                   <td className="overflow-hidden px-sm py-lg text-sm text-text-primary">{line.entries}</td>
-                  <td className="overflow-hidden px-sm py-lg">{notesFor(line, personName)}</td>
+                  <td className="overflow-hidden px-sm py-lg"><NotesCell line={line} personName={personName} /></td>
                 </tr>
               ))}
             </tbody>

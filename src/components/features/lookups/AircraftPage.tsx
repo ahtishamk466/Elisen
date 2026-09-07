@@ -5,6 +5,8 @@ import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { TableTabs } from '@/components/patterns/TableTabs'
@@ -21,8 +23,34 @@ import type { AircraftModel, AircraftSerial } from '@/types/lookup'
 
 export type PageState = 'ready' | 'loading' | 'error'
 
-const MODEL_HEADERS = ['Model Number', 'Model Name', 'Manufacture', 'TCCA TC', 'FAA TC', 'EASA TC', 'Prefix', 'Airframes', 'Active', 'Actions']
-const SERIAL_HEADERS = ['Serial No', 'Reg. No', 'Aircraft', 'Owner', 'Company', 'Location', 'Telephone', 'Active', 'Actions']
+type ModelSortKey = 'modelNumber' | 'modelName' | 'manufacturer' | 'tccaTc' | 'faaTc'
+  | 'easaTc' | 'prefix' | 'airframes' | 'active'
+type SerialSortKey = 'serial' | 'registration' | 'aircraft' | 'owner' | 'company'
+  | 'location' | 'telephone' | 'active'
+
+const MODEL_COLUMNS: { label: string; sort?: ModelSortKey }[] = [
+  { label: 'Model Number', sort: 'modelNumber' },
+  { label: 'Model Name', sort: 'modelName' },
+  { label: 'Manufacture', sort: 'manufacturer' },
+  { label: 'TCCA TC', sort: 'tccaTc' },
+  { label: 'FAA TC', sort: 'faaTc' },
+  { label: 'EASA TC', sort: 'easaTc' },
+  { label: 'Prefix', sort: 'prefix' },
+  { label: 'Airframes', sort: 'airframes' },
+  { label: 'Active', sort: 'active' },
+  { label: 'Actions' },
+]
+const SERIAL_COLUMNS: { label: string; sort?: SerialSortKey }[] = [
+  { label: 'Serial No', sort: 'serial' },
+  { label: 'Reg. No', sort: 'registration' },
+  { label: 'Aircraft', sort: 'aircraft' },
+  { label: 'Owner', sort: 'owner' },
+  { label: 'Company', sort: 'company' },
+  { label: 'Location', sort: 'location' },
+  { label: 'Telephone', sort: 'telephone' },
+  { label: 'Active', sort: 'active' },
+  { label: 'Actions' },
+]
 
 type Tab = 'aircraft' | 'serials'
 
@@ -80,6 +108,32 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
   const rowCount = tab === 'aircraft' ? models.length : airframes.length
   const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(rowCount, 25)
 
+  /* One sort per tab, both hooks always called so the order is stable.
+     Location sorts on the same joined "city, province, country" string the
+     cell prints, so what you read is what you ordered by. */
+  const modelSort = useTableSort(models, {
+    modelNumber: (a) => a.modelNumber,
+    modelName: (a) => a.modelName,
+    manufacturer: (a) => a.manufacturer,
+    tccaTc: (a) => a.tccaTc,
+    faaTc: (a) => a.faaTc,
+    easaTc: (a) => a.easaTc,
+    prefix: (a) => a.drawingPrefix,
+    airframes: (a) => serialsOf(a.id).length,
+    active: (a) => a.active,
+  }, { onSortChange: resetVisible })
+
+  const serialSort = useTableSort(airframes, {
+    serial: (sn) => sn.serial,
+    registration: (sn) => sn.registration,
+    aircraft: (sn) => modelOf(sn.aircraftId)?.modelNumber,
+    owner: (sn) => sn.ownerName,
+    company: (sn) => sn.company,
+    location: (sn) => [sn.city, sn.provState, sn.country].filter(Boolean).join(', '),
+    telephone: (sn) => sn.telephone,
+    active: (sn) => sn.active,
+  }, { onSortChange: resetVisible })
+
   const tabs = (
     <TableTabs
       ariaLabel="Aircraft reference data"
@@ -102,7 +156,11 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
     )
   }
 
-  const headers = tab === 'aircraft' ? MODEL_HEADERS : SERIAL_HEADERS
+  const columns: { label: string; sort?: string }[] = tab === 'aircraft' ? MODEL_COLUMNS : SERIAL_COLUMNS
+  const { sort, setSort } = (tab === 'aircraft' ? modelSort : serialSort) as {
+    sort?: { key: string; dir: 'asc' | 'desc' }
+    setSort: (s: { key: string; dir: 'asc' | 'desc' }) => void
+  }
 
   return (
     <AppShell
@@ -163,8 +221,9 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
                 <caption className="sr-only">{tab === 'aircraft' ? 'Aircraft types' : 'Aircraft serial numbers'}</caption>
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
-                    {headers.map((h) => (
-                      <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                    {columns.map((c) => (
+                      <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                        className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                     ))}
                   </tr>
                 </thead>
@@ -172,11 +231,11 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
                   {loading
                     ? Array.from({ length: 6 }, (_, i) => (
                         <tr key={i} className="border-b border-border-default last:border-b-0">
-                          {headers.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                          {columns.map((c) => <td key={c.label} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                         </tr>
                       ))
                     : tab === 'aircraft'
-                      ? models.slice(0, visibleCount).map((a) => {
+                      ? modelSort.sorted.slice(0, visibleCount).map((a) => {
                           const count = serialsOf(a.id).length
                           return (
                             <tr key={a.id} onClick={() => setModelDrawer({ mode: 'view', model: a })}
@@ -214,7 +273,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
                             </tr>
                           )
                         })
-                      : airframes.slice(0, visibleCount).map((sn) => {
+                      : serialSort.sorted.slice(0, visibleCount).map((sn) => {
                           const m = modelOf(sn.aircraftId)
                           const place = [sn.city, sn.provState, sn.country].filter(Boolean).join(', ')
                           return (

@@ -8,6 +8,8 @@ import { FilterChips } from '@/components/patterns/FilterChips'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Truncate } from '@/components/patterns/Truncate'
@@ -28,14 +30,16 @@ import { formatDate } from '@/lib/formatDate'
 /** Shares, not fixed widths — the table scales with the page and cannot
     overflow. "Approval Holder" → "Holder" and "Current Revision" → "Revision":
     both headings, not their values, were setting their columns' width. */
-const COLUMNS: { label: string; width: string }[] = [
-  { label: 'Number', width: '13%' },
-  { label: 'Description', width: '25%' },
-  { label: 'Primary', width: '8%' },
-  { label: 'Holder', width: '10%' },
-  { label: 'Aircraft', width: '15%' },
-  { label: 'Revision', width: '11%' },
-  { label: 'Projects', width: '10%' },
+type SortKey = 'number' | 'description' | 'primary' | 'holder' | 'aircraft' | 'revision' | 'projects'
+
+const COLUMNS: { label: string; width: string; sort?: SortKey }[] = [
+  { label: 'Number', width: '13%', sort: 'number' },
+  { label: 'Description', width: '25%', sort: 'description' },
+  { label: 'Primary', width: '8%', sort: 'primary' },
+  { label: 'Holder', width: '10%', sort: 'holder' },
+  { label: 'Aircraft', width: '15%', sort: 'aircraft' },
+  { label: 'Revision', width: '11%', sort: 'revision' },
+  { label: 'Projects', width: '10%', sort: 'projects' },
   { label: 'Actions', width: '8%' },
 ]
 
@@ -121,6 +125,20 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
       .filter(Boolean)
       .map((p) => `${p!.number}-${p!.subNumber}`)
 
+  /* Declared after every helper it calls — the accessors run inside the sort
+     hook's render-time memo, so a helper below it would still be uninitialised.
+     Aircraft and Projects sort by how many the certificate covers, which is
+     what their chip counts communicate; Revision sorts by issue date. */
+  const { sorted, sort, setSort } = useTableSort(filtered, {
+    number: (a) => a.number,
+    description: (a) => a.description,
+    primary: (a) => a.primary,
+    holder: (a) => a.designApprovalHolder,
+    aircraft: (a) => aircraftLabels(a).length,
+    revision: (a) => currentRevision(a.id)?.revisionDate,
+    projects: (a) => projectLabels(a).length,
+  }, { onSortChange: resetVisible })
+
   if (state === 'error') {
     return (
       <AppShell title="Approvals" activeItem="Approvals">
@@ -193,8 +211,8 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
                     {COLUMNS.map((c) => (
-                      <th key={c.label} scope="col" style={{ width: c.width }}
-                        className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-secondary">{c.label}</th>
+                      <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                        style={{ width: c.width }} className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                     ))}
                   </tr>
                 </thead>
@@ -205,7 +223,7 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
                           {COLUMNS.map((c) => <td key={c.label} className="px-sm py-base"><Skeleton className="h-4 w-full" /></td>)}
                         </tr>
                       ))
-                    : filtered.slice(0, visibleCount).map((a) => {
+                    : sorted.slice(0, visibleCount).map((a) => {
                         const labels = projectLabels(a)
                         return (
                           <tr

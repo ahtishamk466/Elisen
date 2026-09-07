@@ -1,4 +1,6 @@
 import { ProgressMeter } from '@/components/patterns/ProgressMeter'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { Stat } from '@/components/patterns/Stat'
 import { Badge } from '@/components/ui/Badge'
 import { HEALTH_LABEL, HEALTH_TONE, formatHours, formatPct, type Health } from '@/lib/projectHealth'
@@ -214,7 +216,21 @@ export function PersonProjectPanel({ group, personName }: { group: PersonProject
  * so this panel has no budget columns at all rather than a row of dashes
  * pretending the question was asked and answered.
  */
+type LineSortKey = 'activity' | 'hours' | 'entries'
+
+const LINE_COLUMNS: { label: string; sort?: LineSortKey }[] = [
+  { label: 'Activity', sort: 'activity' },
+  { label: 'Hours', sort: 'hours' },
+  { label: 'Entries', sort: 'entries' },
+]
+
 export function PersonNonProjectPanel({ lines, total, personName }: { lines: NonProjectLine[]; total: number; personName: string }) {
+  const { sorted: sortedLines, sort, setSort } = useTableSort(lines, {
+    activity: (l) => l.activityTitle,
+    hours: (l) => l.hours,
+    entries: (l) => l.entries,
+  })
+
   return (
     /* Same shape as PersonProjectPanel: cards on the page's own tinted
        canvas, not one bordered box wrapping both a header and a table. The
@@ -239,13 +255,14 @@ export function PersonNonProjectPanel({ lines, total, personName }: { lines: Non
           <caption className="sr-only">{personName}: non-project time</caption>
           <thead>
             <tr className="border-b border-border-default bg-neutral-50">
-              {['Activity', 'Hours', 'Entries'].map((h) => (
-                <th key={h} scope="col" className="whitespace-nowrap px-base py-base text-xs font-semibold text-text-secondary">{h}</th>
+              {LINE_COLUMNS.map((c) => (
+                <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                  className="whitespace-nowrap px-base py-base text-xs font-semibold text-text-secondary">{c.label}</SortableTh>
               ))}
             </tr>
           </thead>
           <tbody>
-            {lines.map((l) => (
+            {sortedLines.map((l) => (
               <tr key={l.activityId} className="border-b border-border-default last:border-b-0">
                 <th scope="row" className="px-base py-lg text-left text-sm font-normal text-text-primary">{l.activityTitle}</th>
                 <td className="whitespace-nowrap px-base py-lg text-sm text-text-primary">{formatHours(l.hours)}</td>

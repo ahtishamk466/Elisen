@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { APPROVALS, APPROVAL_REVISIONS } from '@/lib/documentFixtures'
+import { coreData } from '@/lib/dataset'
 import type { Approval, ApprovalRevision } from '@/types/documents'
 
 interface ApprovalsState {
@@ -39,8 +39,8 @@ const removeFrom = (key: 'projectIds' | 'aircraftIds' | 'serialIds') =>
     approvals.map((a) => (a.id === id ? { ...a, [key]: a[key].filter((v) => v !== value) } : a))
 
 export const useApprovalsStore = create<ApprovalsState>((set) => ({
-  approvals: APPROVALS,
-  revisions: APPROVAL_REVISIONS,
+  approvals: coreData().approvals,
+  revisions: coreData().approvalRevisions,
 
   addApproval: (a) => set((s) => ({ approvals: [a, ...s.approvals] })),
   updateApproval: (id, patch) =>

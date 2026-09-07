@@ -5,6 +5,8 @@ import { StatCard } from '@/components/patterns/StatCard'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
@@ -15,7 +17,16 @@ import { useAccessStore } from '@/stores/accessStore'
 import { roleMembers } from '@/lib/accessDisplay'
 import type { AccessUser } from '@/types/access'
 
-const HEADERS = ['Username', 'Email', 'Status', 'Roles', 'Direct grants', 'Actions']
+type SortKey = 'username' | 'email' | 'status' | 'roles' | 'grants'
+
+const COLUMNS: { label: string; sort?: SortKey }[] = [
+  { label: 'Username', sort: 'username' },
+  { label: 'Email', sort: 'email' },
+  { label: 'Status', sort: 'status' },
+  { label: 'Roles', sort: 'roles' },
+  { label: 'Direct grants', sort: 'grants' },
+  { label: 'Actions' },
+]
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -40,6 +51,16 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
   }, [users, roles, query])
 
   const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(filtered.length, 25)
+
+  /* Roles and Direct grants hold chip lists; both sort by how many a user
+     has, which is the question the column answers at a glance. */
+  const { sorted, sort, setSort } = useTableSort(filtered, {
+    username: (u) => u.username,
+    email: (u) => u.email,
+    status: (u) => u.status,
+    roles: (u) => u.roleIds.length,
+    grants: (u) => u.directPermissionIds.length,
+  }, { onSortChange: resetVisible })
 
   const loading = state === 'loading'
 
@@ -97,8 +118,9 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
               <caption className="sr-only">Users and their access</caption>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
-                  {HEADERS.map((h) => (
-                    <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                  {COLUMNS.map((c) => (
+                    <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                      className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                 </tr>
               </thead>
@@ -106,10 +128,10 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
                 {loading
                   ? Array.from({ length: 6 }, (_, i) => (
                       <tr key={i} className="border-b border-border-default last:border-b-0">
-                        {HEADERS.map((h) => <td key={h} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                        {COLUMNS.map((c) => <td key={c.label} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
                       </tr>
                     ))
-                  : filtered.slice(0, visibleCount).map((u) => (
+                  : sorted.slice(0, visibleCount).map((u) => (
                       <tr
                         key={u.id}
                         onClick={() => setEditing(u)}

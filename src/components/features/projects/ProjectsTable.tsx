@@ -1,5 +1,5 @@
 import { useRef, type ReactNode } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Eye, Pencil, Copy, Trash2, Package } from 'lucide-react'
+import { Eye, Pencil, Copy, Trash2, Package } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
@@ -7,6 +7,7 @@ import { ProgressMeter } from '@/components/patterns/ProgressMeter'
 import { PersonCell } from '@/components/patterns/PersonCell'
 import { Truncate } from '@/components/patterns/Truncate'
 import { SortMenu } from '@/components/patterns/SortMenu'
+import { SortableTh } from '@/components/patterns/SortableTh'
 import { useElementWidth } from '@/components/patterns/useElementWidth'
 import { PRIORITY_LABEL, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
 import { formatHours, formatPct, type Health } from '@/lib/projectHealth'
@@ -19,7 +20,7 @@ export interface ProjectRowWithHealth {
   health: Health
 }
 
-export type SortKey = 'number' | 'company' | 'contact' | 'budget' | 'actual' | 'remaining' | 'progress' | 'priority' | 'type' | 'opened'
+export type SortKey = 'number' | 'company' | 'contact' | 'budget' | 'actual' | 'remaining' | 'progress' | 'priority' | 'type' | 'opened' | 'status' | 'active' | 'person'
 export interface Sort {
   key: SortKey
   dir: 'asc' | 'desc'
@@ -121,7 +122,7 @@ const COLUMNS: Column[] = [
     max: 248,
     sorts: [{ key: 'company', label: 'Company' }, { key: 'contact', label: 'Contact' }],
   },
-  { label: 'Person Res.', flex: 22, min: 94, max: 208 },
+  { label: 'Person Res.', sort: 'person', flex: 22, min: 94, max: 208 },
   /* One line: a date reads as one thing. Sized to the widest month name
      rather than the average — "May 23, 2026" needs 100px where "Jul 6, 2026"
      needs 84, and the column was quietly breaking the wide ones over two
@@ -153,8 +154,8 @@ const COLUMNS: Column[] = [
   /* Both sized to their widest badge plus the gutter: "In Progress" (82px)
      and "Inactive" (62px). Active was 82 — 20px under what its own badge
      needs — so the badge had been quietly spilling into the cell's padding. */
-  { label: 'Status', fixed: 106 },
-  { label: 'Active', fixed: 86 },
+  { label: 'Status', sort: 'status', fixed: 106 },
+  { label: 'Active', sort: 'active', fixed: 86 },
   /* Sized to its **heading**, not its button: the 3-dot trigger is only
      26px, but "Actions" is 45px, and at the old 58 the heading itself was
      clipped to "Action". 70 fits the word and leaves the button sitting
@@ -232,33 +233,6 @@ export function ProjectsTable({
   const flexWidths = shareOut(columns.filter((c) => c.flex), available)
   const widthOf = (c: Column) => c.fixed ?? flexWidths.get(c.label) ?? 0
 
-  const headerButton = (c: Column, key: SortKey) => {
-    const active = sort?.key === key
-    // Neutral ⇅ marks it sortable at rest; a directional arrow only once it
-    // is the active sort — same rule as the merged-column SortMenu headings.
-    const Icon = active && sort ? (sort.dir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
-    return (
-      <button
-        type="button"
-        onClick={() => onSortChange?.({ key, dir: active && sort?.dir === 'asc' ? 'desc' : 'asc' })}
-        /* Every heading keeps the <th>'s own weight and colour, active or not.
-           Darkening the sorted one to text-primary read as a second, heavier
-           font next to its grey neighbours — the blue arrow already says which
-           column is sorted, without a second cue that looks like a typo. */
-        /* `w-full` is what makes `justify-end` mean anything: a <button> is a
-           form control, so it shrinks to fit its text even at `display:flex`
-           — the heading sat left of a 212px cell with 135px of empty space
-           after it, while the <th>'s own `text-right` had no inline content
-           left to align. */
-        className={`flex items-center gap-xs whitespace-nowrap rounded-sm transition-colors duration-fast hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
-          ${c.align === 'right' ? 'w-full justify-end' : ''}`}
-      >
-        {c.label}
-        <Icon size={14} aria-hidden className={active ? 'text-accent' : 'text-text-muted'} />
-      </button>
-    )
-  }
-
   return (
     <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
       <div ref={wrapRef} className="overflow-x-auto">
@@ -280,17 +254,22 @@ export function ProjectsTable({
               // state, so choosing that sort never makes the label reflow.
               const label = c.shortLabel && widthOf(c) < (c.fullLabelMin ?? 0) ? c.shortLabel : c.label
               return (
-                <th
+                <SortableTh
                   key={c.label}
-                  scope="col"
-                  aria-sort={sort && (c.sort === sort.key || c.sorts?.some((o) => o.key === sort.key))
-                    ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
+                  /* A merged column's click belongs to the SortMenu inside
+                     it, so the cell reports aria-sort through ownsKeys
+                     instead of owning a sortKey of its own. */
+                  sortKey={c.sorts ? undefined : c.sort}
+                  ownsKeys={c.sorts?.map((o) => o.key)}
+                  sort={sort}
+                  onSortChange={onSortChange}
+                  align={c.align}
                   className={`whitespace-nowrap px-base py-base align-middle text-xs font-semibold text-text-secondary ${c.align === 'right' ? 'text-right' : ''}`}
                 >
                   {c.sorts && onSortChange
                     ? <SortMenu label={label} options={c.sorts} sort={sort} onChange={onSortChange} align={c.align} />
-                    : c.sort && onSortChange ? headerButton({ ...c, label }, c.sort) : label}
-                </th>
+                    : label}
+                </SortableTh>
               )
             })}
           </tr>

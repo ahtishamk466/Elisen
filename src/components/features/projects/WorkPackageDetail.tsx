@@ -1,4 +1,7 @@
 import { ClipboardCheck, Eye, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { SortMenu } from '@/components/patterns/SortMenu'
+import { SortableTh } from '@/components/patterns/SortableTh'
+import { useTableSort } from '@/components/patterns/useTableSort'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ChipOverflow } from '@/components/patterns/ChipOverflow'
 import { PersonCell } from '@/components/patterns/PersonCell'
@@ -17,13 +20,19 @@ import type { ProjectPriority } from '@/types/project'
 /* Shares of the detail pane, not pixel caps: the pane is ~750px next to the
    rail, so every heading has to fit its share on one line. "Actual / Budget"
    is the widest heading here and sets its own column, as usual. */
-const COLUMNS: { label: string; width: string }[] = [
-  { label: 'Activity Name', width: '16%' },
-  { label: 'Responsible', width: '14%' },
-  { label: 'Actual / Budget', width: '17%' },
-  { label: 'Remaining', width: '12.5%' },
-  { label: 'Used', width: '14%' },
-  { label: 'Tasks', width: '18%' },
+type ActivitySortKey = 'activity' | 'responsible' | 'actual' | 'budget' | 'remaining' | 'used' | 'tasks'
+
+const COLUMNS: { label: string; width: string; sort?: ActivitySortKey; sorts?: { key: ActivitySortKey; label: string }[] }[] = [
+  { label: 'Activity Name', width: '16%', sort: 'activity' },
+  { label: 'Responsible', width: '14%', sort: 'responsible' },
+  {
+    label: 'Actual / Budget',
+    width: '17%',
+    sorts: [{ key: 'actual', label: 'Actual' }, { key: 'budget', label: 'Budget' }],
+  },
+  { label: 'Remaining', width: '12.5%', sort: 'remaining' },
+  { label: 'Used', width: '14%', sort: 'used' },
+  { label: 'Tasks', width: '18%', sort: 'tasks' },
   { label: 'Action', width: '8.5%' },
 ]
 
@@ -72,6 +81,17 @@ export function WorkPackageDetail({
   onEditPackage, onDeletePackage, onAddActivity, onViewActivity, onEditActivity, onRemoveActivity,
 }: WorkPackageDetailProps) {
   const health = rollUpActivities(activities, workPackage.status === 'complete')
+
+  const activityHealth = (a: WorkPackageActivity) => healthOf(a.budgetHours, a.actualHours, workPackage.status === 'complete')
+  const { sorted: sortedActivities, sort, setSort } = useTableSort(activities, {
+    activity: (a) => activityName(catalog.activities, a.activityId),
+    responsible: (a) => a.responsible,
+    actual: (a) => activityHealth(a).actual,
+    budget: (a) => activityHealth(a).budget,
+    remaining: (a) => (activityHealth(a).budget > 0 ? activityHealth(a).remaining : null),
+    used: (a) => activityHealth(a).progressPct,
+    tasks: (a) => tasksForActivity(catalog, a.activityId, true).length,
+  })
   const over = health.remaining < 0
   const n = activities.length
 
@@ -187,15 +207,18 @@ export function WorkPackageDetail({
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
                   {COLUMNS.map((c) => (
-                    <th key={c.label} scope="col" style={{ width: c.width }}
+                    <SortableTh key={c.label} sortKey={c.sort} ownsKeys={c.sorts?.map((o) => o.key)}
+                      sort={sort} onSortChange={setSort} style={{ width: c.width }}
                       className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-secondary">
-                      {c.label}
-                    </th>
+                      {c.sorts
+                        ? <SortMenu label={c.label} options={c.sorts} sort={sort} onChange={setSort} />
+                        : c.label}
+                    </SortableTh>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {activities.map((a) => {
+                {sortedActivities.map((a) => {
                   const ah = healthOf(a.budgetHours, a.actualHours, workPackage.status === 'complete')
                   const over = ah.remaining < 0
                   const name = activityName(catalog.activities, a.activityId)
