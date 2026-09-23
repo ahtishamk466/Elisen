@@ -6,6 +6,7 @@ import { useTableSort } from '@/components/patterns/useTableSort'
 import { Truncate } from '@/components/patterns/Truncate'
 import { DateText } from '@/components/patterns/DateText'
 import { Alert } from '@/components/ui/Alert'
+import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -28,9 +29,10 @@ const COLUMNS: { label: string; sort?: SortKey; style?: CSSProperties }[] = [
 
 export interface FlowStepProjectProps {
   projectId: string
-  /** `atStep` resumes a project that already has progress at the furthest
-      step its data supports, instead of always restarting at step 2. */
-  onPick: (id: string, atStep?: number) => void
+  /** Always lands on step 2 — the flow moves forward one step at a time
+      regardless of how far a project has already gotten; its own Back
+      button is how the reader retreats. */
+  onPick: (id: string) => void
   state?: 'ready' | 'loading' | 'error'
 }
 
@@ -44,7 +46,6 @@ export function FlowStepProject({ projectId, onPick, state = 'ready' }: FlowStep
   const tccaProjects = useTccaStore((s) => s.tccaProjects)
   const projects = useProjectsStore((s) => s.rows)
   const planEntries = useGcpFlowStore((s) => s.planEntries)
-  const projectBasis = useGcpFlowStore((s) => s.projectBasis)
   const [query, setQuery] = useState('')
 
   const elisenProjectLabel = (projectIds: string[]) => {
@@ -78,8 +79,8 @@ export function FlowStepProject({ projectId, onPick, state = 'ready' }: FlowStep
   const loading = state === 'loading'
 
   return (
-    <section className="grid gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg py-lg">
-      <div className="flex flex-wrap items-end justify-between gap-base">
+    <section className="flex min-h-0 flex-1 flex-col gap-lg">
+      <div className="flex shrink-0 flex-wrap items-end justify-between gap-base">
         <div className="grid gap-xxss">
           <h2 className="text-sm font-semibold text-text-primary">Pick the TCCA project</h2>
           <p className="text-xs text-text-muted">Certification planning is done one Transport Canada project at a time.</p>
@@ -96,15 +97,17 @@ export function FlowStepProject({ projectId, onPick, state = 'ready' }: FlowStep
           Something went wrong fetching the list. Refresh the page, and if it keeps happening, contact your administrator.
         </Alert>
       ) : !loading && filtered.length === 0 ? (
-        <EmptyState
-          icon={<ShieldCheck size={48} strokeWidth={1.5} />}
-          title={query ? 'No projects match your search' : 'No TCCA projects yet'}
-          description={query ? 'Try another project number or description.' : 'Open a TCCA project first, from Projects → TCCA Projects.'}
-          action={query ? <Button variant="secondary" onClick={() => setQuery('')}>Clear search</Button> : undefined}
-        />
+        <div className="rounded-sm border border-border-default bg-neutral-25">
+          <EmptyState
+            icon={<ShieldCheck size={48} strokeWidth={1.5} />}
+            title={query ? 'No projects match your search' : 'No TCCA projects yet'}
+            description={query ? 'Try another project number or description.' : 'Open a TCCA project first, from Projects → TCCA Projects.'}
+            action={query ? <Button variant="secondary" onClick={() => setQuery('')}>Clear search</Button> : undefined}
+          />
+        </div>
       ) : (
-        <div className="overflow-hidden rounded-sm border border-border-default">
-          <div className="max-h-[480px] overflow-auto">
+        <div className="min-h-0 flex-1 overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+          <div className="h-full overflow-auto">
             <table className="w-full border-collapse text-left" style={{ minWidth: 960 }}>
               <caption className="sr-only">TCCA projects available for certification planning</caption>
               <thead>
@@ -126,11 +129,18 @@ export function FlowStepProject({ projectId, onPick, state = 'ready' }: FlowStep
                     ))
                   : sorted.map(({ project: t, entries, affected, complete }) => {
                       const started = entries.length > 0
-                      const atStep = projectBasis[t.id] ? (entries.length > 0 ? (affected.length > 0 ? 5 : 4) : 3) : 2
                       const isCurrent = t.id === projectId
+
+                      const isComplete = started && affected.length > 0 && complete.length === affected.length
+                      const progress: { label: string; tone: BadgeTone; actionLabel: string } = !started
+                        ? { label: 'Not Started', tone: 'neutral', actionLabel: 'Start GCP' }
+                        : isComplete
+                        ? { label: 'Complete', tone: 'success', actionLabel: 'View GCP' }
+                        : { label: 'In Progress', tone: 'warning', actionLabel: 'Continue GCP' }
+
                       return (
                         <tr key={t.id} className={`border-b border-border-default transition-colors duration-fast last:border-b-0 ${isCurrent ? 'bg-accent-subtle' : ''}`}>
-                          <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">{t.number}</td>
+                          <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{t.number}</td>
                           <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 280 }}>
                             <Truncate lines={1}>{t.description}</Truncate>
                           </td>
@@ -138,20 +148,19 @@ export function FlowStepProject({ projectId, onPick, state = 'ready' }: FlowStep
                           <td className="px-lg py-base text-sm text-text-primary">{entries.length || '—'}</td>
                           <td className="px-lg py-base text-sm text-text-primary">{affected.length || '—'}</td>
                           <td className="px-lg py-base">
-                            {started ? (
-                              <span className="grid gap-xxss">
-                                <span className="text-sm font-semibold text-text-primary">Compliance</span>
+                            <div className="grid gap-xxss">
+                              <Badge tone={progress.tone}>{progress.label}</Badge>
+                              {started && affected.length > 0 && (
                                 <span className="text-xs text-text-muted">{complete.length} / {affected.length} complete</span>
-                              </span>
-                            ) : (
-                              <span className="text-sm font-semibold text-text-muted">Not Started</span>
-                            )}
+                              )}
+                            </div>
                           </td>
                           <td className="px-lg py-base text-sm text-text-primary"><DateText value={t.openedDate} /></td>
                           <td className="whitespace-nowrap px-lg py-base">
-                            <Button variant="tertiary" size="sm" trailingIcon={<ArrowRight size={14} aria-hidden />}
-                              onClick={() => onPick(t.id, atStep)}>
-                              {started ? 'Continue GCP' : 'Start GCP'}
+                            <Button variant="tertiary" size="sm" className="!text-accent hover:!text-accent-hover"
+                              trailingIcon={<ArrowRight size={14} aria-hidden />}
+                              onClick={() => onPick(t.id)}>
+                              {progress.actionLabel}
                             </Button>
                           </td>
                         </tr>

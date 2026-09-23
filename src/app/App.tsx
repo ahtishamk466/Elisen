@@ -30,6 +30,7 @@ import { GcpRegulationsPage } from '@/components/features/gcp/GcpRegulationsPage
 import { GcpCertBasesPage } from '@/components/features/gcp/GcpCertBasesPage'
 import { GcpPeoplePage } from '@/components/features/gcp/GcpPeoplePage'
 import { GcpReferencePage } from '@/components/features/gcp/GcpReferencePage'
+import { GcpReportsPage } from '@/components/features/gcp/GcpReportsPage'
 import { SignedOutScreen } from './SignedOutScreen'
 import { useSessionStore } from '@/stores/sessionStore'
 
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="/gcp/cert-bases" element={<GcpCertBasesPage />} />
         <Route path="/gcp/people" element={<GcpPeoplePage />} />
         <Route path="/gcp/reference" element={<GcpReferencePage />} />
+        <Route path="/gcp/reports" element={<GcpReportsPage />} />
         <Route path="/timesheet" element={<TimesheetListPage />} />
         <Route path="/hours-worked" element={<HoursWorkedPage />} />
         <Route path="/hours-worked/person/:name" element={<PersonDetailPage />} />

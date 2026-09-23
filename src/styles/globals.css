@@ -21,4 +21,64 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
+
+  /* Renders the HTML `RichTextEditor` stores/edits — the browser's own
+     contenteditable output has no default spacing or list markers, so
+     without this every DDS Text / Requirement Text paragraph and list
+     collapses onto one line. */
+  .rte-content {
+    color: var(--color-text-primary);
+  }
+  .rte-content :is(p, ul, ol, table, blockquote) {
+    margin-bottom: var(--spacing-sm);
+  }
+  .rte-content :is(p, ul, ol, table, blockquote):last-child {
+    margin-bottom: 0;
+  }
+  .rte-content ul {
+    list-style: disc;
+    padding-left: 1.5em;
+  }
+  .rte-content ol {
+    list-style: decimal;
+    padding-left: 1.5em;
+  }
+  .rte-content li > ul,
+  .rte-content li > ol {
+    margin-top: var(--spacing-xxss);
+  }
+  .rte-content blockquote {
+    border-left: 2px solid var(--color-border-default);
+    padding-left: var(--spacing-base);
+    color: var(--color-text-secondary);
+  }
+  .rte-content a {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .rte-content img {
+    max-width: 100%;
+    border-radius: 4px;
+  }
+  .rte-content table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .rte-content :is(th, td) {
+    border: 1px solid var(--color-border-default);
+    padding: 0.375rem 0.5rem;
+    text-align: left;
+  }
+  .rte-content th {
+    background-color: var(--color-neutral-50);
+    font-weight: 600;
+  }
+  .rte-content p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: var(--color-text-muted);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
 }

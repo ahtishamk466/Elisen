@@ -2,12 +2,16 @@ import { useState } from 'react'
 import { Drawer } from '@/components/patterns/Drawer'
 import { FormSection } from '@/components/patterns/FormSection'
 import { FormField } from '@/components/patterns/FormField'
+import { ActiveSelect } from '@/components/patterns/ActiveSelect'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useGcpFlowStore } from '@/stores/gcpFlowStore'
+import type { GcpItem } from '@/types/gcp'
 
 export interface GcpItemDrawerProps {
+  mode: 'create' | 'edit'
   planEntryId: string
+  initial?: GcpItem
   /** The rule the item belongs to, named in the title so the group is never
       asked for twice. */
   ruleLabel: string
@@ -15,55 +19,66 @@ export interface GcpItemDrawerProps {
 }
 
 /**
- * One discipline's plan for one rule.
+ * One GCP Data row: who shows compliance with a rule, how, and where.
  *
- * The client's lists of disciplines, means of compliance and delegated people
- * are not in the system yet, so each is a plain field here rather than a picker
- * over invented options. They become dropdowns — with delegation deciding who
- * may find compliance — as soon as those lists arrive.
+ * The client's Discipline, MOC and FOC reference lists (and Delegation, which
+ * would filter FOC Code to only those authorized on this rule's Section Root)
+ * are not in the system yet, so each is a plain field here rather than a
+ * picker over invented options. They become dropdowns as soon as those lists
+ * arrive.
  */
-export function GcpItemDrawer({ planEntryId, ruleLabel, onClose }: GcpItemDrawerProps) {
+export function GcpItemDrawer({ mode, planEntryId, initial, ruleLabel, onClose }: GcpItemDrawerProps) {
+  const isEdit = mode === 'edit'
   const addItem = useGcpFlowStore((s) => s.addItem)
-  const [disciplineCode, setDisciplineCode] = useState('')
-  const [moc, setMoc] = useState('')
-  const [focCode, setFocCode] = useState('')
-  const [documentId, setDocumentId] = useState('')
+  const updateItem = useGcpFlowStore((s) => s.updateItem)
+  const [daoSpecialtyCode, setDaoSpecialtyCode] = useState(initial?.daoSpecialtyCode ?? '')
+  const [mocCode, setMocCode] = useState(initial?.mocCode ?? '')
+  const [focCode, setFocCode] = useState(initial?.focCode ?? '')
+  const [deliverableId, setDeliverableId] = useState(initial?.deliverableId ?? '')
+  const [active, setActive] = useState(initial?.active ?? true)
+
+  const submit = () => {
+    if (isEdit && initial) {
+      updateItem(initial.id, { daoSpecialtyCode, mocCode, focCode, deliverableId, active })
+    } else {
+      addItem({ id: crypto.randomUUID(), planEntryId, daoSpecialtyCode, mocCode, focCode, deliverableId, active })
+    }
+    onClose()
+  }
 
   return (
     <Drawer
       open
       onClose={onClose}
-      title={`Compliance item for ${ruleLabel}`}
+      title={isEdit ? `Edit GCP data for ${ruleLabel}` : `GCP data for ${ruleLabel}`}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => {
-            addItem({ id: crypto.randomUUID(), planEntryId, disciplineCode, moc, focCode, documentId })
-            onClose()
-          }}>
-            Add item
-          </Button>
+          <Button onClick={submit}>{isEdit ? 'Save Changes' : 'Add'}</Button>
         </>
       }
     >
-      <FormSection title="Item" subtitle="Who shows compliance with this rule, how, and where it is written.">
-        <FormField label="Discipline" htmlFor="item-discipline">
-          <Input id="item-discipline" value={disciplineCode} placeholder="e.g. A1"
-            onChange={(e) => setDisciplineCode(e.target.value)} />
+      <FormSection title="GCP Data" subtitle="Who shows compliance with this rule, how, and where it is written.">
+        <FormField label="DAO Specialty Code" htmlFor="item-dao">
+          <Input id="item-dao" value={daoSpecialtyCode} placeholder="e.g. A1"
+            onChange={(e) => setDaoSpecialtyCode(e.target.value)} />
         </FormField>
-        <FormField label="Means of Compliance" htmlFor="item-moc">
-          <Input id="item-moc" value={moc} placeholder="e.g. DR"
-            onChange={(e) => setMoc(e.target.value)} />
+        <FormField label="MOC Code" htmlFor="item-moc">
+          <Input id="item-moc" value={mocCode} placeholder="e.g. DR"
+            onChange={(e) => setMocCode(e.target.value)} />
         </FormField>
-        <FormField label="Finding of Compliance by" htmlFor="item-foc"
+        <FormField label="FOC Code" htmlFor="item-foc"
           help="Delegation decides who may find compliance on this rule.">
-          <Input id="item-foc" value={focCode} placeholder="e.g. APO1"
+          <Input id="item-foc" value={focCode} placeholder="e.g. AP-01"
             onChange={(e) => setFocCode(e.target.value)} />
         </FormField>
-        <FormField label="Document" htmlFor="item-document"
+        <FormField label="Deliverable #" htmlFor="item-deliverable"
           help="The report this rule's evidence goes into.">
-          <Input id="item-document" value={documentId} placeholder="e.g. DCR-1234"
-            onChange={(e) => setDocumentId(e.target.value)} />
+          <Input id="item-deliverable" value={deliverableId} placeholder="e.g. A4ALL-2-08-1-1623-CR"
+            onChange={(e) => setDeliverableId(e.target.value)} />
+        </FormField>
+        <FormField label="Active" htmlFor="item-active">
+          <ActiveSelect id="item-active" value={active} onChange={setActive} />
         </FormField>
       </FormSection>
     </Drawer>

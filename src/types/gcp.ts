@@ -106,12 +106,19 @@ export interface PlanEntry {
   complete: boolean
 }
 
-/** One discipline's plan for one rule: who shows compliance, how, and where. */
+/** One discipline's plan for one rule: who shows compliance, how, and where.
+    Fields and names mirror the legacy `gcp` table and its create screen. */
 export interface GcpItem {
   id: string
   planEntryId: string
-  disciplineCode: string
-  moc: string
+  /** `Dao Specialty Code` — matches the Discipline reference list. */
+  daoSpecialtyCode: string
+  /** `Moc Code` — matches the MOC reference list. */
+  mocCode: string
+  /** `Foc Code` — matches the FOC reference list, filtered by Delegation
+      against this rule's Section Root. */
   focCode: string
-  documentId: string
+  /** `Deliverable Number`. */
+  deliverableId: string
+  active: boolean
 }

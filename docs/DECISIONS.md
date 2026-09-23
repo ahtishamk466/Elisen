@@ -5569,3 +5569,261 @@ the wrong model versus the verified portal (Master Cert Basis is Code +
 Description only; GCP items are DAO Specialty Code / MOC Code / delegation-
 filtered FOC Code / Deliverable Number) — that redesign is a separate,
 larger change awaiting the client's sign-off on the corrected field set.
+
+## 2026-09-23 — Certification Flow Step 2 drops Master Cert Basis identity, scopes regulations by Section + Amdt directly
+
+**Context:** Portal verification (see the 2026-09-23 entry above) confirmed
+Master Cert Basis is a separate, mostly-reused ~40-record Code+Description
+table, not something built fresh per project. Rather than reproduce that
+extra picker/identity screen, the client asked to skip it entirely for this
+flow: attach regulations to the project directly, filtered the same way the
+legacy Cert Basis list itself is filtered — by Regulation Section and
+Regulation Amdt.
+
+**Choice:** `FlowStepBasis` no longer asks for Aircraft Model or Type
+Certificate Number. Two `MultiSelect` dropdowns — Regulation Section,
+Regulation Amdt — scope the rule pool; a regulation qualifies once it matches
+whichever of the two is picked (picking neither matches nothing, so an empty
+basis can't be attached by accident). The matched set previews in a
+two-column table (Regulation Section, Regulation Amdt only — Title and
+Active dropped per the client's own correction of the column list) and a
+single "Attach N regulations & continue" action saves the basis and advances
+to Initialize in one step, replacing the old separate "Save basis" /
+"Save & scope rules" pair. The basis this produces is implicitly
+project-specific: `CertBasis.aircraftModel` is defaulted to the project's own
+number rather than collected from the reader, since there is no Master Cert
+Basis identity in this flow to ask it from.
+
+## 2026-09-23 — Scope Rules (step 3) shows the whole rule pool, not the basis's hand-picked subset; wizard never jumps ahead
+
+**Context:** The client's own portal screenshot of `/cert-plan/initialize` showed
+402 rows for one project — the legacy Initialize screen scopes from
+everything the aircraft's type certificate applies to, not a small
+hand-curated list. `FlowStepInitialize` was filtering to `basis.regulationIds`
+(whatever step 2's Section/Amdt pickers narrowed to), which produced 1-6 rows
+in testing — right shape, wrong scale, and wrong source: applicable is a
+property of the aircraft, not of what step 2 happened to select.
+
+**Choice:** `FlowStepInitialize` (renamed "Scope Rules" on the stepper) now
+lists every regulation in the pool (`useGcpStore().regulations`), with the
+same columns the legacy screen has — Subpart, Subsection, Section, Amdt,
+Title, Section Root, Source, Assigned — reusing `CodeWithName`, `GcpChip` and
+`sourceLabel` exactly as `RegulationListPage` already does, so the same data
+reads identically everywhere. A search box above the table (by section/amdt/
+title) makes a pool that scales to hundreds of rows navigable. Step 2's basis
+still gates whether step 3 is reachable at all (a project needs *a* basis
+before there is anything to scope), but no longer determines *which* rules
+appear here.
+
+**Also fixed in this pass:** the project picker's "Continue GCP" / "View GCP"
+actions used to jump straight to whichever step a project's data supported
+(step 4 or 5 for an in-progress or complete project). The client asked for
+strictly forward, one-step-at-a-time movement — picking a project from step 1
+now always lands on step 2, and going backward is only ever through each
+step's own Back button, never a jump.
+
+## 2026-09-23 — Real 402-row Cert Basis pool imported from the live portal; Scope Rules gets a leading checkbox, no Section Root, and an internally-scrolling table
+
+**Context:** The demo rule pool only had 10 regulations, so "Scope Rules" could
+never show what the client actually meant by "all applicable rules" — the
+client pointed at `dev.elisen.com/cert-plan/initialize?tccaprojectId=60` and
+asked for the real data, not another synthetic example.
+
+**Choice:** Read that screen directly (the client's own logged-in session,
+read-only) and added its full 402-row table to `gcpFixtures.ts` — `REGULATIONS`
+grows from 10 to 412, `SUBPARTS` gains the one row (`APP — APPENDICES`) this
+file's own earlier comment had predicted but left uninvented, and `SUBSECTIONS`
+gains the 32 codes that screen confirmed but the Subsection list screenshots
+never covered (Part 23/25/27/29 ranges stay blank for those — not shown on
+this screen, not invented). Every row's Url was blank on the real screen, so
+none of the 402 new regulations carries an invented link.
+
+**Also fixed on Scope Rules (`FlowStepInitialize`):**
+- A leading checkbox column (header select-all, indeterminate when partial)
+  is now how a rule gets marked Assigned — the trailing Assigned cell is a
+  read-only colored tag, not an input.
+- Section Root column removed.
+- The table body scrolls inside its own bounded frame (`max-h-[560px]`,
+  sticky header) instead of stretching the page — required once the pool is
+  in the hundreds rather than single digits.
+
+## 2026-09-23 — Every Certification Flow step gets an unboxed heading; Step 1's table fills to the fold
+
+**Context:** Step 1 and Step 3 already had their heading/description sitting
+directly on the page with the content in its own card underneath; Step 2 and
+Step 4 still had the older shape, one big bordered box wrapping the heading
+together with the fields or table. The client asked for the unboxed-heading
+shape everywhere in this flow, not just the two screens it had already
+reached.
+
+**Choice:** `FlowStepBasis` and `FlowStepPlan` now match `FlowStepProject` /
+`FlowStepInitialize`: heading and description sit plain above a separate
+card for the actual content. This is the standing pattern for any step this
+flow gains later.
+
+**Also:** Step 1's project table now fills to the bottom of the viewport
+instead of a fixed `max-h-[480px]`. `GcpFlowPage` passes `fill` on `AppShell`
+only when `step === 1` (the other steps are ordinary forms/panels that read
+fine as a scrolling page) and wraps that step in `min-h-0 flex-1`;
+`FlowStepProject` mirrors that down to its table wrapper (`min-h-0 flex-1`)
+and scrolls the rows inside it (`h-full overflow-auto`) rather than clipping
+at an arbitrary pixel height.
+
+## 2026-09-23 — Step 4 renamed "Compliance Plan" and rebuilt field-for-field from the legacy Cert Plan Dashboard screenshot
+
+**Context:** The client attached exact screenshots of the legacy `Certplan
+Data` / `GCP Data` panels (Prev/Select/Next through 52 regulations, every
+readonly identity field, Complete, DDS Id/Text, MOC Text, Comment, and the
+GCP Data table) and asked for it rebuilt with nothing missing, in this app's
+own design language — on step 4, renamed "Compliance Plan".
+
+**Choice:** `FlowStepPlan` (step 4) is now that screen: Prev/Select/Next
+(the "Select" is a `SearchableSelect` jumping straight to a rule) over a
+`Stat` grid for every readonly field (Subpart Code/Description, Subsection
+Code/Title, Regulation Section/Amdt/Title), a read-only Url + Goto row, the
+Requirement Text block, Complete, DDS Id (a plain `Select` — the four
+options are the real ones read off the legacy dropdown, not invented) and
+DDS Text, MOC Text with "Copy Regulation Default MOC Text", and Comment.
+Below it, a GCP Data card lists DAO Specialty Code / MOC Code / FOC Code /
+Deliverable # / Active, with edit and remove per row. `GcpItem` gained
+`active` and its fields were renamed to the real column names
+(`daoSpecialtyCode`, `mocCode`, `deliverableId`) to match; `GcpItemDrawer`
+now supports create and edit.
+
+**Kept unboxed and sticky, per the client's own correction:** the project's
+number/description already live in the persistent summary card above every
+step, so `FlowStepPlan` doesn't repeat them as fields — only the Prev/
+Select/Next bar is sticky (`top-0`), since it's the one thing that needs to
+stay reachable while the long field list scrolls under it.
+
+**Left open:** step 5 ("Dashboard") still has its older sidebar-plus-editor
+shape and now duplicates ground step 4 covers in full. Its future shape
+(a true summary/overview, folded into step 4, or something else) is not yet
+decided — flagged for the client rather than assumed.
+
+## 2026-09-23 — New "GCP Reports" screen: 3 parameter drawers, field-for-field off the legacy screenshots
+
+**Context:** The client attached the legacy `GCP Reports - List` and each of
+its three reports' "Enter Parameters" forms (Certification Plan,
+Certification Record, Requirement Cross Reference Matrix) and asked for them
+built with nothing missing, in this app's own card/drawer style.
+
+**Choice:** `GcpReportsPage` (`/gcp/reports`, "GCP Reports" under the GCP nav
+section) lists the three reports; "Run" on each opens its own parameter
+`Drawer` rather than the global Reports page's live-preview params bar — a
+generated report is a deliberate one-time action here, not something
+filtered live. `CertPlanReportDrawer` and `CertRecordReportDrawer` share
+their first six fields (TCCA Project Number, Starting Page Number, Report
+Number, Addendum Number, Report Issue, Report Date) and then diverge:
+Certification Plan adds Delegation Section / Deliverables Section;
+Certification Record adds Foc/Moc Codes Section, Compliance Reports Section,
+Mdl Number And Rev, and the DAO's own identity (Application Name, Design
+Approval Doc, Aircraft Make/Model, Type) pre-filled with the real values the
+legacy screen showed (Elisen & associes inc. / A-177 / Bombardier /
+BD-700-1A11 / Aircraft) rather than left blank. `RequirementMatrixReportDrawer`
+is just TCCA Project Number and Report Date. Delegation Section and
+Deliverables Section render as plain text inputs rather than invented
+dropdown option lists — no such lists exist in this app yet.
+
+**Not built:** an actual report export/generation pipeline. "Run" validates
+the required fields and shows a toast; there is nothing to download yet,
+consistent with every other still-backend-less action in this prototype.
+
+## 2026-09-23 — Certification Flow step 5 becomes "Reports"; report drawers reused, Cancel/Download instead of Cancel/Run
+
+**Context:** Step 5 ("Dashboard") had been left open after step 4 absorbed
+the full legacy Cert Plan Dashboard fields, duplicating that ground. The
+client resolved it: step 5 becomes "Reports" — the three GCP reports, one
+card each (icon, "Report" label, name, "Enter Parameters →", matching the
+supplied reference), reusing the exact parameter drawers already built for
+the standalone `/gcp/reports` page rather than a second implementation.
+
+**Choice:** `FlowStepDashboard.tsx` is deleted; `FlowStepReports.tsx` takes
+its place as step 5. Its cards open `CertPlanReportDrawer` /
+`CertRecordReportDrawer` / `RequirementMatrixReportDrawer` unchanged, with a
+new optional `defaultTccaProjectId` that pre-selects the project this flow
+is already on — the standalone Reports page leaves it unset, since it has no
+project of its own. All three drawers' footers changed from Cancel/Run to
+**Cancel/Download** (`leadingIcon={<Download/>}`, the same icon+label the
+app's existing `DownloadMenu` uses), on both the standalone page and this
+step, since the two share the same components — "Download" is the more
+accurate verb for what a generated report is used for.
+
+## 2026-09-23 — Compliance Plan collapses to one card; TCCA Project fields return to the sticky block
+
+**Context:** After the earlier pass split Compliance Plan into three cards
+(nav, fields, GCP Data) and dropped TCCA Project Number/Description as
+redundant with the persistent summary card above the step, the client asked
+for the opposite: TCCA Project Number/Description belong back in this
+screen's own sticky section (alongside Subpart/Subsection/Regulation), and
+everything — nav, identity, DDS/MOC/Comment, GCP Data — should read as one
+card, not three.
+
+**Choice:** `FlowStepPlan` is now a single bordered card. Its sticky block
+(`sticky top-0`, its own `bg-neutral-25` so it doesn't go transparent over
+the content scrolling under it) holds the nav plus every readonly identity
+field including TCCA Project Number/Description; DDS/MOC Text/Comment and
+the GCP Data table sit below it, inside the same card, separated only by a
+`border-t` — not a second or third bordered box.
+
+## 2026-09-23 — Compliance Plan's rule identity moves into the persistent summary card; state lifted to GcpFlowPage
+
+**Context:** The previous pass put TCCA Project/Subpart/Subsection/
+Regulation/Url back into `FlowStepPlan`'s own sticky block. The client
+corrected the placement: that data belongs in the persistent project summary
+card that already sits at the top of every step (2 through 5) — not inside
+`FlowStepPlan`'s own container. Prev/Select/Next stays exactly where it was,
+in its own small card.
+
+**Choice:** `GcpFlowPage` now owns which rule is "current" for step 4
+(`planIndex` state, `planRows` computed from the project's affected entries)
+instead of that living inside `FlowStepPlan`. Its persistent summary card
+swaps its usual `Stat` band (Elisen Project, Applicable, Affected,
+Compliance, Opened) for the rule's own identity — via the new shared
+`ReadOnlyField` component — whenever `step === 4`. `FlowStepPlan` becomes a
+plain consumer of `rows`/`index`/`setIndex` props: its own render is back to
+two cards, one for Prev/Select/Next, one for the editable fields and GCP
+Data, with no rule-identity fields of its own — clicking Next there updates
+`GcpFlowPage`'s state, which the summary card reads, so the two never drift
+apart.
+
+## 2026-09-23 — Prev/Select/Next and the progress badge move into the header; DDS Text and Requirement Text become rich text
+
+**Context:** Further client feedback on the Compliance Plan header/nav
+layout, plus a legacy-portal screenshot showing DDS Text and Regulation
+Requirement Text as full WYSIWYG (CKEditor) fields, not plain text —
+`Textarea` and a static `<p>` didn't match what the legacy screens actually
+store and let the reader edit.
+
+**Choices:**
+- The Prev/Select/Next nav moved out of `FlowStepPlan` entirely and into
+  `GcpFlowPage`'s persistent summary card header, in the slot the GCP
+  progress `Badge` used to occupy on step 4. It's a single joined control —
+  a bordered strip with `SearchableSelect variant="bare"` as the middle
+  segment (the `PhoneInput` pattern) — divided into its three visible chunks
+  via `border-r-border-default`/`border-l-border-default` on the Prev/Next
+  buttons (an important-flagged directional color utility, since a plain
+  `border-{color}` appended after `variant="tertiary"`'s own transparent
+  border isn't guaranteed to win on Tailwind's utility ordering).
+- The progress `Badge` moved to sit inline next to the main project number
+  heading (always visible, every step) instead of swapping with the nav.
+  `FlowStepPlan` no longer renders it and no longer takes a `progress` prop.
+- `FlowStepPlan`'s own heading ("Compliance plan" + description) merged into
+  the same card as the editable fields — one container, not two — and its
+  heading size was set to 16px semibold to match the rest of the form's
+  section headings rather than the page-title scale it briefly had.
+- Added `ui/RichTextEditor.tsx` (Tiptap: `starter-kit`, `underline`,
+  `subscript`, `superscript`, `link`, `image`, `extension-table`,
+  `placeholder`) with two toolbar presets matching the two distinct legacy
+  toolbars: `full` for DDS Text, `compact` for Regulation Requirement Text.
+  Requirement Text now always renders (previously conditional on the
+  regulation having text) and edits the shared `Regulation.requirementText`
+  via `updateRegulation`, positioned above DDS Id. The legacy toolbar's
+  cut/copy/paste, fullscreen and Source-view icons were left out — the
+  browser's own clipboard/zoom already cover them, and a button that visually
+  matches but does nothing is worse than omitting it.
+- Fixed a real bug hit while verifying this: clicking a toolbar button
+  blurred the editor's `contenteditable` first (mousedown default), which
+  collapsed the text selection before the click handler ran — so Bold/Italic
+  etc. silently applied to nothing. Each toolbar button now calls
+  `e.preventDefault()` on `onMouseDown` to keep the selection intact.

@@ -36,6 +36,7 @@ const CHILD_ROUTES: Record<string, string> = {
   'Cert Bases': '/gcp/cert-bases',
   'People & Authority': '/gcp/people',
   'Reference Lists': '/gcp/reference',
+  'GCP Reports': '/gcp/reports',
   'Software Settings': '/system/settings',
   'Audit Control': '/system/audit',
   'Database Management': '/system/database',
@@ -68,7 +69,7 @@ const NAV: NavItem[] = [
   { label: 'Reports', icon: <ListChecks size={18} /> },
   // GCP's 23 legacy screens collapse into five: the project workspace where the
   // daily work happens, and four library sections it reads from.
-  { label: 'GCP', icon: <ShieldCheck size={18} />, children: ['Certification Flow', 'GCP Projects', 'Regulations', 'Cert Bases', 'People & Authority', 'Reference Lists'] },
+  { label: 'GCP', icon: <ShieldCheck size={18} />, children: ['Certification Flow', 'GCP Projects', 'Regulations', 'Cert Bases', 'People & Authority', 'Reference Lists', 'GCP Reports'] },
   // Three administrative sections split by *what* they hold, not by who is
   // senior enough to see them: business data staff maintain, access
   // management, and machine-side tooling. Ordered most-used first, and each
