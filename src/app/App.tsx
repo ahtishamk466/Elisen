@@ -23,6 +23,13 @@ import { ProfilePage } from '@/components/features/profile/ProfilePage'
 import { ApprovalsWorkspace } from '@/components/features/approvals/ApprovalsWorkspace'
 import { ApprovalDetailPage } from '@/components/features/approvals/ApprovalDetailPage'
 import { DocumentsPage } from '@/components/features/documents/DocumentsPage'
+import { GcpProjectsPage } from '@/components/features/gcp/GcpProjectsPage'
+import { GcpFlowPage } from '@/components/features/gcp/flow/GcpFlowPage'
+import { GcpProjectWorkspace } from '@/components/features/gcp/GcpProjectWorkspace'
+import { GcpRegulationsPage } from '@/components/features/gcp/GcpRegulationsPage'
+import { GcpCertBasesPage } from '@/components/features/gcp/GcpCertBasesPage'
+import { GcpPeoplePage } from '@/components/features/gcp/GcpPeoplePage'
+import { GcpReferencePage } from '@/components/features/gcp/GcpReferencePage'
 import { SignedOutScreen } from './SignedOutScreen'
 import { useSessionStore } from '@/stores/sessionStore'
 
@@ -48,6 +55,14 @@ export default function App() {
         <Route path="/documents/design-data" element={<DocumentsPage kind="drawing" />} />
         <Route path="/tcca-projects" element={<TccaProjectsListPage />} />
         <Route path="/tcca-projects/:id" element={<TccaProjectDetailPage />} />
+        <Route path="/gcp" element={<Navigate to="/gcp/projects" replace />} />
+        <Route path="/gcp/flow" element={<GcpFlowPage />} />
+        <Route path="/gcp/projects" element={<GcpProjectsPage />} />
+        <Route path="/gcp/projects/:id" element={<GcpProjectWorkspace />} />
+        <Route path="/gcp/regulations" element={<GcpRegulationsPage />} />
+        <Route path="/gcp/cert-bases" element={<GcpCertBasesPage />} />
+        <Route path="/gcp/people" element={<GcpPeoplePage />} />
+        <Route path="/gcp/reference" element={<GcpReferencePage />} />
         <Route path="/timesheet" element={<TimesheetListPage />} />
         <Route path="/hours-worked" element={<HoursWorkedPage />} />
         <Route path="/hours-worked/person/:name" element={<PersonDetailPage />} />

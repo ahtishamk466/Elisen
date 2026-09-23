@@ -196,11 +196,14 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
       activeChild="Hours Worked"
       headerActions={
         <>
-          <div className="min-w-0" style={{ width: 400 }}>
-            <label htmlFor="hours-worked-search" className="sr-only">Search entries</label>
+          {/* Narrower and just "Search" — every field it covers is already a
+              column on screen, so the long descriptive placeholder used
+              elsewhere in the app was mostly just crowding the header row. */}
+          <div className="min-w-0" style={{ width: 220 }}>
+            <label htmlFor="hours-worked-search" className="sr-only">Search by employee, project, activity or comment</label>
             <Input size="sm"
               id="hours-worked-search" value={query} onChange={(e) => { setQuery(e.target.value); resetVisible() }}
-              placeholder="Search by employee, project, activity or comment..." leadingIcon={<Search size={16} />}
+              placeholder="Search..." leadingIcon={<Search size={16} />}
             />
           </div>
           <TimesheetFilterMenu

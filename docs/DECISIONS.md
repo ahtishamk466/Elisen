@@ -5189,3 +5189,383 @@ shape.
 
 **Regenerating** is three scripts in `tools/` — see `tools/README.md`, which
 also lists what must never appear in the output.
+
+## 2026-09-21 — GCP: 23 legacy screens become five, structure first
+
+**Context:** The client walked through the legacy GCP module screen by screen
+(recorded transcript). Its menu carries 23 entries in one flat list: a rules
+library (Regulation, Subpart, Subsection, Regulation Group, Group Section,
+Regulation Checklist), cert bases (Master Cert Basis, Cert Basis, Import,
+Associate), people and reference lists (FOC, Delegation, Discipline, MOC, DDS),
+and the project work (Cert Plan, Initialize, Copy, Dashboard, GCP, GCP Copy,
+GCP Modify, Reports). Nine of those screens are filtered by the same TCCA
+project, and today the user re-enters the project number on each one — in the
+walkthrough the client himself had to go back and look the number up mid-flow.
+
+**Choice:** Five sidebar entries under GCP — GCP Projects (the workspace),
+Regulations, Cert Bases, People & Authority, Reference Lists. Inside a project:
+five section tabs in the order the work happens (Cert Basis → Cert Plan
+Initialize → Cert Plan → GCP → Reports), with Reports carrying three in-card
+tabs for its three outputs. Parent/child pairs (Subpart→Subsection, Group→Group
+Section, Master Cert Basis→Cert Basis) open from inside their parent row rather
+than as sibling tabs. Copy, Modify and Import become actions, not screens.
+This change ships the structure only: every tab renders `GcpTabPanel` naming
+the legacy screen it carries. Content lands tab by tab as the client supplies
+each screen's definition.
+
+**Rationale:** Tabs show data, buttons do things — keeping copy/modify/import
+out of the tab bar is what stops the clutter returning. Ordering the workspace
+tabs by the real sequence teaches the process to new staff, and picking the
+project once removes the repeated lookup. Three screens stay provisional
+because the client could not confirm their purpose on the call (the standalone
+GCP list, Cert Plan Copy, Regulation Checklist); their panel copy says so, and
+Regulation Checklist may move to the project side since it holds a TCCA project
+number and a deliverable number.
+
+**Also:** `SectionTabs` was extracted into `/components/patterns` rather than
+hand-rolling the detail-page tab strip a third time (it exists inline in
+`ProjectDetailPage` and `TccaProjectDetailPage`). Those two keep their copies
+for now — migrating them is a separate, no-visual-change pass.
+
+## 2026-09-21 — GCP Regulation list: legacy columns kept, per-column filter row dropped
+
+**Context:** The client sent the legacy `Regulation - List` screen: ten columns
+(Section, Amdt, Title, Subpart Code, Subsection Code, Url, Sort, Section Root,
+Active, Actions), a filter box under every heading, an Add button, and five
+per-row icon actions, over 3,932 rows.
+
+**Choice:** Every column is kept, in the legacy order and under the legacy
+names. The per-column filter row is not: search plus the standard Filters menu
+covers the same columns (Amdt, Subpart Code, Subsection Code, Section Root, Url,
+Active) with removable chips, which is what every other list in this app uses.
+The five row icons collapse into the standard 3-dot menu — View, Edit, Delete —
+since View and Edit were two of the five and the app has one actions idiom.
+Section sorts on the stored Sort key so a rule's amendments stay together and
+23.2 still precedes 23.21.
+
+**Rationale:** A second header row of inputs costs ~50px on a table already
+1,280px wide, and the app retired that pattern everywhere else when filters
+became a menu with chips; keeping it here would have made GCP the only screen
+with two filter idioms. The column set itself is the client's data model and was
+not ours to edit.
+
+**Data:** the ten rows the screenshot showed are seeded in
+`src/lib/gcpFixtures.ts`, verbatim — including the literal "-" the legacy screen
+stores in Section Root and Subsection Code where there is no value. The
+remaining rows come with the client's export.
+
+**Open:** the screenshot shows a control in the Url cell of one row (23.1 at
+23-34) whose value is not readable in the image. Every row here therefore ships
+with an empty Url, and the column renders an Open link when a value exists. The
+real Url values need to come from the export or from the client.
+
+## 2026-09-21 — Regulation: create fields completed, list recut around names not codes
+
+**Context:** The client sent the legacy `Regulation - Create` screen, the
+Subpart and Subsection lists, and a target column set for the table.
+
+**Choice:**
+- The create screen's full field set is now in the drawer, in its order:
+  Section, Amdt, Title, Subpart Code, Subsection Code, Url, Sort, Requirement
+  Text, Default Moc Text, Section Root. Requirement Text and Default Moc Text
+  are new to our model. Active is ours — the legacy create screen has no Active
+  field, but Edit needs one and the list shows the state.
+- Subpart and Subsection are pickers listing `CODE -- NAME`, as the legacy
+  dropdown does, fed by the Subpart and Subsection records (first pages seeded
+  from the client's lists).
+- Table columns: Section, Amdt, Title, Subpart, Subsection, Source, Active,
+  Action. Subpart and Subsection print code and name, truncated. Sort and
+  Section Root left the table and live in View and Edit.
+- Amdt and Section Root render as chips (`ChipOverflow`), the app's existing
+  chip; body cells carry no weight above regular, at the client's instruction.
+  Headings keep the app-wide semibold so this table matches every other one.
+- Row actions: View, Copy, Edit, Delete. Copy opens the row's values as a new
+  record, which the one-record-per-rule-and-amendment check then forces onto a
+  different amendment.
+
+**Rationale:** A bare `A01` is unreadable to anyone who hasn't memorised the
+taxonomy, and the client asked for both halves; truncation keeps the two-line
+row rule. Source names what opens before the reader clicks, rather than
+printing a URL in a table cell.
+
+**Open:** `Requirement Text` is a rich-text field in the legacy screen
+(CKEditor). It is a plain `Textarea` here — the app has no rich-text component
+and adding one is a separate decision (CLAUDE.md rule 2). Also, the Subpart
+dropdown in the reference lists `APP -- APPENDICES`, which is not on the first
+page of the Subpart list, so its id, sort and active state are unknown and it
+is not seeded.
+
+## 2026-09-21 — Regulation table: fixed widths so nine columns fit one screen
+
+**Context:** With Section Root added back after Subsection, the Regulation list
+carries nine columns and was scrolling sideways below 1440px.
+
+**Choice:** `table-fixed` over measured pixel widths totalling 938px — Section
+112, Amdt 76, Title 170, Subpart 120, Subsection 120, Section Root 104, Source
+100, Active 84, Action 52. Title came down from 190; Section wraps to a second
+line instead of truncating, since a rule number is the row's identity. Verified
+at 1440 and 1280: no horizontal scroll on the table or the page.
+
+**Rationale:** Same lesson as the Hours Worked tables — once headings carry sort
+buttons, percentage widths collapse the icon onto its own line, so columns are
+measured and the total is checked against the narrowest supported viewport. Text
+that can outgrow its column truncates at two lines; only Section, which must be
+read in full, wraps.
+
+**Source column:** links render in the accent, underlined, with an
+arrow-up-right, so they read as links before hover. The seeded rows now carry
+FAA DRS links (`drs.faa.gov`) and one eCFR link, to exercise the FAA Source /
+Source / No source labels — placeholders until the client's export supplies the
+real URLs.
+
+## 2026-09-21 — Subpart and Subsection cells: code as a chip, name beside it
+
+**Context:** Rendering the pair as one string (`A -- GENERAL`) made a column of
+them read as prose — the eye had to parse each row to find the code.
+
+**Choice:** `CodeWithName` — the code in the same chip the Amdt and Section Root
+columns use, the name in the cell's own text, truncated to one line. Where the
+legacy record's name is a placeholder (`--`, or the code repeated, as on A01)
+the chip stands alone rather than trailing a dash. The joined `A -- GENERAL`
+string stays for pickers and filter chips, where both halves must travel as one
+value. Offered the client three treatments (chip + name, two lines, one line
+with a middle dot); they chose chip + name.
+
+**Width lesson, again:** "Section Root ⇅" needs 120px for its own heading and
+sort icon regardless of its data, and "Action ⇅" 58px. Undersizing them was what
+put a 2px scrollbar back on the table after the widths already summed under the
+container. Measure headings, not just values.
+
+## 2026-09-21 — Dash placeholders leave the chip; Subpart reads `code — name`
+
+**Context:** Two client notes on the Regulation table: a `-` should print as a
+bare dash, not inside a chip, and Subpart / Subsection should read as code then
+title rather than a chip followed by a name.
+
+**Choice:**
+- `GcpChip` wraps every identifier chip (Amdt, Section Root) and prints a bare
+  muted dash when the stored value is one. The chip announces "there is a value
+  here"; ten empty chips down a column announce the opposite of the truth.
+- `CodeWithName` now renders `A — GENERAL` on one line, an em dash between the
+  two, with the name capped at **ten words** before the cell's own one-line
+  truncation takes over. The View drawer shows the same string.
+
+**Left as stored:** the names print in the client's own case (`GENERAL`, `JAA
+SUBPART J - APU`). The reference mock showed them title-cased; title-casing
+would also rewrite acronyms (APU, JAA), so the data is shown as it is until the
+client says otherwise.
+
+## 2026-09-21 — Subpart and Subsection move under Regulations → Structure
+
+**Context:** They were sitting as two of the library's four top-level tabs, as
+they are in the legacy menu. The client's correction: Regulations *is* the rule
+library, and subpart/subsection are not peers of a regulation — they describe
+how one is filed.
+
+**Choice:** The Regulations screen now has four sections — Regulation,
+Structure, Regulation Group, Regulation Checklist — rendered with `SectionTabs`
+above the card. Structure holds two listings, Subparts and Subsections, as
+`TableTabs` inside the table's own card. Two tab levels, two different
+components, so the hierarchy is visible rather than implied: the outer strip
+switches what the screen is about, the inner one switches which table is listed.
+
+**Data:** both listings are seeded from the client's screenshots — 20 of 21
+subparts (id 17 is absent in the source too) and 20 of 74 subsections, with the
+legacy values untouched, `X` ranges and typos included. Create forms match the
+legacy ones field for field (Subpart: Code, Description, Sort; Subsection: Code,
+Title, Part 23/25/27/29), plus Active, which Edit needs and the lists show.
+
+**Deletion:** a subpart or subsection with regulations filed under it is retired
+rather than deleted, the same rule ATA Chapters follows — never orphan a record
+that other rows point at.
+
+## 2026-09-21 — Regulation Group, its sections, and the Checklist picker
+
+**Context:** Client screenshots for the last three library screens.
+
+**Choice:**
+- **Regulation Group** is a listing (Title, Description, Active) with the same
+  create fields as the legacy form (Title, Description) plus Active. Seeded with
+  the client's three groups, all active.
+- **Sections** become a second tab inside Regulation Group — `Groups` and
+  `Sections` — mirroring Structure's two listings. The client's table is empty,
+  so the screen ships empty: groups exist, the rules under them were never
+  filled in, and inventing rows would have hidden that.
+- The legacy **transfer widget** (two facing list boxes with `>` `>>` `<` `<<`)
+  is a `MultiSelect`: search, tick, a chip per choice with its own ×. Same
+  choice, keyboard reachable, and no "which box am I in?" — the app has one
+  multi-select pattern and this is it. Saving replaces the whole set for that
+  group, which is how the legacy screen behaved.
+- **Regulation Checklist** ships the selection step exactly as the dialog has
+  it — TCCA Project Number and Deliverable Number, with Select — and says
+  plainly that what the checklist lists is still to be confirmed, rather than
+  guessing columns.
+
+**Deletion:** deleting a group takes its attached rules with it (they cannot
+outlive their group); removing one rule from a group leaves the rule in the
+library.
+
+## 2026-09-21 — Regulations tab names shortened to the client's wording
+
+**Context:** The client set the final structure for the rule library's tabs.
+
+**Choice:**
+```
+Regulations
+├── Regulations
+├── Structure          ├── Subparts   └── Subsections
+├── Groups             ├── Group Details   └── Typical Regulations
+└── Checklist
+```
+The legacy prefixes go: "Regulation Group" → "Groups", "Regulation Checklist" →
+"Checklist", and the group's two listings are named for what they hold — the
+group's own record, and the rules that kind of modification typically affects.
+URLs follow the labels (`?tab=groups&view=typical`), so a link reads as the
+place it opens.
+
+**Rationale:** Inside a screen already titled Regulations, repeating
+"Regulation" on every tab spent width on a word the reader had just read.
+"Typical Regulations" also says what the legacy "Group Section" never did:
+these are the rules such a change usually touches, not a fixed set.
+
+## 2026-09-21 — Groups becomes a master–detail, like ATA Chapters
+
+**Context:** The client asked for the Groups section to follow the ATA Chapters
+layout: the list on a rail, the selected record's contents in the main area.
+
+**Choice:** One screen instead of two tabs. The rail carries every group with
+the number of regulations attached; the panel shows that group's title,
+description and state, then a **Regulation List** table of its section roots.
+"Add New Group" sits in the page header beside the search; "Add Regulation" sits
+beside the Regulation List heading, exactly as ATA places "Add Chapter" and "Add
+Sub Chapter". Selection lives in `?group=`, so a group is linkable, and search
+spans a group's own text *and* the section roots under it.
+
+**What this replaces:** the `Group Details` / `Typical Regulations` inner tabs.
+Both listings are now on screen at once, which is the point of the pattern —
+"which rules does the galley group carry?" was a second screen and a manual
+filter in the legacy system.
+
+**Data untouched:** the three groups are the client's, still with no regulations
+attached, so the panel reads "No results found." exactly as the legacy list
+does. The legacy table's `Regulation Group Title` column is now the panel
+heading rather than the same value repeated on every row — flagged to the client
+rather than dropped silently.
+
+## 2026-09-22 — Subpart and subsection names display as Title Case
+
+**Context:** The client's data stores these names in capitals
+(`GENERAL`, `STRUCTURE / STRENGTH REQUIREMENTS`); they asked for Title Case.
+
+**Choice:** `titleCaseName()` in `lib/gcpDisplay.ts`, applied wherever a subpart
+or subsection name is *shown* — the Regulation table's Subpart and Subsection
+columns, the Structure listings, the pickers and filter chips.
+
+Three rules keep it from mangling the data:
+- only ALL-CAPS words are recased, so `Requirements that have been identified as
+  Non-ATCs for this program` stays exactly as the client typed it;
+- an acronym list (AWM, FAR, ICAO, JAA, APU, EWIS, SFAR, ATC, TBD, EX, ES, SC…)
+  stays in capitals, so `JAA SUBPART J - APU` reads `JAA Subpart J - APU`;
+- anything containing a digit or `/` is untouched (`AWM 5xx`, `FAR 34/36`).
+
+**Display only:** the stored value is unchanged, and the create/edit drawers show
+what is stored, so nothing is silently rewritten on save and a client export in
+capitals still round-trips.
+
+## 2026-09-22 — A second GCP entry point: the certification flow
+
+**Context:** The client's own words: twenty-odd GCP menu entries mean a user has
+to know which tab to switch to next. They asked for the work to run as one
+hierarchy — like buying something online: pick the product, add the details,
+pay, check out — and to have it on a **separate link**, leaving the existing
+GCP screens untouched.
+
+**Choice:** `/gcp/flow`, a five-step route with the app's `Stepper`:
+1. **Project** — the TCCA project the work belongs to.
+2. **Certification Basis** — the merge they asked for: aircraft model and type
+   certificate number (legacy *Master Cert Basis*) plus the regulations
+   allocated to it, each with its amendment, title, subpart and subsection
+   (legacy *Cert Basis*), and the link to the project (legacy *Associate*) — all
+   on one screen.
+3. **Initialize** — every rule in the basis marked affected or not affected.
+4. **Certification Plan** — the affected rules, with whether each is planned.
+5. **Dashboard** — per rule: requirement text, method (seeded from the rule's
+   Default Moc Text), comments, and the compliance items (discipline, MOC,
+   finding by, document).
+
+A step is reachable only once the previous one has produced its output, so the
+forward path is the only path and nothing has to be explained.
+
+**Nothing removed:** `/gcp/projects`, `/gcp/regulations`, `/gcp/cert-bases`,
+`/gcp/people` and `/gcp/reference` are exactly as they were; the flow is an
+additional sidebar entry, "Certification Flow".
+
+**What is deliberately not filled in:** disciplines, means of compliance and
+delegated people are still empty in this system, so the compliance-item form
+takes free text and says so rather than offering invented options. The moment
+those lists arrive they become pickers, with delegation deciding who may be
+chosen as "finding by" — the rule the whole module exists to enforce.
+
+**Not built, because the client's spec stopped at the Dashboard:** Reports,
+GCP Copy, GCP Modify and Cert Plan Copy. They exist in the tab-based module and
+can be added as later steps once the client says where they belong.
+
+## 2026-09-22 — Structure becomes a hierarchy: Subpart → Subsection, not two tabs
+
+**Context:** Structure held Subparts and Subsections as sibling `TableTabs`,
+mirroring the legacy menu. The client asked for one hierarchical view instead —
+Subpart as the parent, its Subsections nested underneath, the relationship
+visible at a glance — the same shape as the Groups master–detail.
+
+**Choice:** `RegulationStructurePage` replaces both list pages: subparts on a
+320px rail (the parent level, with each one's subsection count), the selected
+subpart's subsections in a table at the right (the child level). A subsection's
+code renders with its inherited subpart-letter prefix dimmed and its own digits
+in full color (`C` muted + `01`), so the reader sees which half of the code is
+inherited without reading two tables side by side. "Add New Subpart" sits in the
+page header; "Add Subsection" sits beside the Subsections heading and pre-fills
+the code field with the open subpart's prefix, so a new subsection is never
+typed as if it could belong anywhere.
+
+**The parent-child link is derived, not stored:** the legacy data has no
+foreign key from subsection to subpart. Every subsection code carries its
+subpart's letters as a prefix — `B04`, `B05` … belong to `B`; `C01`...`C14`
+belong to `C` — verified against all 20 seeded rows before relying on it
+(`subpartCodeOfSubsection()` in `lib/gcpDisplay.ts` strips the trailing digits).
+If the client's full export ever contains a subsection code that doesn't start
+with a real subpart's letters, that row needs a second look before this
+derivation is trusted for it.
+
+**Removed:** `SubpartListPage.tsx`, `SubsectionListPage.tsx`, and
+`GcpStructureTabs` (the `TableTabs` pair) — no longer reachable from anywhere.
+
+## 2026-09-23 — Certification Flow Step 1 becomes a table, matched to the live portal's real Master Cert Basis / Cert Basis / Cert Plan Dashboard schema
+
+**Context:** Step 1 (project picker) had been built as vertical cards showing
+only Number, Description and Status, sourced from `useTccaStore` — real TCCA
+project data, but the weakest possible disambiguator (most projects share the
+same status). Direct, read-only verification against the client's live
+`dev.elisen.com` portal (the user's own logged-in session; credentials were
+never entered by the assistant) also surfaced that `FlowStepDashboard` was
+missing the legacy `CertPlan.complete` checkbox entirely.
+
+**Choice:** `FlowStepProject` is now a sortable table — TCCA Project #,
+Project Description, Elisen Project, Applicable, Affected, GCP Progress,
+Opened, Action — reusing the exact table chrome (`SortableTh`, `useTableSort`,
+`Truncate`, `DateText`, `Skeleton` loading rows) already shipped on the
+standalone TCCA Projects list, so the two lists read as one system rather than
+two different pickers for the same data. Applicable/Affected come from
+`planEntries` per project; GCP Progress needs a real completion signal, so
+`PlanEntry` gained a `complete: boolean` field (matching the verified
+`CertPlan.complete` field) and `FlowStepDashboard` gained the missing
+Complete checkbox next to the rule heading. The Action button reads "Start
+GCP" or "Continue GCP" and resumes at the furthest step the project's own
+data already supports (basis → 3, entries → 4, affected rules → 5), rather
+than always restarting at step 2.
+
+**Not done in this pass:** `FlowStepBasis`'s aircraft-model/TC-number fields
+and `GcpItemDrawer`'s free-text discipline/MOC/FOC/document fields are still
+the wrong model versus the verified portal (Master Cert Basis is Code +
+Description only; GCP items are DAO Specialty Code / MOC Code / delegation-
+filtered FOC Code / Deliverable Number) — that redesign is a separate,
+larger change awaiting the client's sign-off on the corrected field set.

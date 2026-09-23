@@ -11,6 +11,7 @@ import { EmptyState } from './EmptyState'
 import { AutoLoadFooter } from './AutoLoadFooter'
 import { useInfiniteReveal } from './useInfiniteReveal'
 import { TableTabs } from './TableTabs'
+import { SectionTabs } from './SectionTabs'
 import { FileDropzone } from './FileDropzone'
 import { BarChart } from './BarChart'
 import { Alert } from '@/components/ui/Alert'
@@ -220,6 +221,23 @@ function TableTabsDemo() {
   )
 }
 export const TableTabsExample: Story = { render: () => <div className="p-lg"><TableTabsDemo /></div> }
+
+/** Section tabs are the other tab strip: they swap whole sections of one
+    record — Project Detail's Overview / Work Packages / Team row, GCP's Cert
+    Basis / Cert Plan / Reports row — and sit above the content they swap,
+    carrying their own border. Use `TableTabs` when the tabs change which rows
+    a table lists; use this when they change what the page is showing. */
+function SectionTabsDemo() {
+  const TABS = ['Cert Basis', 'Cert Plan Initialize', 'Cert Plan', 'GCP', 'Reports'] as const
+  const [tab, setTab] = useState<(typeof TABS)[number]>('Cert Plan')
+  return (
+    <div className="grid gap-lg">
+      <SectionTabs tabs={TABS} active={tab} onChange={setTab} ariaLabel="GCP sections" counts={{ 'Cert Plan': 41 }} />
+      <div className="rounded-sm border border-border-default bg-neutral-25 p-lg text-sm text-text-secondary">{tab}</div>
+    </div>
+  )
+}
+export const SectionTabsExample: Story = { render: () => <div className="p-lg"><SectionTabsDemo /></div> }
 
 /** THE file picker for the whole app — every upload uses this, never a bare
     `<input type="file">` and never a FormField/FormSection wrapper around it.

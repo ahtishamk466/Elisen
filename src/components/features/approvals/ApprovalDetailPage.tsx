@@ -233,12 +233,18 @@ export function ApprovalDetailPage() {
                       No revisions recorded yet. A certificate is granted by its first revision, raise revision 1 to record it.
                     </p>
                   ) : (
-                    <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
-                      <Field label="First issued" nowrap>{revisions[revisions.length - 1].revisionDate}</Field>
-                      <Field label="Current revision" nowrap>Rev {latestRevision.revision}</Field>
-                      <Field label="Current revision date" nowrap>{formatDate(latestRevision.revisionDate)}</Field>
-                      <Field label="Latest change">{latestRevision.changeDescription}</Field>
-                    </div>
+                    <>
+                      <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+                        <Field label="First issued" nowrap>{revisions[revisions.length - 1].revisionDate}</Field>
+                        <Field label="Current revision" nowrap>Rev {latestRevision.revision}</Field>
+                        <Field label="Current revision date" nowrap>{formatDate(latestRevision.revisionDate)}</Field>
+                      </div>
+                      {/* Full width of the card, not another cell in the stat grid above —
+                          the change description runs longer than a revision number or a date. */}
+                      <div className="mt-lg">
+                        <Field label="Latest change">{latestRevision.changeDescription}</Field>
+                      </div>
+                    </>
                   )}
                 </Card>
               </div>
