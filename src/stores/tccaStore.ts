@@ -11,6 +11,13 @@ interface TccaState {
   addTcca: (t: TccaProject) => void
   updateTcca: (id: string, patch: Partial<TccaProject>) => void
   removeTcca: (id: string) => void
+  /** Inserted directly after the original, not prepended to the top —
+      client instruction, 2026-09-24, so the copy reads as "this one, again"
+      rather than turning up as an unrelated new row at the top of the
+      list. Every field is copied as-is, including `number`; only `id` is
+      new and `isCopy` is set, which is what the row's own "Copy" badge
+      reads. */
+  duplicateTcca: (id: string) => void
   /** Linkable from either side: a project's TCCA tab and the TCCA project's
       own Projects tab call these same two verbs. */
   linkProject: (tccaProjectId: string, projectId: string) => void
@@ -34,6 +41,15 @@ export const useTccaStore = create<TccaState>((set) => ({
       tccaProjects: s.tccaProjects.filter((t) => t.id !== id),
       docLinks: s.docLinks.filter((l) => l.tccaProjectId !== id),
     })),
+  duplicateTcca: (id) =>
+    set((s) => {
+      const idx = s.tccaProjects.findIndex((t) => t.id === id)
+      if (idx === -1) return s
+      const copy: TccaProject = { ...s.tccaProjects[idx], id: crypto.randomUUID(), isCopy: true }
+      const tccaProjects = [...s.tccaProjects]
+      tccaProjects.splice(idx + 1, 0, copy)
+      return { tccaProjects }
+    }),
 
   setChecklistItem: (tccaId, itemId, date) =>
     set((s) => ({

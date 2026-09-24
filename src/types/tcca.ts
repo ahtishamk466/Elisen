@@ -45,6 +45,10 @@ export interface TccaProject {
   /** itemId → completion date ('' = applicable but not complete).
       Items absent from the map are Not Applicable. */
   checklist: Record<string, string>
+  /** Set on a project made via "Duplicate" — every other field, including
+      `number`, is copied as-is from the original, so this is the only way
+      to tell the two apart. Shown as a "Copy" badge next to the number. */
+  isCopy?: boolean
 }
 
 /** A document revision from the Elisen side. Documents only — drawings are

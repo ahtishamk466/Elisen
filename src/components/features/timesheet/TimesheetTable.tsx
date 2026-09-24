@@ -178,7 +178,10 @@ export function TimesheetTable({
                       onClick={(e) => { e.stopPropagation(); onView?.(row) }}
                       className="block w-full min-w-0 text-left underline-offset-2 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
                     >
-                      <span className="block truncate text-sm font-semibold text-text-primary">{row.projectLabel}</span>
+                      <span className="flex min-w-0 items-center gap-xs">
+                        <span className="truncate text-sm font-semibold text-text-primary">{row.projectLabel}</span>
+                        {row.isCopy && <Badge tone="info">Copy</Badge>}
+                      </span>
                       <span className="block truncate text-xs text-text-secondary">{row.projectDescription}</span>
                     </button>
                   </td>

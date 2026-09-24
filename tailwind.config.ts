@@ -106,6 +106,7 @@ export default {
         lg: 'var(--shadow-lg)',
         button: 'var(--shadow-button)',
         textfield: 'var(--shadow-textfield)',
+        sticky: 'var(--shadow-sticky)',
       },
       transitionDuration: {
         fast: 'var(--duration-fast)',

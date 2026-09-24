@@ -23,9 +23,7 @@ import { ProfilePage } from '@/components/features/profile/ProfilePage'
 import { ApprovalsWorkspace } from '@/components/features/approvals/ApprovalsWorkspace'
 import { ApprovalDetailPage } from '@/components/features/approvals/ApprovalDetailPage'
 import { DocumentsPage } from '@/components/features/documents/DocumentsPage'
-import { GcpProjectsPage } from '@/components/features/gcp/GcpProjectsPage'
 import { GcpFlowPage } from '@/components/features/gcp/flow/GcpFlowPage'
-import { GcpProjectWorkspace } from '@/components/features/gcp/GcpProjectWorkspace'
 import { GcpRegulationsPage } from '@/components/features/gcp/GcpRegulationsPage'
 import { GcpCertBasesPage } from '@/components/features/gcp/GcpCertBasesPage'
 import { GcpPeoplePage } from '@/components/features/gcp/GcpPeoplePage'
@@ -56,10 +54,10 @@ export default function App() {
         <Route path="/documents/design-data" element={<DocumentsPage kind="drawing" />} />
         <Route path="/tcca-projects" element={<TccaProjectsListPage />} />
         <Route path="/tcca-projects/:id" element={<TccaProjectDetailPage />} />
-        <Route path="/gcp" element={<Navigate to="/gcp/projects" replace />} />
+        <Route path="/gcp" element={<Navigate to="/gcp/flow" replace />} />
+        {/* Old bookmark: this project picker + workspace is `/gcp/flow` now. */}
+        <Route path="/gcp/projects" element={<Navigate to="/gcp/flow" replace />} />
         <Route path="/gcp/flow" element={<GcpFlowPage />} />
-        <Route path="/gcp/projects" element={<GcpProjectsPage />} />
-        <Route path="/gcp/projects/:id" element={<GcpProjectWorkspace />} />
         <Route path="/gcp/regulations" element={<GcpRegulationsPage />} />
         <Route path="/gcp/cert-bases" element={<GcpCertBasesPage />} />
         <Route path="/gcp/people" element={<GcpPeoplePage />} />

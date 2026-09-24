@@ -74,7 +74,7 @@ export function DisciplineDrawer({ mode, initial, onClose, onSubmit }: Disciplin
           <Input id="disc-tcca" value={tccaDiscipline} error={!!errors.tccaDiscipline} placeholder="e.g. Avionics & Electrical"
             onChange={(e) => { setTccaDiscipline(e.target.value); setErrors((p) => ({ ...p, tccaDiscipline: undefined })) }} />
         </FormField>
-        <FormField label="Active" htmlFor="disc-active" fullWidth>
+        <FormField label="Active" htmlFor="disc-active" help="Inactive stays on old records, out of pickers.">
           <ActiveSelect id="disc-active" value={active} onChange={setActive} />
         </FormField>
       </FormSection>

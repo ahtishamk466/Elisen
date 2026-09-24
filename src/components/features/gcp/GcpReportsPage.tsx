@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Play } from 'lucide-react'
+import { ArrowRight, ClipboardCheck } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
@@ -18,7 +18,14 @@ type ReportKey = typeof REPORTS[number]['key']
 /** The three reports the legacy GCP Reports list runs, each its own
     parameter form before it runs — matching that screen's own shape rather
     than a live-preview params bar, since a report here is generated once
-    with a deliberate set of inputs, not filtered live. */
+    with a deliberate set of inputs, not filtered live.
+
+    One card per report rather than a two-column table (client instruction,
+    2026-09-24), the same treatment as step 5 of the certification flow: with
+    only three rows and one action each, a table spent a whole column on a
+    header ("Action") that described a button already labelled, and left the
+    right half of every row empty. The card puts the name and its one action
+    together and the page reads as three things to run, not a list to scan. */
 export function GcpReportsPage() {
   const [open, setOpen] = useState<ReportKey | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -32,34 +39,34 @@ export function GcpReportsPage() {
       activeItem="GCP"
       activeChild="GCP Reports"
       title="Reports"
-      description="Generate a report by choosing its parameters."
+      description="The reports available across every TCCA project."
     >
       <div className="grid gap-lg">
         {toast && <Alert tone="info" title={toast} />}
 
-        <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-          <table className="w-full border-collapse text-left">
-            <caption className="sr-only">GCP reports</caption>
-            <thead>
-              <tr className="border-b border-border-default bg-neutral-50">
-                <th scope="col" className="px-lg py-base text-sm font-semibold text-text-secondary">Name</th>
-                <th scope="col" className="px-lg py-base text-sm font-semibold text-text-secondary">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {REPORTS.map((r) => (
-                <tr key={r.key} className="border-b border-border-default last:border-b-0">
-                  <td className="px-lg py-base text-sm text-text-primary">{r.name}</td>
-                  <td className="px-lg py-base">
-                    <Button variant="tertiary" size="sm" leadingIcon={<Play size={14} />} onClick={() => setOpen(r.key)}>
-                      Enter Parameters
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* `flex-col` with the name block flexing, not step 5's plain grid:
+            this page shows each report's full name (the flow's narrower
+            cards abbreviate the Matrix one), so a name can wrap to two
+            lines at tablet width and the buttons would otherwise sit at
+            different heights across the row. */}
+        <ul className="grid list-none gap-lg tablet:grid-cols-3">
+          {REPORTS.map((r) => (
+            <li key={r.key} className="flex flex-col gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg py-lg">
+              <div className="flex flex-1 items-center gap-base">
+                <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-accent-subtle text-accent">
+                  <ClipboardCheck size={22} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs text-text-muted">Report</p>
+                  <p className="text-sm font-semibold text-text-primary">{r.name}</p>
+                </div>
+              </div>
+              <Button trailingIcon={<ArrowRight size={16} aria-hidden />} onClick={() => setOpen(r.key)}>
+                Enter Parameters
+              </Button>
+            </li>
+          ))}
+        </ul>
       </div>
 
       {open === 'cert-plan' && (

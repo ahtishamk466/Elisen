@@ -162,3 +162,28 @@ export interface Delegation {
   limitation: boolean
   active: boolean
 }
+
+/** One Means of Compliance code — how a rule's compliance is shown (design
+    review, inspection, test, and the rest). Reference Lists' MOC tab,
+    matching the legacy `moc` table and its create screen field-for-field
+    (Code, Title, Description — the legacy list carries no Active flag). */
+export interface Moc {
+  id: string
+  code: string
+  title: string
+  description: string
+}
+
+/** One DDS (Detailed Design Specification) type — the specification kinds
+    used on Part 23 projects under the new rule format, offered from the
+    `DDS Id` field in the Compliance Plan step. Reference Lists' DDS tab.
+    The legacy `dds/index` list has only Type + Active; `ddsText` is new
+    here, carrying the rich HTML template a DDS entry of this type starts
+    from (same `RichTextEditor` used by `FlowStepPlan`'s own DDS Text
+    field), per the client's own instruction — no Active flag, matching
+    the request as given rather than the legacy screen's own column set. */
+export interface DdsType {
+  id: string
+  type: string
+  ddsText: string
+}

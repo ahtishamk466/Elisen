@@ -23,4 +23,8 @@ export interface TimesheetEntry {
   /** Locked once true — only an admin (Hours Worked) can edit/unmark past this point. */
   validated: boolean
   active: boolean
+  /** Set on an entry made via "Duplicate" — every other field is copied
+      as-is from the original except `validated` (reset to `false`). Shown
+      as a "Copy" badge next to the entry's own project label. */
+  isCopy?: boolean
 }

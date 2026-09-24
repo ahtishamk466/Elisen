@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { DELEGATIONS, DISCIPLINES, FOC_LIST, REGULATION_GROUPS, REGULATION_GROUP_SECTIONS, REGULATIONS, SUBPARTS, SUBSECTIONS } from '@/lib/gcpFixtures'
-import type { Delegation, Discipline, Foc, Regulation, RegulationGroup, RegulationGroupSection, Subpart, Subsection } from '@/types/gcp'
+import { DDS_TYPES, DELEGATIONS, DISCIPLINES, FOC_LIST, MOC_LIST, REGULATION_GROUPS, REGULATION_GROUP_SECTIONS, REGULATIONS, SUBPARTS, SUBSECTIONS } from '@/lib/gcpFixtures'
+import type { DdsType, Delegation, Discipline, Foc, Moc, Regulation, RegulationGroup, RegulationGroupSection, Subpart, Subsection } from '@/types/gcp'
 
 interface GcpState {
   regulations: Regulation[]
@@ -11,6 +11,8 @@ interface GcpState {
   focs: Foc[]
   disciplines: Discipline[]
   delegations: Delegation[]
+  mocs: Moc[]
+  ddsTypes: DdsType[]
 
   addRegulation: (r: Regulation) => void
   updateRegulation: (id: string, patch: Partial<Regulation>) => void
@@ -46,6 +48,14 @@ interface GcpState {
   addDelegation: (d: Delegation) => void
   updateDelegation: (id: string, patch: Partial<Delegation>) => void
   removeDelegation: (id: string) => void
+
+  addMoc: (m: Moc) => void
+  updateMoc: (id: string, patch: Partial<Moc>) => void
+  removeMoc: (id: string) => void
+
+  addDdsType: (d: DdsType) => void
+  updateDdsType: (id: string, patch: Partial<DdsType>) => void
+  removeDdsType: (id: string) => void
 }
 
 export const useGcpStore = create<GcpState>((set) => ({
@@ -57,6 +67,8 @@ export const useGcpStore = create<GcpState>((set) => ({
   focs: FOC_LIST,
   disciplines: DISCIPLINES,
   delegations: DELEGATIONS,
+  mocs: MOC_LIST,
+  ddsTypes: DDS_TYPES,
 
   addRegulation: (r) => set((s) => ({ regulations: [r, ...s.regulations] })),
   updateRegulation: (id, patch) => set((s) => ({
@@ -116,4 +128,16 @@ export const useGcpStore = create<GcpState>((set) => ({
     delegations: s.delegations.map((d) => (d.id === id ? { ...d, ...patch } : d)),
   })),
   removeDelegation: (id) => set((s) => ({ delegations: s.delegations.filter((d) => d.id !== id) })),
+
+  addMoc: (m) => set((s) => ({ mocs: [m, ...s.mocs] })),
+  updateMoc: (id, patch) => set((s) => ({
+    mocs: s.mocs.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+  })),
+  removeMoc: (id) => set((s) => ({ mocs: s.mocs.filter((m) => m.id !== id) })),
+
+  addDdsType: (d) => set((s) => ({ ddsTypes: [d, ...s.ddsTypes] })),
+  updateDdsType: (id, patch) => set((s) => ({
+    ddsTypes: s.ddsTypes.map((d) => (d.id === id ? { ...d, ...patch } : d)),
+  })),
+  removeDdsType: (id) => set((s) => ({ ddsTypes: s.ddsTypes.filter((d) => d.id !== id) })),
 }))

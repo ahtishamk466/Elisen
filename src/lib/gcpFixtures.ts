@@ -1,4 +1,4 @@
-import type { Delegation, Discipline, Foc, Regulation, RegulationGroup, RegulationGroupSection, Subpart, Subsection } from '@/types/gcp'
+import type { Delegation, DdsType, Discipline, Foc, Moc, Regulation, RegulationGroup, RegulationGroupSection, Subpart, Subsection } from '@/types/gcp'
 
 /**
  * The regulation rows the client showed from the legacy Regulation list, taken
@@ -1515,4 +1515,50 @@ export const DELEGATIONS: Delegation[] = [
   { id: 'delegation-718', sectionRoot: '23.1583', focCode: 'DAR 386', limitation: true, active: true },
   { id: 'delegation-719', sectionRoot: '23.1585', focCode: 'DAR 386', limitation: true, active: true },
   { id: 'delegation-720', sectionRoot: 'AWM 516', focCode: 'DAR 386', limitation: false, active: true },
+]
+
+/**
+ * The client's MOC (Means of Compliance) list, from
+ * dev.elisen.com/moc/index — every Code, Title and Description exactly as
+ * the legacy screen shows them, all 16 of 16 rows. No personal data here,
+ * so nothing was substituted, and the legacy list carries no Active flag.
+ */
+export const MOC_LIST: Moc[] = [
+  { id: 'moc-1', code: '-', title: '-', description: 'Placeholder / TBD' },
+  { id: 'moc-2', code: 'A', title: 'Analysis', description: 'Analysis, Calculation and Mathematical Models (including)' },
+  { id: 'moc-3', code: 'DR', title: 'DESIGN REVIEW', description: 'Design Review based on drawings, schematics, specifications or descriptions' },
+  { id: 'moc-4', code: 'ELOS', title: 'ELOS', description: 'Equivalent Level of Safety Finding' },
+  { id: 'moc-5', code: 'EX', title: 'EXEMPTION', description: 'Petition for Exemption to all or part of the requirement is applied, subject to TCCA approval.' },
+  { id: 'moc-6', code: 'FT', title: 'FLIGHT TEST', description: 'Flight testing on actual airplane (airplane moving under its own power during test)' },
+  { id: 'moc-7', code: 'GT', title: 'GROUND TEST', description: 'Ground Testing on actual airplane (airplane stationary during test)' },
+  { id: 'moc-8', code: 'I', title: 'INSPECTION (Installation Evaluation)', description: 'Inspection of actual conformed article (airplane modification or component)' },
+  { id: 'moc-9', code: 'N', title: 'NOTED', description: 'Election of methods and factors, definitions, recorded statements. No demonstration of compliance necessary.' },
+  { id: 'moc-10', code: 'NAF', title: 'NOT AFFECTED', description: 'Qualitative Assessment to confirm modification does not have an influence or impact upon compliance to the regulation.' },
+  { id: 'moc-11', code: 'NC', title: 'NO CHANGE', description: 'Qualitative Assessment to confirm no technical change in the specific area that could affect compliance to the regulation' },
+  { id: 'moc-12', code: 'P', title: 'PUBLICATION', description: 'Publication of a document (E.g. AMFS, ICA, etc...)' },
+  { id: 'moc-13', code: 'R', title: 'REFERENCE', description: 'Reference to approved or accepted standard, source of data, or method (E.g. TSO, etc.)' },
+  { id: 'moc-14', code: 'S', title: 'STATEMENT', description: 'Statement alone.' },
+  { id: 'moc-15', code: 'T', title: 'FUNCTIONAL TEST', description: 'Bench, laboratory, component, functional, and rig testing (E.g. Static fatigue, Iron Bird, etc…, on or off of Aircraft or Aircraft not fully conformed)' },
+  { id: 'moc-16', code: 'N/A', title: 'Not Applicable', description: 'An argument or analysis demonstrating that the standard is not applicable to the area of change' },
+]
+
+/**
+ * The client's DDS Type list, from dev.elisen.com/dds/index — every Type
+ * exactly as the legacy screen shows it. Page 1 of 2 (10 of 11 rows); the
+ * portal now requires a login the app is never allowed to perform (see
+ * docs/PROJECT_HANDOFF.md), so the 11th row (page 2) is not yet imported —
+ * flagged to the user rather than invented. `ddsText` starts empty for
+ * every row: the legacy list has no text column to import from.
+ */
+export const DDS_TYPES: DdsType[] = [
+  { id: 'dds-1', type: '', ddsText: '' },
+  { id: 'dds-2', type: 'PR language from amdt 23-63', ddsText: '' },
+  { id: 'dds-3', type: 'Accepted ASTM', ddsText: '' },
+  { id: 'dds-4', type: 'Combination of Amdt 23-63 Text & Accepted ASTM', ddsText: '' },
+  { id: 'dds-5', type: 'Applicant Proposed Alternative or Additional DDS', ddsText: '' },
+  { id: 'dds-6', type: 'Published ASTM', ddsText: '' },
+  { id: 'dds-7', type: 'Accepted ASTM and Applicant Proposed Additional DDS', ddsText: '' },
+  { id: 'dds-8', type: 'Published ASTM & Applicant Proposed Additional DDS', ddsText: '' },
+  { id: 'dds-9', type: 'Administrative regulation that does not require DDS', ddsText: '' },
+  { id: 'dds-10', type: 'Not applicable', ddsText: '' },
 ]

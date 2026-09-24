@@ -3,6 +3,7 @@ import { CalendarRange, CircleDashed, SearchX, SlidersHorizontal } from 'lucide-
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useTableSort } from '@/components/patterns/useTableSort'
+import { useSyncedScroll } from '@/components/patterns/useSyncedScroll'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 
@@ -160,31 +161,56 @@ function PreviewTable({ result }: { result: ReportResult }) {
     [result.columns],
   )
   const { sorted, sort, setSort } = useTableSort(result.rows, accessors)
+  const { headerRef, onBodyScroll } = useSyncedScroll()
+
+  const tableWidth = result.columns.length * 120
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto">
-      <table className="w-full border-collapse text-left" style={{ minWidth: result.columns.length * 120 }}>
-        <caption className="sr-only">{result.title} preview</caption>
-        <thead>
-          <tr className="border-b border-border-default bg-neutral-50">
-            {result.columns.map((c, i) => (
-              <SortableTh key={c} sortKey={String(i)} sort={sort} onSortChange={setSort}
-                className="sticky top-0 z-sticky whitespace-nowrap bg-neutral-50 px-lg py-base text-xs font-semibold text-text-secondary">
-                {c}
-              </SortableTh>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((row, ri) => (
-            <tr key={ri} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
-              {row.map((v, ci) => (
-                <td key={ci} className="px-lg py-lg align-top text-sm text-text-primary">{v}</td>
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Frozen header, own table, full width — a scrollbar never runs
+          alongside a table's header (docs/COMPONENTS.md). */}
+      <div ref={headerRef} className="shrink-0 overflow-x-hidden overflow-y-scroll scrollbar-none">
+        <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: tableWidth }}>
+          <colgroup>
+            {result.columns.map((c) => <col key={c} style={{ width: 120 }} />)}
+            {/* Soaks up whatever's left past `tableWidth` on a wide screen
+                instead of leaving it as dead space (client instruction,
+                2026-09-24) — the real columns keep their own explicit
+                widths either way. */}
+            <col />
+          </colgroup>
+          <thead>
+            <tr className="border-b border-border-default bg-neutral-50">
+              {result.columns.map((c, i) => (
+                <SortableTh key={c} sortKey={String(i)} sort={sort} onSortChange={setSort}
+                  className="whitespace-nowrap bg-neutral-50 px-lg py-base text-xs font-semibold text-text-secondary">
+                  {c}
+                </SortableTh>
               ))}
+              <th aria-hidden className="bg-neutral-50" />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+        </table>
+      </div>
+      <div className="min-h-0 flex-1 overflow-x-auto overflow-y-scroll scrollbar-none" onScroll={onBodyScroll}>
+        <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: tableWidth }}>
+          <caption className="sr-only">{result.title} preview</caption>
+          <colgroup>
+            {result.columns.map((c) => <col key={c} style={{ width: 120 }} />)}
+            <col />
+          </colgroup>
+          <tbody>
+            {sorted.map((row, ri) => (
+              <tr key={ri} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
+                {row.map((v, ci) => (
+                  <td key={ci} className="px-lg py-lg align-top text-sm text-text-primary">{v}</td>
+                ))}
+                <td aria-hidden />
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useTableSort } from '@/components/patterns/useTableSort'
+import { useSyncedScroll } from '@/components/patterns/useSyncedScroll'
 import { Badge } from '@/components/ui/Badge'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { Delegation } from '@/types/gcp'
@@ -19,6 +20,8 @@ const COLUMNS: { label: string; sort: SortKey; style?: CSSProperties }[] = [
   { label: 'Limitation', sort: 'limitation', style: { width: 130 } },
   { label: 'Active', sort: 'active', style: { width: 100 } },
 ]
+const ACTIONS_WIDTH = 64
+const TABLE_WIDTH = COLUMNS.reduce((sum, c) => sum + (c.style?.width as number), 0) + ACTIONS_WIDTH
 
 export interface GcpDelegationTabProps {
   /** The page header's "Add Delegation" button controls this drawer — see
@@ -56,6 +59,7 @@ export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpD
     limitation: (d) => d.limitation,
     active: (d) => d.active,
   })
+  const { headerRef, onBodyScroll } = useSyncedScroll()
 
   return (
     <div className="grid gap-lg">
@@ -68,21 +72,50 @@ export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpD
           />
         </div>
       ) : (
-        <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-          <div className="max-h-[600px] overflow-auto">
-            <table className="w-full border-collapse text-left">
-              <caption className="sr-only">Delegations</caption>
+        <div className="flex flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+          {/* Frozen header, own table, full width — a scrollbar must never
+              run alongside a table's header (client instruction,
+              2026-09-24). Sort controls are real, interactive `SortableTh`s,
+              so they stay in this one visible header rather than a hidden
+              duplicate; the body below carries no header of its own. */}
+          <div ref={headerRef} className="shrink-0 overflow-x-hidden overflow-y-scroll scrollbar-none">
+            <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
+              <colgroup>
+                {COLUMNS.map((c) => <col key={c.label} style={c.style} />)}
+                <col style={{ width: ACTIONS_WIDTH }} />
+                {/* Soaks up whatever's left of the container past
+                    `TABLE_WIDTH` — every other column above has an explicit
+                    width and stays exactly that width regardless (`table-
+                    fixed` only ever redistributes into columns *without*
+                    one), so a screen wider than the table's real content no
+                    longer leaves that leftover as dead space to the card's
+                    right (client instruction, 2026-09-24). On a narrow
+                    screen this column has nothing to give and just
+                    disappears, same as before. */}
+                <col />
+              </colgroup>
               <thead>
-                <tr className="sticky top-0 border-b border-border-default bg-neutral-50">
+                <tr className="border-b border-border-default bg-neutral-50">
                   {COLUMNS.map((c) => (
                     <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
-                      style={c.style} className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">
+                      className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">
                       {c.label}
                     </SortableTh>
                   ))}
-                  <SortableTh style={{ width: 64 }} className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
+                  <SortableTh className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
+                  <th aria-hidden />
                 </tr>
               </thead>
+            </table>
+          </div>
+          <div className="max-h-[600px] overflow-x-auto overflow-y-scroll scrollbar-none" onScroll={onBodyScroll}>
+            <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
+              <caption className="sr-only">Delegations</caption>
+              <colgroup>
+                {COLUMNS.map((c) => <col key={c.label} style={c.style} />)}
+                <col style={{ width: ACTIONS_WIDTH }} />
+                <col />
+              </colgroup>
               <tbody>
                 {sorted.map((d) => (
                   <tr key={d.id} className="border-b border-border-default last:border-b-0">
@@ -104,6 +137,7 @@ export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpD
                         ]}
                       />
                     </td>
+                    <td aria-hidden />
                   </tr>
                 ))}
               </tbody>

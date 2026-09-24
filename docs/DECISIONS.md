@@ -5969,3 +5969,855 @@ of the existing "Tabbed page layout" rule (docs/COMPONENTS.md and the
 `feedback_tabbed_page_layout` memory), not a separate one — the two
 reference screens (Roles & Permissions, Aircraft) together define the full
 shape now.
+
+## 2026-09-24 — Reference Lists' MOC tab goes live, real legacy data
+
+**Context:** The client sent screenshots of `dev.elisen.com/moc/index`
+(pages 1-2, 16 rows total) and the `moc/create` form, and asked for the MOC
+tab of Reference Lists — until now a `GcpTabPanel` placeholder — to be built
+with that real data, following the "Tabbed page layout" standard already
+established on `GcpPeoplePage`.
+
+**Choice:** New `Moc` type (`types/gcp.ts`): Code, Title, Description only —
+the legacy `moc` table and its create screen carry no Active flag, so one
+wasn't invented for it. All 16 rows imported byte-for-byte into
+`MOC_LIST` (`gcpFixtures.ts`) from the screenshots; no personal data on this
+list, so nothing needed anonymizing (same as `DISCIPLINES`). `useGcpStore`
+gained `mocs` + `addMoc`/`updateMoc`/`removeMoc`, matching the Discipline
+CRUD shape exactly. `GcpMocTab`, `MocDrawer` (create/edit) and
+`MocDetailDrawer` (view) are direct copies of `GcpDisciplineTab`'s shape,
+swapping the three Discipline fields for Code/Title/Description and
+dropping the Active column since the source data has none.
+
+`GcpReferencePage` now follows "Tabbed page layout" fully rather than
+rendering both tabs through `GcpTabPanel`: the header search box and "Add
+MOC" button only render when the MOC tab is active (`active.addLabel` is
+`null` for DDS), and the MOC tab pill carries its row count (16). DDS stays
+exactly as it was — a bare `GcpTabPanel` placeholder with no header
+controls, per the standing rule that a tab with no working create flow
+shows no Add button. Its own data (the legacy DDS Type list, 11 options)
+remains unimported — still flagged in the Open Questions section of
+`docs/PROJECT_HANDOFF.md`.
+
+## 2026-09-24 — Reference Lists' DDS tab goes live; legacy portal now requires login; a security fix on the way there
+
+**Context:** Following the MOC tab, the client sent screenshots of
+`dev.elisen.com/dds/index` (page 1 of 2, 11 rows total) and asked for the
+DDS tab built with a specific shape: table columns DDS Type / DDS Text /
+Actions, and a 2-field Add form (Type, plus the rich-text field the app
+already uses for DDS Text on `FlowStepPlan`'s Compliance Plan step). This
+also closes part of the Open Question flagged in `docs/PROJECT_HANDOFF.md` —
+`FlowStepPlan`'s DDS Id field has only ever had 4 of the legacy list's real
+options hard-coded in.
+
+**Choice:** New `DdsType` type (`types/gcp.ts`): `type` + `ddsText` only —
+no Active flag, per the client's own 3-column spec, even though the legacy
+`dds` table does carry one (a deliberate deviation from the source screen,
+flagged here rather than silently matched or silently dropped). `ddsText`
+itself is new relative to the legacy list, which has no text column at all;
+every imported row starts with an empty one, since there is nothing to
+import it from.
+
+Tried to fetch the list's second page directly (`dev.elisen.com/dds/index?
+page=2`) to get the true 11th row instead of guessing it — the portal now
+redirects to a login page. Per the hard rule in `docs/PROJECT_HANDOFF.md`
+("never type a password into any login form on this portal, no exception"),
+the fetch stopped there. `DDS_TYPES` ships with the 10 rows the screenshot
+shows; the 11th is flagged in its own comment as missing, not invented.
+
+**Security course-correction, caught before it shipped:** the first draft
+of `DdsTypeDetailDrawer` rendered a DDS type's stored HTML with
+`dangerouslySetInnerHTML`, which `docs/SECURITY.md` rule 3 flatly
+prohibits ("propose a sanitization approach and wait for approval" — never
+just use it). Rather than pull in a new dependency (DOMPurify) without that
+proposal, both the View drawer and `GcpDdsTab`'s own table cell now reduce
+the stored HTML to plain text with `DOMParser().parseFromString(...).body
+.textContent` — the parsed document is never attached to the page, so
+nothing in it executes, and formatting is dropped only for the read-only
+preview; `DdsTypeDrawer`'s own edit field still uses the full
+`RichTextEditor` for the real editing surface.
+
+`GcpMocTab` and `GcpDdsTab` are otherwise the reference tabs' shape exactly
+— same `createOpen`/`onCreateOpenChange` header-Add pattern, same
+View/Edit/Remove `ActionsMenu`. `GcpReferencePage` now runs the full
+"Tabbed page layout" standard on both tabs (search + Add in the header, a
+count pill per tab); the `GcpTabPanel` placeholder it used for DDS is no
+longer referenced from this page (still used elsewhere, e.g.
+`RegulationChecklistPage`).
+
+## 2026-09-24 — Scope Rules gets subpart tabs, so 412 rules read as named groups
+
+**Context:** The client sent a reference screenshot (a subpart tab strip —
+All / A – General / B – Flight / etc., each with a count, plus a "More"
+overflow) and said explicitly it was for the *idea* only — build it in this
+app's own UI style, not a visual copy. The goal: picking which of the 412
+applicable rules a modification affects should read as "find the right
+category, then work down its list" instead of scanning one flat pool.
+Anything that doesn't land in a named category should collect in a shared
+"Other" tab rather than being scattered with no home.
+
+**Choice:** `FlowStepInitialize` (Step 3, Scope Rules) now renders a real
+`TableTabs` strip — the app's own component, not a new one — as the
+table's first child, matching how every other tabbed table in the app
+already reads (docs/COMPONENTS.md, "Tabbed page layout"'s sibling rule for
+one table sliced several ways). Tabs are built from whichever subparts this
+rule pool *actually uses*, not the full 22-row Subpart catalog (most of
+which is inactive/legacy-only): each active, non-placeholder subpart with
+at least one rule gets a tab, sorted by the subpart's own `sort` field,
+labelled `${code} — ${titleCaseName(description)}`. A rule whose subpart is
+the `-` / TBD placeholder, inactive, or not in the catalog at all has
+nowhere named to go, so all of those collect in one "Other" tab (42 of 412
+on this project's basis) instead of each getting a one-off tab or silently
+vanishing. `All` stays first and always shows the full count.
+
+Switching tabs filters the table (composes with the existing search, tab
+first then query) but never touches which rules are checked — a reader can
+mark rules in one subpart, look at another, and come back without losing
+anything. The header's own count line ("N in this view · N applicable") now
+scopes to the active tab + search rather than the whole 412-row pool,
+correcting it to the existing app-wide "stats describe what's on screen"
+rule (docs/COMPONENTS.md) at the same time — it had been reading the whole
+pool's total against the whole pool's checked count regardless of what the
+table below was actually showing. The footer's "Create plan from N affected
+rules" stays deliberately unscoped — it always reflects every checked rule
+across every subpart, since that's what actually gets written to the plan.
+
+## 2026-09-24 — 'GCP Projects' hidden from the sidebar
+
+**Context:** The client asked for the `GCP Projects` child item removed
+from the sidebar under `GCP`.
+
+**Choice:** Same treatment as `Work Packages` (already in `AppShell.tsx`'s
+`NAV`, same reasoning documented there): the label was dropped from the
+`GCP` entry's `children` array, not deleted. `/gcp/projects`,
+`/gcp/projects/:id`, `GcpProjectsPage.tsx`, `GcpProjectWorkspace.tsx` and
+the `CHILD_ROUTES` entry are all untouched and still directly reachable —
+`Certification Flow`'s own Step 1 project picker is the nav path into GCP
+work now. Re-adding the sidebar entry is a one-line change (put `'GCP
+Projects'` back in the `children` array) if the client wants it back.
+
+## 2026-09-24 — Certification Basis' Section and Amdt fields cascade
+
+**Context:** The client walked through four cases for `FlowStepBasis`'s two
+`MultiSelect`s: (1) nothing picked in Section → Amdt shows every amendment
+in the pool; (2) picking an Amdt first should auto-fill its parent
+section(s) into Section, so the system figures out the link rather than
+making the reader look it up too; (3) one Section picked → Amdt narrows to
+only that section's amendments; (4) two Sections picked → Amdt shows the
+union of both. Both fields were asked to stay searchable and multi-select.
+
+**Choice:** `amdtOptions` now derives from the regulation pool filtered by
+whichever sections are selected (empty selection = the whole pool, so case
+1 falls out of the same formula as 3/4 rather than needing a special
+case). `handleSectionsChange` additionally prunes any already-selected
+amdt that the new section set no longer covers, so the field never holds
+an invisible selection the narrowed dropdown doesn't offer any more.
+
+Section's own options are deliberately **not** narrowed by Amdt in the
+reverse direction — that would set up a ping-pong (each field re-narrowing
+the other on every change). Instead `handleAmdtsChange` auto-fills Section
+directly, and only once: when Section is still empty at the moment an Amdt
+is picked, it computes every section that amdt actually belongs to (real
+data can be many-to-many — 23-10 alone spans three-plus sections here) and
+sets Section to exactly that set. Once Section holds anything — auto-filled
+or picked by hand — further Amdt changes stop touching it, so the reader's
+own later edits are never silently overwritten.
+
+Both fields were already `MultiSelect` (search past 5 options, multi-pick)
+before this change; nothing new was needed there, it was already the
+existing behavior.
+
+## 2026-09-24 — Certification Flow: heading size, tighter copy, Back arrows
+
+**Context:** Three flagged screenshots (Project, Certification Basis, Scope
+Rules steps) — the client asked for every step heading above a table/form
+in the GCP module to share one font size (16px, semibold), and for the
+one-line description under every heading and field to read short, to the
+point, and clearly understandable. A follow-up message, mid-turn, asked
+for every "Back" button in the flow to carry a leading arrow so it reads
+clearly as a back action.
+
+**Choice:** `FlowStepPlan`'s "Compliance plan" heading (`text-base
+font-semibold`, 16px) was already the right size — every other step
+(`FlowStepProject`, `FlowStepBasis`, `FlowStepInitialize`,
+`FlowStepReports`) was `text-sm` (14px) and is now brought up to match.
+Descriptions were tightened at the same time, one clause each: "Certification
+planning is done one Transport Canada project at a time." →
+"Choose one Transport Canada project to plan certification for.";
+"Pick the regulations to attach, by section and amendment." → "Scope
+which regulations apply, by section and amendment."; "Check the rules this
+modification affects, then create the plan." → "Check every rule this
+modification affects, then create the plan."; "The affected rules for this
+project, planned one at a time." (a sentence fragment, no verb) →
+"Plan each affected rule's compliance, one at a time."; "Generate a report
+for this project by entering its parameters." → "Pick a report, then enter
+its parameters to generate it." `FlowStepPlan`'s description also dropped
+from `text-sm` to `text-xs`, the size every sibling step already used — it
+had been the one inconsistent size in the set.
+
+Every "Back" button across the five steps (`FlowStepBasis`,
+`FlowStepInitialize`, `FlowStepPlan` ×2, `GcpFlowPage`'s own step-5 Back)
+now carries `leadingIcon={<ArrowLeft size={16} />}`, matching the `ArrowLeft`
+already used on "Back to all projects" above the stepper. Step 1
+(`FlowStepProject`) has no Back button — nothing precedes it.
+
+## 2026-09-24 — Certification Flow's project picker: heading, column rename, column widths
+
+**Context:** Three small requests on `FlowStepProject` (step 1): rename the
+heading to "All Projects" with a visible total count; rename the "Elisen
+Project" column to "Elisen Project #"; and take 10px each off the
+Applicable and Affected columns, giving the 20px to Status.
+
+**Choice:** Heading is now "All Projects" with a count pill beside it in
+the same style `TableTabs` already uses for a tab's own count
+(`bg-neutral-100`, `text-xs font-medium`) — bound to `sorted.length`, so it
+follows the search box as it narrows rather than always showing the
+unfiltered total, matching the app's "stats describe what's on screen"
+rule. Column header renamed to "Elisen Project #". Widths: Applicable
+110px→100px, Affected 100px→90px, Status 170px→190px — exactly the 20px
+moved, nothing else touched.
+
+## 2026-09-24 — Compliance Plan: "Reg" not "Regulation", and no count on an empty GCP Data table
+
+**Context:** Two small requests on Step 4. The Prev/Select/Next nav's
+"Regulation N of M" label should abbreviate to "Reg N of M". And the GCP
+Data section's "Total N items." line, which sat beside the Add button even
+at zero, shouldn't show anything there when the table is empty — it's
+never a long enough list to need a running total in the first place.
+
+**Choice:** `GcpFlowPage`'s nav label now reads "Reg {n} of {m}". `FlowStepPlan`'s
+"Total N items." text now only renders when `currentItems.length > 0` — an
+empty GCP Data table shows just the Add GCP Data button, nothing beside it;
+the count returns once there's at least one row to describe.
+
+## 2026-09-24 — Subpart code badges: capped to 2 characters, fully round
+
+**Context:** `RegulationStructurePage`'s subpart code badge (`bg-accent-subtle`
+disc, the same visual pattern as `Avatar`'s initials disc) is a fixed-size
+circle sized for one or two characters. Most subpart codes are one letter,
+but a few (`AWO`, `APP`) run three, which stretched the fixed box into a
+pill instead of a circle — visibly different from every other badge in the
+same list. The client also asked for more corner rounding on this badge —
+it read closer to a rounded square than a circle.
+
+**Choice:** New `initialsOf()` helper (`lib/gcpDisplay.ts`) caps a code at
+2 characters for display in this badge only (`AWO` → `AW`, `APP` → `AP`) —
+the stored code, every label, and the `sr-only` text next to it are
+untouched; only the disc's own text was too long for its shape. Radius
+went from `rounded-sm` to `rounded-full` — not an arbitrary "+4px": this
+badge is functionally the same `bg-accent-subtle` + accent-initials pattern
+`Avatar` already uses app-wide, and `Avatar` is `rounded-full`, so this
+brings it in line with that existing convention rather than inventing a
+new radius value outside the token scale (CLAUDE.md rule 4 — semantic
+tokens only). Applied to both sizes of the badge — the 24px rail entry and
+the 40px selected-subpart header.
+
+## 2026-09-24 — App-wide thin scrollbars, neutral-300
+
+**Context:** The client shared a video reference and asked for every
+horizontal and vertical scrollbar across the whole app — tables, rails,
+drawers, the sidebar nav, everywhere — to go from the browser's default
+width down to 4px, colored with the blue-neutral ramp's `neutral-300`.
+
+**Choice:** A global rule in `globals.css`'s base layer, on the universal
+selector (`*`) rather than a class added to each scroll container — scroll
+regions are spread across dozens of tables, drawers and rails app-wide, so
+a class-based opt-in would have meant touching every one of them for the
+same result. `scrollbar-width: thin` + `scrollbar-color` cover Firefox;
+`::-webkit-scrollbar{width,height:4px}` plus a `neutral-300` thumb
+(`neutral-400` on hover) with a transparent track cover WebKit/Chromium.
+`.scrollbar-none` (`TableTabs`'s own hidden-scrollbar strip) still wins
+where a scrollbar must stay fully invisible — a class selector outranks
+the `*` wildcard on specificity regardless of source order, verified this
+still holds. Radius on the thumb uses the existing `--radius-full` token,
+not a new arbitrary value.
+
+## 2026-09-24 — Scrollbar follow-up: sidebar hidden, thumb capped to 40px
+
+**Context:** Right after the app-wide thin-scrollbar pass, the client
+flagged the sidebar nav specifically — its scroll content barely overflows,
+so the thumb rendered nearly the full height of the nav, reading as a
+permanent decorative blue line rather than a scroll affordance. Two asks:
+the side nav shouldn't show a scrollbar at all, and everywhere else the
+thumb should cap at a short 40px pill instead of scaling to however much
+of the track the visible-content ratio happens to produce.
+
+**Choice:** `AppShell`'s sidebar `<nav>` gained `scrollbar-none` (the same
+class `TableTabs` already uses) — it still scrolls by wheel and keyboard,
+it simply never shows the bar. The global thumb rule
+(`*::-webkit-scrollbar-thumb`) gained `min-height`/`max-height` and
+`min-width`/`max-width` all set to 40px: `max-*` caps a thumb that would
+otherwise run long on a container that barely scrolls, `min-*` keeps it
+a draggable 40px even on a very long list (Delegation's 720 rows) where
+the proportional thumb would otherwise shrink well under that. Verified at
+1280px that the sidebar's line is gone and a 720-row table's thumb renders
+as a short pill rather than spanning most of the track.
+
+## 2026-09-24 — GCP module descriptions: introductory, "TCCA project" throughout
+
+**Context:** The client flagged `FlowStepProject`'s "Choose one Transport
+Canada project to plan certification for." as unclear, and asked for two
+things across the whole GCP module: use the term "TCCA project"
+consistently (not "Transport Canada project"), and make every description
+line read as an introduction — what this screen holds, not an instruction
+to carry out.
+
+**Choice:** Reworded every page-level description and each Flow step's own
+sub-heading description from an imperative ("Choose...", "Check...",
+"Scope...", "Pick...") to a short noun-phrase introduction:
+`FlowStepProject` → "The TCCA project this certification plan is built
+for."; `FlowStepBasis` → "The regulations this project's certification
+basis is built from."; `FlowStepInitialize` → "The rules this modification
+affects, marked one by one."; `FlowStepPlan` → "Each affected rule's
+compliance plan, one at a time." (both branches); `FlowStepReports` → "The
+reports available for this TCCA project."; `GcpProjectsPage` → "Every TCCA
+project, and how far its certification planning has gotten."；
+`GcpReportsPage` → "The reports available across every TCCA project.";
+`GcpCertBasesPage`'s bases-list description trimmed from three clauses to
+one: "Aircraft models and project-specific bases, each with its own rule
+set." (the FAA-export detail moved out — implementation detail, not part of
+what a reader needs to understand the list). The four Regulations/
+Structure/Groups/Checklist tabs already shared one short, clear line ("The
+rule library shared by every certification basis.") and needed no change.
+Every remaining "Transport Canada project" instance in the GCP module is
+now "TCCA project".
+
+## 2026-09-24 — Certification Basis table: a section alone is a pending row, not a full amdt dump
+
+**Context:** With only a Section picked and no Amdt yet, the table was
+showing every regulation under that section at every amendment — a section
+alone doesn't identify one regulation to attach, it identifies a whole
+family of them, so this looked like a real, ready-to-attach basis before
+the reader had actually decided anything. The client's ask: with a section
+picked and no amdt, show one row per selected section with Amdt reading
+"Not selected yet"; once amdt(s) are picked, replace those with the real
+matched rows.
+
+**Choice:** `matched` (the real, attachable set — what `attachAndContinue`
+actually saves) now requires **both** `sections` and `amdts` non-empty;
+a section with no amdt yet contributes nothing to it. A new
+`pendingSections` holds the sections still waiting on an amdt, rendered as
+placeholder rows (Amdt column: "Not selected yet", muted) ahead of any real
+matched rows in the same table — no separate empty state needed, since the
+table itself carries both states now. The Attach button stays correctly
+disabled while only pending rows show, since `matched.length` is still 0.
+
+Verified live: picking "23.1" alone shows one pending row and a disabled
+Attach button; picking "23-10" from the now-narrowed Amdt list replaces it
+with the real matched rows (2, since the data genuinely has two Regulation
+records at that exact section+amdt — same duplication visible in the
+project's very first Certification Basis screenshot this session, not new).
+
+## 2026-09-24 — New standing rule: scrollbar never runs alongside a table header; thumb bumped to 50px
+
+**Context:** On Scope Rules, the scrollbar for the internally-scrolling
+regulation table ran the full height of its box — alongside the `TableTabs`
+strip and the table header too, not just the data rows — because both sat
+inside the one `overflow-auto` box a `sticky top-0` thead lives in. The
+client asked for this fixed everywhere it occurs, framed explicitly as a
+standing rule to remember for all future table-building, not just this one
+screen. Separately: the scrollbar thumb, capped to 40px earlier today, was
+judged too small once seen live — bumped to 50px.
+
+**Choice:** `FlowStepInitialize` and `GcpDelegationTab` (the app's two
+internally-scrolling, `TableTabs`-adjacent or long-list tables) now split
+into a frozen, non-scrolling header table (full width, `table-fixed`,
+`paddingRight: 4` to match the body's scrollbar gutter) and a separately
+`overflow-auto` body table below it, sharing a `<colgroup>` so columns stay
+aligned. Interactive header controls (the select-all checkbox, sort
+buttons) stay in the one visible header rather than a hidden duplicate;
+the trade-off — the scrolling table's cells lose native header association
+across the two-table boundary — is deliberate and documented, not a silent
+regression, and every row's own control already carries a full
+`aria-label` regardless. Logged as a full standing rule in
+docs/COMPONENTS.md ("A scrollbar never runs alongside a table's header or
+a tab strip") so it's applied to every future table with a bounded scroll
+frame. `FlowStepProject` and `ReportDetailPanel` still use the old
+single-table shape and are noted there as known, not-yet-fixed cases —
+same pattern, lower traffic, left for a follow-up rather than expanding
+this pass further. Scrollbar thumb: `min/max-height` and `min/max-width`
+on `*::-webkit-scrollbar-thumb` raised from 40px to 50px.
+
+## 2026-09-24 — TableTabs: fade + scroll arrow when a strip overflows
+
+**Context:** GCP's subpart tab strip (Scope Rules) can run wider than the
+viewport with nothing telling the reader more tabs exist off-screen —
+it just stopped at the edge with no visual cue. The client asked for a
+fade-out edge plus a clickable arrow, defaulting to the right (there's more
+ahead, nothing behind yet); once scrolled to the true end, the right
+fade/arrow should drop and the left one take over instead.
+
+**Choice:** Built into `TableTabs` itself, not a one-off on the GCP screen
+— every tabs-over-a-table screen in the app shares this component, so the
+fix applies everywhere at once. A scroll listener (plus a `ResizeObserver`
+for when the tab set itself changes) tracks `canScrollLeft`/
+`canScrollRight` against the strip's actual `scrollLeft`/`scrollWidth`.
+Each edge, when scrollable in that direction, gets a `pointer-events-none`
+gradient (`from-neutral-25 to-transparent`, matching the card's own white
+background) with a small round `pointer-events-auto` arrow button inside
+it that pages the strip by 80% of its own width on click. Both edges can
+show at once in the middle of a long strip; at the very start only the
+right one shows, and at the very end only the left — verified live by
+paging through GCP's own subpart tabs end to end.
+
+## 2026-09-24 — Frozen-header fix extended to every remaining table; thumb 30% of 50px; saved to Storybook
+
+**Context:** The client caught the same scrollbar-over-header issue on
+`RegulationStructurePage`'s Subsections table (the header + rail carried
+over from an earlier "40px then 50px" scrollbar pass), pointed out the fix
+had only landed on two of the app's internally-scrolling tables, and asked
+for it applied everywhere and saved as a documented rule in Storybook — not
+repeated as a one-off fix per screen. Also asked the scrollbar thumb, 50px
+as of the last pass, reduced to 30% of that.
+
+**Choice:** Every remaining internally-scrolling table with its own
+`overflow-auto`/`max-h-[…]` frame and a `<thead>` inside it got the same
+frozen-header split as `FlowStepInitialize`/`GcpDelegationTab`:
+`RegulationStructurePage` (Subsections), `RegulationGroupsPage`
+(Regulation List), `AtaChaptersPage` (Sub chapters), `FlowStepProject`
+(the TCCA project picker), and `ReportDetailPanel` (the generic report
+preview, dynamic column count handled with a shared 120px-per-column
+`<colgroup>`). `PersonProjectPanel`'s table was checked and left alone —
+its `overflow-auto` belongs to the whole page-scrolling panel (several
+stacked cards), not a bounded table box, so it was never actually the
+violation. The three rail nav lists sharing this page (Subpart, ATA
+chapter, Regulation group) were also checked and were already correct —
+their header row already sits outside the scrolling list, unrelated to
+this pass.
+
+**A real bug surfaced and got fixed along the way:** `table-fixed` (needed
+for the frozen header's `<colgroup>` to stay pixel-aligned with the body)
+requires every column to have an explicit width — a column left flexible
+collapses to a few px once its siblings' widths already sum past the
+table's own `minWidth`. `FlowStepProject`'s "Project Description" column
+did exactly that (verified via the rendered DOM: 4px wide, sum of the other
+seven columns already at 970px against a 960px `minWidth`). Fixed by giving
+it an explicit 280px width and deriving `TABLE_WIDTH` from the real column
+sum instead of a hand-typed number that had drifted out of sync with an
+earlier width edit this same session.
+
+Scrollbar thumb: 50px → 15px (30% of 50, per instruction), same
+`min/max-height`/`min/max-width` mechanism on `*::-webkit-scrollbar-thumb`.
+
+**Saved as a Storybook regression guard**, not just a DECISIONS.md entry —
+`Patterns/Overview` → `FrozenTableHeaderExample`, a live scrollable demo
+plus the full rule written up in its doc comment (the two-table split,
+shared `<colgroup>`, `paddingRight: 4` gutter match, every column needing
+an explicit width, interactive header controls staying in the one visible
+copy). Also added to docs/COMPONENTS.md's standing-rules section the same
+day this was first fixed; the Storybook story is the living, visual copy
+of that same rule.
+
+## 2026-09-24 — Fixed-length scrollbar pill stays inside tables, not on the whole page
+
+**Context:** The client confirmed the padding-hack removal fixed the
+Delegation table's scrollbar (now correctly short, matching FOC), then
+flagged that the same fixed 15px pill was also being forced onto the page
+scroller itself (`<main>`) — a hard length cap makes sense for a bounded
+table box showing 720 rows in a small frame, but on the one scroller
+carrying an entire page it made every page look identically "barely
+scrolled" regardless of how long it actually was, since the thumb never
+grew past 15px no matter the content.
+
+**Choice:** `main::-webkit-scrollbar-thumb` now overrides the bounded-box
+rule — `max-height`/`max-width: none` (a natural, proportional thumb again,
+the same as the browser default length calculation, just still thin and
+neutral-300), `min-height`/`min-width: 24px` (still can't shrink to
+unusable on a very long page). Every other scroll box in the app — tables,
+rails, drawers — keeps the fixed 15px pill from the earlier pass, since
+that's genuinely the right shape for "a small box holding far more rows
+than it shows." Verified live: Delegation's 720-row table still shows the
+short pill; the Projects List page (793 rows, `main` genuinely
+long-scrolling) now shows a proportionally longer thumb.
+
+## 2026-09-24 — Cert Bases goes live: master–detail, Regulations library actions reused
+
+**Context:** `GcpCertBasesPage` was still a `GcpTabPanel` placeholder. The
+client sent the legacy `Cert Basis - List` screen (14,238 rows, a flat
+table repeating every basis's identity on every row) and asked for it
+rebuilt with a specific column set — Regulation Section, Regulation Amdt,
+Regulation Title, Status, Actions — a row `ActionsMenu` of View/Edit/Remove,
+and two header CTAs: **Add Cert Basis** (primary) and **Import** (secondary,
+with an icon).
+
+**Choice:** Built as the same master–detail shape `RegulationGroupsPage`
+and `AtaChaptersPage` already use — every basis on a rail (aircraft model +
+TCDS number, or "Project-specific" for one with none, plus its regulation
+count), the selected one's regulations at the right. This is why the
+column set doesn't repeat the basis's own identity per row the way the
+legacy flat table does — it's shown once, in the selected basis's own
+header, the same reasoning `RegulationStructurePage`'s subpart identity
+isn't repeated per subsection row either.
+
+Row actions reuse `RegulationDetailDrawer`/`RegulationDrawer` from the
+Regulations library **unchanged** — View and Edit open and edit the
+regulation's own global record, not a basis-specific copy of it. This is a
+deliberate, flagged exception to "global records are edited only in their
+home workspace" (Approvals/Documents/Aircraft's rule): unlike those, a
+Cert Basis regulation link carries no fields of its own to edit (no
+project-scoped tracking data), so there's nothing to edit *except* the
+regulation's own identity, and the client asked for Edit as one of the
+three row actions explicitly. **Remove** stays link-scoped — it drops the
+regulation from `regulationIds`, never deletes it from the pool, matching
+every other global-record removal in the app.
+
+New `CertBasisDrawer` (Aircraft Model + TCDS Number only — regulations
+attach separately) and `CertBasisImportDrawer` (a `FileDropzone`, matching
+`UploadBackupDrawer`'s exact shape) for the two header CTAs. Import has no
+real file parsing — this prototype has no backend — so it hands back a
+toast confirmation instead, the same "no export pipeline yet" pattern
+`GcpReportsPage`'s own download already uses; noted directly in the
+component's own doc comment so it isn't mistaken for a working import.
+
+Verified live end-to-end: created a basis via the drawer, separately
+attached real regulations to a different basis through the Certification
+Flow's own Certification Basis step (`saveBasis` is shared state between
+both), confirmed the table renders all five columns correctly with real
+data, and confirmed View, Edit and Remove each work as expected.
+
+## 2026-09-24 — Certification Flow's Step 1: no stepper, "Create GCP" CTA
+
+**Context:** The client sent the legacy `GCP - List` screenshot and asked
+for two things on the Certification Flow's project-picker step: a "Create
+GCP" CTA, top-right of the heading, and the `Stepper` removed from that
+specific screen — it should read as a plain landing table, with the wizard
+(and its stepper) only starting once a row is actually picked. Also
+confirmed the page and nav label should read "Certification Flow" — already
+true everywhere in the app (grepped for any stray "GCP Flow" text; none
+found), so no rename was actually needed.
+
+**Choice:** `Stepper` now renders conditionally on `step > 1` — step 1 is
+`FlowStepProject`'s table alone, nothing above it. A new **Create GCP**
+button (`headerActions`, step 1 only) opens a one-field drawer — a
+`SearchableSelect` of every TCCA project — whose "Continue" routes straight
+to step 2 (`go(2, { project: id })`), the same destination a table row's
+own "Start GCP"/"Continue GCP" action already leads to. It's a second entry
+point into the same flow, not a different one: nothing about how a project
+enters certification planning changed, only how you can reach step 2 —
+by clicking a row, or now also by picking one from this quick drawer.
+
+Verified live end-to-end: step 1 shows no stepper and the new CTA; opening
+the drawer, picking a project and continuing lands correctly on step 2
+with the stepper now visible and the picked project's summary card shown.
+
+## 2026-09-24 — Certification Basis table gets Regulation Title; Compliance Plan's GCP Data table gets a sticky Actions column
+
+Client sent the legacy `gcp` grid (Tcca Project #, Regulation Section/Amdt/Title, Discipline dsc, MOC Code, FOC Code, Deliverable #, Active) as a reference and asked for whichever columns are missing from the flow's own tables to be added, plus a reference screenshot of a right-pinned Actions column that stays put while a row's own data scrolls underneath it.
+
+Checked every table in `features/gcp/flow/`: `FlowStepInitialize` (Scope Rules) and `FlowStepPlan`'s GCP Data table already carry every field the legacy grid does (Section/Amdt/Title, DAO Specialty Code/MOC/FOC/Deliverable/Active) — the one real gap was `FlowStepBasis`'s matched-regulations table, Section and Amdt only, no Title. Added it. Tcca Project # and the DAO/MOC/FOC/Deliverable/Active fields weren't added anywhere new — they either don't apply yet at that step (a basis attaches a regulation, not a discipline's plan for it) or the project is already the one thing the whole screen is scoped to, so repeating it on every row would just be noise.
+
+For the sticky column: of the flow's tables, only two carry a real Actions column — `FlowStepProject`'s step-1 table (a `Button`, already inside the frozen-header pattern, low overflow risk at 1250px) and `FlowStepPlan`'s GCP Data table (`ActionsMenu`, plain `overflow-x-auto`, no fixed widths — the one actually reported). Gave the GCP Data table's Actions `<th>`/`<td>` `sticky right-0 z-sticky` with the row's own `bg` (`bg-neutral-50` header, `bg-neutral-25` body) so scrolled content doesn't show through, and `shadow-sm` (existing token, unused elsewhere in the app until now) for the "floats above the row" edge — same colors and borders as every other cell, per the client's own instruction to keep the reference screenshot's *mechanic*, not its style. Gave the other five columns `whitespace-nowrap` too, so long values actually widen the table into a real horizontal scroll instead of wrapping — otherwise there'd be nothing for the sticky column to demonstrate. Verified live at a narrow viewport: FOC Code/Deliverable #/Active scroll out of view under the Actions column while it stays pinned.
+
+Left `FlowStepProject`'s Action column alone — not reported, and its frozen-header split (a non-scrolling header `<table>` over a `overflow-auto` body) doesn't actually track horizontal scroll between the two tables today, so `sticky` there wouldn't behave correctly without first fixing that separately.
+
+## 2026-09-24 — DisciplineDrawer's Active field gets the standard help line
+
+Client's screenshot of "Add Discipline" flagged it against the app's own house style. The 4 fields and the `ActiveSelect` dropdown were already right (per FORM STANDARD, rule 9d) — what `DisciplineDrawer` was missing was the one-line help text every sibling GCP `ActiveSelect` field carries ("Inactive stays on old records, out of pickers." — `SubpartDrawer`, `SubsectionDrawer`, `RegulationGroupDrawer`, `RegulationDrawer`, plus the lookups drawers). Added it and dropped the stray `fullWidth` that no other Active field uses, so this drawer now matches the rest exactly.
+
+## 2026-09-24 — Certification Flow's step 1: one heading, search moved into the header
+
+Client's screenshot showed step 1 with two headings stacked: `GcpFlowPage`'s own "Certification Flow" title, then `FlowStepProject`'s own "All Projects" + count pill + description + search row directly under it — asked for one heading with the count alongside it, and the search brought up so more table rows fit in the viewport.
+
+Moved the count pill and description into `GcpFlowPage`'s `headerLeft` (replacing the default title only on step 1, same mechanism step 2+ already uses for "Back to all projects"), and the search `Input` into `headerActions` next to "Create GCP". `FlowStepProject` no longer owns search state or renders a heading — `query`/`onQueryChange` are now props from `GcpFlowPage`, which also computes the header's count pill with the same substring match `FlowStepProject` filters its rows by, so the pill narrows with the search exactly as it did before. Verified live: one heading, search working, filtered count updates, and the extra vertical space now fits an 11th row instead of 10 at the same viewport height.
+
+## 2026-09-24 — Step 1 table: merged Project column, retuned sequence and widths
+
+Client asked to merge TCCA Project # and Project Description into one column, tighten every column's width, and reorder to a sequence lifted from the legacy `gcp` grid: Elisen #, Regulation Section, Amdt, Regulation Title, Discipline, MOC, FOC, Deliverable #, Applicable, Affected, Opened, Status, Action.
+
+Tried the reference link they sent (dev.elisen.com/gcp/index) to double check the exact source columns — it requires a login I don't have, so left it alone rather than guessing at credentials. That reference sequence mixes two different grains: this table is one row per *TCCA project* (it's the entry point into the wizard, a row click starts/continues that project's plan), but Regulation Section/Amdt/Title, Discipline, MOC, FOC and Deliverable # are per-*regulation-item* fields — a project here can have many (this project alone shows 8 applicable rules), so there's no single value one project row could put in those columns. Confirmed with the client before building: keep one row per project, apply the merge/reorder/tighten to the fields that are actually project-level, drop the per-regulation fields from this table.
+
+Built: `TCCA Project` (merged, number on top / description underneath, one `<td>`), then Elisen Project #, Applicable, Affected, Opened, Status, Action — dropping the old separate Description column and swapping Status/Opened to match the client's order. Widths dropped from a 1250px total to 1080px (`TCCA Project` 260, Elisen Project # 170, Applicable 110, Affected 100, Opened 120, Status 170, Action 150). First pass at 120/90/80 for Elisen/Applicable/Affected made the sortable header buttons overflow into their neighbor's cell (`table-fixed` allocates each `<th>`'s width but doesn't clip content that doesn't fit it) — widened those three until the label + sort icon actually fit, verified live, no more bleed.
+
+## 2026-09-24 — "Certification Flow" renamed to "GCP Projects"; the old, superseded /gcp/projects page deleted
+
+Client asked to rename the "Certification Flow" nav tab/page to "GCP Projects" with a description along the lines of "choose a project to build the compliance plan."
+
+Found a real naming collision before renaming anything: `/gcp/projects` already existed as its own page (`GcpProjectsPage.tsx`, hidden from nav since — per a comment already in `AppShell.tsx` from earlier work — "Certification Flow's own project picker is the nav path into GCP work now"). It was the pre-flow TCCA-project picker (Project / Description / Opened / Status only, no Applicable/Affected), opening `GcpProjectWorkspace.tsx` per row — the *old* tab menu (Cert Basis / Cert Plan Initialize / Cert Plan / GCP / Reports) that `GcpFlowPage` was explicitly built to replace. Confirmed with the client: rename Certification Flow to "GCP Projects" and delete the old page rather than pick a different name.
+
+Deleted `GcpProjectsPage.tsx`, `GcpProjectWorkspace.tsx`, and the two components only it used — `GcpTabPanel.tsx`, `GcpReportsTab.tsx` (grepped first: no other file imported either). Removed their routes/imports from `App.tsx`; `/gcp` now redirects to `/gcp/flow` (was `/gcp/projects`), and `/gcp/projects` itself now redirects to `/gcp/flow` too, so an old bookmark still lands somewhere real instead of 404ing. Renamed the label everywhere: `AppShell`'s `CHILD_ROUTES`/`NAV` (dropping the now-obsolete "hidden from nav" comment, since there's nothing left to hide from), `GcpFlowPage`'s `activeChild`/`title`/step-1 heading/"Create GCP" drawer's `FormSection` title, and the step-1 description to "Choose a project to build its compliance plan." Verified live: `/gcp`, `/gcp/flow` and the old `/gcp/projects` bookmark all land on the renamed page; sidebar shows "GCP Projects" as the active item.
+
+**Process note:** mid-edit, a `git checkout -- AppShell.tsx` (meant to undo just the colliding rename) instead reverted the whole file to the last commit, discarding this session's other uncommitted `AppShell.tsx` work (the sidebar's `scrollbar-none` and the pre-existing "hide GCP Projects from nav" state) along with it. Caught immediately — the `git diff` run right before the checkout had captured the complete, exact pre-checkout diff, so both changes were reconstructed from it and reapplied verbatim; `git diff` against HEAD afterward matched that captured diff exactly (minus the reverted rename). No content was actually lost, but it's a reminder that `git checkout --` on a file discards *everything* uncommitted in it, not just the most recent edit — a targeted `Edit` (or `git diff` reviewed first) is the safer way to undo one change in an otherwise-legitimately-modified file.
+
+## 2026-09-24 — Cert Basis page was always empty (dangling seed reference); drawer gets Regulation Section/Amdt; "Cert Bases" → "Cert Basis" everywhere
+
+Client re-sent the exact column/action spec for the Cert Basis page that was already built two turns ago, saying none of it was visible. It wasn't a miscommunication — `useGcpFlowStore`'s `bases` was hardcoded to `[]` while `projectBasis` already pointed both seeded projects (`tp-60`, `tp-64`) at basis ids (`seed-basis-tp-60`/`-tp-64`) that never actually existed in `bases`. So the Cert Basis page had zero rows to show (always its empty state, header actions only — exactly what the client's screenshot showed), and `FlowStepBasis` read an empty `regulationIds` for both projects too. Added `seedBases()` in `gcpFlowStore.ts`, using the same regulation ids `seedPlanEntries` already uses per project (`reg-1..reg-8` for tp-60, `reg-1..reg-6` for tp-64) so the counts agree everywhere — Cert Basis's rail, its detail table, and `FlowStepBasis`'s own Section/Amdt selects (which now come up pre-selected instead of empty, a side effect worth having). No new client data invented — same restraint the existing `seedPlanEntries` comment already states.
+
+Second ask: "Cert Basis" (singular), not "Cert Bases" — matches the legacy screen's own title. Renamed everywhere the string appeared: `AppShell`'s `CHILD_ROUTES`/`NAV`, `GcpCertBasesPage`'s `activeChild`/`title`/empty-state text/`aria-label`s, and one cross-reference in `RegulationListPage`'s own empty state. Left the deleted-page/renamed-page history in this log and `GcpCertBasesPage.tsx`'s file name alone — those aren't user-facing text.
+
+Third ask, read off a screenshot of `FlowStepBasis`'s own Regulation Section/Amdt fields sent alongside "when you add cert basis, the dropdown should be multi-select": `CertBasisDrawer` (the page's own "Add Cert Basis" form) had no way to attach a regulation at all before — only Import, or linking a project through the flow. Added the same cascading `MultiSelect` pair `FlowStepBasis` uses (identical narrowing rules, both fields required to attach a regulation), wired into `regulationIds` on submit; editing seeds the selects from the basis's existing regulations. Verified live: created "CL-650" with Section 23.1 + Amdt 23-10 attaching 2 real regulations (the fixture pool has two 23.1/23-10 rows), appearing immediately in the rail and detail table with the right column set.
+
+## 2026-09-24 — GCP Projects gets the full legacy column sequence; found and fixed a real header/body horizontal-scroll bug across every frozen-header table
+
+Client re-sent the same column sequence from two turns ago (Regulation/Amdt/Reg Title, Discipline, MOC, FOC, Deliverable # alongside the existing project columns) after I'd proposed splitting it into a separate page. Asked once more to confirm the row-grain trade-off before building it that way; the client clarified I'd misunderstood — they want the header sequence as given, on this table, not a structural split. Built it: `TCCA Project, Elisen Project #, Regulation, Amdt, Reg Title, Discipline, MOC, FOC, Deliverable #, Applicable, Affected, Opened, Status, Action`, still one row per project. Since a project can have many applicable rules and many GCP data items, the new columns show the **first** rule/item (own hover title stating how many more) rather than exploding rows or repeating the project's own `Applicable` count under a different name — a design call made without further back-and-forth, flagged here per rule 12/13 in case it's not what was pictured.
+
+Seeded one demo `GcpItem` (`seed-item-tp-60-1`, real fixture codes: `A1`/`A`/`AP-01`) so the new Discipline/MOC/FOC/Deliverable # columns have something to show for at least one row rather than reading `—` everywhere on first load — same restraint as the existing `seedPlanEntries`/`seedBases` comments (real fixture ids, no invented client data).
+
+**The real find**: scrolling the now-much-wider table horizontally revealed the header and body tables going out of alignment — a structural bug in the "frozen header" pattern itself (`docs/COMPONENTS.md`), not something new in this table. The pattern's non-scrolling header `<table>` sits in a plain `overflow-hidden` parent; nothing ever moved it, so it always rendered at scroll position 0. Vertical-only tables never exposed this (the header never needs to move vertically anyway), but any table wide enough to need horizontal scroll would show exactly this misalignment. None of the other 7 tables built with this pattern happened to be that wide before now — this one just was.
+
+Added `useSyncedScroll()` (`patterns/useSyncedScroll.ts`): the header wraps in `<div ref={headerRef} className="shrink-0 overflow-x-hidden">`, the body's `overflow-auto` wrapper gets `onScroll={onBodyScroll}`, which mirrors `scrollLeft` onto the header on every scroll event. Applied to all 8 tables using this pattern — `FlowStepProject`, `FlowStepInitialize`, `GcpDelegationTab`, `RegulationStructurePage`, `RegulationGroupsPage`, `AtaChaptersPage`, `GcpCertBasesPage`, `ReportDetailPanel` — and the Storybook reference story (`FrozenTableHeaderExample`), which now demonstrates it (widened its own demo columns so the story actually overflows and shows the fix, rather than just describing it). `docs/COMPONENTS.md`'s standing-rule section documents the fix and also drops a stale line that still told readers to add `paddingRight: 4` to the header table — that was removed everywhere over a turn ago (it was the actual cause of an earlier scrollbar-inconsistency bug) but the doc itself was never updated; caught and fixed while already in this section.
+
+Verified live: `FlowStepProject` at both a wide and a narrow (700px) viewport, and `GcpCertBasesPage` at 700px — header and body scroll as one in both.
+
+## 2026-09-24 — Cert Basis "Import" icon fixed (was Upload, backwards); Import drawer gets a required project picker
+
+Two small fixes to `GcpCertBasesPage`'s import flow. First, both **Import** buttons (header, empty state) used lucide's `Upload` icon — an arrow pointing up/out, which reads backwards on a button labeled "Import" (bringing data *into* the app, not sending it out). Swapped to `Download` (arrow in), which matches the label's own direction; `FileDropzone`'s own internal "Upload File" button keeps its `Upload` icon untouched — that one's correctly labeled for what it does (a generic file picker, reused everywhere in the app, not specific to import/export semantics).
+
+Second, `CertBasisImportDrawer` had no way to say which project an import was for — picking a file and hitting Import had nowhere to attach the resulting basis. Added a required **TCCA Project** `SearchableSelect` above the file zone (client instruction, 2026-09-24), same options shape as `GcpFlowPage`'s "Create GCP" project picker. `onImport` now takes `(file, projectId)`; the confirmation toast names the picked project's number. Project and file validate independently — submitting with only one missing shows only that field's error, not both reset together.
+
+## 2026-09-24 — Cert Basis: dropped the detail-panel's identity header, just the table now
+
+Client rejected the master–detail's right-side structure — a boxed header (icon, name, regulation count, and the basis's own Edit/Delete menu) sitting on top of a separately-boxed table, with a lot of dead space below a short table. Asked for "just table": the selected basis's regulations render directly, no identity card duplicating what the rail already names.
+
+Kept the rail (untouched otherwise — it's not what was flagged) but moved the basis-level Edit/Delete `ActionsMenu` onto each rail row itself, next to its regulation-count pill, so removing the header card didn't also remove the only way to rename or delete a basis. That required restructuring the rail's `<li>`: the row used to be one big `<button>`; now the button (selection) and the `ActionsMenu` (edit/delete) are siblings inside the `<li>`, since a `<button>` can't contain another interactive control. Selection/hover styling (the left accent border, the tinted background) moved from the button onto the `<li>` to match.
+
+Verified live: table renders immediately under the rail with no header card, rail-row Edit/Delete opens correctly, and clicking between rail rows still switches the selected basis's regulations.
+
+## 2026-09-24 — GCP Projects table: long cell values were overflowing into the next column
+
+Client's screenshot showed "Deliverable #" (`A4ALL-2-08-1-1623-CR`, 21 characters) visually running into "Applicable"'s own "8" — `whitespace-nowrap` alone doesn't clip a `<td>`'s content to its column width under `table-fixed`, it only stops it wrapping, so a value wider than its column just overflows into whatever sits to its right instead. Same class of bug as the earlier sortable-header overflow, this time on body cells with real (not just placeholder-short) data.
+
+Swapped `whitespace-nowrap` for `truncate` (Tailwind's `overflow-hidden` + `text-overflow: ellipsis` + `white-space: nowrap`) on every cell that can hold a variable-length real value — Elisen Project #, Regulation, Amdt, Discipline, MOC, FOC, Deliverable # — and added each cell's own `title` attribute so the full value (or, for Regulation/Amdt, the value plus the existing "+N more" note) is still there on hover, nothing actually hidden from the reader. Widened Regulation (110→140), Amdt (90→100), Discipline (110→120), MOC/FOC (80→90) and Deliverable # (150→190) for breathing room, per the client's "make it visually balanced" ask, so truncation is the fallback for a genuinely long value, not the default fate of an ordinary one. Verified live at both a normal and a 560px-wide viewport (matching the reported screenshot) — no more bleed into the next column.
+
+## 2026-09-24 — GCP Projects table: Action column pinned right
+
+Client asked for the same sticky-right Action column `FlowStepPlan`'s GCP Data table already has, on the `GCP Projects` step-1 table too — the rest of a wide row scrolls underneath it, Action stays put. This was deliberately skipped two turns ago: this table's frozen-header split didn't track horizontal scroll between the header and body tables, so pinning a column here would have drifted out of alignment. That bug is fixed now (`useSyncedScroll`, same turn as the Deliverable # overflow fix), so it's safe to add.
+
+`<tr>` gets `group`; the sticky `<td>`/`<th>` gets `sticky right-0 z-sticky shadow-sm` plus its own opaque background (`bg-neutral-50` for the header; `bg-accent-subtle` for the current project's row, `bg-neutral-25` + `group-hover:bg-neutral-50` otherwise) so scrolled content doesn't show through it, matching the row's own hover/current-row tint exactly rather than sitting flat over it. Verified live at 1200px: Action stays pinned while Regulation → Opened scroll underneath, header and body still track together.
+
+## 2026-09-24 — Cert Basis: master–detail replaced with one flat table
+
+Client's last message on this page ("just the table, no header card") turned out to be a partial fix — this turn they clarified directly: it's still two separate sections (the rail, and the selected basis's pane beside it), and they want one table, period.
+
+Rebuilt as a single table: every basis's regulations render one after another, each introduced by a group row (`colSpan`'d name + TCDS/"Project-specific" + regulation count, plus that basis's own Edit/Delete `ActionsMenu` — the only place those two actions live now that there's no rail row to carry them), followed by its own Regulation Section/Amdt/Title/Status/Actions rows. Dropped the rail, the `?basis=` URL param, and the scroll-into-view effect entirely — nothing reads them anymore.
+
+Sorting needed a specific decision the client didn't spell out: one shared sort control (the frozen header) now touches every basis's rows, so does clicking "Regulation Section" reorder within each basis, or interleave every regulation across every basis into one global order? Went with **within each basis** — global interleaving would have scattered one basis's rows apart from each other, defeating the grouping the client just asked for. Implemented by sorting *all* visible regulations together in one `useTableSort` call (React hooks can't run inside the per-basis loop), then filtering that single sorted array down to each basis's own `basisId` — cheap, and the group's relative order falls out of the filter for free.
+
+Verified live: one continuous table with no rail; ascending/descending sort reorders both groups independently and correctly; group-row Edit/Delete and per-regulation View/Edit/Remove all still work; search still narrows to matching bases, each still showing its own full regulation list.
+
+## 2026-09-24 — GCP Projects: Action column gets its reference-matched sticky style and a real ⋮ menu
+
+Client's screenshot of the sticky Action column (shipped last turn) was close but not matching their reference: no left border, no visible drop shadow doing real separation work. Added `border-l border-border-default` (the design system's own border color, which is literally `--color-neutral-200` — matches "neutral stroke" exactly) alongside the existing `shadow-sm`, on both the header cell and every body cell (and the loading skeleton's).
+
+Bigger ask: Action's single "Start/Continue/View GCP" button becomes a `⋮` `ActionsMenu` with five items — that same status label first, then View, Duplicate, Edit, Delete. The last four don't exist anywhere in the GCP flow; they operate on the row's underlying TCCA project, so they're wired to the exact same handlers `TccaProjectsListPage` already uses: View navigates to `/tcca-projects/:id`, Edit opens `TccaProjectDrawer` (imported directly from `features/tcca` — a cross-feature reuse, which `ProjectDetailPage`/`DocumentsPage` already do elsewhere in the app, so not a new pattern), Delete is the same `ConfirmDialog` wording, and Duplicate (new: no existing precedent for it in this app) clones the project via `addTcca` with a fresh id and `" (Copy)"` appended to its number.
+
+Verified live: menu opens with all 5 items correctly ordered; Edit opens the real drawer pre-filled; Duplicate adds a genuinely new row and bumps the header count (328 → 329); the sticky column's left border and shadow are visible while scrolling the rest of the row underneath it.
+
+## 2026-09-24 — Duplicate: inserted next to the original, not the top; marked with a "Copy" badge, not a changed number
+
+Client's follow-up on last turn's Duplicate action: the copy should land directly below the original project (not wherever `addTcca`'s prepend-to-top put it), keep the exact same number as the original ("sab kuch same ho" — no more `" (Copy)"` suffix on the number, which was my own addition last turn to keep rows visually distinguishable), and instead be marked with a small "Copy" tag, the same kind of badge the Status column already uses.
+
+Added `TccaProject.isCopy?: boolean` (`types/tcca.ts`) and a new `duplicateTcca(id)` action on `useTccaStore` — finds the original's index, splices a clone (`{ ...original, id: crypto.randomUUID(), isCopy: true }`) in right after it, rather than reusing `addTcca`'s prepend. `FlowStepProject`'s Duplicate menu item now calls `duplicateTcca(t.id)` directly; the TCCA Project cell renders an `info`-tone `Badge` reading "Copy" next to the number whenever `t.isCopy` is set. The table has no default sort applied (`useTableSort` with no `initial`), so its rows render in the store's own array order until a reader clicks a column header — meaning the copy shows up immediately adjacent with no other change needed.
+
+Two identical `number` values now coexist by design, which the create-project uniqueness check in `TccaProjectDrawer` doesn't touch (duplicates never go through that drawer, and editing an existing record's own number is exempt from that same-number check already). Verified live: duplicating a project mid-list ("A-11-0007") placed the copy directly beneath it, same number, same description, "Copy" badge visible, header count incremented (328 → 329).
+
+## 2026-09-24 — Action column: 64px not 150px, header border matched to the client's own CSS
+
+Client selected the sticky Action `<th>`/`<td>` with their browser's element inspector and sent the computed styles alongside a Figma-copied CSS snippet (`border-bottom: 1px solid var(--Primitive-Neutral-300, #CBD5E1); background: #F9FAFC;`) for the header cell specifically, asking for the column narrower and the sticky edge more clearly separated from the rest of the table.
+
+Column width was still 150px, left over from when it held a text button ("Continue GCP →"); now that it's icon-only, shrank it to 64px, matching `ACTIONS_WIDTH` on `GcpCertBasesPage`/`GcpDelegationTab` — the app's own existing convention for an icon-only actions column, not a new number invented for this one. Left border was already `border-l border-border-default` (neutral-200) from two turns ago, exactly matching "left stroke ho neutral-200" — confirmed via computed style, no change needed there. Added `border-b-neutral-300` to the header cell only (`#CBD5E1`, exactly the value in their pasted CSS) — a `<th>`'s own border wins over its `<tr>`'s under `border-collapse`, so this reads as a slightly more prominent bottom edge than its non-sticky neighbors, which still show the row's own neutral-200. Their `#F9FAFC` background is `--color-neutral-50` (`#F8FAFC`) already in use — close enough (1 unit off in one channel, almost certainly the same intended color) that it didn't need touching.
+
+Verified via computed styles in the browser console (not just eyeballing): `width: 64px`, `border-bottom-color: rgb(203, 213, 225)` (`#CBD5E1`), `border-left-color: rgb(226, 232, 240)` (`#E2E8F0`), `background-color: rgb(248, 250, 252)` — all exact matches.
+
+## 2026-09-24 — Sidebar now shows from tablet: (768px), not laptop: (1280px)
+
+Client sent a screenshot of the app running in their own browser, full window, no sidebar visible. Reproduced my own testing at a genuinely wide viewport (2000px) and the sidebar rendered fine there (`display: flex`, confirmed via computed styles) — meaning the CSS itself was correct for a browser window whose CSS viewport really is ≥1280px, but the client's actual window apparently wasn't, despite reading as wide in the screenshot (display scaling or browser zoom can make a window look wide in pixels while its CSS viewport stays narrower).
+
+Rather than guess at their exact effective width, lowered the threshold itself: `<aside>` was `hidden ... laptop:flex` (1280px), now `hidden ... tablet:flex` (768px) — the one place `laptop:` gated the sidebar in `AppShell.tsx`. 768px covers any real laptop or desktop window; the app has no hamburger-menu mobile nav fallback below that, so genuinely phone-sized viewports still lose the sidebar entirely, same gap as before this change, not newly introduced. Verified live at 1000px (sidebar shows, was hidden before) and 600px (correctly still hidden, no regression at true mobile widths) and 2000px (unaffected, still shows).
+
+## 2026-09-24 — Certification Basis table: reverted to just Regulation Section + Amdt
+
+Client asked to put this table back the way it was — two fields, Regulation Section and Regulation Amdt, one line per row, no Regulation Title. That column was added a few turns ago on my own read of the legacy reference grid; the client's own screenshot of the resulting screen showed rows wrapping to two lines for anything with a long title (the "Exemption No. 013-2007-NCR/RCN..." row), which wasn't the clean, single-line table they wanted here. Removed the column and added `whitespace-nowrap` to both remaining columns so no future long value can wrap a row again. Verified live: every row (including that same exemption one) is back to a single line.
+
+## 2026-09-24 — Found the real cause of the sticky Actions column's width mismatch; added the client's own drop-shadow spec as a token
+
+Client selected the sticky Actions `<th>`/`<td>` with their browser's inspector and reported three things together: no visible drop shadow, a width mismatch between the header and the rows below it, and stray lines appearing while scrolling. All three turned out to share one root cause.
+
+Every frozen-header table (the two-table split documented above) rendered both its header and body `<table>` as `w-full table-fixed` with `style={{ minWidth: TABLE_WIDTH }}`. `w-full` stretches each table to fill its own container whenever that container is wider than `TABLE_WIDTH` — and per CSS2.1, `table-layout: fixed` still spreads that leftover width across every column even when each one already has an explicit `<col>` width; an explicit width is a floor, not a ceiling, once the table itself is wider. The header's wrapper never has a vertical scrollbar; the body's `overflow-auto` wrapper does whenever there are enough rows to need one, leaving it a few px less real width to distribute. So the two tables' matching columns could each land at a different actual pixel width — the sticky Actions column showing up narrower in the header than in the rows was the visible symptom, and `FlowStepProject`'s Actions column shrinking to 64px two turns ago made the leftover width (and so the mismatch) bigger and easier to notice than it likely was before.
+
+Fixed at the root: dropped `w-full` and changed `minWidth` to `width` on both tables, in all 8 places this pattern is used (`FlowStepProject`, `FlowStepInitialize`, `GcpDelegationTab`, `RegulationStructurePage`, `RegulationGroupsPage`, `AtaChaptersPage`, `GcpCertBasesPage`, `ReportDetailPanel`) plus the Storybook reference story — each table now renders at *exactly* `TABLE_WIDTH`, never more, so there's never leftover width for either side to redistribute differently. A table narrower than its container now sits at its own width unstretched inside the bordered card, rather than stretching to fill it — a normal look for a dense data grid, and the trade-off for guaranteed-identical columns. This is very likely also what caused the scroll-time "line" artifact: a column whose computed width isn't reliably identical between two independently-scrolling tables can visibly shift by a px during repaint.
+
+Also added the client's own drop-shadow spec as a real token rather than reusing the generic `shadow-sm`: `--shadow-sticky: -4px 0 14px 0 rgba(71, 85, 105, 0.12)` in `tokens.css` (X -4, Y 0, blur 14, spread 0, `#475569` at 12% — read directly off their design tool), wired into `tailwind.config.ts` as `shadow-sticky`, applied to both sticky Actions columns in the app (`FlowStepPlan`, `FlowStepProject`) in place of `shadow-sm`.
+
+Verified via computed styles, not just visually: header `<th>` and body `<td>` both report `width: 64px` and both tables report `width: 1904px` (`FlowStepProject`'s exact `TABLE_WIDTH`) at a 1600px viewport; the sticky cell's `box-shadow` computes to `rgba(71, 85, 105, 0.12) -4px 0px 14px 0px`, an exact match for the client's spec.
+
+## 2026-09-24 — Duplicate's new pattern (insert-below, Copy badge) rolled out to Projects and Timesheet
+
+Client asked for the same Duplicate pattern just built for GCP Projects (`duplicateTcca`) everywhere else the app has a Duplicate action: Projects List/Detail and Timesheet/Hours Worked (the only other two real, wired-up Duplicate implementations in the codebase — confirmed by grep, not a guess).
+
+Both screens previously built the clone by hand in a page-level `handleDuplicate` and called each store's generic `addRow`, which **prepends** to the array top — not the splice-after-original the new pattern needs. Added a dedicated store action to each (`projectsStore.duplicateRow(id)`, `timesheetStore.duplicateEntry(id)`), mirroring `duplicateTcca`'s shape: find the original's index, splice a clone in directly after it, set `isCopy: true`.
+
+**Projects** previously mutated the clone's `number` (via `getNextProjectNumber`), `subNumber` ("00"), and `title` (`" (Copy)"` appended) to keep duplicates visually distinct in a flat, unsorted list — that's exactly what the "Copy" badge now does instead, so those three rewrites are gone; the clone's number/subNumber/title are copied as-is like the reference pattern. Two fields stayed reset on purpose, not carried over: `actualHours` (0) and `status` ("quoted") — those describe progress the *original* has already made, which a fresh copy genuinely hasn't, the same category of exception as Timesheet's own `validated` reset, not a naming/identity concern the badge replaces. Removed `getNextProjectNumber` from both `ProjectsListPage.tsx` and `ProjectDetailPage.tsx` since duplicate was its only caller in each file (it's still used inside `AddProjectDrawer` for actual new-project creation, untouched).
+
+**Timesheet** was already close to the reference shape — only `validated` was ever reset — so the only real change there is the insertion point and the new `isCopy` flag/badge.
+
+Both new type fields (`ProjectListRow.isCopy`, `TimesheetEntry.isCopy`) checked clean against existing fields first — no collision with `active` (both) or `validated` (Timesheet).
+
+**Badge placement bug, caught and fixed before calling it done:** the first pass put the "Copy" badge inline next to the number in `ProjectsTable`, matching the TCCA reference exactly — but that table's Project column is only 88px wide (this table has far more columns competing for space than the GCP ones), and `{number}-{subNumber}` plus a badge side by side overflowed into the Priority/Type column, the same class of bleed-into-neighbor bug fixed on GCP tables earlier this session. Put the badge on its own line under the number instead of beside it. `ProjectDetailPage`'s header (a 320px sidebar) and `TimesheetTable`'s Project cell (no competing badge already crowding it) had enough room for the inline version and needed no change.
+
+Verified live: Projects List (duplicate lands directly below the original, "Copy" badge on its own line, status/hours reset, count 793→794), the duplicate's own detail page (badge shown in the header, "Quoted"/"0h"), and Timesheet (duplicate below original, badge inline, `Valid.` correctly shows "No" on the copy, count 4152→4153).
+
+## 2026-09-24 — GCP Projects gets the same stat-card row as Projects List
+
+Client asked for the same top-of-page stat cards Projects List shows (Projects shown / health breakdown) to appear on GCP Projects too. Reused the exact same `StatCard` pattern and layout (`grid gap-lg mobile:grid-cols-2 laptop:grid-cols-4`, `shrink-0` so it doesn't eat into the table's own scroll area), with the natural GCP equivalent of Projects List's health buckets: Projects shown, Not Started, In Progress, Complete — the same three buckets each row's own Status `Badge` already sorts into, now also counted at the top instead of only per-row. Counted off the search-`filtered` set (same rows the table renders), so the stats always agree with the heading's own count pill.
+
+Verified live: 328/326/1/1 unfiltered, narrows correctly to 29/28/1/0 when searching "Top Aces" — matching the heading pill exactly in both cases.
+
+## 2026-09-24 — Projects List's "Copy" badge: back to inline, not stacked
+
+Client rejected last turn's fix: stacking the "Copy" badge under the project number (to dodge an overflow into Priority/Type) turned the row into three lines, and they'd already said rows never go past two — number-plus-title. Wanted the badge inline next to the number, matching GCP Projects, no exceptions.
+
+The overflow that motivated stacking it was real but measured at the wrong width — the Claude Browser pane's own default render is narrower than this table's documented 1280px "no horizontal scroll" floor, so what looked like a guaranteed collision was actually a testing-environment artifact. At the table's real floor, `ProjectsTable`'s `Project` column has no accompanying badge budget, so put the badge back inline and raised the column's own floor instead: `min: 88 → 145` on the `Project` column, `FLEX_FLOOR: 296 → 353` to match (it must equal the sum of the three flex columns' own mins — a documented invariant in the file, updated in the same edit so it doesn't drift out of sync).
+
+Verified properly this time: set the viewport to exactly 1280px (this table's own stated worst case, not a guess), triggered a real duplicate, and measured the rendered geometry directly rather than eyeballing a screenshot — the badge's right edge sits at 139.8px inside a 145px-wide cell, no overflow, even at the tightest width the table is designed to support without scrolling.
+
+## 2026-09-24 — Create GCP drawer expanded to full legacy field set, Section/Amdt kept as two dropdowns
+
+Client asked for the "Create GCP" drawer (previously just a single TCCA Project dropdown) to match a legacy reference screen's full field set: TCCA Project Number, Regulation Section, Regulation Amdt, DAO Specialty Code, MOC Code, FOC Code, Deliverable Number, then Create/Cancel — with one explicit deviation from that reference: Section and Amdt must stay two separate dropdowns, never merged into one combined value the way the legacy screen shows them (e.g. not `23.1301(a)(1) -- 23-14` as a single option).
+
+Added `Regulation Section` and `Regulation Amdt` as two `SearchableSelect`s, both required. Amdt's own option list cascades off whichever Section is picked (falls back to every Amdt when no Section is chosen yet); picking a Section that no longer supports the current Amdt clears it rather than leaving a stale, invalid pairing selected. `DAO Specialty Code` (from `disciplines`, active only, `"A1 -- Electrical Systems"` label), `MOC Code` and `FOC Code` (`mocs`/`focs`, same `code -- description` label convention as the rest of the app) are optional `SearchableSelect`s. `Deliverable Number` is a plain free-text `Input`, not a dropdown — unlike the other five fields, there's no master deliverable list anywhere in the app to back a picker with real data, so a fabricated option list would be worse than an honest text field; flagging this rather than silently inventing one.
+
+Submitting creates or updates the target project's `CertBasis` (adds the picked regulation to its `regulationIds`, first basis created from the project's own number if none exists yet), links it, and creates or updates a `PlanEntry` for that regulation marked `affected: true` — reusing `defaultMocText` for a brand-new entry the same way the Scope Rules step already does, and leaving every other field of an existing entry untouched. If any of DAO/MOC/FOC/Deliverable were filled in, also creates a `GcpItem` against that entry. Lands on step 4 (Compliance) with the just-created/updated rule selected, mirroring what picking a rule from Scope Rules already does.
+
+Verified live end to end: opened the drawer, confirmed all seven fields render in the reference screen's order; picked a TCCA project, typed "23.1301" into Regulation Section and selected `23.1301(a)(1)`, confirmed Amdt's list narrowed to only `23-14` (the one real pairing for that section) rather than showing every Amdt in the system; filled DAO Specialty Code (`A1 -- Electrical Systems`) and Deliverable Number, submitted, and landed on step 4 showing "Reg 6 of 6" with `23.1301(a)(1) · 23-14` selected and the GCP Data table showing one row (`A1`, the typed deliverable number) — confirming the `CertBasis`/`PlanEntry`/`GcpItem` writes all landed correctly.
+
+## 2026-09-24 — FlowStepProject Action column widened 64px → 72px
+
+Client's own inspector showed the sticky Action `<th>`/`<td>` both reporting exactly 64px (not a mismatch), but flagged them as visually unbalanced against each other — the `⋮` button sat tight against the column's edges. Widened the single `COLUMNS` entry driving both the header and body `<colgroup>`s from 64 to 72, giving the button (and the "Action" header label) real breathing room on both sides.
+
+Verified live: both `<th>`/`<td>` report 72px via `getBoundingClientRect()`, still equal to each other, screenshot confirms visual balance.
+
+## 2026-09-24 — GCP Projects heading loses its count pill
+
+Client asked to remove the `328` count pill sitting next to the "GCP Projects" `<h1>`. Removed the badge `<span>` from `GcpFlowPage`'s step-1 `headerLeft`, along with the `projectQ`/`projectCount` locals that existed only to feed it (the page's own count is still visible in the "Projects shown" stat card just below, and `FlowStepProject`'s table filters independently off `projectQuery`, so nothing else depended on this derived value).
+
+Verified live: heading now reads "GCP Projects" / description with no pill, stat cards and table unaffected.
+
+## 2026-09-24 — FlowStepProject Action column: root-caused a real header/body pixel misalignment, plus a "affected" wording fix
+
+Client flagged the sticky Action `<th>`/`<td>` as visually unaligned and asked for the header's background to match its neighbors and the `⋮` button's background to read white — both already true by value (same `bg-neutral-50` token on every header cell, `bg-neutral-25` resolving to pure `#FFFFFF` on the button's cell), which was the tell that the real defect was positional, not color. Measured it directly: the sticky `<th>` reported `left: 605px` while the sticky `<td>` directly below it reported `left: 594px` — an 11px gap, despite both computing `width: 72px`.
+
+Root cause: the body wrapper (`overflow-auto`, independently scrolling) reserves real width for its vertical scrollbar; the header wrapper (`overflow-x-hidden`, never scrolls) doesn't reserve any. Both tables render at the exact same fixed width and start at the same left edge (confirmed — `table.getBoundingClientRect()` matched exactly, 1912px, left 17px, in both), so ordinary columns were never affected; only `position: sticky; right: 0` is, since its offset resolves against its own scrolling ancestor's *padding box*, and the two ancestors' padding boxes differ in width by however many pixels the real scrollbar takes.
+
+Tried `scrollbar-gutter: stable` first (the standards-track fix) on both wrappers — it changed `clientWidth` correctly but Chromium didn't carry that reservation into the sticky positioning containing block for an `overflow: hidden` axis, so the misalignment persisted. Fixed with the older, more literal technique instead: force the header wrapper to `overflow-y-scroll` (a genuine scroll container, always reserving real scrollbar width, mirroring the body's own mechanism exactly) rather than `hidden`. First pass paired that with the app's existing `.scrollbar-none` utility to hide it — wrong choice, caught before calling it done: `scrollbar-none` sets `scrollbar-width: none`, which drops the reservation to zero width, undoing the fix entirely. Removed it; the header's forced scrollbar renders using the app's own default thin/transparent-track global style, so with no content to scroll it shows no visible thumb, just a few px of already-transparent gutter — invisible in practice, but real width, matching the body's. Applied to all 8 tables (+ the Storybook story) sharing this header/body pattern, not just `FlowStepProject`, since the same wrapper shape is present in all of them, even though only `FlowStepProject`/`FlowStepPlan` currently sticky their last column — the other 7 get the same hardening for free against the same bug the day they gain one.
+
+Verified via `getBoundingClientRect()`: `<th>`/`<td>` now both report `left: 594`, a 0px diff (was 11px) — confirmed live, and confirmed horizontal scroll sync (`useSyncedScroll`) and the sticky shadow both still work correctly after the change.
+
+Also, separately, changed Scope Rules' `"{N} in this view · {M} applicable"` stat to `"… affected"` (client instruction) — `M` counts rules the reader has checked via `marks[r.id]`, which is exactly what this step calls "affected" everywhere else on the same screen (the heading, the description, and the "Create plan from N affected rules" button); "applicable" was simply the wrong word for what was being counted.
+
+## 2026-09-24 — TableTabs: scroll arrows squared off, tab row given breathing room
+
+Client flagged the subpart-filter tab strip's left/right scroll arrows as too round, and the row itself as congested against the card's top/bottom edges — both on `TableTabs.tsx`, shared by every tab strip in the app (Scope Rules' subpart tabs is the one with enough tabs to actually scroll and show the arrows).
+
+Changed both scroll-arrow buttons from `rounded-full` to `rounded-sm` — the app's one standard corner radius (`--radius-sm`, 8px), matching every other button/card/input rather than the one-off pill shape. Bumped each tab's own `py-base` (12px) to `py-lg` (16px) for more vertical space — done on the tab buttons themselves, not as separate padding on the tablist container, since the active tab's underline relies on `-mb-px` landing exactly on the container's own `border-b` to read as one continuous line; padding on the container instead would have pushed that border away from the buttons and broken the merge.
+
+Verified live: both arrows now compute `border-radius: 8px` (were `9999px`), tab buttons compute `padding: 16px` top/bottom (were `12px`), underline-to-divider merge still intact, both arrows render together mid-strip after a programmatic scroll.
+
+## 2026-09-24 — Frozen-header tables no longer leave dead space on wide screens
+
+Client flagged empty negative space to the right of the People & Authority → Delegation table (and asked me to check every table, not just that one) on a wide screen. Root cause: the earlier fix for the header/body column-width mismatch (this file, "frozen-header two-table split" entry) deliberately dropped `w-full` and switched `minWidth: TABLE_WIDTH` to a plain `width: TABLE_WIDTH` on all 8 tables sharing that pattern, so the table would never stretch past its real content width — the trade-off documented at the time was "a table narrower than its container now sits at its own width unstretched... rather than stretching to fill it." That trade-off is exactly what was now being reported as a bug, correctly — a bordered card with a large blank strip down one side reads as broken, not as a deliberate density choice.
+
+Fixed properly this time, not by reverting to `w-full` alone (which is what caused the *original* mismatch: `table-fixed` redistributes a table's own extra resolved width across every column, even ones with an explicit `<col>` width, once the table's width exceeds their sum — confirmed against spec, not assumption). Added one trailing "spacer" `<col />` (no width, so `table-fixed` gives it 100% of whatever's left) to every table's `<colgroup>`, in both the header and body tables, plus a matching empty `<th aria-hidden />` / `<td aria-hidden />` in each row — then switched the table back to `w-full` + `style={{ minWidth: TABLE_WIDTH }}`. Every *real* column keeps its own explicit width exactly as before (`table-fixed` never touches a column that has one); only the new empty column absorbs the stretch, so the header/body pixel-match this session already fixed is untouched.
+
+`FlowStepProject` needed the spacer placed *before* its sticky `Action` column, not after: `Action` is `position: sticky; right: 0`, pinned to the scrollport's own right edge regardless of where it sits in source order, so a trailing spacer placed after it would sit underneath/behind the pinned column instead of doing anything useful. Placed before, `Action`'s natural (unstuck) position already lands flush right once the spacer has taken the slack, so there's nothing to reconcile between the stuck and unstuck states.
+
+`AtaChaptersPage`'s sub-chapter table needed no new column at all — its existing `Definition` column already has no explicit width (`SUB_CHAPTER_COLUMNS`), so switching that table from fixed `width` to `w-full` + `minWidth` let `table-fixed`'s existing behavior give `Definition` 100% of the extra room automatically, which is strictly better than a blank spacer (more room for the one column whose content is actually long-form text) and needed zero markup changes beyond the table/colgroup width switch.
+
+`GcpCertBasesPage`'s per-basis group header row (`<td colSpan={COLUMNS.length}>` + a separate Actions `<td>`) needed its Actions cell's `colSpan` bumped from implicit 1 to 2 (covering the new spacer) rather than a new empty cell, and its "No regulations yet" row's `colSpan` bumped from `COLUMNS.length + 1` to `+ 2`, to keep both back in sync with the now-6-column table.
+
+Applied to all 8 places sharing this pattern: `GcpDelegationTab`, `GcpCertBasesPage`, `RegulationGroupsPage`, `RegulationStructurePage`, `AtaChaptersPage`, `FlowStepInitialize`, `FlowStepProject`, `ReportDetailPanel`, plus the Storybook reference story (`Patterns.stories.tsx`) so it keeps demonstrating the current, correct shape rather than a now-outdated one.
+
+Verified live, per table: real columns' pixel widths stay identical between header and body at both a narrow viewport (table sits at its own `TABLE_WIDTH`/`minWidth` floor, spacer collapses to 0, horizontal scroll behaves exactly as before) and a wide one (table stretches to fill the card, spacer/`Definition` absorbs the difference, zero dead space). `FlowStepProject`'s sticky `Action` column specifically re-checked at both 1600px (legitimately still narrower than its 14-column `TABLE_WIDTH`, correctly scrolls) and 2400px (wide enough to stretch) — `getBoundingClientRect()` on the header/body `Action` cells matches exactly (`diff: 0`) in both cases. `GcpCertBasesPage`'s group-header `colSpan` fix checked visually (group row still reads as one banner across the full stretched width, no stray column peeking through).
+
+## 2026-09-24 — GCP Projects table: sort added to every remaining column
+
+Client flagged that only some of this table's headers showed the sort affordance (TCCA Project, Elisen Project #, Applicable, Affected, Opened) while Regulation, Amdt, Reg Title, Discipline, MOC, FOC, Deliverable # and Status showed plain text — an inconsistency visible the moment the table's wide enough to show both kinds of header side by side. These columns had been deliberately left unsortable when they were added (each shows a per-*rule*/per-*item* value on a table that stays one row per *project* — "none of them sort" was a real decision at the time, not an oversight), but a reader has no way to tell "doesn't sort by design" apart from "forgot to wire up," and the visual inconsistency reads as broken either way.
+
+Added a `sort` key to all eight remaining columns and an accessor for each, matching exactly what its cell already displays: `primaryRule?.section`/`amdt`/`title` for Regulation/Amdt/Reg Title, `primaryItem?.daoSpecialtyCode`/`mocCode`/`focCode`/`deliverableId` for Discipline/MOC/FOC/Deliverable #, and the same `statusOf(r)` bucket ('not-started'/'in-progress'/'complete') the Status badge and the page's own stat cards already use. `useTableSort`'s existing blank-handling (sinks to the bottom in both directions, not just ascending) already does the right thing here without any extra work, since most rows have no rule/item yet.
+
+Verified live at a wide viewport: every header except Action now shows the ⇅ icon; clicking "Regulation" actually reorders the rows (populated values rise, blanks sink), confirming the accessor is wired, not just the icon.
+
+## 2026-09-24 — Closed the gap between the sticky Action column and the card's edge
+
+Client flagged a visible gap between the sticky Action column and the bordered card's right edge on `FlowStepProject` — measured it directly: 12px between the `Action` cell's own right edge and the card's. That 12px was the *same* reserved vertical-scrollbar gutter the earlier alignment fix (this file, "root-caused a real header/body pixel misalignment" entry) deliberately forces onto both the header and body wrappers via `overflow-y-scroll`, so the two would always reserve identical space whether or not a real scrollbar was needed. The reservation was correct; leaving it visually unpainted — nothing in the app draws into that strip — was the bug.
+
+Tried coloring it in first, two ways, both dead ends confirmed live: `::-webkit-scrollbar-track { background: ... }` scoped to the wrapper, and setting the wrapper `<div>`'s own `background-color` directly. Neither changed anything on screen, and a follow-up extreme test (`::-webkit-scrollbar { width: 30px; background: red }`) confirmed why — this environment doesn't render `::-webkit-scrollbar` customization *at all*, so the visible gap is this browser's own default/classic scrollbar chrome, unstyleable from CSS here regardless of what the app's global thin-scrollbar rules say.
+
+Fixed by removing the gutter instead of trying to paint it: added the app's existing `.scrollbar-none` utility (`scrollbar-width: none`, confirmed elsewhere in the app to actually zero out reserved width, unlike the webkit properties) to both the header and body wrappers, on all 8 tables sharing this pattern plus the Storybook story. Scrolling itself is unaffected — `overflow-y: scroll` with a hidden scrollbar still scrolls via wheel, trackpad and keyboard exactly as before; only the visible track/thumb and its reserved layout space go away. Both wrappers now reserve *zero* width apiece, identically, which keeps the header/body alignment fix from three turns ago intact (still `diff: 0` between the sticky `<th>`/`<td>`) while also closing the gap to the card's edge (measured 1px, i.e. just the border) instead of leaving it unfixed at a smaller-but-still-visible size.
+
+Verified live: `FlowStepProject`'s sticky Action column now sits flush against the card's right border (1px, the border itself) in both the header and body rows, `th`/`td` left edges still match exactly (`diff: 0`), and programmatic vertical scroll (`scrollTop`) still moves the body's rows. Spot-checked People & Authority → Delegation too (a table without a sticky column, same wrapper pattern) — wrapper `clientWidth`/`offsetWidth` now equal, zero reserved gutter there either.
+
+## 2026-09-24 — Regulation Section/Amdt triggers stop drifting out of alignment
+
+Client flagged that once one of the two Certification Basis dropdowns (Regulation Section, Regulation Amdt) has a chip row under it and the other doesn't (e.g. one cleared, one still has picks), their triggers no longer line up — one visibly sits lower than the other.
+
+Root cause: the two `FormField`s sit in a plain `grid gap-base tablet:grid-cols-2` with no `align-items` set, so the row stretches both cells to match whichever is taller (the one with a chip row), and each `FormField`'s own content — by CSS Grid's default `align-content: normal` behaving as `stretch` — spread out to fill that shared height rather than staying pinned to the top, sinking the shorter field's label+trigger down into whatever the taller sibling needed.
+
+Fixed with `items-start` on that grid: both fields now anchor to the row's top edge regardless of which one currently has a chip row under it — a one-line fix, no change to either field itself.
+
+Verified live: cleared Regulation Section (drops its chip row) while Regulation Amdt kept 6 selections (chip row still showing) — both triggers' `getBoundingClientRect().top` now match exactly (461px, was visibly offset before).
+
+## 2026-09-24 — Certification Basis: one card instead of two stacked ones
+
+Client flagged the Certification Basis step as reading "boxy boxy" — the Regulation Section/Amdt pickers sat in their own bordered card, with the results table in a second, separate bordered card directly below it, each with its own rounded corners and border. Merged into one: a single `rounded-sm border border-border-default bg-neutral-25` card holds the pickers (still `px-lg py-lg`) and the table, split only by one `border-t` divider — the table itself lost its own nested border/rounding/background and now runs the full width of the outer card (`overflow-hidden` on the card clips the table header's square corners to the card's own rounded ones). Matches the same "fields, then a `border-t` divider, then a flush-width table" shape already used on `RegulationGroupsPage`'s and `RegulationStructurePage`'s own selected-item detail panels, rather than introducing a new pattern.
+
+Verified live: pickers and table now read as one continuous card with a single seam between them, in both states — populated (5/6 selections, chip rows, then the matched-rules table) and empty (both cleared, "No regulations match yet" `EmptyState` sitting inside the same card rather than a separate one).
+
+## 2026-09-24 — TableTabs scroll arrows become full-height edge cells
+
+Client supplied a reference for the subpart tab strip's scroll arrows: a full-height container at the strip's edge, white fill, a stroke dividing it from the tabs, arrow centred on it — rather than the small rounded button the strip had, floating on a fade-to-card-white gradient.
+
+Rebuilt each arrow as its own cell: `absolute inset-y-0` at its edge (so it's exactly the strip's height, whatever the tab padding happens to be), `w-5xl` (48px, near-square against the 54px strip), `bg-neutral-25`, `border-b border-border-default` so the tablist's own bottom line carries across it unbroken, and one inner-side stroke (`border-r` on the left cell, `border-l` on the right). Dropped the gradient wrapper entirely along with its `pointer-events-none`/`pointer-events-auto` pairing — the stroke now does what the fade did, marking where the tabs stop, and two overlapping "the strip continues" signals would be one too many. Arrow bumped 14px → 16px to sit right in the larger cell, and hover moved from a text-colour shift to `hover:bg-neutral-50`, which is what reads on a filled cell.
+
+Flagging the one deviation from what was there before: the fade is gone, not kept alongside the new cell. The original rationale for it ("the strip visibly trails off instead of just stopping") is now carried by the stroke + filled cell, which is what the client's reference shows; keeping both would have meant a gradient bleeding under an opaque cell that already covers that edge.
+
+Verified live on Scope Rules: both cells measure 54px tall against a 54px strip (full height, exact), 48px wide, `rgb(255,255,255)` fill, 1px `border-border-default` stroke on the inner side, bottom line unbroken across them. Both page the strip correctly (481px per click at a 601px strip = the intended 80%) — worth noting the smooth-scroll animation doesn't advance while this browser pane sits idle between tool calls, so a scroll position read straight after a click shows the *previous* click's result; checked across calls to confirm, rather than trusting the first (misleading) reading.
+
+## 2026-09-24 — Step 4's GCP Data table drops its count and its pinned Actions column
+
+Client instruction, on the GCP Data table inside Compliance Plan (step 4):
+remove "Total N item", and drop the shadow/stroke from the Actions column —
+"here is not too much data in table so just do this for this specific table
+only".
+
+Both are deliberate exceptions to app-wide patterns, scoped to this one table:
+
+- **No count.** Every list screen carries a total because the reader can't see
+  how much is below the fold. This table is a handful of rows inside a form,
+  all on screen at once, so the count restates what's already visible.
+- **Actions scrolls with the rest.** Elsewhere Actions is `sticky right-0`
+  with a `shadow-sticky` overlay marking the column it floats over. Here the
+  table is short and narrow enough that pinning bought nothing, and the edge
+  shadow read as a stray divider halfway across the table rather than as a
+  frozen edge.
+
+The `sticky`/`shadow-sticky` pattern is untouched everywhere else — this is a
+local exception, not a change to the pattern.
+
+**Not done: the extra columns.** The same instruction asked for the section's
+full field set to be read off the live system
+(`dev.elisen.com/cert-plan/dashboard?tccaprojectId=60`). That URL is behind a
+login, so the field list could not be read. The table still shows the five
+fields `GcpItem` carries today (DAO Specialty Code, MOC Code, FOC Code,
+Deliverable #, Active). Pending the field names.
+
+## 2026-09-24 — GCP Reports list becomes cards, matching step 5
+
+Client instruction: give `/gcp/reports` the same treatment as step 5 of the
+certification flow, "just for visually appealing".
+
+The table wasn't earning itself. Three rows, one action each, and a whole
+column headed "Action" describing a button that already said what it did —
+so half of every row was empty and the page read as a list to scan when it
+is really three things to run. The card puts each report's name and its one
+action together, and the two screens that offer the same three reports now
+look like the same offer.
+
+One deliberate difference from `FlowStepReports`: those cards are narrow and
+`truncate` the name (the Matrix report is abbreviated there). This page shows
+the full name, so a name can wrap to two lines at tablet width. The card is
+therefore `flex flex-col` with the name block flexing, which bottom-aligns
+every "Enter Parameters" across the row regardless of title length — step 5's
+plain `grid` would have staggered them.
+
+Markup is a `<ul>`/`<li>`, not divs: it is a list of reports, and the count
+is worth announcing.

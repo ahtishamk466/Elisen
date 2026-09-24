@@ -51,11 +51,39 @@ interface GcpFlowState {
   removeItem: (id: string) => void
 }
 
+/**
+ * The two bases `projectBasis` below already points at — without these, the
+ * Cert Basis page had nothing to show (its rail read `bases`, which was
+ * empty) and `FlowStepBasis` read an empty `regulationIds` for both seeded
+ * projects. Same regulation ids `seedPlanEntries` already uses for each
+ * project, so the counts agree everywhere (8 for tp-60, 6 for tp-64).
+ */
+function seedBases(): CertBasis[] {
+  const regIds = (n: number) => Array.from({ length: n }, (_, i) => `reg-${i + 1}`)
+  return [
+    { id: 'seed-basis-tp-60', aircraftModel: '1568 -Top Aces 1623', tcdsNumber: '', regulationIds: regIds(8) },
+    { id: 'seed-basis-tp-64', aircraftModel: 'A-11-0007', tcdsNumber: '', regulationIds: regIds(6) },
+  ]
+}
+
+/**
+ * One demo `GcpItem` so the GCP Projects table's Discipline/MOC/FOC/
+ * Deliverable # columns have something real to show for at least one row —
+ * real fixture codes (`disc-2` "A1", `moc-2` "A", `foc-3` "AP-01" in
+ * `gcpFixtures.ts`), and the same deliverable-number shape the legacy
+ * screens already use for this exact project (1623), not invented.
+ */
+function seedItems(): GcpItem[] {
+  return [
+    { id: 'seed-item-tp-60-1', planEntryId: 'seed-tp-60-reg-1', daoSpecialtyCode: 'A1', mocCode: 'A', focCode: 'AP-01', deliverableId: 'A4ALL-2-08-1-1623-CR', active: true },
+  ]
+}
+
 export const useGcpFlowStore = create<GcpFlowState>((set) => ({
-  bases: [],
+  bases: seedBases(),
   projectBasis: { 'tp-60': 'seed-basis-tp-60', 'tp-64': 'seed-basis-tp-64' },
   planEntries: seedPlanEntries(),
-  items: [],
+  items: seedItems(),
 
   saveBasis: (basis) => set((s) => ({
     bases: s.bases.some((b) => b.id === basis.id)

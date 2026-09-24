@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, Search, X } from 'lucide-react'
 import { usePanelPosition } from './usePanelPosition'
@@ -50,6 +50,53 @@ export function MultiSelect({
   const position = usePanelPosition(open, triggerRef)
 
   const selected = options.filter((o) => value.includes(o.value))
+
+  /* The chip row never wraps to a second line (client instruction,
+     2026-09-24) — past whatever fits, the rest collapse into one "+N more"
+     chip instead, with "Clear all" always staying pinned at the row's end.
+     Measured with a hidden clone of every chip (`visibility: hidden` keeps
+     its layout box for width purposes without painting or taking space in
+     flow) rather than a fixed chip-count cutoff, since the same component
+     sits in containers of very different widths across the app. */
+  const chipRowRef = useRef<HTMLDivElement>(null)
+  const measureRef = useRef<HTMLDivElement>(null)
+  const clearAllMeasureRef = useRef<HTMLSpanElement>(null)
+  const moreMeasureRef = useRef<HTMLSpanElement>(null)
+  const [visibleChipCount, setVisibleChipCount] = useState(selected.length)
+
+  useLayoutEffect(() => {
+    const row = chipRowRef.current
+    const measure = measureRef.current
+    if (!row || !measure || selected.length === 0) { setVisibleChipCount(selected.length); return }
+
+    const recompute = () => {
+      const available = row.clientWidth
+      const gap = 4 // gap-xs
+      const clearAllWidth = selected.length > 1 ? (clearAllMeasureRef.current?.offsetWidth ?? 0) + gap : 0
+      const moreWidth = (moreMeasureRef.current?.offsetWidth ?? 0) + gap
+      const chipEls = Array.from(measure.querySelectorAll('[data-chip]')) as HTMLElement[]
+
+      let used = clearAllWidth
+      let count = 0
+      for (let i = 0; i < chipEls.length; i += 1) {
+        const isLast = i === chipEls.length - 1
+        const reserve = isLast ? 0 : moreWidth
+        const w = chipEls[i].offsetWidth + gap
+        if (used + w + reserve > available) break
+        used += w
+        count += 1
+      }
+      setVisibleChipCount(count)
+    }
+
+    recompute()
+    const ro = new ResizeObserver(recompute)
+    ro.observe(row)
+    return () => ro.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected.length, selected.map((o) => o.value).join(','), selected.map((o) => o.label).join(',')])
+
+  const hiddenChipCount = selected.length - visibleChipCount
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
@@ -121,13 +168,17 @@ export function MultiSelect({
         <ChevronDown size={16} aria-hidden className="shrink-0 text-text-muted" />
       </button>
 
-      {/* Which, not just how many. */}
+      {/* Which, not just how many. One line, always — past whatever fits, a
+          "+N more" chip stands in for the rest rather than wrapping to a
+          second line (client instruction, 2026-09-24); "Clear all" stays
+          pinned at the end via `shrink-0` either way. */}
       {showChips && selected.length > 0 && (
-        <div className="flex flex-wrap gap-xs">
-          {selected.map((o) => (
+        <div ref={chipRowRef} className="flex flex-nowrap items-center gap-xs overflow-hidden">
+          {selected.slice(0, visibleChipCount).map((o) => (
             <span
               key={o.value}
-              className="inline-flex max-w-full items-center gap-xs rounded-sm border border-border-default bg-neutral-25 py-xxss pl-sm pr-xxss text-xs text-text-primary"
+              data-chip
+              className="inline-flex max-w-full shrink-0 items-center gap-xs rounded-sm border border-border-default bg-neutral-25 py-xxss pl-sm pr-xxss text-xs text-text-primary"
             >
               <span className="min-w-0 truncate">{o.label}</span>
               <button
@@ -140,15 +191,41 @@ export function MultiSelect({
               </button>
             </span>
           ))}
+          {hiddenChipCount > 0 && (
+            <span className="shrink-0 whitespace-nowrap rounded-sm border border-border-default bg-neutral-25 px-sm py-xxss text-xs text-text-muted">
+              +{hiddenChipCount} more
+            </span>
+          )}
           {selected.length > 1 && (
             <button
               type="button"
               onClick={() => onChange([])}
-              className="rounded-sm px-sm py-xxss text-xs font-semibold text-text-primary underline-offset-2 transition-colors duration-fast hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+              className="shrink-0 whitespace-nowrap rounded-sm px-sm py-xxss text-xs font-semibold text-text-primary underline-offset-2 transition-colors duration-fast hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
             >
               Clear all
             </button>
           )}
+          {/* Hidden clone of every chip, purely for measurement — same
+              markup/classes so its widths match the real chips exactly,
+              `visibility: hidden` keeps a layout box without painting or
+              taking space in flow. Spans, not the real interactive chip, so
+              nothing here is ever reachable by keyboard or a screen reader. */}
+          <div ref={measureRef} aria-hidden className="pointer-events-none invisible absolute left-0 top-0 flex h-0 gap-xs overflow-hidden">
+            {selected.map((o) => (
+              <span key={o.value} data-chip className="inline-flex shrink-0 items-center gap-xs rounded-sm border border-border-default py-xxss pl-sm pr-xxss text-xs">
+                <span>{o.label}</span>
+                <span className="p-xxss"><X size={12} aria-hidden /></span>
+              </span>
+            ))}
+            <span ref={moreMeasureRef} className="shrink-0 whitespace-nowrap rounded-sm border border-border-default px-sm py-xxss text-xs">
+              +{selected.length} more
+            </span>
+            {selected.length > 1 && (
+              <span ref={clearAllMeasureRef} className="shrink-0 whitespace-nowrap px-sm py-xxss text-xs font-semibold">
+                Clear all
+              </span>
+            )}
+          </div>
         </div>
       )}
 

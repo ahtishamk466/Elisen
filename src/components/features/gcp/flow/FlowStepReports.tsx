@@ -26,8 +26,8 @@ export function FlowStepReports({ project }: { project: TccaProject }) {
   return (
     <section className="grid gap-lg">
       <div className="grid gap-xxss">
-        <h2 className="text-sm font-semibold text-text-primary">Reports</h2>
-        <p className="text-xs text-text-muted">Generate a report for this project by entering its parameters.</p>
+        <h2 className="text-base font-semibold text-text-primary">Reports</h2>
+        <p className="text-xs text-text-muted">The reports available for this TCCA project.</p>
       </div>
 
       <div className="grid gap-lg tablet:grid-cols-3">

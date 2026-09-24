@@ -25,7 +25,6 @@ import { PEOPLE } from '@/lib/projectFixtures'
 import { STATUS_LABEL, TYPE_LABEL } from '@/lib/projectDisplay'
 import { HEALTH_LABEL, rollUpProject, type HealthState } from '@/lib/projectHealth'
 import { useTccaStore } from '@/stores/tccaStore'
-import { getNextProjectNumber } from '@/lib/projectFixtures'
 import type { ProjectListRow } from '@/types/project'
 import type { AddProjectValues } from './useAddProjectForm'
 
@@ -55,6 +54,7 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
   const addRow = useProjectsStore((s) => s.addRow)
   const updateRow = useProjectsStore((s) => s.updateRow)
   const removeRow = useProjectsStore((s) => s.removeRow)
+  const duplicateRow = useProjectsStore((s) => s.duplicateRow)
   const linkTccaToProject = useTccaStore((s) => s.linkProject)
   const workPackages = useWorkPackagesStore((s) => s.workPackages)
   const catalogAircraft = useLookupStore((s) => s.aircraft)
@@ -165,9 +165,8 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
       ]
 
   const handleDuplicate = (row: ProjectListRow) => {
-    const number = getNextProjectNumber(rows)
-    addRow({ ...row, id: crypto.randomUUID(), number, subNumber: '00', title: `${row.title} (Copy)`, actualHours: 0, status: 'quoted' })
-    setToast(`Duplicated as project ${number}-00.`)
+    duplicateRow(row.id)
+    setToast(`"${row.number}-${row.subNumber}" duplicated.`)
   }
 
   const handleDeleteConfirmed = () => {

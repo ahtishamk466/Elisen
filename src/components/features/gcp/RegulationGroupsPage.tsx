@@ -5,6 +5,7 @@ import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useTableSort } from '@/components/patterns/useTableSort'
+import { useSyncedScroll } from '@/components/patterns/useSyncedScroll'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Badge } from '@/components/ui/Badge'
@@ -81,6 +82,7 @@ export function RegulationGroupsPage() {
     root: (s) => s.sectionRoot,
     active: (s) => s.active,
   })
+  const { headerRef, onBodyScroll } = useSyncedScroll()
 
   return (
     <AppShell
@@ -201,18 +203,39 @@ export function RegulationGroupsPage() {
                     />
                   </div>
                 ) : (
-                  <div className="min-h-0 flex-1 overflow-auto border-t border-border-default">
-                    <table className="w-full border-collapse text-left" style={{ minWidth: 480 }}>
+                  <div className="flex min-h-0 flex-1 flex-col border-t border-border-default">
+                    {/* Frozen header, own table, full width — a scrollbar
+                        never runs alongside a table's header
+                        (docs/COMPONENTS.md). */}
+                    <div ref={headerRef} className="shrink-0 overflow-x-hidden overflow-y-scroll scrollbar-none">
+                      <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 480 }}>
+                        <colgroup>
+                          {COLUMNS.map((c) => <col key={c.label} style={{ width: c.width }} />)}
+                          {/* Soaks up whatever's left past 480px on a wide
+                              screen instead of leaving it as dead space
+                              (client instruction, 2026-09-24) — the real
+                              columns keep their own explicit widths either
+                              way. */}
+                          <col />
+                        </colgroup>
+                        <thead>
+                          <tr className="border-b border-border-default bg-neutral-50">
+                            {COLUMNS.map((c) => (
+                              <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                                className="px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
+                            ))}
+                            <th aria-hidden />
+                          </tr>
+                        </thead>
+                      </table>
+                    </div>
+                    <div className="min-h-0 flex-1 overflow-x-auto overflow-y-scroll scrollbar-none" onScroll={onBodyScroll}>
+                    <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 480 }}>
                       <caption className="sr-only">Regulations in {selected.title}</caption>
-                      <thead>
-                        <tr className="border-b border-border-default bg-neutral-50">
-                          {COLUMNS.map((c) => (
-                            <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
-                              style={{ width: c.width }}
-                              className="px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
-                          ))}
-                        </tr>
-                      </thead>
+                      <colgroup>
+                        {COLUMNS.map((c) => <col key={c.label} style={{ width: c.width }} />)}
+                        <col />
+                      </colgroup>
                       <tbody>
                         {sorted.map((s) => (
                           <tr key={s.id} className="border-b border-border-default last:border-b-0">
@@ -229,10 +252,12 @@ export function RegulationGroupsPage() {
                                 ]}
                               />
                             </td>
+                            <td aria-hidden />
                           </tr>
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 )}
               </section>

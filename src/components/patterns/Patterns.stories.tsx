@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { ChevronDown, Copy as CopyIcon, Filter as FilterIcon, FolderOpen, Plus, Search as SearchIcon, Trash2 } from 'lucide-react'
 import { SortableTh } from './SortableTh'
 import { useTableSort } from './useTableSort'
+import { useSyncedScroll } from './useSyncedScroll'
 import { FormField } from './FormField'
 import { FormSection } from './FormSection'
 import { Stepper } from './Stepper'
@@ -1389,6 +1390,127 @@ export const SortableHeaderExample: Story = {
               </tr>
             </thead>
           </table>
+        </div>
+      </div>
+    )
+  },
+}
+
+/**
+ * **A scrollbar never runs alongside a table's header or a tab strip**
+ * (client instruction, 2026-09-24). Standing rule for every internally-
+ * scrolling table in the app — a `max-h-[…]` or `flex-1` bounded frame with
+ * its own `overflow-auto`, not a page-level list that scrolls with `main`.
+ *
+ * A `sticky top-0` (or even a plain, non-sticky) `<thead>` inside one shared
+ * `overflow-auto` box still sits inside that box's own scroll track, so the
+ * scrollbar visually runs right alongside the header — and the header has
+ * to share the box's own reduced width. The fix is two tables, not one: a
+ * frozen, non-scrolling header table on top (full width, no scrollbar
+ * gutter to share) and the body in its own `overflow-auto` box below it,
+ * which owns the scrollbar alone.
+ *
+ * Both tables need `table-fixed` with a **shared `<colgroup>`** (same
+ * widths, same order — including an explicit width for a plain "Actions"
+ * column) so their columns stay pixel-aligned. **Every column needs an explicit width**
+ * once `table-fixed` is in play — a column left to size itself off its
+ * content can collapse to a few px if the others' widths already sum past
+ * the table's own `minWidth` (this shipped once, on `FlowStepProject`,
+ * caught during this same pass).
+ *
+ * Interactive header controls (sort buttons, a select-all checkbox) stay in
+ * the one visible frozen table — never duplicate them into a hidden second
+ * copy for the scrolling table below.
+ *
+ * **The two tables also need to stay in horizontal sync**, not just split —
+ * a table wide enough to need horizontal scroll left the header stranded at
+ * wherever it first rendered while the body scrolled underneath it (shipped
+ * once, on `FlowStepProject`, once it grew enough columns to actually need
+ * horizontal scroll; every table below already had the vertical-only split
+ * for months without anyone noticing this half of it was still broken).
+ * `useSyncedScroll()` gives back a `headerRef` for the header's own
+ * (`overflow-x-hidden`, non-interactive) wrapper and an `onBodyScroll` for
+ * the body's `overflow-auto` wrapper, which mirrors its `scrollLeft` onto
+ * the header on every scroll event.
+ *
+ * Reference implementations: `FlowStepInitialize`, `GcpDelegationTab`,
+ * `RegulationStructurePage`, `RegulationGroupsPage`, `AtaChaptersPage`,
+ * `FlowStepProject`, `ReportDetailPanel`, `GcpCertBasesPage`.
+ */
+export const FrozenTableHeaderExample: Story = {
+  render: function FrozenTableHeaderStory() {
+    type Row = { code: string; title: string; note: string }
+    const ROWS: Row[] = Array.from({ length: 24 }, (_, i) => ({
+      code: `23.${1000 + i}`,
+      title: `Regulation row ${i + 1}`,
+      note: i % 3 === 0 ? 'Flagged' : '',
+    }))
+    const { sorted, sort, setSort } = useTableSort(ROWS, {
+      code: (r) => r.code,
+      title: (r) => r.title,
+      note: (r) => r.note,
+    })
+    const COLS = [
+      { label: 'Code', sort: 'code' as const, width: 160 },
+      { label: 'Title', sort: 'title' as const, width: 320 },
+      { label: 'Note', sort: 'note' as const, width: 220 },
+      { label: 'Actions', width: 120 },
+    ]
+    const tableWidth = COLS.reduce((sum, c) => sum + c.width, 0)
+    const { headerRef, onBodyScroll } = useSyncedScroll()
+    return (
+      <div className="grid gap-lg p-lg" style={{ maxWidth: 640 }}>
+        <p className="text-sm text-text-secondary">
+          Scroll the body below, vertically or horizontally (this table is wider
+          than its frame) — the header stays in sync either way, and the
+          scrollbar never runs alongside it, only alongside the rows.
+        </p>
+        <div className="flex flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-25" style={{ height: 280 }}>
+          <div ref={headerRef} className="shrink-0 overflow-x-hidden overflow-y-scroll scrollbar-none">
+            <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: tableWidth }}>
+              <colgroup>
+                {COLS.map((c) => <col key={c.label} style={{ width: c.width }} />)}
+                {/* Soaks up whatever's left past `tableWidth` on a screen
+                    wider than the table's real content, instead of leaving
+                    it as dead space (client instruction, 2026-09-24) — every
+                    other column keeps its own explicit width regardless. */}
+                <col />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-border-default bg-neutral-50">
+                  {COLS.map((c) => (
+                    <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                      className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">
+                      {c.label}
+                    </SortableTh>
+                  ))}
+                  <th aria-hidden />
+                </tr>
+              </thead>
+            </table>
+          </div>
+          <div className="min-h-0 flex-1 overflow-x-auto overflow-y-scroll scrollbar-none" onScroll={onBodyScroll}>
+            <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: tableWidth }}>
+              <caption className="sr-only">Example rows, frozen header</caption>
+              <colgroup>
+                {COLS.map((c) => <col key={c.label} style={{ width: c.width }} />)}
+                <col />
+              </colgroup>
+              <tbody>
+                {sorted.map((r) => (
+                  <tr key={r.code} className="border-b border-border-default last:border-b-0">
+                    <td className="px-lg py-base text-sm text-text-primary">{r.code}</td>
+                    <td className="px-lg py-base text-sm text-text-primary">{r.title}</td>
+                    <td className="px-lg py-base text-sm text-text-primary">
+                      {r.note || <span className="text-text-muted">—</span>}
+                    </td>
+                    <td className="px-lg py-base text-sm text-text-muted">⋮</td>
+                    <td aria-hidden />
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     )

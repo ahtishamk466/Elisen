@@ -49,6 +49,7 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
   const addRow = useTimesheetStore((s) => s.addRow)
   const updateRow = useTimesheetStore((s) => s.updateRow)
   const removeRow = useTimesheetStore((s) => s.removeRow)
+  const duplicateEntry = useTimesheetStore((s) => s.duplicateEntry)
   const projects = useProjectsStore((s) => s.rows)
   const workPackages = useWorkPackagesStore((s) => s.workPackages)
   const catalogActivities = useCatalogStore((s) => s.activities)
@@ -99,7 +100,7 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
   const showEmpty = state === 'empty' || (state === 'ready' && filtered.length === 0)
 
   const handleDuplicate = (row: TimesheetEntry) => {
-    addRow({ ...row, id: crypto.randomUUID(), validated: false })
+    duplicateEntry(row.id)
     setToast('Entry duplicated.')
   }
   const handleToggleValidated = (row: TimesheetEntry) => {

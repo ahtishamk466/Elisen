@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ListChecks, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ListChecks, Pencil, Plus, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { FormField } from '@/components/patterns/FormField'
@@ -53,7 +53,7 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
       <section className="grid gap-lg">
         <div className="grid gap-xxss">
           <h2 className="text-base font-semibold text-text-primary">Compliance plan</h2>
-          <p className="text-sm text-text-muted">The affected rules for this project, planned one at a time.</p>
+          <p className="text-xs text-text-muted">Each affected rule’s compliance plan, one at a time.</p>
         </div>
         <div className="rounded-sm border border-border-default bg-neutral-25">
           <EmptyState icon={<ListChecks size={48} strokeWidth={1.5} />}
@@ -61,7 +61,7 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
             description="Scope the basis in Scope Rules first; the rules marked affected arrive here." />
         </div>
         <div className="flex justify-start">
-          <Button variant="secondary" onClick={onBack}>Back</Button>
+          <Button variant="secondary" leadingIcon={<ArrowLeft size={16} />} onClick={onBack}>Back</Button>
         </div>
       </section>
     )
@@ -75,7 +75,7 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
       <div className="grid gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg py-lg">
         <div className="grid gap-xxss">
           <h2 className="text-base font-semibold text-text-primary">Compliance plan</h2>
-          <p className="text-sm text-text-muted">The affected rules for this project, planned one at a time.</p>
+          <p className="text-xs text-text-muted">Each affected rule’s compliance plan, one at a time.</p>
         </div>
 
         <FormField label="Regulation Requirement Text" htmlFor="plan-requirement" fullWidth>
@@ -135,10 +135,10 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
         <div className="grid gap-base border-t border-border-default pt-lg">
           <div className="flex flex-wrap items-center justify-between gap-base">
             <h3 className="text-sm font-semibold text-text-primary">GCP Data</h3>
-            <div className="flex items-center gap-base">
-              <p className="whitespace-nowrap text-xs text-text-muted">Total {currentItems.length} item{currentItems.length === 1 ? '' : 's'}.</p>
-              <Button size="sm" leadingIcon={<Plus size={14} />} onClick={() => setDrawer({ mode: 'create' })}>Add</Button>
-            </div>
+            {/* No running total here — this table holds a handful of rows at
+                most, all of them on screen at once, so a count restates what
+                the reader can already see (client instruction, 2026-09-24). */}
+            <Button size="sm" leadingIcon={<Plus size={14} />} onClick={() => setDrawer({ mode: 'create' })}>Add GCP Data</Button>
           </div>
 
           {currentItems.length === 0 ? (
@@ -151,20 +151,27 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
                 <caption className="sr-only">GCP data for {current.rule.section}</caption>
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
-                    {['DAO Specialty Code', 'MOC Code', 'FOC Code', 'Deliverable #', 'Active', 'Actions'].map((h) => (
-                      <th key={h} scope="col" className="px-base py-base text-sm font-semibold text-text-secondary">{h}</th>
+                    {['DAO Specialty Code', 'MOC Code', 'FOC Code', 'Deliverable #', 'Active'].map((h) => (
+                      <th key={h} scope="col" className="whitespace-nowrap px-base py-base text-sm font-semibold text-text-secondary">{h}</th>
                     ))}
+                    {/* Actions scrolls with the rest here, unlike every other
+                        table in the app: this one is a handful of rows inside
+                        a form, not a long list to scan, so pinning the column
+                        bought nothing and its edge shadow read as a stray
+                        divider mid-table (client instruction, 2026-09-24 —
+                        this table only). */}
+                    <th scope="col" className="whitespace-nowrap px-base py-base text-sm font-semibold text-text-secondary">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentItems.map((i) => (
                     <tr key={i.id} className="border-b border-border-default last:border-b-0">
-                      <td className="px-base py-base text-sm text-text-primary">{i.daoSpecialtyCode || '—'}</td>
-                      <td className="px-base py-base text-sm text-text-primary">{i.mocCode || '—'}</td>
-                      <td className="px-base py-base text-sm text-text-primary">{i.focCode || '—'}</td>
-                      <td className="px-base py-base text-sm text-text-primary">{i.deliverableId || '—'}</td>
-                      <td className="px-base py-base"><Badge tone={i.active ? 'success' : 'neutral'}>{i.active ? 'Active' : 'Inactive'}</Badge></td>
-                      <td className="px-base py-base">
+                      <td className="whitespace-nowrap px-base py-base text-sm text-text-primary">{i.daoSpecialtyCode || '—'}</td>
+                      <td className="whitespace-nowrap px-base py-base text-sm text-text-primary">{i.mocCode || '—'}</td>
+                      <td className="whitespace-nowrap px-base py-base text-sm text-text-primary">{i.focCode || '—'}</td>
+                      <td className="whitespace-nowrap px-base py-base text-sm text-text-primary">{i.deliverableId || '—'}</td>
+                      <td className="whitespace-nowrap px-base py-base"><Badge tone={i.active ? 'success' : 'neutral'}>{i.active ? 'Active' : 'Inactive'}</Badge></td>
+                      <td className="whitespace-nowrap px-base py-base">
                         <ActionsMenu
                           ariaLabel={`Actions for ${i.daoSpecialtyCode || 'GCP data row'}`}
                           items={[
@@ -183,7 +190,7 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
       </div>
 
       <div className="flex items-center justify-between">
-        <Button variant="secondary" onClick={onBack}>Back</Button>
+        <Button variant="secondary" leadingIcon={<ArrowLeft size={16} />} onClick={onBack}>Back</Button>
         <Button onClick={onNext}>Continue to Reports</Button>
       </div>
 

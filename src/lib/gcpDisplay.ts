@@ -111,3 +111,14 @@ function hostOf(url: string) {
     return ''
   }
 }
+
+/**
+ * A code as it fits a round two-character initials disc (`Avatar`'s own
+ * pattern: `bg-accent-subtle` circle, accent initials) — every subpart code
+ * is one letter except a handful (`AWO`, `APP`…) that ran three, which
+ * stretched the fixed-size circle into a pill. Capped at 2, matching every
+ * other code in the set instead of one outlier breaking the shape.
+ */
+export function initialsOf(code: string) {
+  return code.slice(0, 2)
+}

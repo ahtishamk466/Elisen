@@ -30,10 +30,9 @@ const CHILD_ROUTES: Record<string, string> = {
   'Aircraft': '/admin/aircraft',
   'Activities & Tasks': '/admin/activities',
   'ATA Chapters': '/admin/ata-chapters',
-  'Certification Flow': '/gcp/flow',
-  'GCP Projects': '/gcp/projects',
+  'GCP Projects': '/gcp/flow',
   'Regulations': '/gcp/regulations',
-  'Cert Bases': '/gcp/cert-bases',
+  'Cert Basis': '/gcp/cert-bases',
   'People & Authority': '/gcp/people',
   'Reference Lists': '/gcp/reference',
   'GCP Reports': '/gcp/reports',
@@ -69,7 +68,7 @@ const NAV: NavItem[] = [
   { label: 'Reports', icon: <ListChecks size={18} /> },
   // GCP's 23 legacy screens collapse into five: the project workspace where the
   // daily work happens, and four library sections it reads from.
-  { label: 'GCP', icon: <ShieldCheck size={18} />, children: ['Certification Flow', 'GCP Projects', 'Regulations', 'Cert Bases', 'People & Authority', 'Reference Lists', 'GCP Reports'] },
+  { label: 'GCP', icon: <ShieldCheck size={18} />, children: ['GCP Projects', 'Regulations', 'Cert Basis', 'People & Authority', 'Reference Lists', 'GCP Reports'] },
   // Three administrative sections split by *what* they hold, not by who is
   // senior enough to see them: business data staff maintain, access
   // management, and machine-side tooling. Ordered most-used first, and each
@@ -125,11 +124,14 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
     <div className="flex h-screen overflow-hidden bg-neutral-50">
       {/* Full height of that frame, with the nav list scrolling internally, so
           the profile footer stays above the fold at any scroll position. */}
-      <aside className="hidden h-full w-64 shrink-0 flex-col bg-primary-700 laptop:flex">
+      <aside className="hidden h-full w-64 shrink-0 flex-col bg-primary-700 tablet:flex">
         <div className="px-lg py-xl">
           <img src="/logo-elisen.svg" alt="Elisen" width={600} height={104} className="h-6 w-auto brightness-0 invert" />
         </div>
-        <nav aria-label="Main" className="min-h-0 flex-1 overflow-y-auto">
+        {/* No visible scrollbar in the sidebar (client instruction,
+            2026-09-24) — it still scrolls (wheel, keyboard), it just never
+            shows the bar the rest of the app's scroll regions do. */}
+        <nav aria-label="Main" className="scrollbar-none min-h-0 flex-1 overflow-y-auto">
           <ul className="grid gap-xxss px-base">
             {NAV.map((item) => {
               const active = item.label === activeItem

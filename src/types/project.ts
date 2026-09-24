@@ -47,6 +47,11 @@ export interface ProjectListRow {
   status: ProjectStatus
   /** Lifecycle flag, as on the legacy Review screen's Active column. */
   active: boolean
+  /** Set on a project made via "Duplicate" — every other field, including
+      `number`/`subNumber`/`title`, is copied as-is from the original, so
+      this is the only way to tell the two apart. Shown as a "Copy" badge
+      next to the number wherever it's the row's own primary label. */
+  isCopy?: boolean
 
   // Detail-only fields — collected on the create/edit form, shown and
   // editable per-section on Project Detail > Overview.

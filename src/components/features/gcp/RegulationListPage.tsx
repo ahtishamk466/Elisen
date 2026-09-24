@@ -182,7 +182,7 @@ export function RegulationListPage({ state = 'ready' }: { state?: PageState }) {
               title={query || hasFilters ? 'No regulations match your search' : 'No regulations yet'}
               description={query || hasFilters
                 ? 'Try another section number, title or amendment.'
-                : 'Add a rule, or import a set from an FAA export on Cert Bases.'}
+                : 'Add a rule, or import a set from an FAA export on Cert Basis.'}
               action={query || hasFilters
                 ? <Button variant="secondary" onClick={clearAll}>Clear search &amp; filters</Button>
                 : <Button leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>Add</Button>}

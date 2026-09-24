@@ -8,6 +8,65 @@
     color: var(--color-text-primary);
     font-family: var(--font-family-sans);
   }
+
+  /* Thin scrollbars everywhere — client instruction (2026-09-24): every
+     horizontal and vertical scroll region in the app, 4px thick (was the
+     browser default, ~8px+), neutral-300 thumb, no visible track. Applies
+     globally via `*` rather than a class on each scroll container, since
+     scroll regions are spread across dozens of tables, drawers and rails
+     app-wide. `.scrollbar-none` below still wins where a scrollbar must
+     stay fully hidden (TableTabs) — a class selector outranks this
+     element-wildcard one regardless of source order. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-neutral-300) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-neutral-300);
+    border-radius: var(--radius-full);
+    /* Capped to a short 15px pill (client instruction — 8px, then 40px,
+       then 50px, then 30% of 50px, all the same day) instead of the
+       thumb's native length, which scales with how much of the content is
+       visible — on a container that barely overflows (the sidebar nav
+       before it gained `scrollbar-none`) that produced a near-full-height
+       bar that read as a permanent decorative line rather than a scroll
+       affordance. `min-height`/`min-width` keep it draggable on very long
+       lists (Delegation's 720 rows) where the proportional thumb would
+       otherwise shrink well under 15px.
+       This cap is for *bounded* scroll boxes — a table, a rail, a drawer —
+       where the content inside is far longer than the box showing it.
+       `<main>`, the one scroller carrying the whole page, is deliberately
+       excluded below: forcing the same fixed-length pill onto a scroller
+       whose job is to show *how far down a long page you are* would make
+       every page look identically scrolled regardless of its real length —
+       client instruction, 2026-09-24 ("keep it in the table, not on the
+       page"). */
+    max-height: 15px;
+    max-width: 15px;
+    min-height: 15px;
+    min-width: 15px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-neutral-400);
+  }
+
+  /* AppShell's page scroller — natural, proportional thumb length instead
+     of the bounded-box pill above; still thin, still neutral-300, still
+     capped at a sane *minimum* so a very long page doesn't shrink it past
+     grabbable. */
+  main::-webkit-scrollbar-thumb {
+    max-height: none;
+    max-width: none;
+    min-height: 24px;
+    min-width: 24px;
+  }
 }
 
 @layer components {

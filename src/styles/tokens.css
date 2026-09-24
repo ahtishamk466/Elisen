@@ -148,6 +148,10 @@
   --shadow-lg: 0 8px 16px 0 rgba(2, 6, 23, 0.10);
   --shadow-button: 3px 3px 4px 0 rgba(255, 255, 255, 0.20);
   --shadow-textfield: 0 1px 2px 0 var(--color-neutral-50);
+  /* A sticky right-pinned column's own edge, floating over the row content
+     that scrolls underneath it — client-supplied spec (2026-09-24), read
+     off their design tool: X -4, Y 0, blur 14, spread 0, #475569 at 12%. */
+  --shadow-sticky: -4px 0 14px 0 rgba(71, 85, 105, 0.12);
 
   /* Motion */
   --duration-fast: 150ms;

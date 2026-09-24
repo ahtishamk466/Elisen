@@ -15,7 +15,6 @@ import { useWorkPackagesStore } from '@/stores/workPackagesStore'
 import { useTccaStore } from '@/stores/tccaStore'
 import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore'
 import { useApprovalsStore } from '@/stores/approvalsStore'
-import { getNextProjectNumber } from '@/lib/projectFixtures'
 import { PRIORITY_LABEL, PRIORITY_TONE, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
 import { PENDING_REPORTS } from '@/lib/pendingReports'
 import { rollUpProject } from '@/lib/projectHealth'
@@ -84,9 +83,9 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
   const rows = useProjectsStore((s) => s.rows)
   const workPackages = useWorkPackagesStore((s) => s.workPackages)
   const wpActivities = useWorkPackagesStore((s) => s.activities)
-  const addRow = useProjectsStore((s) => s.addRow)
   const updateRow = useProjectsStore((s) => s.updateRow)
   const removeRow = useProjectsStore((s) => s.removeRow)
+  const duplicateRow = useProjectsStore((s) => s.duplicateRow)
 
   const tccaProjects = useTccaStore((s) => s.tccaProjects)
   const docLinks = useTccaStore((s) => s.docLinks)
@@ -136,8 +135,7 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
   }
 
   const handleDuplicate = () => {
-    const number = getNextProjectNumber(rows)
-    addRow({ ...row, id: crypto.randomUUID(), number, subNumber: '00', title: `${row.title} (Copy)`, actualHours: 0, status: 'quoted' })
+    duplicateRow(row.id)
     navigate('/projects')
   }
 
@@ -237,7 +235,10 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
               <div className="grid items-start gap-lg laptop:grid-cols-[320px_minmax(0,1fr)]">
               <aside className="h-fit rounded-sm border border-border-default bg-neutral-25 p-lg">
             <div className="flex items-start justify-between gap-sm">
-              <p className="text-2xl font-bold leading-tight text-text-primary">{row.number}-{row.subNumber}</p>
+              <div className="flex items-center gap-xs">
+                <p className="text-2xl font-bold leading-tight text-text-primary">{row.number}-{row.subNumber}</p>
+                {row.isCopy && <Badge tone="info">Copy</Badge>}
+              </div>
               <ActionsMenu
                 ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
                 items={[

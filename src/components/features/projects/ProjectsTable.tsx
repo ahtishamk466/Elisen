@@ -68,7 +68,7 @@ interface Column {
 }
 
 /** Below this the flexible three would start truncating everything — must
-    equal the sum of the three flex columns' own `min` (88 + 114 + 94).
+    equal the sum of the three flex columns' own `min` (145 + 114 + 94).
 
     Every `fixed` and `min` here is its column's **measured** content floor —
     the widest thing it ever holds, heading included — plus the 24px column
@@ -78,8 +78,15 @@ interface Column {
 
     The gutter came down from 32px to 24px to buy the ~72px that made nine
     columns fit a 1280 laptop without a scrollbar. Wider screens spend the
-    surplus on the three flex columns rather than on padding. */
-const FLEX_FLOOR = 296
+    surplus on the three flex columns rather than on padding.
+
+    Project's own floor moved 88 → 145 (client instruction, 2026-09-24): a
+    duplicated row's "Copy" `Badge` sits inline next to the number, never on
+    its own line — floor had to grow to fit `{number}-{subNumber}` plus the
+    badge without either wrapping the row to a third line or bleeding into
+    Priority/Type, the same way `Active`'s floor already accounts for its
+    own badge. */
+const FLEX_FLOOR = 353
 
 /**
  * Seven columns, and **no horizontal scroll**: the table used to declare a
@@ -103,9 +110,10 @@ const COLUMNS: Column[] = [
      lines of free text, so it leads the table at every width instead of
      collapsing to the narrowest column on the row. It is also the one column
      with no `max`, so every pixel the others don't claim lands here.
-     min 110 → 145: a project number plus a truncated title read as cramped
-     at the old floor, and this is the one column meant to lead the row. */
-  { label: 'Project', sort: 'number', flex: 52, min: 88 },
+     min 88 → 145 (client instruction, 2026-09-24): fits a duplicated row's
+     inline "Copy" `Badge` next to the number without it wrapping to a third
+     line or bleeding into Priority/Type — see `FLEX_FLOOR` above. */
+  { label: 'Project', sort: 'number', flex: 52, min: 145 },
   {
     label: 'Priority/Type',
     /* Heading-bound, not content-bound: "Priority/Type" plus its sort icon
@@ -299,8 +307,11 @@ export function ProjectsTable({
                         onClick={(e) => { e.stopPropagation(); onView?.(row) }}
                         className="block w-full text-left underline-offset-2 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
                       >
-                        <span className="block whitespace-nowrap text-sm font-semibold tabular-nums text-text-primary">
-                          {row.number}-{row.subNumber}
+                        <span className="flex items-center gap-xs">
+                          <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-text-primary">
+                            {row.number}-{row.subNumber}
+                          </span>
+                          {row.isCopy && <Badge tone="info">Copy</Badge>}
                         </span>
                         <span className="block text-xs text-text-secondary"><Truncate lines={1}>{row.title}</Truncate></span>
                       </button>

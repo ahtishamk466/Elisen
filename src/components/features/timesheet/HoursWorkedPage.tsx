@@ -63,6 +63,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
   const addRow = useTimesheetStore((s) => s.addRow)
   const updateRow = useTimesheetStore((s) => s.updateRow)
   const removeRow = useTimesheetStore((s) => s.removeRow)
+  const duplicateEntry = useTimesheetStore((s) => s.duplicateEntry)
   const projects = useProjectsStore((s) => s.rows)
   const workPackages = useWorkPackagesStore((s) => s.workPackages)
   const wpActivities = useWorkPackagesStore((s) => s.activities)
@@ -174,7 +175,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
   const showEmpty = state === 'empty' || (state === 'ready' && filtered.length === 0)
 
   const handleDuplicate = (row: TimesheetEntry) => {
-    addRow({ ...row, id: crypto.randomUUID(), validated: false })
+    duplicateEntry(row.id)
     setToast('Entry duplicated.')
   }
   const handleToggleValidated = (row: TimesheetEntry) => {

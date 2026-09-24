@@ -5,6 +5,7 @@ import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useTableSort } from '@/components/patterns/useTableSort'
+import { useSyncedScroll } from '@/components/patterns/useSyncedScroll'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { StatCard } from '@/components/patterns/StatCard'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -24,12 +25,12 @@ export type PageState = 'ready' | 'loading' | 'error'
 
 type SubSortKey = 'code' | 'title' | 'definition' | 'active'
 
-const SUB_CHAPTER_COLUMNS: { label: string; sort?: SubSortKey }[] = [
-  { label: 'Code', sort: 'code' },
-  { label: 'Title', sort: 'title' },
+const SUB_CHAPTER_COLUMNS: { label: string; sort?: SubSortKey; width?: number }[] = [
+  { label: 'Code', sort: 'code', width: 140 },
+  { label: 'Title', sort: 'title', width: 180 },
   { label: 'Definition', sort: 'definition' },
-  { label: 'Active', sort: 'active' },
-  { label: 'Actions' },
+  { label: 'Active', sort: 'active', width: 110 },
+  { label: 'Actions', width: 64 },
 ]
 
 /**
@@ -163,6 +164,7 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
     active: (s) => s.active,
   })
   const shownSubChapters = filtered.reduce((n, c) => n + subChaptersOf(c.id).length, 0)
+  const { headerRef, onBodyScroll } = useSyncedScroll()
 
   const activeCount = filtered.filter((c) => c.active).length
   const inactiveCount = filtered.length - activeCount
@@ -340,17 +342,34 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
                     No sub chapters yet. Most chapters start with 00 — General.
                   </p>
                 ) : (
-                  <div className="min-h-0 flex-1 overflow-auto border-t border-border-default">
-                    <table className="w-full border-collapse text-left" style={{ minWidth: 680 }}>
+                  <div className="flex min-h-0 flex-1 flex-col border-t border-border-default">
+                    {/* Frozen header, own table, full width — a scrollbar
+                        never runs alongside a table's header
+                        (docs/COMPONENTS.md). */}
+                    <div ref={headerRef} className="shrink-0 overflow-x-hidden overflow-y-scroll scrollbar-none">
+                      {/* No spacer column needed here — `Definition` already
+                          has no explicit width, so `table-fixed` gives it
+                          100% of whatever's left past the other columns'
+                          widths; `w-full` + `minWidth` just lets that be more
+                          than 680px on a wide screen instead of leaving the
+                          extra as dead space (client instruction,
+                          2026-09-24). */}
+                      <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 680 }}>
+                        <colgroup>{SUB_CHAPTER_COLUMNS.map((c) => <col key={c.label} style={c.width ? { width: c.width } : undefined} />)}</colgroup>
+                        <thead>
+                          <tr className="border-b border-border-default bg-neutral-50">
+                            {SUB_CHAPTER_COLUMNS.map((c) => (
+                              <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                                className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
+                            ))}
+                          </tr>
+                        </thead>
+                      </table>
+                    </div>
+                    <div className="min-h-0 flex-1 overflow-x-auto overflow-y-scroll scrollbar-none" onScroll={onBodyScroll}>
+                    <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 680 }}>
                       <caption className="sr-only">Sub chapters of chapter {selected.chapter}</caption>
-                      <thead>
-                        <tr className="border-b border-border-default bg-neutral-50">
-                          {SUB_CHAPTER_COLUMNS.map((c) => (
-                            <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
-                              className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
-                          ))}
-                        </tr>
-                      </thead>
+                      <colgroup>{SUB_CHAPTER_COLUMNS.map((c) => <col key={c.label} style={c.width ? { width: c.width } : undefined} />)}</colgroup>
                       <tbody>
                         {sortedSubChapters.map((s) => (
                             <tr key={s.id} className="border-b border-border-default last:border-b-0">
@@ -377,6 +396,7 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 )}
               </section>
