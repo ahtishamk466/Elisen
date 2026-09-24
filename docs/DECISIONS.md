@@ -5827,3 +5827,145 @@ store and let the reader edit.
   collapsed the text selection before the click handler ran — so Bold/Italic
   etc. silently applied to nothing. Each toolbar button now calls
   `e.preventDefault()` on `onMouseDown` to keep the selection intact.
+
+## 2026-09-23 — Every Certification Flow step fills the viewport; only inner content scrolls
+
+**Context:** Steps 2–5 let the browser window itself scroll once their form
+or table grew past the fold, while step 1's project table was already built
+to fill to the viewport and scroll its own rows. The client asked for that
+same behavior everywhere in this flow: the page never scrolls, the stepper
+and project summary card stay put, and whatever's below scrolls in its own
+pane.
+
+**Choice:** `GcpFlowPage` now always passes `AppShell`'s `fill` (previously
+only on step 1), and its stepper/summary card are `shrink-0` inside an
+always-`flex min-h-0 flex-1 flex-col` wrapper. Step 1 and step 3
+(`FlowStepInitialize`) manage their own internal scroll — their tables now
+fill the remaining height (`min-h-0 flex-1` + `h-full overflow-auto`
+replacing step 3's old fixed `max-h-[560px]`) with a sticky header, matching
+step 1's existing pattern. Steps 2, 4 and 5 are forms rather than tables, so
+each is wrapped at the call site in a plain `min-h-0 flex-1 overflow-y-auto`
+pane rather than reworking their internals — the minimal fix for "don't let
+the window scroll" on a form-shaped step.
+
+## 2026-09-23 — FOC tab built with real codes/specialties, placeholder names
+
+**Context:** The client asked for the People & Authority FOC tab (previously
+a placeholder) to be filled in from the legacy portal
+(dev.elisen.com/foc/index), "don't miss anything" — all 63 rows. That list's
+`Authority Specialist` column is real personal names (delegates, candidates,
+certification engineers, outside specialists), and the legacy portal is
+unauthenticated and effectively public — the standing rule from earlier in
+this project (no real name is ever bundled into this app's source) applies
+directly here.
+
+**Choice:** Fetched all 63 rows from the portal's "Show all data" view and
+brought in Code, Specialty and Default exactly as stored. Every real name in
+Authority Specialist was replaced with a fictitious placeholder, in the same
+style as `employeeFixtures.ts`'s existing made-up names — but the mapping is
+consistent: everywhere the legacy list repeats one real person across
+multiple codes (e.g. one person holding both an AP and a CE code), that
+person's placeholder repeats across those same rows, so the list's real
+shape (who holds how many codes) survives even though identity doesn't.
+Institutional "names" that were never a real person (TBD, Not Applicable,
+Not Required, Transport Canada, the literal "-") were left as the legacy
+screen has them. New `Foc` type, `FOC_LIST` fixture, `useGcpStore`
+CRUD (`addFoc`/`updateFoc`/`removeFoc`), `GcpFocTab` (sortable/searchable
+table, matching `FlowStepProject`'s conventions) and `FocDrawer` (Code,
+Authority Specialist, Specialty, Default as a `Checkbox` rather than
+`ActiveSelect` — Default isn't this record's active/inactive state).
+Delegation and Discipline tabs are unchanged, still `GcpTabPanel`
+placeholders — only FOC was in scope for this pass.
+
+## 2026-09-23 — Discipline tab built with the legacy list, no anonymization needed
+
+**Context:** Same ask as FOC — fill in the People & Authority Discipline tab
+from the legacy portal (dev.elisen.com/discipline/index), exactly as it
+reads, in this app's own table style rather than the legacy grid's look.
+
+**Choice:** Fetched all 23 rows via "Show all data" and brought in DAO
+Specialty Code, Elisen discipline, TCCA discipline and Active exactly as
+stored — no substitution needed this time, since this list has no personal
+data (unlike FOC's Authority Specialist column). New `Discipline` type,
+`DISCIPLINES` fixture, `useGcpStore` CRUD (`addDiscipline`/`updateDiscipline`/
+`removeDiscipline`), `GcpDisciplineTab` (same sortable/searchable table shape
+as `GcpFocTab`) and `DisciplineDrawer` — Active here IS the record's
+active/inactive state, so it's an `ActiveSelect`, unlike FOC's Default
+`Checkbox`.
+
+## 2026-09-23 — Tabbed page layout: tabs/table separate cards, Add moves to the header
+
+**Context:** The client pointed at the app's own Roles & Permissions screen
+as the layout every tabs-over-a-table page should follow, and asked that it
+be saved as a standing rule so it doesn't need repeating: tab strip and
+table in separate cards (not one shared card), and a single Add button in
+the page header whose label names the active tab.
+
+**Choice:** `GcpPeoplePage` restructured first: `TableTabs` now sits in its
+own bordered card, the active tab's content (table or placeholder) in
+another below it. `AppShell`'s `headerActions` carries one `Button` whose
+label is `active.addLabel` ("Add FOC", "Add Discipline") — omitted entirely
+for a tab with no working create flow (Delegation), rather than showing a
+button that would open nothing. `GcpFocTab` and `GcpDisciplineTab` no longer
+own an internal Add button or manage their create-drawer's open state; that
+became `createOpen`/`onCreateOpenChange` props driven by the page. Edit and
+Remove stay local state in each tab, since only the primary Add action moved.
+This convention is documented in COMPONENTS.md ("Tabbed page layout") and in
+memory (`feedback_tabbed_page_layout`) as a standing rule for every future
+tabbed screen, not just this one.
+
+## 2026-09-23 — Delegation tab built (720 rows); View added to all three People & Authority tabs
+
+**Context:** The client asked for the Delegation tab to be filled in from
+the legacy portal (dev.elisen.com/delegation/index) — 720 rows, the largest
+of the three People & Authority lists — plus two corrections: the legacy
+grid's tick/cross icons for Limitation should read as a green "Yes" / red
+"No" tag instead, and creating/editing a delegation should pick Yes/No from
+a dropdown, not a checkbox. Separately, all three tabs' row actions should
+be a 3-dot menu with View, Edit and Remove — FOC and Discipline only had
+Edit/Remove until now.
+
+**Choice:** Fetched all 720 rows via "Show all data" (Section Root, FOC
+Code, Limitation, Active) — no personal data on this list, so nothing
+needed anonymizing, unlike FOC. New `Delegation` type, `DELEGATIONS`
+fixture, `useGcpStore` CRUD. `GcpDelegationTab` follows the same
+`createOpen`/`onCreateOpenChange` header-Add pattern as `GcpFocTab`/
+`GcpDisciplineTab`, but scrolls inside a bounded `max-h-[600px]` frame with
+a sticky header (matching Scope Rules' 412-row table) rather than
+stretching the page 720 rows tall. `DelegationDrawer`'s Section Root and
+FOC Code are `SearchableSelect` pickers sourced from real data (regulation
+section roots, the FOC list) rather than free text, matching the legacy
+screen's own dropdowns; Limitation and Active are Yes/No `Select`s.
+Limitation renders as `Badge tone={limitation ? 'success' : 'danger'}`
+everywhere (table and detail view), not an icon.
+
+Added `FocDetailDrawer` and `DisciplineDetailDrawer` (paired with the new
+`DelegationDetailDrawer`) so all three tabs now have the same View → Edit
+bridge `RegulationDetailDrawer` established: a read-only `DetailCard`/
+`DetailField` view with Edit in its footer, `ActionsMenu` gets View/Edit/
+Remove uniformly across FOC, Delegation and Discipline.
+
+## 2026-09-24 — Tabbed page layout, extended: header search + tab count pills
+
+**Context:** Further correction to the "Tabbed page layout" rule from
+2026-09-23: the client pointed at the app's own Aircraft / Serial Numbers
+reference-data screen and asked for the same treatment on `GcpPeoplePage` —
+the search box should move into the page header beside Add (not sit in its
+own "Total N / search" card above the table), and each tab's label should
+carry its row count as a pill, the way "Aircraft 128 / Serial Numbers 53"
+does.
+
+**Choice:** `GcpPeoplePage` now owns `query` state and renders one search
+`Input` in `headerActions` next to the Add button, with a placeholder that
+changes per active tab ("Search by code, specialist or specialty..." for
+FOC, etc.). `GcpFocTab`/`GcpDelegationTab`/`GcpDisciplineTab` each dropped
+their own search box and the "Total N ..." card entirely — they now take
+`query` as a prop and filter with it, nothing else. `TableTabs` already
+supported a `count` per tab (used by Aircraft), so `GcpPeoplePage` just
+passes `focs.length`/`delegations.length`/`disciplines.length` through.
+Switching tabs clears both `query` and `createOpen`, so a stale search or an
+open create drawer never survives a tab switch. Documented as an extension
+of the existing "Tabbed page layout" rule (docs/COMPONENTS.md and the
+`feedback_tabbed_page_layout` memory), not a separate one — the two
+reference screens (Roles & Permissions, Aircraft) together define the full
+shape now.

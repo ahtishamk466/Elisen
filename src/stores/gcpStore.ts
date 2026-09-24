@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { REGULATION_GROUPS, REGULATION_GROUP_SECTIONS, REGULATIONS, SUBPARTS, SUBSECTIONS } from '@/lib/gcpFixtures'
-import type { Regulation, RegulationGroup, RegulationGroupSection, Subpart, Subsection } from '@/types/gcp'
+import { DELEGATIONS, DISCIPLINES, FOC_LIST, REGULATION_GROUPS, REGULATION_GROUP_SECTIONS, REGULATIONS, SUBPARTS, SUBSECTIONS } from '@/lib/gcpFixtures'
+import type { Delegation, Discipline, Foc, Regulation, RegulationGroup, RegulationGroupSection, Subpart, Subsection } from '@/types/gcp'
 
 interface GcpState {
   regulations: Regulation[]
@@ -8,6 +8,9 @@ interface GcpState {
   subsections: Subsection[]
   groups: RegulationGroup[]
   groupSections: RegulationGroupSection[]
+  focs: Foc[]
+  disciplines: Discipline[]
+  delegations: Delegation[]
 
   addRegulation: (r: Regulation) => void
   updateRegulation: (id: string, patch: Partial<Regulation>) => void
@@ -31,6 +34,18 @@ interface GcpState {
   setGroupSections: (groupId: string, sectionRoots: string[]) => void
   updateGroupSection: (id: string, patch: Partial<RegulationGroupSection>) => void
   removeGroupSection: (id: string) => void
+
+  addFoc: (f: Foc) => void
+  updateFoc: (id: string, patch: Partial<Foc>) => void
+  removeFoc: (id: string) => void
+
+  addDiscipline: (d: Discipline) => void
+  updateDiscipline: (id: string, patch: Partial<Discipline>) => void
+  removeDiscipline: (id: string) => void
+
+  addDelegation: (d: Delegation) => void
+  updateDelegation: (id: string, patch: Partial<Delegation>) => void
+  removeDelegation: (id: string) => void
 }
 
 export const useGcpStore = create<GcpState>((set) => ({
@@ -39,6 +54,9 @@ export const useGcpStore = create<GcpState>((set) => ({
   subsections: SUBSECTIONS,
   groups: REGULATION_GROUPS,
   groupSections: REGULATION_GROUP_SECTIONS,
+  focs: FOC_LIST,
+  disciplines: DISCIPLINES,
+  delegations: DELEGATIONS,
 
   addRegulation: (r) => set((s) => ({ regulations: [r, ...s.regulations] })),
   updateRegulation: (id, patch) => set((s) => ({
@@ -80,4 +98,22 @@ export const useGcpStore = create<GcpState>((set) => ({
     groupSections: s.groupSections.map((x) => (x.id === id ? { ...x, ...patch } : x)),
   })),
   removeGroupSection: (id) => set((s) => ({ groupSections: s.groupSections.filter((x) => x.id !== id) })),
+
+  addFoc: (f) => set((s) => ({ focs: [f, ...s.focs] })),
+  updateFoc: (id, patch) => set((s) => ({
+    focs: s.focs.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+  })),
+  removeFoc: (id) => set((s) => ({ focs: s.focs.filter((f) => f.id !== id) })),
+
+  addDiscipline: (d) => set((s) => ({ disciplines: [d, ...s.disciplines] })),
+  updateDiscipline: (id, patch) => set((s) => ({
+    disciplines: s.disciplines.map((d) => (d.id === id ? { ...d, ...patch } : d)),
+  })),
+  removeDiscipline: (id) => set((s) => ({ disciplines: s.disciplines.filter((d) => d.id !== id) })),
+
+  addDelegation: (d) => set((s) => ({ delegations: [d, ...s.delegations] })),
+  updateDelegation: (id, patch) => set((s) => ({
+    delegations: s.delegations.map((d) => (d.id === id ? { ...d, ...patch } : d)),
+  })),
+  removeDelegation: (id) => set((s) => ({ delegations: s.delegations.filter((d) => d.id !== id) })),
 }))

@@ -122,3 +122,43 @@ export interface GcpItem {
   deliverableId: string
   active: boolean
 }
+
+/** Who can find or recommend compliance, and under which code — delegates,
+    candidates, certification engineers, outside specialists and Transport
+    Canada. Fields mirror the legacy `foc` table and its create screen.
+    `authoritySpecialist` is a name only in the sense every legacy row has
+    one; every real person's name is replaced with a placeholder here (see
+    docs/DECISIONS.md — the legacy portal is unauthenticated and effectively
+    public, so no real name is ever bundled into this app). */
+export interface Foc {
+  id: string
+  code: string
+  authoritySpecialist: string
+  specialty: string
+  /** `Default` — the FOC offered first when a rule's own default isn't set. */
+  isDefault: boolean
+}
+
+/** One technical discipline, at the DAO specialty code level, mapped to its
+    Elisen and TCCA names — the third People & Authority list, matching the
+    legacy `discipline` table and its create screen. */
+export interface Discipline {
+  id: string
+  daoSpecialtyCode: string
+  elisenDiscipline: string
+  tccaDiscipline: string
+  active: boolean
+}
+
+/** Which rule numbers a FOC code may sign for — the second People &
+    Authority list, matching the legacy `delegation` table and its create
+    screen. `sectionRoot` here is the padded root a `Regulation`'s own
+    `sectionRoot` uses (e.g. `23.0021`), not the bare `23.21` a reader would
+    type. */
+export interface Delegation {
+  id: string
+  sectionRoot: string
+  focCode: string
+  limitation: boolean
+  active: boolean
+}

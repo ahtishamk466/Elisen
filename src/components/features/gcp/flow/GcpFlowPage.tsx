@@ -107,15 +107,14 @@ export function GcpFlowPage() {
           Back to all projects
         </button>
       ) : undefined}
-      /* Step 1's project table is the one screen in this flow long enough to
-         want the viewport: it fills down to the fold and scrolls its own
-         rows, rather than fixing an arbitrary pixel height that leaves dead
-         space on a tall screen and clips early on a short one. Every other
-         step is a form/panel that reads naturally as a scrolling page. */
-      fill={step === 1}
+      /* Every step fills the viewport instead of letting the browser window
+         itself scroll: the stepper and project summary card stay put, and
+         whatever's below them — a table (step 1, step 3) or a tall form
+         (step 2, 4, 5) — is the one thing that scrolls, in its own pane. */
+      fill
     >
-      <div className={step === 1 ? 'flex min-h-0 flex-1 flex-col gap-lg' : 'grid gap-lg'}>
-        <div className="rounded-sm border border-border-default bg-neutral-25 px-lg py-lg">
+      <div className="flex min-h-0 flex-1 flex-col gap-lg">
+        <div className="shrink-0 rounded-sm border border-border-default bg-neutral-25 px-lg py-lg">
           <Stepper steps={[...FLOW_STEPS]} current={step - 1} />
         </div>
 
@@ -126,7 +125,7 @@ export function GcpFlowPage() {
             detail header), so going back never means losing track of which
             project this work belongs to or how far its GCP has gotten. */}
         {step > 1 && project && (
-          <section aria-label={`${project.number} summary`} className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+          <section aria-label={`${project.number} summary`} className="shrink-0 overflow-hidden rounded-sm border border-border-default bg-neutral-25">
             <header className="flex flex-wrap items-center gap-sm px-lg py-lg">
               <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-accent-subtle text-accent">
                 <FolderKanban size={22} />
@@ -232,20 +231,34 @@ export function GcpFlowPage() {
             <FlowStepProject projectId={projectId} onPick={(id) => go(2, { project: id })} />
           </div>
         )}
-        {step === 2 && project && <FlowStepBasis project={project} onBack={() => go(1)} onNext={() => go(3)} />}
-        {step === 3 && project && <FlowStepInitialize project={project} onBack={() => go(2)} onNext={() => go(4)} />}
-        {step === 4 && project && (
-          <FlowStepPlan
-            rows={planRows}
-            index={planIndex}
-            onBack={() => go(3)}
-            onNext={() => go(5)}
-          />
+        {step === 2 && project && (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <FlowStepBasis project={project} onBack={() => go(1)} onNext={() => go(3)} />
+          </div>
         )}
-        {step === 5 && project && <FlowStepReports project={project} />}
+        {step === 3 && project && (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <FlowStepInitialize project={project} onBack={() => go(2)} onNext={() => go(4)} />
+          </div>
+        )}
+        {step === 4 && project && (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <FlowStepPlan
+              rows={planRows}
+              index={planIndex}
+              onBack={() => go(3)}
+              onNext={() => go(5)}
+            />
+          </div>
+        )}
+        {step === 5 && project && (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <FlowStepReports project={project} />
+          </div>
+        )}
 
         {step === 5 && (
-          <div className="flex justify-start">
+          <div className="flex shrink-0 justify-start">
             <Button variant="secondary" onClick={() => go(step - 1)}>Back</Button>
           </div>
         )}

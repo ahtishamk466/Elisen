@@ -17,14 +17,14 @@ import { useGcpFlowStore } from '@/stores/gcpFlowStore'
 type SortKey = 'number' | 'description' | 'elisenProject' | 'applicable' | 'affected' | 'opened'
 
 const COLUMNS: { label: string; sort?: SortKey; style?: CSSProperties }[] = [
-  { label: 'TCCA Project #', sort: 'number', style: { width: 160 } },
+  { label: 'TCCA Project #', sort: 'number', style: { width: 170 } },
   { label: 'Project Description', sort: 'description' },
-  { label: 'Elisen Project', sort: 'elisenProject', style: { width: 140 } },
-  { label: 'Applicable', sort: 'applicable', style: { width: 100 } },
-  { label: 'Affected', sort: 'affected', style: { width: 90 } },
-  { label: 'GCP Progress', style: { width: 160 } },
-  { label: 'Opened', sort: 'opened', style: { width: 110 } },
-  { label: 'Action', style: { width: 150 } },
+  { label: 'Elisen Project', sort: 'elisenProject', style: { width: 130 } },
+  { label: 'Applicable', sort: 'applicable', style: { width: 110 } },
+  { label: 'Affected', sort: 'affected', style: { width: 100 } },
+  { label: 'Status', style: { width: 170 } },
+  { label: 'Opened', sort: 'opened', style: { width: 130 } },
+  { label: 'Action', style: { width: 160 } },
 ]
 
 export interface FlowStepProjectProps {
@@ -139,7 +139,10 @@ export function FlowStepProject({ projectId, onPick, state = 'ready' }: FlowStep
                         : { label: 'In Progress', tone: 'warning', actionLabel: 'Continue GCP' }
 
                       return (
-                        <tr key={t.id} className={`border-b border-border-default transition-colors duration-fast last:border-b-0 ${isCurrent ? 'bg-accent-subtle' : ''}`}>
+                        <tr key={t.id}
+                          onClick={() => onPick(t.id)}
+                          className={`cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50 ${isCurrent ? 'bg-accent-subtle hover:bg-accent-subtle' : ''}`}
+                        >
                           <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{t.number}</td>
                           <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 280 }}>
                             <Truncate lines={1}>{t.description}</Truncate>
@@ -148,18 +151,18 @@ export function FlowStepProject({ projectId, onPick, state = 'ready' }: FlowStep
                           <td className="px-lg py-base text-sm text-text-primary">{entries.length || '—'}</td>
                           <td className="px-lg py-base text-sm text-text-primary">{affected.length || '—'}</td>
                           <td className="px-lg py-base">
-                            <div className="grid gap-xxss">
+                            <div className="flex flex-col items-start gap-xxss">
                               <Badge tone={progress.tone}>{progress.label}</Badge>
                               {started && affected.length > 0 && (
-                                <span className="text-xs text-text-muted">{complete.length} / {affected.length} complete</span>
+                                <span className="whitespace-nowrap text-xs text-text-muted">{complete.length} / {affected.length} complete</span>
                               )}
                             </div>
                           </td>
-                          <td className="px-lg py-base text-sm text-text-primary"><DateText value={t.openedDate} /></td>
+                          <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary"><DateText value={t.openedDate} /></td>
                           <td className="whitespace-nowrap px-lg py-base">
                             <Button variant="tertiary" size="sm" className="!text-accent hover:!text-accent-hover"
                               trailingIcon={<ArrowRight size={14} aria-hidden />}
-                              onClick={() => onPick(t.id)}>
+                              onClick={(e) => { e.stopPropagation(); onPick(t.id) }}>
                               {progress.actionLabel}
                             </Button>
                           </td>

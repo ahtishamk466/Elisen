@@ -97,8 +97,8 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
   }
 
   return (
-    <section className="grid gap-lg">
-      <div className="flex flex-wrap items-end justify-between gap-base">
+    <section className="flex min-h-0 flex-1 flex-col gap-lg">
+      <div className="flex shrink-0 flex-wrap items-end justify-between gap-base">
         <div className="grid gap-xxss">
           <h2 className="text-sm font-semibold text-text-primary">Which rules does this modification affect?</h2>
           <p className="text-xs text-text-muted">Check the rules this modification affects, then create the plan.</p>
@@ -113,8 +113,8 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-        <div className="max-h-[560px] overflow-auto">
+      <div className="min-h-0 flex-1 overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+        <div className="h-full overflow-auto">
         <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
           <caption className="sr-only">Applicable rules for {project.number}</caption>
           <thead>
@@ -182,7 +182,7 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex shrink-0 items-center justify-between">
         <Button variant="secondary" onClick={onBack}>Back</Button>
         <Button disabled={affected === 0} onClick={confirm}>
           Create plan from {affected} affected rule{affected === 1 ? '' : 's'}

@@ -1,9 +1,16 @@
 # Project Handoff
 
 A condensed, thematic synthesis of `docs/DECISIONS.md` (the full chronological
-log, ~146 entries, 2026-08-07 to 2026-08-24) for anyone picking up this
-project cold. Read this first (~10-15 min), then consult DECISIONS.md for the
+log, 181 entries, 2026-08-07 to 2026-09-24) for anyone picking up this
+project cold — including switching to it from a different Claude account or
+session. Read this first (~15-20 min), then consult DECISIONS.md for the
 full reasoning behind any specific call.
+
+**If you are a fresh Claude session reading this to pick up the project:**
+read this whole file, then `CLAUDE.md` at the repo root (the standing rules
+file — it is short and non-negotiable), then skim `docs/COMPONENTS.md`'s
+table of contents so you know what already exists before building anything
+new. Do not start writing code before doing this.
 
 ---
 
@@ -98,6 +105,127 @@ View + Duplicate only; only Hours Worked (the admin) can toggle validation
 and still fully edit. Actual hours come from the timesheet (the only record
 that knows *who*); budget comes from the activity. Overtime/banked/
 non-project hours are never folded into Actual against a budget.
+
+---
+
+## Repo, access, and hard rules for anyone new to this project
+
+- **Repo:** `https://github.com/ahtishamk466/Elisen.git`, default branch
+  `main`. Dev server: `npm run dev` (or the `dev` launch config), fixed to
+  **port 5180** (5173 is used by an unrelated project on the same machine).
+  Storybook: `npm run storybook`, port 6006.
+- **Legacy portal access (`dev.elisen.com`):** a real, unauthenticated
+  prototype of the client's existing TPMS system, used as the source of
+  truth for exact field names, options, and real data to import (never
+  invent or guess a field, option, or data row — always read it off a
+  screenshot the client sent or a live page read from this portal). Because
+  it is unauthenticated and effectively public:
+  - **Never type a password into any login form**, on this portal or any
+    other, even if the user offers or pastes credentials in chat. This is a
+    hard rule with no exception. If authenticated access is ever genuinely
+    needed: navigate there, ask the user to log in manually themselves, then
+    resume read-only browsing once they have.
+  - **Never import a real person's name into this app's bundle/fixtures.**
+    Several legacy lists (e.g. FOC — Finding of Compliance) contain real
+    employee/delegate names. When seeding data from such a list, pull every
+    non-personal field (codes, specialties, flags) verbatim, but replace
+    each real name with a fictitious placeholder in the same style as
+    `employeeFixtures.ts`'s existing made-up names (realistic-sounding
+    full names, never a real one) — and reuse the *same* placeholder
+    everywhere that person's real name repeats across rows, so the data's
+    real shape (e.g. "this person holds three different codes") survives
+    even though identity doesn't. See `gcpFixtures.ts`'s `FOC_LIST` for the
+    worked example and its `docs/DECISIONS.md` entry for the full reasoning.
+  - Lists with no personal data (Discipline, Delegation, most of the
+    regulation library) are imported byte-for-byte with no substitution.
+- **"The data is the client's own, fetched not bundled" (COMPONENTS.md)** —
+  applies everywhere, not just GCP: fixtures exist to prototype against
+  real-shaped data, not to invent plausible-looking data. If a full dataset
+  is large (the regulation library is 3,932 rows; only a representative
+  slice is bundled), that's noted in the fixture file's own comment.
+
+---
+
+## The GCP module
+
+Added after the original handoff synthesis above (which predates it — see
+its own "Open questions" entry, now stale on this point). GCP is Elisen's
+certification-compliance tracking against Transport Canada (TCCA)
+regulations, live under the `GCP` sidebar item.
+
+**Certification Flow (`/gcp/flow`, `GcpFlowPage.tsx`)** — the client's
+requested alternative to ~20 separate legacy tab screens, one linear wizard:
+1. **Project** — pick a TCCA project from a sortable table (row itself is
+   the click target, not just an Action link).
+2. **Certification Basis** — scope which regulations apply via Regulation
+   Section/Amdt `MultiSelect`s.
+3. **Scope Rules** — mark which applicable rules this modification affects,
+   from the full rule pool (hundreds of rows), internally scrolling table.
+4. **Compliance Plan** — one affected rule at a time (Prev/Select/Next nav
+   lives in the persistent project-summary card, not this step, so the
+   nav and the rule's identity band never desync); DDS Id/Text, MOC Text,
+   Comment, a GCP Data sub-table (DAO Specialty/MOC/FOC codes,
+   Deliverable #). DDS Text and Regulation Requirement Text are rich-text
+   fields (`ui/RichTextEditor.tsx`, Tiptap-based), matching the legacy
+   portal's own WYSIWYG editors for those two fields specifically.
+5. **Reports** — 3 report cards (Certification Plan, Certification Record,
+   Requirement Cross-Reference Matrix), each opening the same parameter
+   drawers `GcpReportsPage` (`/gcp/reports`) uses standalone, with this
+   flow's project pre-selected.
+
+Every step fills the viewport (`AppShell`'s `fill`) — the browser window
+itself never scrolls; the stepper and project summary card stay fixed, and
+each step's own table or form scrolls in its own bounded pane.
+
+**People & Authority (`/gcp/people`, `GcpPeoplePage.tsx`)** — three tabs,
+all real legacy data: **FOC** (63 rows, names anonymized per the rule
+above), **Delegation** (720 rows — the largest list in the app, scrolls in
+a bounded frame rather than stretching the page), **Discipline** (23 rows,
+no personal data). This page is the reference implementation of the
+**"Tabbed page layout"** standing rule (below) — copy its shape for any
+new tabs-over-a-table screen.
+
+**Regulations (`/gcp/regulations`, `RegulationListPage.tsx` etc.)** — the
+rule library itself (412 rows bundled from a legacy export, real total is
+higher), Subparts/Subsections, Regulation Groups. **Reference Lists**
+(`/gcp/reference`) — MOC and DDS short lists (DDS currently only has 4
+options hard-coded in `FlowStepPlan.tsx`; the legacy portal's actual "DDS
+Type" list has 11 — **flagged to the user, not yet pulled in**, see Open
+Questions below).
+
+---
+
+## Standing rule: Tabbed page layout
+
+A durable, cross-cutting rule (client instruction, explicitly asked to be
+remembered — saved in the memory system as `feedback_tabbed_page_layout`,
+not just here) for **every** screen in this app with tabs over a table, not
+only GCP's:
+
+- Tab strip and the active tab's table are **two separate bordered
+  containers**, stacked vertically — never one shared card, and nothing
+  else (no floating "Total N / search" card) sits between them.
+- The page's one **Add** action lives in the page header, top-right
+  (`AppShell`'s `headerActions`), never inside the tab panel. Its label
+  always names the active tab ("Add FOC", "Add Delegation") — never a bare
+  "Add" — and it's omitted entirely for a tab with no working create flow
+  yet (a button that opens nothing is a half-finished implementation).
+- The **search box** for the active tab also lives in the header, beside
+  Add, with a placeholder naming what that tab searches by. Search state is
+  owned by the page and passed down as a `query` prop; tab panels never
+  render their own search input.
+- Each tab's label carries its **row count as a pill** (`TableTabs`'s
+  `count` prop), e.g. "FOC 63", "Delegation 720" — matching the existing
+  Aircraft / Serial Numbers reference-data screen.
+- Every row's Actions column is a 3-dot `ActionsMenu` with **View, Edit,
+  Remove** — View opens a read-only `DetailCard`/`DetailField` drawer (same
+  shape as `RegulationDetailDrawer`) with Edit in its footer bridging to the
+  edit drawer.
+
+Reference implementations: the app's own **Roles & Permissions** screen
+(tabs/table separation, header Add) and **Aircraft** (`AircraftPage.tsx`,
+header search + tab count pills). `GcpPeoplePage.tsx` is the GCP-side
+reference now built to this full shape.
 
 ---
 
@@ -414,7 +542,15 @@ gaps:
 - **Banked hours (§5.2 "Banked Hours (profile)")** — exists per timesheet
   entry, no per-person accrued balance.
 - **Hours Worked query/report (§2.2)** — unbuilt.
-- **GCP module** — deferred placeholder throughout (TCCA Reports tab, sidebar).
+- **GCP module** — now built (Certification Flow, People & Authority's FOC/
+  Delegation/Discipline tabs all with full View/Edit/Remove/Add, Regulations,
+  Reports); see its own section above. Still open within it: the **DDS Type
+  reference list** (11 legacy options, seen on a client screenshot but not
+  yet imported) hasn't replaced the 4 hard-coded `DDS_ID_OPTIONS` in
+  `FlowStepPlan.tsx`'s Compliance Plan step, and the standalone **Reference
+  Lists** page's own MOC/DDS tabs (`/gcp/reference`) are still `GcpTabPanel`
+  placeholders (a separate page from the now-live GCP People & Authority
+  page — don't confuse the two).
 - **PDF/Excel export** — HTML/CSV/Text are live in `ExportMenu`; PDF/Excel
   pending a library choice.
 - **Design Approval Holder as free text vs. searchable select** — changed to
@@ -463,3 +599,29 @@ gaps:
   ships loading/empty/error states, accessibility is non-negotiable, the
   `DrawerFormStandard`, log decisions, flag conflicts rather than silently
   picking a side, import-direction rule, ~200-line file guideline.
+- **Claude's memory system** (outside this repo, tied to the working
+  directory) — durable feedback the client gave that should apply without
+  being repeated, e.g. `feedback_tabbed_page_layout`. A fresh Claude session
+  on a new account, in a new memory store, won't have these automatically —
+  re-read this handoff's "Tabbed page layout" section above and, if the new
+  session supports the same memory mechanism, re-save it there.
+
+---
+
+## Handing off to a new account/session — practical checklist
+
+1. **Check `git status` before anything else.** As of 2026-09-24 this repo
+   had uncommitted work (the full Delegation tab, View actions added to
+   FOC/Discipline, and the header-search/tab-count layout pass) — confirm
+   whether that was committed and pushed before you continue, and if not,
+   do that first (with the user's go-ahead; never push without it, per
+   CLAUDE.md rule 16).
+2. Confirm the remote is still `https://github.com/ahtishamk466/Elisen.git`
+   and the new account/session has push access to it (or knows it doesn't).
+3. Read this file in full, then `CLAUDE.md`, then skim `docs/COMPONENTS.md`.
+4. Re-establish the memory entries listed above if the new session's memory
+   store starts empty.
+5. Do **not** re-derive the anonymization mapping in `gcpFixtures.ts`'s
+   `FOC_LIST` from scratch, or re-fetch it from the legacy portal — the
+   placeholder names are already assigned and consistent; treat that file as
+   settled data, not a draft.
