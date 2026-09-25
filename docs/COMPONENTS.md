@@ -251,6 +251,29 @@ The revision's **Document is a `FileDropzone`**, never a filename text box — t
 legacy screen has a real file picker and the requirement document asks for a PDF
 view.
 
+**A revision's document has a name and a link, kept separate** (client
+instruction, 2026-09-25). `ApprovalRevision.document` (the filename,
+`FileDropzone`) and `ApprovalRevision.documentUrl` (optional — most of the
+legacy export never linked its files) are two different facts about one file,
+same split as `DocRevision.url` on the Documents side. Both `ApprovalRevisionsPage`
+(the global Revisions list) and `ApprovalDetailPage`'s own Revisions tab render
+the Document cell as a clickable button — `isOpenableUrl(documentUrl)` — with
+the filename as its label, and add an **Open PDF** item to the row's
+`ActionsMenu` when there's a link to open; with no `documentUrl`, the cell falls
+back to plain text exactly as before. `ApprovalRevisionDrawer`'s Document
+section keeps three actions distinct rather than folding them into one: a
+"Current document: *name*" line with its own **Open PDF** button, a
+**Document URL** `UrlField` for setting or fixing that link, and
+`FileDropzone`'s **Replace document** below it for swapping the file entirely
+— naming what's there, opening it, and changing it are three different jobs.
+
+**"Raise Revision" reads "Add Revision"** everywhere it appears (both list
+pages, the empty state, and the drawer's own title/submit button) — client
+instruction, 2026-09-25, "for clearer UX." Behavior was already correct and
+needed no change: adding a revision has always created a new record
+(`addRevision`, a fresh id) alongside the existing ones rather than overwriting,
+and `Edit revision` has always scoped to the one revision it's opened from.
+
 **Project links are bidirectional.** The approval's Projects tab and the
 project's Approvals tab call the same two store verbs (`linkToProject` /
 `unlinkFromProject`), so the two directions can never disagree — verified live

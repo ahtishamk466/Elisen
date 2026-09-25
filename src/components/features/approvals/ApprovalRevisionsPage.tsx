@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { ExternalLink, FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { ApprovalsTabs } from './ApprovalsTabs'
 import { EmptyState } from '@/components/patterns/EmptyState'
@@ -11,6 +11,7 @@ import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Truncate } from '@/components/patterns/Truncate'
+import { isOpenableUrl } from '@/components/patterns/UrlField'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -106,7 +107,7 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
             />
           </div>
           <Button leadingIcon={<Plus size={16} />} onClick={() => setDrawer({})}>
-            Raise Revision
+            Add Revision
           </Button>
         </>
       }
@@ -125,7 +126,7 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
                 : 'A certificate is granted by its first revision. Raise one against an approval to record it.'}
               action={query
                 ? <Button variant="secondary" onClick={() => setQuery('')}>Clear search</Button>
-                : <Button leadingIcon={<Plus size={16} />} onClick={() => setDrawer({})}>Raise Revision</Button>}
+                : <Button leadingIcon={<Plus size={16} />} onClick={() => setDrawer({})}>Add Revision</Button>}
             />
           </div>
         ) : (
@@ -178,14 +179,28 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
                             </td>
                             <td className="px-lg py-base align-top text-sm text-text-primary"><DateText value={revision.revisionDate} /></td>
                             <td className="px-lg py-base align-top text-sm text-text-primary">
-                              {revision.document
-                                ? <span className="inline-flex items-center gap-xs"><FileText size={14} aria-hidden />{revision.document}</span>
-                                : <span className="text-text-muted">—</span>}
+                              {!revision.document ? (
+                                <span className="text-text-muted">—</span>
+                              ) : isOpenableUrl(revision.documentUrl ?? "") ? (
+                                <button
+                                  type="button" title={revision.document}
+                                  className="inline-flex max-w-full items-center gap-xs text-accent underline-offset-2 hover:underline"
+                                  onClick={(e) => { e.stopPropagation(); window.open(revision.documentUrl!.trim(), '_blank', 'noopener,noreferrer') }}
+                                >
+                                  <FileText size={14} className="shrink-0" aria-hidden />
+                                  <span className="truncate">{revision.document}</span>
+                                </button>
+                              ) : (
+                                <span className="inline-flex items-center gap-xs"><FileText size={14} aria-hidden />{revision.document}</span>
+                              )}
                             </td>
                             <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
                               <ActionsMenu
                                 ariaLabel={`Actions for ${approval?.number ?? 'approval'} revision ${revision.revision}`}
                                 items={[
+                                  ...(isOpenableUrl(revision.documentUrl ?? "")
+                                    ? [{ label: 'Open PDF', icon: <ExternalLink size={16} />, onSelect: () => window.open(revision.documentUrl!.trim(), '_blank', 'noopener,noreferrer') }]
+                                    : []),
                                   { label: 'Edit revision', icon: <Pencil size={16} />, onSelect: () => setDrawer({ revision }) },
                                   { label: 'Delete revision', icon: <Trash2 size={16} />, onSelect: () => setDeleting(row), tone: 'danger' },
                                 ]}

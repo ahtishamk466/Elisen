@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { FileText } from 'lucide-react'
+import { ExternalLink, FileText } from 'lucide-react'
 import { Drawer } from '@/components/patterns/Drawer'
 import { FormSection } from '@/components/patterns/FormSection'
 import { FormField } from '@/components/patterns/FormField'
@@ -7,6 +7,7 @@ import { SortableTh } from '@/components/patterns/SortableTh'
 import { useTableSort } from '@/components/patterns/useTableSort'
 import { Truncate } from '@/components/patterns/Truncate'
 import { FileDropzone } from '@/components/patterns/FileDropzone'
+import { UrlField, isOpenableUrl } from '@/components/patterns/UrlField'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
@@ -79,6 +80,7 @@ export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: 
   /** Existing revisions carry a filename from the server; a fresh pick carries
       a real File. Only the name is stored — there is no backend to upload to. */
   const [documentName, setDocumentName] = useState(initial?.document ?? '')
+  const [documentUrl, setDocumentUrl] = useState(initial?.documentUrl ?? '')
   const [file, setFile] = useState<File | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -104,20 +106,21 @@ export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: 
       changeDescription: changeDescription.trim(),
       revisionDate,
       document: file?.name ?? documentName.trim(),
+      documentUrl: documentUrl.trim(),
     }
     if (isEdit) {
       updateRevision(initial.id, { approvalId, ...fields })
       onSaved?.(`${label} revision ${effective} saved.`)
     } else {
       addRevision({ id: crypto.randomUUID(), approvalId, ...fields })
-      onSaved?.(`${label} revision ${effective} raised.`)
+      onSaved?.(`${label} revision ${effective} added.`)
     }
     onClose()
   }
 
   const title = isEdit
     ? `Edit Revision ${initial.revision}${target ? `: ${target.number}` : ''}`
-    : `Raise Revision${target ? `: ${target.number}` : ''}`
+    : `Add Revision${target ? `: ${target.number}` : ''}`
 
   return (
     <Drawer
@@ -128,7 +131,7 @@ export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: 
         <>
           <div className="flex gap-sm">
             <Button variant="secondary" onClick={onClose}>Cancel</Button>
-            <Button onClick={submit}>{isEdit ? 'Save Changes' : 'Raise Revision'}</Button>
+            <Button onClick={submit}>{isEdit ? 'Save Changes' : 'Add Revision'}</Button>
           </div>
         </>
       }
@@ -157,9 +160,19 @@ export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: 
                     <td className="px-base py-sm text-sm text-text-primary"><DateText value={r.revisionDate} /></td>
                     <td className="px-base py-sm text-sm text-text-secondary"><Truncate lines={2}>{r.changeDescription}</Truncate></td>
                     <td className="px-base py-sm text-sm text-text-primary">
-                      {r.document
-                        ? <span className="block truncate" title={r.document}>{r.document}</span>
-                        : <span className="text-text-muted">—</span>}
+                      {!r.document ? (
+                        <span className="text-text-muted">—</span>
+                      ) : isOpenableUrl(r.documentUrl ?? "") ? (
+                        <button
+                          type="button" title={r.document}
+                          className="block max-w-full truncate text-left text-accent underline-offset-2 hover:underline"
+                          onClick={() => window.open(r.documentUrl!.trim(), '_blank', 'noopener,noreferrer')}
+                        >
+                          {r.document}
+                        </button>
+                      ) : (
+                        <span className="block truncate" title={r.document}>{r.document}</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -218,14 +231,32 @@ export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: 
 
       {/* The legacy screen has a real file picker here, and the requirement
           document asks for a PDF view — so this is the app's one upload
-          pattern, not a filename text box. */}
+          pattern, not a filename text box. Naming and opening the current
+          file is kept separate from replacing it (client instruction,
+          2026-09-25): the row above just shows what's already there and
+          opens it, the URL field below is how that link gets set or fixed,
+          and the dropzone is its own distinct action for swapping the file
+          entirely — three different jobs, never collapsed into one control. */}
       <FormSection title="Document" subtitle="The revision file, the signed approval document.">
         {documentName && !file && (
-          <p className="flex items-center gap-xs text-sm text-text-secondary">
-            <FileText size={16} aria-hidden />
-            Current document: <span className="font-semibold text-text-primary">{documentName}</span>
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-sm">
+            <p className="flex min-w-0 items-center gap-xs text-sm text-text-secondary">
+              <FileText size={16} className="shrink-0" aria-hidden />
+              Current document: <span className="truncate font-semibold text-text-primary">{documentName}</span>
+            </p>
+            {isOpenableUrl(documentUrl) && (
+              <Button
+                variant="tertiary" size="sm" className="shrink-0" leadingIcon={<ExternalLink size={14} />}
+                onClick={() => window.open(documentUrl.trim(), '_blank', 'noopener,noreferrer')}
+              >
+                Open PDF
+              </Button>
+            )}
+          </div>
         )}
+        <FormField label="Document URL" htmlFor="ar-doc-url" help="Optional — Open PDF uses this link.">
+          <UrlField id="ar-doc-url" value={documentUrl} onChange={setDocumentUrl} />
+        </FormField>
         <FileDropzone
           label={documentName && !file ? 'Replace document' : 'Upload document'}
           accept=".pdf"

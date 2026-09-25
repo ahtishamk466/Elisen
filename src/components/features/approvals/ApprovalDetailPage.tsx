@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft, Award, FileText, Link2, Pencil, Plus, Trash2, Unlink,
+  ArrowLeft, Award, ExternalLink, FileText, Link2, Pencil, Plus, Trash2, Unlink,
 } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { StatCard } from '@/components/patterns/StatCard'
@@ -11,6 +11,7 @@ import { useTableSort } from '@/components/patterns/useTableSort'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { DetailCard as Card, DetailField as Field } from '@/components/patterns/DetailView'
+import { isOpenableUrl } from '@/components/patterns/UrlField'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
@@ -136,7 +137,7 @@ export function ApprovalDetailPage() {
             Edit approval
           </Button>
           <Button leadingIcon={<Plus size={16} />} onClick={() => setRevDrawer({})}>
-            Raise revision
+            Add Revision
           </Button>
           <ActionsMenu
             ariaLabel={`More actions for ${approval.number}`}
@@ -255,7 +256,7 @@ export function ApprovalDetailPage() {
                     {revisions.length} revision{revisions.length === 1 ? '' : 's'} — each one a change to this
                     certificate, newest first.
                   </p>
-                  <Button leadingIcon={<Plus size={16} />} onClick={() => setRevDrawer({})}>Raise revision</Button>
+                  <Button leadingIcon={<Plus size={16} />} onClick={() => setRevDrawer({})}>Add Revision</Button>
                 </div>
 
                 {revisions.length === 0 ? (
@@ -263,8 +264,8 @@ export function ApprovalDetailPage() {
                     <EmptyState
                       icon={<FileText size={48} strokeWidth={1.5} />}
                       title="No revisions recorded yet"
-                      description="A certificate is granted by its first revision. Raise revision 1 to record when it was granted and what it covered."
-                      action={<Button leadingIcon={<Plus size={16} />} onClick={() => setRevDrawer({})}>Raise revision</Button>}
+                      description="A certificate is granted by its first revision. Add revision 1 to record when it was granted and what it covered."
+                      action={<Button leadingIcon={<Plus size={16} />} onClick={() => setRevDrawer({})}>Add Revision</Button>}
                     />
                   </div>
                 ) : (
@@ -290,14 +291,28 @@ export function ApprovalDetailPage() {
                             </td>
                             <td className="px-lg py-base align-top text-sm text-text-primary"><DateText value={r.revisionDate} /></td>
                             <td className="px-lg py-base align-top text-sm text-text-primary">
-                              {r.document
-                                ? <span className="inline-flex items-center gap-xs"><FileText size={14} aria-hidden />{r.document}</span>
-                                : <span className="text-text-muted">—</span>}
+                              {!r.document ? (
+                                <span className="text-text-muted">—</span>
+                              ) : isOpenableUrl(r.documentUrl ?? "") ? (
+                                <button
+                                  type="button" title={r.document}
+                                  className="inline-flex max-w-full items-center gap-xs text-accent underline-offset-2 hover:underline"
+                                  onClick={() => window.open(r.documentUrl!.trim(), '_blank', 'noopener,noreferrer')}
+                                >
+                                  <FileText size={14} className="shrink-0" aria-hidden />
+                                  <span className="truncate">{r.document}</span>
+                                </button>
+                              ) : (
+                                <span className="inline-flex items-center gap-xs"><FileText size={14} aria-hidden />{r.document}</span>
+                              )}
                             </td>
                             <td className="px-lg py-base align-top">
                               <ActionsMenu
                                 ariaLabel={`Actions for revision ${r.revision}`}
                                 items={[
+                                  ...(isOpenableUrl(r.documentUrl ?? "")
+                                    ? [{ label: 'Open PDF', icon: <ExternalLink size={16} />, onSelect: () => window.open(r.documentUrl!.trim(), '_blank', 'noopener,noreferrer') }]
+                                    : []),
                                   { label: 'Edit revision', icon: <Pencil size={16} />, onSelect: () => setRevDrawer({ revision: r }) },
                                   { label: 'Delete revision', icon: <Trash2 size={16} />, onSelect: () => setDeletingRev(r), tone: 'danger' },
                                 ]}

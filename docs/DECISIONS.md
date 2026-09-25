@@ -6872,3 +6872,47 @@ narrower way — an `ExternalLink` icon beside the number when
 project's own list, "did this come from elsewhere" is the useful signal, not
 naming which project, since the reader is already looking at one project's
 context.
+
+## 2026-09-25 — Approvals: "Add Revision" wording, clickable documents, split Edit drawer
+
+Client instruction, off a legacy-screen comparison of the Approvals →
+Revisions list:
+
+1. Primary action reads **"Add Revision"**, not "Raise Revision" — changed
+   everywhere it appears: `ApprovalRevisionsPage` (global list, header +
+   empty state), `ApprovalDetailPage` (per-approval Revisions tab, header +
+   empty state), and `ApprovalRevisionDrawer`'s own title/submit button.
+2. Adding a revision must create a new record (`Rev 1 → Rev 2`) without
+   overwriting the previous one, with every past revision still visible for
+   traceability, and Edit Revision must only ever touch the one revision it
+   was opened from. All three were already true — `addRevision` always
+   appends a fresh record, the revisions list was never filtered down to
+   "latest only," and `updateRevision(initial.id, …)` was already scoped —
+   so nothing needed to change here beyond confirming it.
+3. Each revision's document name is now clickable, opening the actual file.
+4. The Edit Revision drawer shows the current document with its own Open PDF
+   action, separate from replacing the file.
+
+(3) and (4) needed a real fix: `ApprovalRevision.document` was only ever a
+filename, with nothing to open — there was no link to click. Added
+`documentUrl?: string` to the type (optional, since the legacy export names
+files far more often than it links them), mirroring the split
+`DocRevision.url` already has on the Documents side. Threaded through
+`useApprovalsStore`, both revisions tables (`ApprovalRevisionsPage`,
+`ApprovalDetailPage`), and `ApprovalRevisionDrawer` — the document name
+renders as a real button when `isOpenableUrl(documentUrl)`, plain text
+otherwise, and an **Open PDF** action joins each row's `ActionsMenu` under
+the same condition.
+
+The drawer keeps naming, opening and replacing the file as three distinct
+controls rather than one, per the client's exact ask: a "Current document: …"
+line with its own Open PDF button, a **Document URL** field for setting or
+correcting that link (a plain `UrlField`, the same pattern `RevisionDrawer`
+uses on `DocRevision.url`), and the existing `FileDropzone` "Replace
+document" beneath it, untouched.
+
+Existing fixture data has no `documentUrl` values (the legacy export never
+linked most files), so today's Document cells still render as plain text
+until a URL is added via Edit Revision — verified live end-to-end with a
+seeded test URL, then reverted before committing so no placeholder link ships
+in the client's real dataset.

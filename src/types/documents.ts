@@ -106,6 +106,12 @@ export interface ApprovalRevision {
   changeDescription: string
   /** `issue_date` */
   revisionDate: string
-  /** `approval_document` — the revision file, a PDF in practice. */
+  /** `approval_document` — the revision file's name, a PDF in practice. */
   document: string
+  /** Where that file actually lives — separate from the name above the same
+      way `DocRevision.url` is separate from a document's own identity, so a
+      revision can carry a real, openable link. Optional: the legacy export
+      only names the file, it doesn't always link it (client instruction,
+      2026-09-25 — "make each revision's PDF/document name clickable"). */
+  documentUrl?: string
 }
