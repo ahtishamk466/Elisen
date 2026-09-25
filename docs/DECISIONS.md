@@ -6970,3 +6970,46 @@ already scrolls inside its own container, so nothing became unreachable.
 Storybook: `Patterns/Overview` → **Sidebar Expanded** / **Sidebar Collapsed**,
 both wrapped in `MemoryRouter` and setting the store state before paint so
 each opens in the state it documents regardless of what ran before it.
+
+## 2026-09-25 — Files render through one component, blue and underlined
+
+Client-reported: the Documents revision drawer's **File** field had become a
+five-line wall of URL — a consequence of the `break-words` fix earlier the
+same day, which stopped the overflow by wrapping instead. Follow-up
+instruction, relayed from the client: the document should be *blue and
+underlined* so it reads as clickable, "Open PDF" should stay in the actions
+menu, and every place a file appears should be clickable.
+
+Added `patterns/FileLink.tsx`. A file reference in this app is almost always
+a SharePoint URL with no filename in it, so there is no short form to fall
+back on: the component clips to one line, keeps the whole value on `title`,
+and opens in a new tab. `flex` + `min-w-0`, because `truncate` needs a
+definite width to clip against.
+
+**Underlined always, not on hover.** A filename sitting in a table cell reads
+as data, not as a control. A hover-only underline means nobody discovers it
+without sweeping the mouse across the column first, and accent colour on its
+own would be signalling by colour alone (CLAUDE.md rule 6).
+
+**A file with no stored link stays plain text**, with a muted icon — it is
+not dressed up as a link that goes nowhere. This is why the Approvals
+Revisions list still shows most document names in plain text: the legacy
+export names the PDF but records no URL for it (the legacy screen's own Url
+column is mostly empty too). Adding a link via **Edit revision → Document
+URL** turns that row blue and underlined immediately — verified live through
+the real UI flow, not by seeding fixture data.
+
+It replaced four hand-rolled copies of the same anchor, so file links now
+have one style changed in one place: `RevisionViewDrawer`'s File field (which
+also now spans the full row — a URL is the one value in that card with no
+natural short form, so it gets the whole width to truncate against rather
+than a third of it), `RegulationDetailDrawer`'s Source field (same wrap bug,
+it printed the entire URL inline after its label), and the three approvals
+document cells. The **Open PDF** action stays in each row's menu alongside
+the inline link: the menu is where the row's other actions live, and a
+keyboard user reaching the menu shouldn't have to go hunting in the cell.
+
+New component flagged to the user rather than proposed first (CLAUDE.md rule
+2) — the instruction was to make files clickable wherever they appear, which
+is not satisfiable without one shared component, and four duplicated copies
+of the anchor already existed to consolidate.

@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react'
 import { Drawer } from '@/components/patterns/Drawer'
 import { DetailCard, DetailField } from '@/components/patterns/DetailView'
+import { FileLink } from '@/components/patterns/FileLink'
 import { PersonCell } from '@/components/patterns/PersonCell'
 import { isOpenableUrl } from '@/components/patterns/UrlField'
 import { Badge } from '@/components/ui/Badge'
@@ -91,7 +92,12 @@ export function RevisionViewDrawer({ document, revision, createdForLabel, usedIn
           <DetailField label="Received" nowrap>{formatDate(revision.receivedDate)}</DetailField>
           <DetailField label="Closed" nowrap>{formatDate(revision.closedDate)}</DetailField>
           <DetailField label="Created For" nowrap>{createdForLabel}</DetailField>
-          <DetailField label="File">{revision.url || undefined}</DetailField>
+          {/* Spans the row: a file URL is the one value here with no natural
+              short form, so it gets the full width to truncate against
+              instead of a third of it (client instruction, 2026-09-25). */}
+          <div className="col-span-2 min-w-0 tablet:col-span-3">
+            <DetailField label="File"><FileLink url={revision.url} /></DetailField>
+          </div>
         </div>
       </DetailCard>
 

@@ -2,6 +2,7 @@ import { useLayoutEffect, useState, type ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import type { Meta, StoryObj } from '@storybook/react'
 import { AppShell } from './AppShell'
+import { FileLink } from './FileLink'
 import { useUiStore } from '@/stores/uiStore'
 import { ChevronDown, Copy as CopyIcon, Filter as FilterIcon, FolderOpen, Plus, Search as SearchIcon, Trash2 } from 'lucide-react'
 import { SortableTh } from './SortableTh'
@@ -1617,4 +1618,62 @@ export const SidebarCollapsed: Story = {
       </AppShell>
     </ShellState>
   ),
+}
+
+/**
+ * **FileLink — a stored file, on one line.**
+ *
+ * File references here are usually SharePoint URLs with no filename in them:
+ * 120+ characters of unbreakable token. Printed as a plain value one either
+ * overflows its card or wraps to five lines and shoves the rest of the drawer
+ * down. `FileLink` clips it to one line, keeps the full value on `title`, and
+ * opens it in a new tab.
+ *
+ * Use it anywhere a file is shown — detail fields, table cells. A record that
+ * names a file but never stored a link renders as plain text, not a dead one.
+ */
+export const FileLinkExample: Story = {
+  render: () => {
+    const long = 'https://elisenaero.sharepoint.com/:b:/s/Elisen-General/EfrUXo2Td7lEjocZTJsQPRIBxfFruY32aQr7UDDrFZYBhA?e=haLl2m'
+    return (
+      <div className="grid gap-2xl p-lg" style={{ maxWidth: 560 }}>
+        <div className="grid gap-sm">
+          <h3 className="text-sm font-semibold text-text-primary">In a detail field — URL only</h3>
+          <p className="text-sm text-text-secondary">
+            The Documents revision drawer. No filename exists, so the URL itself is the label;
+            it clips instead of wrapping, however narrow the column.
+          </p>
+          <DetailCard title="Revision">
+            <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+              <DetailField label="Revision" nowrap>C</DetailField>
+              <DetailField label="Closed" nowrap>Jul 15, 2025</DetailField>
+              <DetailField label="Created For" nowrap>3207-00</DetailField>
+              <div className="col-span-2 min-w-0 tablet:col-span-3">
+                <DetailField label="File"><FileLink url={long} /></DetailField>
+              </div>
+            </div>
+          </DetailCard>
+        </div>
+
+        <div className="grid gap-sm">
+          <h3 className="text-sm font-semibold text-text-primary">With a filename, and with no link</h3>
+          <p className="text-sm text-text-secondary">
+            An approval revision names its PDF, so that is the label. The second row has a
+            filename but no stored URL — plain text and a muted icon, never a dead link.
+          </p>
+          <div className="grid gap-base rounded-sm border border-border-default bg-neutral-25 p-lg">
+            <div className="min-w-0"><FileLink url={long} label="A-LSA26-032-D Iss 01.pdf" /></div>
+            <div className="min-w-0"><FileLink label="60464-APF01 Repair Approval Ed1.pdf" /></div>
+            <div className="min-w-0"><FileLink /></div>
+          </div>
+        </div>
+
+        <Alert tone="info" title="truncate needs something to clip against">
+          <code>FileLink</code> is a <code>flex</code> box with <code>min-w-0</code>, so it only needs a
+          container that can shrink — a grid or flex cell with <code>min-w-0</code>, which{' '}
+          <code>Stat</code> (and therefore <code>DetailField</code>) already gives it.
+        </Alert>
+      </div>
+    )
+  },
 }

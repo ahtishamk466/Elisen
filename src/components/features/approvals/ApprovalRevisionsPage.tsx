@@ -12,6 +12,7 @@ import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Truncate } from '@/components/patterns/Truncate'
 import { isOpenableUrl } from '@/components/patterns/UrlField'
+import { FileLink } from '@/components/patterns/FileLink'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -179,20 +180,11 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
                             </td>
                             <td className="px-lg py-base align-top text-sm text-text-primary"><DateText value={revision.revisionDate} /></td>
                             <td className="px-lg py-base align-top text-sm text-text-primary">
-                              {!revision.document ? (
-                                <span className="text-text-muted">—</span>
-                              ) : isOpenableUrl(revision.documentUrl ?? "") ? (
-                                <button
-                                  type="button" title={revision.document}
-                                  className="inline-flex max-w-full items-center gap-xs text-accent underline-offset-2 hover:underline"
-                                  onClick={(e) => { e.stopPropagation(); window.open(revision.documentUrl!.trim(), '_blank', 'noopener,noreferrer') }}
-                                >
-                                  <FileText size={14} className="shrink-0" aria-hidden />
-                                  <span className="truncate">{revision.document}</span>
-                                </button>
-                              ) : (
-                                <span className="inline-flex items-center gap-xs"><FileText size={14} aria-hidden />{revision.document}</span>
-                              )}
+                              {/* The anchor handles its own navigation, so the
+                                  row's own click must not also fire. */}
+                              <span onClick={(e) => e.stopPropagation()}>
+                                <FileLink url={revision.documentUrl} label={revision.document} />
+                              </span>
                             </td>
                             <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
                               <ActionsMenu

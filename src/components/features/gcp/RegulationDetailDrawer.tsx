@@ -1,6 +1,7 @@
-import { ExternalLink } from 'lucide-react'
+
 import { Drawer } from '@/components/patterns/Drawer'
 import { DetailCard, DetailField } from '@/components/patterns/DetailView'
+import { FileLink } from '@/components/patterns/FileLink'
 import { GcpChip } from './GcpChip'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -43,14 +44,12 @@ export function RegulationDetailDrawer({ regulation: r, subpart, subsection, onC
             <DetailField label="Title">{r.title}</DetailField>
           </div>
           <div className="mt-lg">
+            {/* Was printing the whole URL inline after its label, which
+                wraps over several lines on a long one — same bug the
+                Documents drawer's File field had (client instruction,
+                2026-09-25). `FileLink` keeps it to one clipped line. */}
             <DetailField label="Source">
-              {r.url ? (
-                <a href={r.url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-xs rounded-sm text-accent underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary">
-                  <ExternalLink size={14} aria-hidden />
-                  {sourceLabel(r.url)} — {r.url}
-                </a>
-              ) : ''}
+              <FileLink url={r.url} label={r.url ? `${sourceLabel(r.url)} — ${r.url}` : undefined} />
             </DetailField>
           </div>
         </DetailCard>

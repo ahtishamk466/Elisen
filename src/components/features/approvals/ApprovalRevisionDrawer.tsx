@@ -8,6 +8,7 @@ import { useTableSort } from '@/components/patterns/useTableSort'
 import { Truncate } from '@/components/patterns/Truncate'
 import { FileDropzone } from '@/components/patterns/FileDropzone'
 import { UrlField, isOpenableUrl } from '@/components/patterns/UrlField'
+import { FileLink } from '@/components/patterns/FileLink'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
@@ -160,19 +161,7 @@ export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: 
                     <td className="px-base py-sm text-sm text-text-primary"><DateText value={r.revisionDate} /></td>
                     <td className="px-base py-sm text-sm text-text-secondary"><Truncate lines={2}>{r.changeDescription}</Truncate></td>
                     <td className="px-base py-sm text-sm text-text-primary">
-                      {!r.document ? (
-                        <span className="text-text-muted">—</span>
-                      ) : isOpenableUrl(r.documentUrl ?? "") ? (
-                        <button
-                          type="button" title={r.document}
-                          className="block max-w-full truncate text-left text-accent underline-offset-2 hover:underline"
-                          onClick={() => window.open(r.documentUrl!.trim(), '_blank', 'noopener,noreferrer')}
-                        >
-                          {r.document}
-                        </button>
-                      ) : (
-                        <span className="block truncate" title={r.document}>{r.document}</span>
-                      )}
+                      <FileLink url={r.documentUrl} label={r.document} />
                     </td>
                   </tr>
                 ))}

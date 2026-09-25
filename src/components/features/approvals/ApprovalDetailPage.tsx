@@ -12,6 +12,7 @@ import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { DetailCard as Card, DetailField as Field } from '@/components/patterns/DetailView'
 import { isOpenableUrl } from '@/components/patterns/UrlField'
+import { FileLink } from '@/components/patterns/FileLink'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
@@ -291,20 +292,7 @@ export function ApprovalDetailPage() {
                             </td>
                             <td className="px-lg py-base align-top text-sm text-text-primary"><DateText value={r.revisionDate} /></td>
                             <td className="px-lg py-base align-top text-sm text-text-primary">
-                              {!r.document ? (
-                                <span className="text-text-muted">—</span>
-                              ) : isOpenableUrl(r.documentUrl ?? "") ? (
-                                <button
-                                  type="button" title={r.document}
-                                  className="inline-flex max-w-full items-center gap-xs text-accent underline-offset-2 hover:underline"
-                                  onClick={() => window.open(r.documentUrl!.trim(), '_blank', 'noopener,noreferrer')}
-                                >
-                                  <FileText size={14} className="shrink-0" aria-hidden />
-                                  <span className="truncate">{r.document}</span>
-                                </button>
-                              ) : (
-                                <span className="inline-flex items-center gap-xs"><FileText size={14} aria-hidden />{r.document}</span>
-                              )}
+                              <FileLink url={r.documentUrl} label={r.document} />
                             </td>
                             <td className="px-lg py-base align-top">
                               <ActionsMenu
