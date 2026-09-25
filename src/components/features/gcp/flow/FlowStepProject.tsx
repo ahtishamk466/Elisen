@@ -19,6 +19,7 @@ import { useProjectsStore } from '@/stores/projectsStore'
 import { useGcpStore } from '@/stores/gcpStore'
 import { useGcpFlowStore } from '@/stores/gcpFlowStore'
 import { TccaProjectDrawer } from '@/components/features/tcca/TccaProjectDrawer'
+import { CodeWithSubname } from '../CodeWithSubname'
 import type { TccaProject } from '@/types/tcca'
 
 type SortKey = 'number' | 'elisenProject' | 'regulation' | 'amdt' | 'regTitle' | 'discipline'
@@ -38,9 +39,9 @@ const COLUMNS: { label: string; sort?: SortKey; style?: CSSProperties }[] = [
   { label: 'Regulation', sort: 'regulation', style: { width: 140 } },
   { label: 'Amdt', sort: 'amdt', style: { width: 100 } },
   { label: 'Reg Title', sort: 'regTitle', style: { width: 200 } },
-  { label: 'Discipline', sort: 'discipline', style: { width: 120 } },
-  { label: 'MOC', sort: 'moc', style: { width: 90 } },
-  { label: 'FOC', sort: 'foc', style: { width: 90 } },
+  { label: 'Discipline', sort: 'discipline', style: { width: 130 } },
+  { label: 'MOC', sort: 'moc', style: { width: 100 } },
+  { label: 'FOC', sort: 'foc', style: { width: 100 } },
   { label: 'Deliverable #', sort: 'deliverable', style: { width: 190 } },
   { label: 'Applicable', sort: 'applicable', style: { width: 110 } },
   { label: 'Affected', sort: 'affected', style: { width: 100 } },
@@ -83,8 +84,20 @@ export function FlowStepProject({ projectId, onPick, state = 'ready', query, onQ
   const removeTcca = useTccaStore((s) => s.removeTcca)
   const projects = useProjectsStore((s) => s.rows)
   const regulations = useGcpStore((s) => s.regulations)
+  const disciplines = useGcpStore((s) => s.disciplines)
+  const mocs = useGcpStore((s) => s.mocs)
+  const focs = useGcpStore((s) => s.focs)
   const planEntries = useGcpFlowStore((s) => s.planEntries)
   const items = useGcpFlowStore((s) => s.items)
+
+  /* What each code is assigned to, for `CodeWithSubname` — a discipline
+     code means its Elisen-side discipline name, a MOC code means its
+     title, a FOC code means the authority specialist who holds it (client
+     instruction, 2026-09-25, "AP-01 code ke against ye name he Taifur
+     Rahman"). */
+  const disciplineName = (code?: string) => disciplines.find((d) => d.daoSpecialtyCode === code)?.elisenDiscipline
+  const mocName = (code?: string) => mocs.find((m) => m.code === code)?.title
+  const focName = (code?: string) => focs.find((f) => f.code === code)?.authoritySpecialist
 
   const [editingProject, setEditingProject] = useState<TccaProject | null>(null)
   const [deletingProject, setDeletingProject] = useState<TccaProject | null>(null)
@@ -276,9 +289,21 @@ export function FlowStepProject({ projectId, onPick, state = 'ready', query, onQ
                           <td className="px-lg py-base text-sm text-text-primary" title={moreRules}>
                             {primaryRule ? <Truncate lines={1}>{primaryRule.title}</Truncate> : '—'}
                           </td>
-                          <td className="truncate px-lg py-base text-sm text-text-primary" title={primaryItem?.daoSpecialtyCode}>{primaryItem?.daoSpecialtyCode || '—'}</td>
-                          <td className="truncate px-lg py-base text-sm text-text-primary" title={primaryItem?.mocCode}>{primaryItem?.mocCode || '—'}</td>
-                          <td className="truncate px-lg py-base text-sm text-text-primary" title={primaryItem?.focCode}>{primaryItem?.focCode || '—'}</td>
+                          <td className="px-lg py-base">
+                            {primaryItem?.daoSpecialtyCode
+                              ? <CodeWithSubname code={primaryItem.daoSpecialtyCode} name={disciplineName(primaryItem.daoSpecialtyCode)} />
+                              : <span className="text-sm text-text-primary">—</span>}
+                          </td>
+                          <td className="px-lg py-base">
+                            {primaryItem?.mocCode
+                              ? <CodeWithSubname code={primaryItem.mocCode} name={mocName(primaryItem.mocCode)} />
+                              : <span className="text-sm text-text-primary">—</span>}
+                          </td>
+                          <td className="px-lg py-base">
+                            {primaryItem?.focCode
+                              ? <CodeWithSubname code={primaryItem.focCode} name={focName(primaryItem.focCode)} />
+                              : <span className="text-sm text-text-primary">—</span>}
+                          </td>
                           <td className="truncate px-lg py-base text-sm text-text-primary" title={primaryItem?.deliverableId}>{primaryItem?.deliverableId || '—'}</td>
                           <td className="px-lg py-base text-sm text-text-primary">{entries.length || '—'}</td>
                           <td className="px-lg py-base text-sm text-text-primary">{affected.length || '—'}</td>

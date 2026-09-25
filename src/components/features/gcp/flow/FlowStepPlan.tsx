@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { useGcpFlowStore } from '@/stores/gcpFlowStore'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { GcpItem, PlanEntry, Regulation } from '@/types/gcp'
+import { CodeWithSubname } from '../CodeWithSubname'
 import { GcpItemDrawer } from './GcpItemDrawer'
 
 /** Real option set, read off the legacy `dds_id` dropdown — not invented. */
@@ -45,6 +46,16 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
   const updatePlanEntry = useGcpFlowStore((s) => s.updatePlanEntry)
   const removeItem = useGcpFlowStore((s) => s.removeItem)
   const updateRegulation = useGcpStore((s) => s.updateRegulation)
+  const disciplines = useGcpStore((s) => s.disciplines)
+  const mocs = useGcpStore((s) => s.mocs)
+  const focs = useGcpStore((s) => s.focs)
+
+  /* Same lookups `FlowStepProject` uses for `CodeWithSubname` — a code
+     alone doesn't say who or what it's assigned to (client instruction,
+     2026-09-25). */
+  const disciplineName = (code?: string) => disciplines.find((d) => d.daoSpecialtyCode === code)?.elisenDiscipline
+  const mocName = (code?: string) => mocs.find((m) => m.code === code)?.title
+  const focName = (code?: string) => focs.find((f) => f.code === code)?.authoritySpecialist
 
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit'; item?: GcpItem } | null>(null)
 
@@ -166,9 +177,21 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
                 <tbody>
                   {currentItems.map((i) => (
                     <tr key={i.id} className="border-b border-border-default last:border-b-0">
-                      <td className="whitespace-nowrap px-base py-base text-sm text-text-primary">{i.daoSpecialtyCode || '—'}</td>
-                      <td className="whitespace-nowrap px-base py-base text-sm text-text-primary">{i.mocCode || '—'}</td>
-                      <td className="whitespace-nowrap px-base py-base text-sm text-text-primary">{i.focCode || '—'}</td>
+                      <td className="px-base py-base">
+                        {i.daoSpecialtyCode
+                          ? <CodeWithSubname code={i.daoSpecialtyCode} name={disciplineName(i.daoSpecialtyCode)} />
+                          : <span className="text-sm text-text-primary">—</span>}
+                      </td>
+                      <td className="px-base py-base">
+                        {i.mocCode
+                          ? <CodeWithSubname code={i.mocCode} name={mocName(i.mocCode)} />
+                          : <span className="text-sm text-text-primary">—</span>}
+                      </td>
+                      <td className="px-base py-base">
+                        {i.focCode
+                          ? <CodeWithSubname code={i.focCode} name={focName(i.focCode)} />
+                          : <span className="text-sm text-text-primary">—</span>}
+                      </td>
                       <td className="whitespace-nowrap px-base py-base text-sm text-text-primary">{i.deliverableId || '—'}</td>
                       <td className="whitespace-nowrap px-base py-base"><Badge tone={i.active ? 'success' : 'neutral'}>{i.active ? 'Active' : 'Inactive'}</Badge></td>
                       <td className="whitespace-nowrap px-base py-base">

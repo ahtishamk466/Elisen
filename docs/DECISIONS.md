@@ -7133,3 +7133,30 @@ found nothing left to fix:
   `FileLink` next time one of them needs an unrelated change.
 
 No code changed for this instruction — confirmed already satisfied.
+
+## 2026-09-25 — Discipline/MOC/FOC codes carry their name, not just the code
+
+Client instruction, with a worked example: "AP-01 code ke against ye naam hai
+[specialist name]" — a bare code in the GCP Projects table and step 4's GCP
+Data table told the reader nothing about who or what it was assigned to.
+Wanted the name alongside the code, capped to 8 characters then truncated,
+full name on hover.
+
+New `CodeWithSubname` (`features/gcp/CodeWithSubname.tsx`): code on top, name
+underneath capped to exactly 8 characters + `…` (a literal character count,
+not `Truncate`'s line-clamp — the client asked for a fixed letter count), the
+full name on native `title` hover — the same hover mechanism every other
+truncated value in the app already uses, not a custom tooltip.
+
+Wired into the two spots that showed these codes bare: `FlowStepProject`
+(Discipline/MOC/FOC columns — widened 120/90/90 to 130/100/100px to give the
+second line room) and `FlowStepPlan`'s GCP Data table. Each code's name comes
+from the matching reference list already in `useGcpStore` — Discipline's
+`elisenDiscipline`, MOC's `title`, FOC's `authoritySpecialist` — looked up by
+code, not stored redundantly. Verified live: FOC `AP-01` shows `Marcus L…`
+under it with `title="Marcus Lindqvist"`.
+
+Not touched: `GcpFocTab`/`GcpDisciplineTab` on People & Authority, which
+already show code and name as two full, untruncated columns side by side —
+those already answer "what does this code mean," so stacking and truncating
+them would remove information rather than add it.
