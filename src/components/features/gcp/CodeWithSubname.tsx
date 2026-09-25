@@ -25,10 +25,16 @@ export interface CodeWithSubnameProps {
 export function CodeWithSubname({ code, name }: CodeWithSubnameProps) {
   if (!name) return <span className="block truncate text-sm text-text-primary">{code}</span>
   const short = name.length > CHAR_LIMIT ? `${name.slice(0, CHAR_LIMIT)}…` : name
+  /* `title` sat only on the truncated name span, so hovering the code line
+     itself — half the cell — showed nothing (client instruction,
+     2026-09-25: "user hover on any [part of the] column... show tooltip of
+     info of code with name"). Moved to the wrapping span, both lines, and
+     widened to name the code the tooltip is even about, not just repeat
+     the name a hover on the name alone already implied. */
   return (
-    <span className="block min-w-0">
+    <span className="block min-w-0" title={`${code} — ${name}`}>
       <span className="block truncate text-sm text-text-primary">{code}</span>
-      <span className="block truncate text-xs text-text-muted" title={name}>{short}</span>
+      <span className="block truncate text-xs text-text-muted">{short}</span>
     </span>
   )
 }

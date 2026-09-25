@@ -7214,3 +7214,29 @@ turn from muted "Open PDF" to a real blue link, confirmed the same result
 propagated automatically to the per-approval tab and the drawer's own
 mini-table (all three read the same `documentUrl`/`document` fields through
 the same `FileLink`).
+
+## 2026-09-25 — CodeWithSubname's tooltip covers the whole cell; real FOC names
+
+Two fixes from one client message.
+
+**Tooltip.** `CodeWithSubname`'s `title` sat only on the name span (the
+second line), so hovering the code itself — half the cell — showed nothing.
+Client instruction: hovering *any part* of the cell should surface the full
+code-and-name info. Moved `title` to the wrapping span and widened its
+content to `${code} — ${name}`, not just the bare name a hover on the name
+line alone already implied.
+
+**Real FOC data.** The client gave the URLs this time —
+`dev.elisen.com/foc/index`, `/moc/index`, `/discipline/index` — and unlike
+`cert-basis/index` earlier, these render without a login. Read all three in
+full (FOC: 7 pages, 63 rows; MOC: 2 pages, 16; Discipline: 3 pages, 23).
+
+MOC and Discipline fixtures already matched the live data exactly — codes,
+titles/descriptions, everything — nothing to change there. FOC's codes,
+specialties and `isDefault` flags also already matched, but every
+`authoritySpecialist` name was a placeholder invented for this prototype
+(`Marcus Lindqvist`, etc., none of them real). Replaced all 63 with the real
+names read off the live list — `AP-01` is genuinely `Taifur Rahman`, matching
+the client's own example verbatim. Matched by `code` (unique per row) rather
+than row position, since the fixture's own ordering doesn't follow the
+live list's.
