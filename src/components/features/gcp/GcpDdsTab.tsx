@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { Eye, FileText, Pencil, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { Truncate } from '@/components/patterns/Truncate'
 import { useTableSort } from '@/components/patterns/useTableSort'
+import { proportionalWidths } from '@/lib/tableWidths'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { DdsType } from '@/types/gcp'
 import { DdsTypeDetailDrawer } from './DdsTypeDetailDrawer'
@@ -13,10 +14,21 @@ import { DdsTypeDrawer } from './DdsTypeDrawer'
 
 type SortKey = 'type' | 'ddsText'
 
-const COLUMNS: { label: string; sort: SortKey; style?: CSSProperties }[] = [
-  { label: 'DDS Type', sort: 'type', style: { width: 360 } },
-  { label: 'DDS Text', sort: 'ddsText' },
+const COLUMNS: { label: string; sort: SortKey; width: number }[] = [
+  { label: 'DDS Type', sort: 'type', width: 360 },
+  /* Legacy DDS Text is blank on every one of the 10 real rows (see
+     DDS_TYPES in gcpFixtures.ts) — an unconstrained column would render as
+     a huge, entirely empty void next to a narrow DDS Type column, which
+     read as broken rather than as a column waiting for real content
+     (client instruction, 2026-09-25). Weighted wider than DDS Type since it
+     will hold longer text once populated, but capped, not unbounded. */
+  { label: 'DDS Text', sort: 'ddsText', width: 480 },
 ]
+const ACTIONS_WIDTH = 64
+const TABLE_WIDTH = COLUMNS.reduce((sum, c) => sum + c.width, 0) + ACTIONS_WIDTH
+/** `%` per column, same proportion as the pixel weights above — see
+    `lib/tableWidths.ts`. */
+const COL_WIDTHS = proportionalWidths([...COLUMNS.map((c) => c.width), ACTIONS_WIDTH])
 
 /** `DOMParser` never attaches the parsed document to the page, so nothing
     it contains executes — only `textContent` is read out of it, for a
@@ -73,17 +85,21 @@ export function GcpDdsTab({ createOpen, onCreateOpenChange, query }: GcpDdsTabPr
         </div>
       ) : (
         <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
-          <table className="w-full table-fixed border-collapse text-left">
+          <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
             <caption className="sr-only">DDS types</caption>
+            <colgroup>
+              {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
+              <col style={{ width: COL_WIDTHS[COLUMNS.length] }} />
+            </colgroup>
             <thead>
               <tr className="border-b border-border-default bg-neutral-50">
                 {COLUMNS.map((c) => (
                   <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
-                    style={c.style} className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">
+                    className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">
                     {c.label}
                   </SortableTh>
                 ))}
-                <SortableTh style={{ width: 64 }} className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
+                <SortableTh className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
               </tr>
             </thead>
             <tbody>

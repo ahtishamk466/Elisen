@@ -7013,3 +7013,55 @@ New component flagged to the user rather than proposed first (CLAUDE.md rule
 2) — the instruction was to make files clickable wherever they appear, which
 is not satisfiable without one shared component, and four duplicated copies
 of the anchor already existed to consolidate.
+
+## 2026-09-25 — Narrow reference tables spread their columns instead of dumping space at the end
+
+Client-reported, twice — GCP Reference Lists → DDS, and (mid-fix) People &
+Authority → Delegation: "the whole table sits on one side, manage the
+spacing between columns, make it look visually balanced, and make it
+responsive."
+
+Both tables (and, found by audit, Cert Basis) share the same shape: a
+handful of short, fixed-width reference columns — a code, a badge, a boolean
+— on a card that's much wider than their sum. Under `table-fixed`, a column
+with an explicit pixel width never grows past it, so all the real content
+stayed pinned to the card's left edge while a trailing invisible spacer
+column (the fix from 2026-09-24, still correct for its own original problem)
+soaked up thirty-plus percent of a wide screen with nothing in it — on
+Delegation at 1728px, 768px of pure blank card past Actions.
+
+That's a different failure from the one the spacer fixed. The spacer was for
+a table whose content legitimately filled the space it was given; these
+tables' *content* doesn't grow, so growth has to go into the columns readers
+are already looking at instead. Added `proportionalWidths()` (`lib/
+tableWidths.ts`): the same pixel numbers already used for each table's
+`minWidth` floor double as a weight, converted to `%` so every column keeps
+its relative proportion (a code column stays visibly narrower than a title
+column) while growing together to fill whatever width the card actually has.
+
+Applied to:
+- **`GcpDelegationTab`** — replaced the trailing spacer with percentage
+  columns. Verified live: Actions now ends flush with the card at 1728px, no
+  gap, in both the frozen header and the scrolling body.
+- **`GcpCertBasesPage`** — same swap; its group-header row's colSpans
+  (`COLUMNS.length + 2`, and a `colSpan={2}` Actions cell) dropped by one
+  each to match the colgroup losing its spacer column.
+- **`GcpDdsTab`** — had no colgroup at all; DDS Text was the one
+  unconstrained column, and it is blank on every one of the legacy dataset's
+  10 real rows, so it rendered as an enormous, entirely empty column next to
+  a narrow DDS Type. Gave DDS Text a bounded weight (480 vs. DDS Type's 360)
+  instead of unlimited growth.
+- **`GcpMocTab`** — same underlying pattern as DDS (an unconstrained
+  Description column), left unreported because MOC's real descriptions
+  happen to be long enough to look fine today. Bounded it anyway for
+  consistency, so this tab doesn't quietly break the day its data changes.
+
+Left alone, checked live at 1728px first: `RegulationListPage`,
+`FlowStepProject`, `FlowStepInitialize` — each already has enough real
+unconstrained columns that they fill the card on their own, no lone narrow
+survivor. `RegulationGroupsPage`/`RegulationStructurePage` are a rail in a
+master–detail layout, narrow by design, not this bug.
+
+Responsiveness verified, not assumed: at 768px (tablet floor), all three
+fixed tables' `<main>` neither pans nor forces page scroll — each table
+still scrolls inside its own bounded container exactly as before.

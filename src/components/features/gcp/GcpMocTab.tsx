@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { BookOpen, Eye, Pencil, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { Truncate } from '@/components/patterns/Truncate'
 import { useTableSort } from '@/components/patterns/useTableSort'
+import { proportionalWidths } from '@/lib/tableWidths'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { Moc } from '@/types/gcp'
 import { MocDetailDrawer } from './MocDetailDrawer'
@@ -13,11 +14,19 @@ import { MocDrawer } from './MocDrawer'
 
 type SortKey = 'code' | 'title' | 'description'
 
-const COLUMNS: { label: string; sort: SortKey; style?: CSSProperties }[] = [
-  { label: 'Code', sort: 'code', style: { width: 120 } },
-  { label: 'Title', sort: 'title', style: { width: 260 } },
-  { label: 'Description', sort: 'description' },
+const COLUMNS: { label: string; sort: SortKey; width: number }[] = [
+  { label: 'Code', sort: 'code', width: 120 },
+  { label: 'Title', sort: 'title', width: 260 },
+  { label: 'Description', sort: 'description', width: 380 },
 ]
+const ACTIONS_WIDTH = 64
+const TABLE_WIDTH = COLUMNS.reduce((sum, c) => sum + c.width, 0) + ACTIONS_WIDTH
+/** `%` per column, same proportion as the pixel weights above — see
+    `lib/tableWidths.ts`. Description already holds real text on every row
+    here, so an unconstrained column happened to look fine; bounding it
+    keeps this tab consistent with DDS's identical layout rather than
+    relying on this table's data staying populated. */
+const COL_WIDTHS = proportionalWidths([...COLUMNS.map((c) => c.width), ACTIONS_WIDTH])
 
 export interface GcpMocTabProps {
   /** The page header's "Add MOC" button controls this drawer — see
@@ -64,17 +73,21 @@ export function GcpMocTab({ createOpen, onCreateOpenChange, query }: GcpMocTabPr
         </div>
       ) : (
         <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
-          <table className="w-full table-fixed border-collapse text-left">
+          <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
             <caption className="sr-only">Means of Compliance codes</caption>
+            <colgroup>
+              {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
+              <col style={{ width: COL_WIDTHS[COLUMNS.length] }} />
+            </colgroup>
             <thead>
               <tr className="border-b border-border-default bg-neutral-50">
                 {COLUMNS.map((c) => (
                   <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
-                    style={c.style} className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">
+                    className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">
                     {c.label}
                   </SortableTh>
                 ))}
-                <SortableTh style={{ width: 64 }} className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
+                <SortableTh className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
               </tr>
             </thead>
             <tbody>

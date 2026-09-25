@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useTableSort } from '@/components/patterns/useTableSort'
 import { useSyncedScroll } from '@/components/patterns/useSyncedScroll'
+import { proportionalWidths } from '@/lib/tableWidths'
 import { Badge } from '@/components/ui/Badge'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { Delegation } from '@/types/gcp'
@@ -22,6 +23,14 @@ const COLUMNS: { label: string; sort: SortKey; style?: CSSProperties }[] = [
 ]
 const ACTIONS_WIDTH = 64
 const TABLE_WIDTH = COLUMNS.reduce((sum, c) => sum + (c.style?.width as number), 0) + ACTIONS_WIDTH
+/** One `%` per real column plus Actions, in the same proportion as their
+    pixel weights above — see `lib/tableWidths.ts`. Replaces the trailing
+    spacer `<col />` this table used to end on: that soaked up a wide
+    screen's extra space invisibly, past Actions, which read as the whole
+    table sitting crammed against the left edge (client instruction,
+    2026-09-25) rather than as four columns actually using the card they sit
+    in. */
+const COL_WIDTHS = proportionalWidths([...COLUMNS.map((c) => c.style?.width as number), ACTIONS_WIDTH])
 
 export interface GcpDelegationTabProps {
   /** The page header's "Add Delegation" button controls this drawer — see
@@ -81,18 +90,8 @@ export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpD
           <div ref={headerRef} className="shrink-0 overflow-x-hidden overflow-y-scroll scrollbar-none">
             <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
               <colgroup>
-                {COLUMNS.map((c) => <col key={c.label} style={c.style} />)}
-                <col style={{ width: ACTIONS_WIDTH }} />
-                {/* Soaks up whatever's left of the container past
-                    `TABLE_WIDTH` — every other column above has an explicit
-                    width and stays exactly that width regardless (`table-
-                    fixed` only ever redistributes into columns *without*
-                    one), so a screen wider than the table's real content no
-                    longer leaves that leftover as dead space to the card's
-                    right (client instruction, 2026-09-24). On a narrow
-                    screen this column has nothing to give and just
-                    disappears, same as before. */}
-                <col />
+                {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
+                <col style={{ width: COL_WIDTHS[COLUMNS.length] }} />
               </colgroup>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
@@ -103,7 +102,6 @@ export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpD
                     </SortableTh>
                   ))}
                   <SortableTh className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
-                  <th aria-hidden />
                 </tr>
               </thead>
             </table>
@@ -112,9 +110,8 @@ export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpD
             <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
               <caption className="sr-only">Delegations</caption>
               <colgroup>
-                {COLUMNS.map((c) => <col key={c.label} style={c.style} />)}
-                <col style={{ width: ACTIONS_WIDTH }} />
-                <col />
+                {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
+                <col style={{ width: COL_WIDTHS[COLUMNS.length] }} />
               </colgroup>
               <tbody>
                 {sorted.map((d) => (
@@ -137,7 +134,6 @@ export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpD
                         ]}
                       />
                     </td>
-                    <td aria-hidden />
                   </tr>
                 ))}
               </tbody>

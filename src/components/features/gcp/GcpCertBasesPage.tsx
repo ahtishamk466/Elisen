@@ -6,6 +6,7 @@ import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useSyncedScroll } from '@/components/patterns/useSyncedScroll'
+import { proportionalWidths } from '@/lib/tableWidths'
 import { Truncate } from '@/components/patterns/Truncate'
 import { useTableSort } from '@/components/patterns/useTableSort'
 import { Alert } from '@/components/ui/Alert'
@@ -30,6 +31,11 @@ const COLUMNS: { label: string; sort: 'section' | 'amdt' | 'title' | 'active'; w
 ]
 const ACTIONS_WIDTH = 64
 const TABLE_WIDTH = COLUMNS.reduce((sum, c) => sum + c.width, 0) + ACTIONS_WIDTH
+/** `%` per column in the same proportion as the pixel weights above, so a
+    screen wider than the table grows all four columns instead of leaving a
+    blank void past Actions (client instruction, 2026-09-25 — see
+    `lib/tableWidths.ts`). Replaces the old trailing spacer `<col />`. */
+const COL_WIDTHS = proportionalWidths([...COLUMNS.map((c) => c.width), ACTIONS_WIDTH])
 
 /**
  * Cert Basis, as one table — client instruction, 2026-09-24, replacing the
@@ -147,15 +153,8 @@ export function GcpCertBasesPage() {
           <div ref={headerRef} className="shrink-0 overflow-x-hidden overflow-y-scroll scrollbar-none">
             <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
               <colgroup>
-                {COLUMNS.map((c) => <col key={c.label} style={{ width: c.width }} />)}
-                <col style={{ width: ACTIONS_WIDTH }} />
-                {/* Soaks up whatever's left past `TABLE_WIDTH` on a screen
-                    wider than the table's real content, instead of leaving
-                    it as dead space to the card's right (client instruction,
-                    2026-09-24) — every other column keeps its own explicit
-                    width regardless, since `table-fixed` only redistributes
-                    into columns without one. */}
-                <col />
+                {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
+                <col style={{ width: COL_WIDTHS[COLUMNS.length] }} />
               </colgroup>
               <thead>
                 <tr className="border-b border-border-default bg-neutral-50">
@@ -164,7 +163,6 @@ export function GcpCertBasesPage() {
                       className="px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                   <SortableTh className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
-                  <th aria-hidden />
                 </tr>
               </thead>
             </table>
@@ -173,9 +171,8 @@ export function GcpCertBasesPage() {
             <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
               <caption className="sr-only">Every Cert Basis and its regulations</caption>
               <colgroup>
-                {COLUMNS.map((c) => <col key={c.label} style={{ width: c.width }} />)}
-                <col style={{ width: ACTIONS_WIDTH }} />
-                <col />
+                {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
+                <col style={{ width: COL_WIDTHS[COLUMNS.length] }} />
               </colgroup>
               {filtered.map((b) => {
                 const count = regsOf(b).length
@@ -191,7 +188,7 @@ export function GcpCertBasesPage() {
                           </span>
                         </div>
                       </td>
-                      <td colSpan={2} className="bg-neutral-50 px-lg py-base">
+                      <td className="bg-neutral-50 px-lg py-base">
                         <ActionsMenu
                           ariaLabel={`Actions for cert basis ${b.aircraftModel}`}
                           items={[
@@ -203,7 +200,7 @@ export function GcpCertBasesPage() {
                     </tr>
                     {basisRegs.length === 0 ? (
                       <tr className="border-b border-border-default last:border-b-0">
-                        <td colSpan={COLUMNS.length + 2} className="px-lg py-base text-sm text-text-muted">
+                        <td colSpan={COLUMNS.length + 1} className="px-lg py-base text-sm text-text-muted">
                           No regulations yet.
                         </td>
                       </tr>
@@ -226,7 +223,6 @@ export function GcpCertBasesPage() {
                               ]}
                             />
                           </td>
-                          <td aria-hidden />
                         </tr>
                       ))
                     )}
