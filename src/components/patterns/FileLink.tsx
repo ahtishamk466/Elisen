@@ -5,8 +5,12 @@ export interface FileLinkProps {
   /** Where the file lives. Anything not openable renders as plain text
       rather than a dead link. */
   url?: string
-  /** What to show — a filename where the record has one. Defaults to the
-      URL itself, which is all a SharePoint link gives us. */
+  /** What to show — a filename where the record has one. Defaults to **"Go
+      To"**, not the URL: a SharePoint link is a 100+ character token with
+      no filename in it, and printing that as the visible text is exactly
+      what a reader can't use (client instruction, 2026-09-25 — "dont write
+      all this [URL]... instead say Go To"). The full URL still lives on
+      `title`, for hover. */
   label?: string
 }
 
@@ -31,12 +35,18 @@ export interface FileLinkProps {
  * links, approval document cells): one file-link style, changed in one place.
  */
 export function FileLink({ url = '', label }: FileLinkProps) {
-  const text = label ?? url
+  const openable = isOpenableUrl(url)
+  /* Plain text (no label, no openable link) has nothing to show at all —
+     "—", same as every other empty value in the app. But once there's a
+     real link to open, "Go To" is always a valid thing to say even with no
+     label, so only the *no-link* branch below needs `url` as a last-resort
+     fallback. */
+  const text = label ?? (openable ? 'Go To' : url)
   if (!text.trim()) return <span className="text-text-muted">—</span>
 
   /* No link to open — the record names a file but never stored where it
      lives. Still worth showing the name, just not as something clickable. */
-  if (!isOpenableUrl(url)) {
+  if (!openable) {
     return (
       <span className="flex min-w-0 items-center gap-xs" title={text}>
         <FileText size={14} className="shrink-0 text-text-muted" aria-hidden />

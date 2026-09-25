@@ -7160,3 +7160,32 @@ Not touched: `GcpFocTab`/`GcpDisciplineTab` on People & Authority, which
 already show code and name as two full, untruncated columns side by side —
 those already answer "what does this code mean," so stacking and truncating
 them would remove information rather than add it.
+
+## 2026-09-25 — FileLink says "Go To", never the raw URL
+
+Client-reported, pointing at the Documents revision drawer's File field:
+"dont write all this [URL]... instead say Go To with icon arrow in a link
+text blue and underline."
+
+`FileLink` fell back to printing the URL itself as the link text whenever no
+filename `label` was given — exactly the case a SharePoint URL (120+
+unreadable characters) always hits, since those links don't carry a
+filename. Changed the fallback from the URL to **"Go To"**, kept only for
+the genuinely link-less case (no URL at all, so nothing to open — that still
+falls back to showing whatever text exists, since there's no link to
+default to "Go To" against). The full URL stays on `title` for hover, same
+as before.
+
+Also caught and fixed on the way: `RegulationDetailDrawer`'s Source field
+was passing `label={sourceLabel + ' — ' + url}` — the exact same
+"URL crammed into the visible text" mistake this whole fix exists to
+prevent, just appended after a label instead of standing alone. Changed to
+`label={sourceLabel}` only, matching its three sibling copies of this same
+link (`RegulationListPage`, `GcpFlowPage`, `FlowStepInitialize`), which
+never appended the URL in the first place.
+
+A record that *does* have a real filename (an approval's PDF name, say)
+keeps showing that filename, not "Go To" — the fix only replaces the URL
+fallback, not every label. Verified live: Documents' File field now reads
+"Go To" (blue, underlined, `ExternalLink` icon); Regulations' Source field
+reads "Source" alone, no URL after it.

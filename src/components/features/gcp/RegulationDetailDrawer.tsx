@@ -48,8 +48,14 @@ export function RegulationDetailDrawer({ regulation: r, subpart, subsection, onC
                 wraps over several lines on a long one — same bug the
                 Documents drawer's File field had (client instruction,
                 2026-09-25). `FileLink` keeps it to one clipped line. */}
+            {/* Label is "FAA Source"/"Source" alone, not the URL appended
+                after it — the same over-long-URL-as-text problem `FileLink`
+                exists to avoid in the first place (client instruction,
+                2026-09-25: "dont write all this [URL]... instead say Go
+                To"). Matches the sibling copies of this same source link on
+                `RegulationListPage`/`GcpFlowPage`/`FlowStepInitialize`. */}
             <DetailField label="Source">
-              <FileLink url={r.url} label={r.url ? `${sourceLabel(r.url)} — ${r.url}` : undefined} />
+              <FileLink url={r.url} label={r.url ? sourceLabel(r.url) : undefined} />
             </DetailField>
           </div>
         </DetailCard>
