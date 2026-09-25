@@ -292,7 +292,7 @@ export function ApprovalDetailPage() {
                             </td>
                             <td className="px-lg py-base align-top text-sm text-text-primary"><DateText value={r.revisionDate} /></td>
                             <td className="px-lg py-base align-top text-sm text-text-primary">
-                              <FileLink url={r.documentUrl} label={r.document} />
+                              <FileLink url={r.documentUrl} label={r.document ? 'Open PDF' : undefined} />
                             </td>
                             <td className="px-lg py-base align-top">
                               <ActionsMenu

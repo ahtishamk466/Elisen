@@ -161,7 +161,7 @@ export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: 
                     <td className="px-base py-sm text-sm text-text-primary"><DateText value={r.revisionDate} /></td>
                     <td className="px-base py-sm text-sm text-text-secondary"><Truncate lines={2}>{r.changeDescription}</Truncate></td>
                     <td className="px-base py-sm text-sm text-text-primary">
-                      <FileLink url={r.documentUrl} label={r.document} />
+                      <FileLink url={r.documentUrl} label={r.document ? 'Open PDF' : undefined} />
                     </td>
                   </tr>
                 ))}

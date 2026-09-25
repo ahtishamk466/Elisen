@@ -183,7 +183,14 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
                               {/* The anchor handles its own navigation, so the
                                   row's own click must not also fire. */}
                               <span onClick={(e) => e.stopPropagation()}>
-                                <FileLink url={revision.documentUrl} label={revision.document} />
+                                {/* "Open PDF", never the filename — client
+                                    instruction, 2026-09-25: the filename
+                                    told the reader nothing they'd act on,
+                                    where a plain call-to-action does. Blue
+                                    + underlined only once there's a link to
+                                    open; muted otherwise, same as every
+                                    other `FileLink`. */}
+                                <FileLink url={revision.documentUrl} label={revision.document ? 'Open PDF' : undefined} />
                               </span>
                             </td>
                             <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>

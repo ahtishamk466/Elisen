@@ -7189,3 +7189,28 @@ keeps showing that filename, not "Go To" — the fix only replaces the URL
 fallback, not every label. Verified live: Documents' File field now reads
 "Go To" (blue, underlined, `ExternalLink` icon); Regulations' Source field
 reads "Source" alone, no URL after it.
+
+## 2026-09-25 — Approvals document cells say "Open PDF", never the filename
+
+Client instruction, pointed at the Approvals → Revisions table: "make this
+clickable link dont say A-LSA26-032-D Iss 01.pdf. say 'open pdf with pdf
+icon' in a blue clickable link... dont say doc name just do it for all
+table."
+
+All three places a revision's document appears — `ApprovalRevisionsPage`
+(global list), `ApprovalDetailPage` (per-approval Revisions tab), and
+`ApprovalRevisionDrawer`'s own "Previous revisions" table — already went
+through `FileLink` from earlier today, so this was one prop change at each
+call site: `label={document ? 'Open PDF' : undefined}` instead of passing
+the filename through as the label. `FileLink`'s existing logic does the
+rest — blue, underlined, `ExternalLink` icon, opens in a new tab once there
+*is* a link; the same "Open PDF" text in muted grey with no link when there
+isn't (most of the seed data — the legacy export names files far more often
+than it links them, per the 2026-09-25 entry that added `documentUrl`).
+
+Verified live end-to-end through the real Edit Revision flow, not by
+seeding fixture data: added a test URL to one revision, watched its row
+turn from muted "Open PDF" to a real blue link, confirmed the same result
+propagated automatically to the per-approval tab and the drawer's own
+mini-table (all three read the same `documentUrl`/`document` fields through
+the same `FileLink`).
