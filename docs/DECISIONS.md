@@ -6916,3 +6916,57 @@ linked most files), so today's Document cells still render as plain text
 until a URL is added via Edit Revision — verified live end-to-end with a
 seeded test URL, then reverted before committing so no placeholder link ships
 in the client's real dataset.
+
+## 2026-09-25 — Sidebar collapses to an icon rail, app-wide
+
+Client instruction: a collapse/expand control beside the logo, a compact
+icon-only sidebar when collapsed, and every screen reflowing cleanly against
+whichever state it's in — "no stretched, clipped, misaligned content or
+awkward empty gaps", with both states saved in Storybook.
+
+**The control.** A `PanelLeftClose` / `PanelLeftOpen` button in the sidebar's
+header row, beside the logo; collapsed, it is all that's left and centres in
+the rail. `aria-expanded` + `aria-controls` point at the nav, and the label
+flips between "Collapse sidebar" and "Expand sidebar". The logo is hidden
+rather than swapped for a standalone mark — docs/DESIGN.md gives one lockup
+and 64px of rail has no room for it beside the control.
+
+**The rail.** `w-64` → `w-16`, transitioning on width only. Each row centres
+its icon and moves its label onto `title` + `aria-label`, so nothing loses an
+accessible name (CLAUDE.md rule 6 — verified live: all 12 interactive
+elements in the collapsed rail report a name). Child lists are hidden, and
+`SidebarProfile` gained a `collapsed` prop that drops the name and chevron
+for the avatar alone. Clicking a parent section from the collapsed rail
+expands the sidebar *and* opens that section: collapsed there is nowhere to
+draw children, and a control that appears to do nothing is worse than one
+that does two things.
+
+**State lives in `useUiStore`, not `useState` in `AppShell`.** Every page
+renders its own `AppShell`, so component state is torn down on every
+navigation and the rail would spring back open the moment you clicked a nav
+item. Confirmed live: collapsed, navigated to a different route, still 64px.
+Not persisted across reloads — consistent with every other store here.
+
+**No page needed changing to reflow.** `<main>` was already
+`flex-1 min-w-0`, so it absorbs the 192px the rail gives back on its own.
+Verified by walking all 27 routes in both states at 768 / 1280 / 1440 —
+checking for page-level horizontal scroll, user-pannable `main`, and any
+child sitting outside `main`'s right gutter. 162 checks, clean.
+
+**One real bug surfaced and fixed on the way.** That sweep found `main`
+horizontally scrollable by 30–58px on `/gcp/regulations` and `/system/audit`
+at tablet width — the whole page, heading included, could be dragged left off
+its gutter onto empty space. Confirmed **pre-existing** by stashing this work
+and re-measuring (identical numbers), so it isn't a regression from the
+collapse feature, but it is exactly the "awkward empty gap" the instruction
+rules out. Cause: a wide table's own `overflow-x-auto` still contributes its
+content width to the ancestor's `scrollWidth` (isolated by elimination —
+`contain: paint` on the table's scroller was the only other thing that
+cleared it, and it clips positioned descendants, so it was the wrong tool).
+Fixed in the shared shell instead: `main` is `overflow-x-hidden` as well as
+`overflow-y-auto`. It scrolls vertically and nothing else; every wide table
+already scrolls inside its own container, so nothing became unreachable.
+
+Storybook: `Patterns/Overview` → **Sidebar Expanded** / **Sidebar Collapsed**,
+both wrapped in `MemoryRouter` and setting the store state before paint so
+each opens in the state it documents regardless of what ran before it.

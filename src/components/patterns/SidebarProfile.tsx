@@ -19,7 +19,13 @@ const MENU_WIDTH = 200
  * reusable primitive — same reason AppShell hardcodes this app's nav and
  * routes. See docs/DECISIONS.md.
  */
-export function SidebarProfile() {
+export interface SidebarProfileProps {
+  /** Icon rail: avatar only, the name and chevron drop and the menu opens
+      from the avatar. Driven by `AppShell`'s collapse toggle. */
+  collapsed?: boolean
+}
+
+export function SidebarProfile({ collapsed = false }: SidebarProfileProps) {
   const { open, setOpen, position, triggerRef, menuRef } = useDropdown<HTMLButtonElement>(MENU_WIDTH)
   const [confirmOut, setConfirmOut] = useState(false)
   const navigate = useNavigate()
@@ -38,13 +44,22 @@ export function SidebarProfile() {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-sm rounded-sm px-base py-sm text-sm text-primary-100 transition-colors duration-fast hover:bg-primary-600 hover:text-text-inverse focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-25"
+        // Collapsed, the name is gone from view, so it becomes the button's
+        // accessible name instead of being lost (CLAUDE.md rule 6).
+        aria-label={collapsed ? displayName : undefined}
+        title={collapsed ? displayName : undefined}
+        className={`flex w-full items-center rounded-sm py-sm text-sm text-primary-100 transition-colors duration-fast hover:bg-primary-600 hover:text-text-inverse focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-25 ${
+          collapsed ? 'justify-center px-0' : 'gap-sm px-base'}`}
       >
         <span aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-600 text-text-inverse">
           <User size={16} />
         </span>
-        <span className="min-w-0 flex-1 truncate text-left">{displayName}</span>
-        <ChevronUp size={16} aria-hidden className={`shrink-0 transition-transform duration-fast ${open ? '' : 'rotate-180'}`} />
+        {!collapsed && (
+          <>
+            <span className="min-w-0 flex-1 truncate text-left">{displayName}</span>
+            <ChevronUp size={16} aria-hidden className={`shrink-0 transition-transform duration-fast ${open ? '' : 'rotate-180'}`} />
+          </>
+        )}
       </button>
 
       {open && position &&

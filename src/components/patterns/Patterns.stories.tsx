@@ -1,5 +1,8 @@
-import { useState, type ReactNode } from 'react'
+import { useLayoutEffect, useState, type ReactNode } from 'react'
+import { MemoryRouter } from 'react-router-dom'
 import type { Meta, StoryObj } from '@storybook/react'
+import { AppShell } from './AppShell'
+import { useUiStore } from '@/stores/uiStore'
 import { ChevronDown, Copy as CopyIcon, Filter as FilterIcon, FolderOpen, Plus, Search as SearchIcon, Trash2 } from 'lucide-react'
 import { SortableTh } from './SortableTh'
 import { useTableSort } from './useTableSort'
@@ -1515,4 +1518,103 @@ export const FrozenTableHeaderExample: Story = {
       </div>
     )
   },
+}
+
+/* ---------------------------------------------------------------------- *
+ * AppShell — sidebar expanded / collapsed
+ * ---------------------------------------------------------------------- */
+
+/** Sets the shell's collapse state before paint, so the story always opens in
+    the state it documents rather than inheriting whatever the last one left
+    in the store. */
+function ShellState({ collapsed, children }: { collapsed: boolean; children: ReactNode }) {
+  useLayoutEffect(() => {
+    useUiStore.setState({ sidebarCollapsed: collapsed })
+  }, [collapsed])
+  return <MemoryRouter initialEntries={['/projects']}>{children}</MemoryRouter>
+}
+
+/** The page body both shell stories share — stat tiles over a table, the two
+    things most likely to look wrong if the content doesn't reflow. */
+function ShellDemoPage() {
+  return (
+    <div className="grid gap-lg">
+      <div className="grid gap-lg mobile:grid-cols-2 laptop:grid-cols-4">
+        <StatCard value={28} label="Total projects" />
+        <StatCard value={19} label="In Progress" />
+        <StatCard value={8} label="Completed projects" />
+        <StatCard value={4} label="Needs Attention" />
+      </div>
+      <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left" style={{ minWidth: 640 }}>
+            <caption className="sr-only">Example rows</caption>
+            <thead>
+              <tr className="border-b border-border-default bg-neutral-50">
+                {['No. / Type', 'Project', 'Company', 'Person Res.', 'Status'].map((h) => (
+                  <th key={h} scope="col" className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 6 }, (_, i) => (
+                <tr key={i} className="border-b border-border-default last:border-b-0">
+                  <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">32{i}0-00</td>
+                  <td className="px-lg py-base text-sm text-text-primary">STC — Cabin Interior Modification</td>
+                  <td className="px-lg py-base text-sm text-text-primary">Northwind Aerospace</td>
+                  <td className="px-lg py-base"><PersonCell name="Sofia Reyes" /></td>
+                  <td className="px-lg py-base"><Badge tone="success">Complete</Badge></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * **Sidebar — expanded.** The default: 256px, icon + label, parent sections
+ * expand in place to show their children.
+ *
+ * The toggle beside the logo collapses it. State lives in `useUiStore`, not in
+ * `AppShell`, because every page mounts its own shell — component state would
+ * reset the rail to full width on every navigation.
+ */
+export const SidebarExpanded: Story = {
+  parameters: { layout: 'fullscreen' },
+  render: () => (
+    <ShellState collapsed={false}>
+      <AppShell activeItem="Projects" activeChild="Projects List" title="Projects List"
+        description="Every project, with its budget health."
+        headerActions={<Button leadingIcon={<Plus size={16} />}>Add new project</Button>}>
+        <ShellDemoPage />
+      </AppShell>
+    </ShellState>
+  ),
+}
+
+/**
+ * **Sidebar — collapsed.** 64px icon rail: labels drop to `title`/`aria-label`
+ * so every item keeps an accessible name, child lists are hidden, and the
+ * profile footer shows the avatar alone.
+ *
+ * `<main>` is `flex-1 min-w-0`, so the 192px the rail gives back is absorbed by
+ * the page with no page-level change — compare the table here against
+ * `SidebarExpanded`. Clicking a parent section (GCP, Projects…) from the rail
+ * expands the sidebar *and* opens that section, since a collapsed rail has
+ * nowhere to show children.
+ */
+export const SidebarCollapsed: Story = {
+  parameters: { layout: 'fullscreen' },
+  render: () => (
+    <ShellState collapsed>
+      <AppShell activeItem="Projects" activeChild="Projects List" title="Projects List"
+        description="Every project, with its budget health."
+        headerActions={<Button leadingIcon={<Plus size={16} />}>Add new project</Button>}>
+        <ShellDemoPage />
+      </AppShell>
+    </ShellState>
+  ),
 }

@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { LayoutDashboard, FolderOpen, Clock, ListChecks, ShieldCheck, Database, Settings, ChevronDown, ChevronRight, KeyRound, Award, FileText } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, Clock, ListChecks, ShieldCheck, Database, Settings, ChevronDown, ChevronRight, KeyRound, Award, FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { SidebarProfile } from './SidebarProfile'
+import { useUiStore } from '@/stores/uiStore'
 
 /** Top-level items without children that have a real screen — rendered as
     router Links; the rest stay inert until their screens exist. */
@@ -116,6 +117,23 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
   // to browse its children before navigating.
   const [expanded, setExpanded] = useState(activeItem)
 
+  /* Collapsed state lives in a store, not in this component: every page
+     mounts its own AppShell, so `useState` here would reset the rail back
+     to full width on every navigation (client instruction, 2026-09-25 —
+     "clicking again should restore the full navigation panel", which has to
+     survive moving between screens to mean anything). */
+  const collapsed = useUiStore((s) => s.sidebarCollapsed)
+  const toggleSidebar = useUiStore((s) => s.toggleSidebar)
+  const expandSidebar = useUiStore((s) => s.expandSidebar)
+
+  /** Collapsed, a parent section has nowhere to show its children, so
+      picking one opens the rail and that section together rather than
+      appearing to do nothing. */
+  const openSection = (label: string) => {
+    if (collapsed) { expandSidebar(); setExpanded(label); return }
+    setExpanded((prev) => (prev === label ? '' : label))
+  }
+
   return (
     /* The shell owns the viewport: it is exactly one screen tall and never
        scrolls itself, so the sidebar and the page heading stay put and only
@@ -123,22 +141,54 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
        to carry the nav and the title off the top of the screen. */
     <div className="flex h-screen overflow-hidden bg-neutral-50">
       {/* Full height of that frame, with the nav list scrolling internally, so
-          the profile footer stays above the fold at any scroll position. */}
-      <aside className="hidden h-full w-64 shrink-0 flex-col bg-primary-700 tablet:flex">
-        <div className="px-lg py-xl">
-          <img src="/logo-elisen.svg" alt="Elisen" width={600} height={104} className="h-6 w-auto brightness-0 invert" />
+          the profile footer stays above the fold at any scroll position.
+
+          Width is the only thing that changes between states — 256px open,
+          64px collapsed (client instruction, 2026-09-25). `<main>` beside it
+          is already `flex-1 min-w-0`, so every page reclaims the 192px
+          without a single page-level change: the transition is on the aside,
+          and the content reflows against it. */}
+      <aside
+        className={`hidden h-full shrink-0 flex-col bg-primary-700 transition-[width] duration-base tablet:flex ${
+          collapsed ? 'w-16' : 'w-64'}`}
+      >
+        {/* Logo and toggle share the header row; collapsed, the toggle is all
+            that's left and it centers in the rail. The logo is hidden rather
+            than swapped for a mark — there is one lockup (docs/DESIGN.md,
+            "Brand"), and 64px of rail has no room for it beside the control. */}
+        <div className={`flex items-center py-xl ${collapsed ? 'justify-center px-sm' : 'justify-between px-lg'}`}>
+          {!collapsed && (
+            <img src="/logo-elisen.svg" alt="Elisen" width={600} height={104} className="h-6 w-auto brightness-0 invert" />
+          )}
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            aria-expanded={!collapsed}
+            aria-controls="app-sidebar-nav"
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-primary-100 transition-colors duration-fast hover:bg-primary-600 hover:text-text-inverse focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-25"
+          >
+            {collapsed ? <PanelLeftOpen size={18} aria-hidden /> : <PanelLeftClose size={18} aria-hidden />}
+          </button>
         </div>
         {/* No visible scrollbar in the sidebar (client instruction,
             2026-09-24) — it still scrolls (wheel, keyboard), it just never
             shows the bar the rest of the app's scroll regions do. */}
-        <nav aria-label="Main" className="scrollbar-none min-h-0 flex-1 overflow-y-auto">
-          <ul className="grid gap-xxss px-base">
+        <nav id="app-sidebar-nav" aria-label="Main" className="scrollbar-none min-h-0 flex-1 overflow-y-auto">
+          <ul className={`grid gap-xxss ${collapsed ? 'px-sm' : 'px-base'}`}>
             {NAV.map((item) => {
               const active = item.label === activeItem
               const hasChildren = !!item.children && item.children.length > 0
-              const isExpanded = item.label === expanded
-              const itemClass = `flex h-4xl w-full items-center gap-sm rounded-sm px-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-25
+              const isExpanded = !collapsed && item.label === expanded
+              /* Collapsed, the row is a centred icon with no padding to push
+                 it off-centre, and the label moves onto `title`/`aria-label`
+                 so the item still has an accessible name (CLAUDE.md rule 6)
+                 and still says what it is on hover. */
+              const itemClass = `flex h-4xl w-full items-center rounded-sm text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-25
+                      ${collapsed ? 'justify-center px-0' : 'gap-sm px-base'}
                       ${active ? 'bg-primary-600 font-semibold text-text-inverse' : 'text-primary-100 hover:bg-primary-600 hover:text-text-inverse'}`
+              const collapsedLabel = collapsed ? { title: item.label, 'aria-label': item.label } : {}
               return (
                 <li key={item.label}>
                   {hasChildren ? (
@@ -146,24 +196,29 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
                       type="button"
                       aria-expanded={isExpanded}
                       aria-current={active ? 'page' : undefined}
-                      onClick={() => setExpanded((prev) => (prev === item.label ? '' : item.label))}
+                      onClick={() => openSection(item.label)}
                       className={itemClass}
+                      {...collapsedLabel}
                     >
                       <span aria-hidden>{item.icon}</span>
-                      <span className="flex-1 text-left">{item.label}</span>
-                      <span aria-hidden className="text-primary-200">
-                        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                      </span>
+                      {!collapsed && (
+                        <>
+                          <span className="flex-1 text-left">{item.label}</span>
+                          <span aria-hidden className="text-primary-200">
+                            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                          </span>
+                        </>
+                      )}
                     </button>
                   ) : TOP_ROUTES[item.label] ? (
-                    <Link to={TOP_ROUTES[item.label]} aria-current={active ? 'page' : undefined} className={itemClass}>
+                    <Link to={TOP_ROUTES[item.label]} aria-current={active ? 'page' : undefined} className={itemClass} {...collapsedLabel}>
                       <span aria-hidden>{item.icon}</span>
-                      <span className="flex-1">{item.label}</span>
+                      {!collapsed && <span className="flex-1">{item.label}</span>}
                     </Link>
                   ) : (
-                    <a href="#" aria-current={active ? 'page' : undefined} className={itemClass}>
+                    <a href="#" aria-current={active ? 'page' : undefined} className={itemClass} {...collapsedLabel}>
                       <span aria-hidden>{item.icon}</span>
-                      <span className="flex-1">{item.label}</span>
+                      {!collapsed && <span className="flex-1">{item.label}</span>}
                     </a>
                   )}
                   {isExpanded && item.children && item.children.length > 0 && (
@@ -198,8 +253,8 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
         </nav>
 
         {/* Signed-in identity sits at the foot of the nav, not the header. */}
-        <div className="shrink-0 border-t border-primary-600 px-base py-base">
-          <SidebarProfile />
+        <div className={`shrink-0 border-t border-primary-600 py-base ${collapsed ? 'px-sm' : 'px-base'}`}>
+          <SidebarProfile collapsed={collapsed} />
         </div>
       </aside>
 
@@ -223,8 +278,18 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
              window while every scrolling page ended 24px from it, so the two
              kinds of screen sat differently in the same shell for no reason
              a reader could see. Only the scroll model differs now. */
+          /* `overflow-x-hidden`, not just `overflow-y-auto`: a wide table's
+             own scroll container still leaks its content width into this
+             element's `scrollWidth` (verified live — `contain: paint` on the
+             table's scroller was the only other thing that cleared it), so
+             `main` became sideways-scrollable by a few dozen pixels and the
+             whole page — heading and all — could be dragged left off its
+             gutter, revealing dead space. `main` scrolls vertically and
+             nothing else; every wide table already scrolls inside its own
+             `overflow-x-auto` (client instruction, 2026-09-25: no awkward
+             empty gaps in either sidebar state). */
           className={`relative min-h-0 min-w-0 flex-1 px-lg pb-2xl tablet:px-2xl ${
-            fill ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'}`}
+            fill ? 'flex flex-col overflow-hidden' : 'overflow-y-auto overflow-x-hidden'}`}
         >
           {children}
         </main>
