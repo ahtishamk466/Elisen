@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useTableSort } from '@/components/patterns/useTableSort'
 import { useSyncedScroll } from '@/components/patterns/useSyncedScroll'
+import { proportionalWidths } from '@/lib/tableWidths'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Badge } from '@/components/ui/Badge'
@@ -23,6 +24,13 @@ const COLUMNS: { label: string; sort?: 'root' | 'active'; width: number }[] = [
   { label: 'Active', sort: 'active', width: 120 },
   { label: 'Actions', width: 80 },
 ]
+const TABLE_MIN_WIDTH = COLUMNS.reduce((sum, c) => sum + c.width, 0)
+/** `%` per column in the same proportion as the pixel weights above, so a
+    detail pane wider than three narrow columns grows all of them instead of
+    leaving the extra as dead space past Actions (client instruction,
+    2026-09-25 — see `lib/tableWidths.ts`). Replaces the old trailing
+    spacer `<col />`. */
+const COL_WIDTHS = proportionalWidths(COLUMNS.map((c) => c.width))
 
 /**
  * GCP → Regulations → Groups, as a **master–detail**, the same shape as
@@ -208,15 +216,9 @@ export function RegulationGroupsPage() {
                         never runs alongside a table's header
                         (docs/COMPONENTS.md). */}
                     <div ref={headerRef} className="shrink-0 overflow-x-hidden overflow-y-scroll scrollbar-none">
-                      <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 480 }}>
+                      <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_MIN_WIDTH }}>
                         <colgroup>
-                          {COLUMNS.map((c) => <col key={c.label} style={{ width: c.width }} />)}
-                          {/* Soaks up whatever's left past 480px on a wide
-                              screen instead of leaving it as dead space
-                              (client instruction, 2026-09-24) — the real
-                              columns keep their own explicit widths either
-                              way. */}
-                          <col />
+                          {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
                         </colgroup>
                         <thead>
                           <tr className="border-b border-border-default bg-neutral-50">
@@ -224,17 +226,15 @@ export function RegulationGroupsPage() {
                               <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
                                 className="px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                             ))}
-                            <th aria-hidden />
                           </tr>
                         </thead>
                       </table>
                     </div>
                     <div className="min-h-0 flex-1 overflow-x-auto overflow-y-scroll scrollbar-none" onScroll={onBodyScroll}>
-                    <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 480 }}>
+                    <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_MIN_WIDTH }}>
                       <caption className="sr-only">Regulations in {selected.title}</caption>
                       <colgroup>
-                        {COLUMNS.map((c) => <col key={c.label} style={{ width: c.width }} />)}
-                        <col />
+                        {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
                       </colgroup>
                       <tbody>
                         {sorted.map((s) => (
@@ -252,7 +252,6 @@ export function RegulationGroupsPage() {
                                 ]}
                               />
                             </td>
-                            <td aria-hidden />
                           </tr>
                         ))}
                       </tbody>

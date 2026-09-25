@@ -7065,3 +7065,71 @@ master–detail layout, narrow by design, not this bug.
 Responsiveness verified, not assumed: at 768px (tablet floor), all three
 fixed tables' `<main>` neither pans nor forces page scroll — each table
 still scrolls inside its own bounded container exactly as before.
+
+## 2026-09-25 — Cert Basis becomes one genuinely flat table
+
+Client instruction, pointed at the legacy `cert-basis/index` screen (a plain,
+ungrouped ~14k-row grid): either pull that real data, or rebuild this screen
+as one clean, properly-spaced table — "table abhi thek nahi hai, clean table
+karo jaisa hamara style hai." Asked which direction rather than guessing,
+since it reverses an explicit 2026-09-24 decision (grouping rows under a
+per-aircraft banner row) — client chose flattening.
+
+Legacy's own 14k rows are behind a login this app never performs, so this
+rebuilds the screen's *shape*, not its literal data: one sortable table, this
+app's own tokens and components, not the legacy grid's dated chrome.
+
+`GcpCertBasesPage` now renders one row per basis↔regulation link (`Row =
+{ basis, regulation }`), with a **Cert Basis** column (aircraft model, TCDS/
+"Project-specific" underneath) carrying that identity per row instead of a
+group-header banner. A basis with zero regulations gets a placeholder row
+(`regulation: null`) rather than disappearing — the banner used to be its
+only visible trace, so losing it silently would have been a real regression,
+not a simplification. Basis-level Edit/Delete moved into every row's own
+`ActionsMenu`, alongside that row's own regulation actions — the same shape
+`DocumentsPage` already uses for mixing a parent record's actions into its
+child row's menu. Column spacing uses the `proportionalWidths()` helper from
+earlier today rather than a trailing spacer, so the five columns share the
+full card width.
+
+Caught and fixed during verification: regulations attached to more than one
+basis (the seed data has some) produced duplicate React keys once rows were
+keyed on the regulation id alone — keyed on `${basisId}-${regulationId}`
+instead.
+
+## 2026-09-25 — Same trailing-spacer bug, found on Regulations → Groups
+
+Client-reported (third instance of the same pattern this session): the
+Groups tab's detail pane — Regulation Section Root / Active / Actions, three
+narrow columns — had the identical trailing-spacer dead-space bug already
+fixed on Delegation, Cert Basis, DDS and MOC. Same fix: `proportionalWidths()`
+in place of the old spacer `<col />`, in `RegulationGroupsPage`'s detail
+table (both the frozen header and the scrolling body). Verified live after
+attaching a test regulation to a group — the three columns now share the
+pane's width instead of leaving a gap past Actions.
+
+## 2026-09-25 — Confirmed: every "View" link already reads as a link
+
+Client instruction: wherever a link appears in a view/detail screen, it
+should open via Go To, with an arrow icon and permanently blue-underlined
+text so it reads as clickable. Audited every `DetailField`/`DetailCard` in
+the app for a URL-shaped value (`grep` across `src/components/features` for
+url/link-carrying detail screens, then read each hit) rather than assuming —
+found nothing left to fix:
+
+- `RevisionViewDrawer`'s File field and the three Approvals document cells
+  already went through `FileLink` earlier today (permanently underlined,
+  accent blue, `ExternalLink` icon, opens in a new tab).
+- `RegulationDetailDrawer`'s Source field, fixed the same way earlier today,
+  verified live just now: `color: rgb(0, 84, 183)` (accent),
+  `text-decoration: underline` — not `hover:underline`.
+- `RegulationListPage`, `GcpFlowPage` (step 4's Regulation Url) and
+  `FlowStepInitialize` each already hand-roll the identical pattern —
+  `underline underline-offset-2` (permanent, not hover-only) + `text-accent`
+  + an arrow icon (`ArrowUpRight`/`ExternalLink`) + `sr-only` "opens in a new
+  tab" text — from earlier work, before `FileLink` existed to consolidate
+  them. Left as-is rather than migrated to `FileLink` in this pass, since
+  they already meet the spec and aren't visibly broken; worth folding into
+  `FileLink` next time one of them needs an unrelated change.
+
+No code changed for this instruction — confirmed already satisfied.

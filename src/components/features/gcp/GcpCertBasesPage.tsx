@@ -23,7 +23,10 @@ import { CertBasisImportDrawer } from './CertBasisImportDrawer'
 import { RegulationDetailDrawer } from './RegulationDetailDrawer'
 import { RegulationDrawer } from './RegulationDrawer'
 
-const COLUMNS: { label: string; sort: 'section' | 'amdt' | 'title' | 'active'; width: number }[] = [
+type SortKey = 'basis' | 'section' | 'amdt' | 'title' | 'active'
+
+const COLUMNS: { label: string; sort: SortKey; width: number }[] = [
+  { label: 'Cert Basis', sort: 'basis', width: 190 },
   { label: 'Regulation Section', sort: 'section', width: 150 },
   { label: 'Regulation Amdt', sort: 'amdt', width: 130 },
   { label: 'Regulation Title', sort: 'title', width: 320 },
@@ -32,28 +35,40 @@ const COLUMNS: { label: string; sort: 'section' | 'amdt' | 'title' | 'active'; w
 const ACTIONS_WIDTH = 64
 const TABLE_WIDTH = COLUMNS.reduce((sum, c) => sum + c.width, 0) + ACTIONS_WIDTH
 /** `%` per column in the same proportion as the pixel weights above, so a
-    screen wider than the table grows all four columns instead of leaving a
+    screen wider than the table grows all five columns instead of leaving a
     blank void past Actions (client instruction, 2026-09-25 — see
-    `lib/tableWidths.ts`). Replaces the old trailing spacer `<col />`. */
+    `lib/tableWidths.ts`). */
 const COL_WIDTHS = proportionalWidths([...COLUMNS.map((c) => c.width), ACTIONS_WIDTH])
 
+/** One row per basis↔regulation link, or one placeholder row (`regulation:
+    null`) for a basis with none yet — never nothing at all, so a basis
+    someone just created (or cleared every regulation off of) still has a
+    row to manage it from. */
+type Row = { basis: CertBasis; regulation: Regulation | null }
+
 /**
- * Cert Basis, as one table — client instruction, 2026-09-24, replacing the
- * earlier master–detail (a rail, and the selected basis's regulations in a
- * separate pane beside it): two sections reading as two separate screens,
- * when the client wanted one. Every basis's regulations now sit in the same
- * table, one basis after another, each introduced by its own group row
- * (name, TCDS/"Project-specific", regulation count, and that basis's own
- * Edit/Delete — the only place those two actions live now that there's no
- * rail row to carry them) followed by its Regulation Section, Regulation
- * Amdt, Regulation Title, Status, Actions rows. Sorting is one shared state
- * (the frozen header's own `SortableTh`s) applied within each group rather
- * than across the whole table — clicking "Regulation Section" reorders every
- * basis's own rows, it doesn't interleave one basis's rows into another's.
- * Import is a header action here, not a per-basis one — the legacy tool
- * builds a basis's rule set from an FAA/TCCA export in one pass; linking a
- * basis to a project is GCP Projects' own Certification Basis step, not
- * this page.
+ * Cert Basis, as **one flat table** — client instruction, 2026-09-25,
+ * pointed at the legacy `cert-basis/index` screen: a plain, ungrouped list
+ * (there, every basis↔regulation link across the whole fleet, 14k+ rows),
+ * not the stacked per-aircraft group-header banners this page used to have
+ * (those were themselves a client instruction, 2026-09-24 — replacing an
+ * earlier master–detail rail+pane — but read as "boxy" and not "one table"
+ * once there was real multi-basis data to look at). The legacy screen's own
+ * data lives behind a login this app never performs, so this rebuilds its
+ * *shape* — one sortable, flat table, this app's own components and tokens,
+ * not its dated grid chrome — rather than its literal rows.
+ *
+ * Every row still carries which basis it belongs to (**Cert Basis** column:
+ * aircraft model, TCDS/"Project-specific" underneath) instead of losing
+ * that identity the way a truly flat re-list of "every regulation" would.
+ * Basis-level actions (**Edit Cert Basis** / **Delete Cert Basis**) ride in
+ * every row's own `ActionsMenu` alongside that row's regulation actions —
+ * the same "mix the parent record's actions into the child row's menu"
+ * shape `DocumentsPage` already uses (`Edit {kind}` / `Edit revision` /
+ * `Delete {kind}` together). Import is still a header action, not a
+ * per-basis one — the legacy tool builds a basis's rule set from an
+ * FAA/TCCA export in one pass; linking a basis to a project is GCP
+ * Projects' own Certification Basis step, not this page.
  */
 export function GcpCertBasesPage() {
   const bases = useGcpFlowStore((s) => s.bases)
@@ -84,16 +99,20 @@ export function GcpCertBasesPage() {
         || regsOf(b).some((r) => `${r.section} ${r.amdt} ${r.title}`.toLowerCase().includes(q)))
     : bases
 
-  /* One shared sort, applied within each basis's own rows — sorting every
-     visible regulation together, then filtering each group back down to its
-     own basis, keeps each group's relative order correct without a
-     `useTableSort` instance per basis (hooks can't run in a loop). */
-  const allRegs = filtered.flatMap((b) => regsOf(b).map((r) => ({ ...r, basisId: b.id })))
-  const { sorted, sort, setSort } = useTableSort(allRegs, {
-    section: (r) => r.section,
-    amdt: (r) => r.amdt,
-    title: (r) => r.title,
-    active: (r) => r.active,
+  /* One row per link, or one placeholder row for a basis with none — see
+     `Row` above. Genuinely flat now: every row sorts against every other
+     row in the table, not within its own basis, which is the whole point
+     of "one table" over the old grouped layout. */
+  const rows: Row[] = filtered.flatMap((b): Row[] => {
+    const regs = regsOf(b)
+    return regs.length > 0 ? regs.map((r) => ({ basis: b, regulation: r })) : [{ basis: b, regulation: null }]
+  })
+  const { sorted, sort, setSort } = useTableSort(rows, {
+    basis: (row) => row.basis.aircraftModel,
+    section: (row) => row.regulation?.section,
+    amdt: (row) => row.regulation?.amdt,
+    title: (row) => row.regulation?.title,
+    active: (row) => row.regulation?.active,
   })
   const { headerRef, onBodyScroll } = useSyncedScroll()
 
@@ -169,66 +188,56 @@ export function GcpCertBasesPage() {
           </div>
           <div className="min-h-0 flex-1 overflow-x-auto overflow-y-scroll scrollbar-none" onScroll={onBodyScroll}>
             <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
-              <caption className="sr-only">Every Cert Basis and its regulations</caption>
+              <caption className="sr-only">Every Cert Basis and its regulations, one row per link</caption>
               <colgroup>
                 {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
                 <col style={{ width: COL_WIDTHS[COLUMNS.length] }} />
               </colgroup>
-              {filtered.map((b) => {
-                const count = regsOf(b).length
-                const basisRegs = sorted.filter((r) => r.basisId === b.id)
-                return (
-                  <tbody key={b.id} className="border-b border-border-default last:border-b-0">
-                    <tr className="bg-neutral-50">
-                      <td colSpan={COLUMNS.length} className="px-lg py-base">
-                        <div className="flex min-w-0 items-center gap-sm">
-                          <span className="truncate text-sm font-semibold text-text-primary">{b.aircraftModel}</span>
-                          <span className="shrink-0 text-xs text-text-muted">
-                            {b.tcdsNumber ? `TCDS ${b.tcdsNumber}` : 'Project-specific'} · {count} regulation{count === 1 ? '' : 's'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="bg-neutral-50 px-lg py-base">
-                        <ActionsMenu
-                          ariaLabel={`Actions for cert basis ${b.aircraftModel}`}
-                          items={[
-                            { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setBasisDrawer({ mode: 'edit', basis: b }) },
-                            { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeletingBasis(b), tone: 'danger' },
-                          ]}
-                        />
-                      </td>
-                    </tr>
-                    {basisRegs.length === 0 ? (
-                      <tr className="border-b border-border-default last:border-b-0">
-                        <td colSpan={COLUMNS.length + 1} className="px-lg py-base text-sm text-text-muted">
-                          No regulations yet.
+              <tbody>
+                {sorted.map(({ basis: b, regulation: r }) => (
+                  <tr key={r ? `${b.id}-${r.id}` : `empty-${b.id}`} className="border-b border-border-default last:border-b-0">
+                    <td className="px-lg py-base">
+                      <span className="block truncate text-sm font-semibold text-text-primary">{b.aircraftModel}</span>
+                      <span className="block truncate text-xs text-text-muted">
+                        {b.tcdsNumber ? `TCDS ${b.tcdsNumber}` : 'Project-specific'}
+                      </span>
+                    </td>
+                    {r ? (
+                      <>
+                        <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{r.section}</td>
+                        <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{r.amdt}</td>
+                        <td className="px-lg py-base text-sm text-text-primary"><Truncate lines={2}>{r.title}</Truncate></td>
+                        <td className="px-lg py-base">
+                          <Badge tone={r.active ? 'success' : 'neutral'}>{r.active ? 'Active' : 'Inactive'}</Badge>
                         </td>
-                      </tr>
+                      </>
                     ) : (
-                      basisRegs.map((r) => (
-                        <tr key={r.id} className="border-b border-border-default last:border-b-0">
-                          <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{r.section}</td>
-                          <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{r.amdt}</td>
-                          <td className="px-lg py-base text-sm text-text-primary"><Truncate lines={2}>{r.title}</Truncate></td>
-                          <td className="px-lg py-base">
-                            <Badge tone={r.active ? 'success' : 'neutral'}>{r.active ? 'Active' : 'Inactive'}</Badge>
-                          </td>
-                          <td className="px-lg py-base">
-                            <ActionsMenu
-                              ariaLabel={`Actions for ${r.section} · ${r.amdt}`}
-                              items={[
-                                { label: 'View', icon: <Eye size={16} />, onSelect: () => setViewing(r) },
-                                { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditing(r) },
-                                { label: 'Remove', icon: <Trash2 size={16} />, onSelect: () => setRemovingReg({ basis: b, regulation: r }), tone: 'danger' },
-                              ]}
-                            />
-                          </td>
-                        </tr>
-                      ))
+                      <td colSpan={4} className="px-lg py-base text-sm text-text-muted">No regulations yet.</td>
                     )}
-                  </tbody>
-                )
-              })}
+                    <td className="px-lg py-base">
+                      <ActionsMenu
+                        ariaLabel={r ? `Actions for ${r.section} · ${r.amdt}` : `Actions for cert basis ${b.aircraftModel}`}
+                        items={[
+                          /* Regulation actions only exist for a real link row;
+                             the basis's own Edit/Delete are on every row of
+                             that basis regardless (including the placeholder),
+                             the same "parent actions ride in the child row's
+                             menu" shape `DocumentsPage` already uses. */
+                          ...(r
+                            ? [
+                                { label: 'View', icon: <Eye size={16} />, onSelect: () => setViewing(r) },
+                                { label: 'Edit regulation', icon: <Pencil size={16} />, onSelect: () => setEditing(r) },
+                                { label: 'Remove from basis', icon: <Trash2 size={16} />, onSelect: () => setRemovingReg({ basis: b, regulation: r }), tone: 'danger' as const },
+                              ]
+                            : []),
+                          { label: 'Edit Cert Basis', icon: <Pencil size={16} />, onSelect: () => setBasisDrawer({ mode: 'edit', basis: b }) },
+                          { label: 'Delete Cert Basis', icon: <Trash2 size={16} />, onSelect: () => setDeletingBasis(b), tone: 'danger' as const },
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         </div>
