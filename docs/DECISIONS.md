@@ -6821,3 +6821,54 @@ plain `grid` would have staggered them.
 
 Markup is a `<ul>`/`<li>`, not divs: it is a list of reports, and the count
 is worth announcing.
+
+## 2026-09-25 — Long unbreakable values (URLs) no longer overflow detail drawers
+
+Client-reported: on the Documents revision view (`004473SA rev A`), the
+File field's SharePoint URL ran outside the drawer, forcing a horizontal
+scrollbar across the whole panel.
+
+Root cause was in `Stat` (`src/components/patterns/Stat.tsx`), the shared
+label/value pair `DetailField` wraps — its value text had no word-break
+rule. A URL is one long token with no spaces for the browser to wrap on, so
+it overflowed its `min-w-0` grid cell and dragged the whole card, and the
+drawer around it, wider. Added `break-words` to the value, skipped when
+`nowrap` is set (short codes like a revision letter or a number, which are
+meant to clip rather than stretch their container).
+
+Fixed at the shared component, so every long free-text or URL value in any
+`DetailCard`/`DetailField` across the app — not just this one screen — gets
+the same protection.
+
+## 2026-09-25 — "Created For" and "Used In" split apart on Deliverables/Design Data
+
+Client instruction, off a legacy-system screenshot: add two distinct project
+relationships to both Design Data and Deliverables — **Created For** (the one
+project a revision was originally made for) and **Used In** (every project it's
+currently linked to) — kept visibly separate in both the table and the detail
+view, "so users can immediately distinguish origin from later usage."
+
+The data already supported this — `DocRevision.initialProjectId` (origin) and
+`ProjectRevisionLink` (reuse) were always two separate facts — the gap was
+purely in the UI, which only ever surfaced the reuse list, labeled "Projects."
+That single label was the actual bug the client hit: a revision's file URL
+showed which projects use it today, with no way to see what it was made for,
+even though the legacy system tracked both and the client's own example
+(a drawing created for 3207-00, released, then used only on 3241-00 and
+3277-00 — never on 3207-00 itself) shows the two can diverge completely.
+
+- `DocumentsPage`'s table gains a **Created For** column (plain text, one
+  project, sortable) directly before the existing **Used In** column (renamed
+  from "Projects," unchanged otherwise — still the chip-overflow reuse list).
+- `RevisionViewDrawer` gains a **Created For** field inside the Revision card
+  (next to the other revision-owned facts — dates, status, file), and its
+  bottom card is renamed **Used In**. Two different questions, two different
+  places on the screen, never one field doing both jobs.
+
+Scoped to this one workspace. `ProjectDocumentsTab` (a project's own
+Documents tab) already answers the same underlying question a different,
+narrower way — an `ExternalLink` icon beside the number when
+`rev.initialProjectId !== projectId` — which is left as-is: inside a
+project's own list, "did this come from elsewhere" is the useful signal, not
+naming which project, since the reader is already looking at one project's
+context.

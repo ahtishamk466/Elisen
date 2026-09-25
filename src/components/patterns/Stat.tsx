@@ -36,7 +36,14 @@ export interface StatProps {
 export function Stat({ label, children, hint, nowrap = false, dl = false }: StatProps) {
   const isEmpty = children === undefined || children === null || children === ''
   const labelClass = 'text-xs font-normal text-text-muted'
-  const valueClass = `mt-xxss text-sm font-semibold text-text-primary ${nowrap ? 'whitespace-nowrap' : ''}`
+  /* A long unbreakable value (a URL, a path — no spaces for the browser to
+     wrap on) overflows its grid cell and drags the whole card wider,
+     forcing horizontal scroll on the drawer around it (client-reported,
+     2026-09-25, the Documents revision "File" field). `break-words` lets
+     it wrap mid-token instead; skipped under `nowrap`, whose whole point is
+     a short code staying on one line even if that means it's clipped by
+     the layout rather than the container stretching to fit it. */
+  const valueClass = `mt-xxss text-sm font-semibold text-text-primary ${nowrap ? 'whitespace-nowrap' : 'break-words'}`
   const value = isEmpty ? '—' : children
 
   if (dl) {

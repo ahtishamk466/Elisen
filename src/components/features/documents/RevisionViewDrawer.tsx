@@ -12,8 +12,16 @@ import type { DocRevision, ProjectDocument } from '@/types/documents'
 export interface RevisionViewDrawerProps {
   document: ProjectDocument
   revision: DocRevision
-  /** Project labels this revision is attached to, e.g. `3200-00`. */
-  projectLabels: string[]
+  /** The one project this revision was originally created for, e.g.
+      `3207-00` — distinct from, and not necessarily a member of,
+      `usedInLabels` below (client instruction, 2026-09-25: a drawing can be
+      created for one project and never actually used on it). Undefined if
+      that project no longer exists. */
+  createdForLabel: string | undefined
+  /** Every project this revision is currently linked to — origin and reuse
+      are different facts and read as two different lists, never collapsed
+      into one "Projects" field. */
+  usedInLabels: string[]
   onClose: () => void
   onEdit: () => void
 }
@@ -27,7 +35,7 @@ export interface RevisionViewDrawerProps {
  * table can only ever show a slice. This is where the whole thing is legible,
  * which is why the row menu opens it rather than the edit form.
  */
-export function RevisionViewDrawer({ document, revision, projectLabels, onClose, onEdit }: RevisionViewDrawerProps) {
+export function RevisionViewDrawer({ document, revision, createdForLabel, usedInLabels, onClose, onEdit }: RevisionViewDrawerProps) {
   const isDrawing = document.kind === 'drawing'
   // KIND_LABEL's singular is lowercase for mid-sentence use ("Edit drawing");
   // a card title is a heading, so it starts the sentence.
@@ -82,16 +90,21 @@ export function RevisionViewDrawer({ document, revision, projectLabels, onClose,
           <DetailField label="Released" nowrap>{formatDate(revision.releasedDate)}</DetailField>
           <DetailField label="Received" nowrap>{formatDate(revision.receivedDate)}</DetailField>
           <DetailField label="Closed" nowrap>{formatDate(revision.closedDate)}</DetailField>
+          <DetailField label="Created For" nowrap>{createdForLabel}</DetailField>
           <DetailField label="File">{revision.url || undefined}</DetailField>
         </div>
       </DetailCard>
 
-      <DetailCard title="Projects">
-        {projectLabels.length === 0 ? (
+      {/* Separate from "Created For" above — origin is one fact, reuse is a
+          list, and the two answer different questions ("what was this made
+          for" vs. "everywhere it's used now"), so they never share a field
+          (client instruction, 2026-09-25). */}
+      <DetailCard title="Used In">
+        {usedInLabels.length === 0 ? (
           <p className="text-sm text-text-muted">Not linked to a project yet.</p>
         ) : (
           <div className="flex flex-wrap gap-xs">
-            {projectLabels.map((l) => <Badge key={l} appearance="outline">{l}</Badge>)}
+            {usedInLabels.map((l) => <Badge key={l} appearance="outline">{l}</Badge>)}
           </div>
         )}
       </DetailCard>

@@ -297,6 +297,22 @@ a TCCA project's Projects tab call the same `linkProject` / `unlinkProject` stor
 verbs, so a link made on either side shows immediately on the other. Approvals
 work the same way.
 
+**"Created For" is not "Used In."** A `DocRevision` already carried
+`initialProjectId` — the one project it was made for — separately from
+`ProjectRevisionLink`, the many-to-many table of every project it's since been
+linked to. The client's own example: a drawing revision created for 3207-00
+ended up used only on 3241-00 and 3277-00, never on the project that spawned
+it. `DocumentsPage` (Deliverables/Design Data workspace) surfaces both as
+their own table columns and their own `RevisionViewDrawer` fields —
+**Created For** (one project, `createdForLabel`, plain text, `—` if that
+project record no longer exists) beside the Revision's dates, and **Used In**
+(a `DetailCard` of badges, `usedInLabels`) as its own card below, never
+merged into one "Projects" field (client instruction, 2026-09-25). Only this
+workspace's table/drawer show "Created For" as a column — `ProjectDocumentsTab`
+already marks reuse a different way, an `ExternalLink` icon beside the number
+when `rev.initialProjectId !== projectId`, since inside a project's own tab
+the interesting fact is just "did this originate elsewhere," not which one.
+
 Reference implementations: `ProjectApprovalsTab`, `ProjectDocumentsTab` and
 `ProjectTccaTab` — deliberately the same shape. Copy one when a sixth record type
 appears.

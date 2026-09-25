@@ -32,7 +32,7 @@ export type PageState = 'ready' | 'loading' | 'error'
 type Row = { doc: ProjectDocument; rev: DocRevision }
 
 type SortKey = 'number' | 'revision' | 'title' | 'aircraft' | 'ata' | 'owner'
-  | 'opened' | 'due' | 'nextAction' | 'status' | 'projects'
+  | 'opened' | 'due' | 'nextAction' | 'status' | 'createdFor' | 'usedIn'
 
 /**
  * The Documents workspace. Deliverables and Design Data are one entity in the
@@ -81,12 +81,23 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
   const { visibleCount, loadingMore, loadMore, reset: resetVisible } = useInfiniteReveal(rows.length, 25)
   const loading = state === 'loading'
 
+  /** Every project this revision is currently linked to — reuse, not origin. */
   const projectsFor = (revisionId: string) =>
     links
       .filter((l) => l.revisionId === revisionId)
       .map((l) => projects.find((p) => p.id === l.projectId))
       .filter(Boolean)
       .map((p) => `${p!.number}-${p!.subNumber}`)
+
+  /** The one project this revision was originally created for — a separate
+      fact from `projectsFor` above, and not necessarily a member of it: a
+      drawing can be created for one project and end up used on entirely
+      different ones, or never used on its own (client instruction,
+      2026-09-25). Undefined if that project record no longer exists. */
+  const createdForLabel = (rev: DocRevision) => {
+    const p = projects.find((p) => p.id === rev.initialProjectId)
+    return p ? `${p.number}-${p.subNumber}` : undefined
+  }
 
   const revisionCount = (documentId: string) => revisions.filter((r) => r.documentId === documentId).length
 
@@ -105,7 +116,8 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
     due: (r) => r.rev.dueDate,
     nextAction: (r) => r.rev.nextAction,
     status: (r) => r.rev.status,
-    projects: (r) => projectsFor(r.rev.id).length,
+    createdFor: (r) => createdForLabel(r.rev),
+    usedIn: (r) => projectsFor(r.rev.id).length,
   }, { onSortChange: resetVisible })
 
   /* Number and Revision are separate columns — a number is how a document is
@@ -128,15 +140,16 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
         { label: 'Title / Type', width: 96, sort: 'title' }, { label: 'Aircraft', width: 92, sort: 'aircraft' },
         { label: 'ATA', width: 58, sort: 'ata' }, { label: 'Opened', width: 118, sort: 'opened' },
         { label: 'Due', width: 118, sort: 'due' }, { label: 'Next Action', width: 96, sort: 'nextAction' },
-        { label: 'Status', width: 82, sort: 'status' }, { label: 'Projects', width: 68, sort: 'projects' },
-        { label: 'Actions', width: 60 },
+        { label: 'Status', width: 82, sort: 'status' }, { label: 'Created For', width: 84, sort: 'createdFor' },
+        { label: 'Used In', width: 68, sort: 'usedIn' }, { label: 'Actions', width: 60 },
       ]
     : [
         { label: 'Number', width: 96, sort: 'number' }, { label: 'Revision', width: 72, sort: 'revision' },
         { label: 'Title / Type', width: 116, sort: 'title' }, { label: 'Owner', width: 104, sort: 'owner' },
         { label: 'Opened', width: 118, sort: 'opened' }, { label: 'Due', width: 118, sort: 'due' },
         { label: 'Next Action', width: 104, sort: 'nextAction' }, { label: 'Status', width: 86, sort: 'status' },
-        { label: 'Projects', width: 72, sort: 'projects' }, { label: 'Actions', width: 64 },
+        { label: 'Created For', width: 88, sort: 'createdFor' }, { label: 'Used In', width: 72, sort: 'usedIn' },
+        { label: 'Actions', width: 64 },
       ]
 
   /* Derived, so the table's declared minimum can never drift from the widths
@@ -223,7 +236,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
             {tabs}
             <div className="overflow-x-auto">
               <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: minTableWidth }}>
-                <caption className="sr-only">{label.plural}, with the projects each revision is attached to</caption>
+                <caption className="sr-only">{label.plural}, with the project each revision was created for and every project it's used on</caption>
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
                     {columns.map((c) => (
@@ -287,6 +300,13 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                             <td className="whitespace-nowrap px-sm py-base align-middle">
                               <Badge tone={REVISION_STATUS_TONE[rev.status]}>{REVISION_STATUS_LABEL[rev.status]}</Badge>
                             </td>
+                            {/* Origin, one project — separate from Used In
+                                (client instruction, 2026-09-25): a drawing can
+                                be created for a project and reused on others
+                                entirely, or never actually used on its own. */}
+                            <td className="px-sm py-base align-middle text-sm text-text-primary">
+                              <span className="block truncate">{createdForLabel(rev) ?? '—'}</span>
+                            </td>
                             {/* The count is the point: it's what makes deleting
                                 a reused revision obviously dangerous. */}
                             <td className="px-sm py-base align-middle">
@@ -327,7 +347,8 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
           key={viewing.rev.id}
           document={viewing.doc}
           revision={viewing.rev}
-          projectLabels={projectsFor(viewing.rev.id)}
+          createdForLabel={createdForLabel(viewing.rev)}
+          usedInLabels={projectsFor(viewing.rev.id)}
           onClose={() => setViewing(null)}
           onEdit={() => setRevDrawer({ doc: viewing.doc, rev: viewing.rev })}
         />
