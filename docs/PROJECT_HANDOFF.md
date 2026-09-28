@@ -1,7 +1,7 @@
 # Project Handoff
 
 A condensed, thematic synthesis of `docs/DECISIONS.md` (the full chronological
-log, 181 entries, 2026-08-07 to 2026-09-24) for anyone picking up this
+log, 247 entries, 2026-08-07 to 2026-09-25) for anyone picking up this
 project cold — including switching to it from a different Claude account or
 session. Read this first (~15-20 min), then consult DECISIONS.md for the
 full reasoning behind any specific call.
@@ -125,19 +125,25 @@ non-project hours are never folded into Actual against a budget.
     hard rule with no exception. If authenticated access is ever genuinely
     needed: navigate there, ask the user to log in manually themselves, then
     resume read-only browsing once they have.
-  - **Never import a real person's name into this app's bundle/fixtures.**
-    Several legacy lists (e.g. FOC — Finding of Compliance) contain real
-    employee/delegate names. When seeding data from such a list, pull every
-    non-personal field (codes, specialties, flags) verbatim, but replace
-    each real name with a fictitious placeholder in the same style as
-    `employeeFixtures.ts`'s existing made-up names (realistic-sounding
-    full names, never a real one) — and reuse the *same* placeholder
-    everywhere that person's real name repeats across rows, so the data's
-    real shape (e.g. "this person holds three different codes") survives
-    even though identity doesn't. See `gcpFixtures.ts`'s `FOC_LIST` for the
-    worked example and its `docs/DECISIONS.md` entry for the full reasoning.
-  - Lists with no personal data (Discipline, Delegation, most of the
-    regulation library) are imported byte-for-byte with no substitution.
+  - **REVERSED 2026-09-25 — read this before touching `FOC_LIST`.** An
+    earlier version of this rule said to anonymize real names read off the
+    legacy portal (FOC's `authoritySpecialist`). The client explicitly
+    reversed that: gave the live URLs (`dev.elisen.com/foc/index`,
+    `/moc/index`, `/discipline/index` — all three load with **no login**,
+    unlike `cert-basis/index`) and asked for the real data. `gcpFixtures.ts`'s
+    `FOC_LIST` now holds the **real** 63 `authoritySpecialist` names read
+    off that live list (`AP-01` is genuinely **Taifur Rahman** — confirmed
+    directly by the client). **Do not re-anonymize it, and do not treat a
+    real name found elsewhere in this app as something to fictionalize by
+    default** — check `docs/DECISIONS.md`'s 2026-09-25 entries first; the
+    client's own instruction on a given list governs, not a blanket
+    anonymize-by-default policy. `MOC_LIST`/`DISCIPLINES` were already
+    byte-for-byte accurate before this reversal and needed no change.
+  - This does **not** relax `docs/SECURITY.md`'s separate rule against
+    fabricating obviously-fake-looking real data elsewhere (e.g. Access
+    fixtures' `@elisen.example` usernames) — that rule is about not
+    *inventing* realistic-looking fake PII, unrelated to this reversal about
+    *real* data the client explicitly asked to be imported verbatim.
 - **"The data is the client's own, fetched not bundled" (COMPONENTS.md)** —
   applies everywhere, not just GCP: fixtures exist to prototype against
   real-shaped data, not to invent plausible-looking data. If a full dataset
@@ -188,10 +194,30 @@ new tabs-over-a-table screen.
 **Regulations (`/gcp/regulations`, `RegulationListPage.tsx` etc.)** — the
 rule library itself (412 rows bundled from a legacy export, real total is
 higher), Subparts/Subsections, Regulation Groups. **Reference Lists**
-(`/gcp/reference`) — MOC and DDS short lists (DDS currently only has 4
-options hard-coded in `FlowStepPlan.tsx`; the legacy portal's actual "DDS
-Type" list has 11 — **flagged to the user, not yet pulled in**, see Open
-Questions below).
+(`/gcp/reference`, `GcpReferencePage.tsx`) — **MOC and DDS are both fully
+live tabs** (`GcpMocTab`/`GcpDdsTab`, not placeholders — full View/Edit/
+Remove/Add, real data verified against the legacy portal 2026-09-25). Do not
+confuse this with `FlowStepPlan.tsx`'s own **DDS Id** field inside the
+Compliance Plan step, which is a separate, still-hardcoded 4-option list
+(`DDS_ID_OPTIONS`) — the legacy portal's actual DDS Type list has 10 real
+rows (`gcpFixtures.ts`'s `DDS_TYPES`, already live on the Reference Lists
+page) but that step's own dropdown hasn't been switched over to read from
+it yet — **still open**, see Open Questions.
+
+**Cert Basis (`/gcp/cert-bases`, `GcpCertBasesPage.tsx`)** — rebuilt
+2026-09-25 into **one genuinely flat table** (one row per basis↔regulation
+link, no per-aircraft group-header banners), reversing the 2026-09-24
+grouped-banner design the client had asked for the day before — the client
+compared it directly against the legacy `cert-basis/index` screen's own flat
+~14k-row grid and asked for that shape instead. Each row still carries its
+**Cert Basis** identity (aircraft model + TCDS) as a column, so nothing about
+"which basis is this" was lost; basis-level Edit/Delete moved into every
+row's own `ActionsMenu` alongside that row's own regulation actions (View/
+Edit regulation/Remove from basis) — the same "parent actions ride in the
+child row's menu" shape `DocumentsPage` already used. If you see references
+elsewhere (or in an old screenshot) to "group rows" on this page, that's the
+superseded 2026-09-24 design — check `docs/DECISIONS.md`'s 2026-09-25 "Cert
+Basis becomes one genuinely flat table" entry before assuming it.
 
 ---
 
@@ -226,6 +252,83 @@ Reference implementations: the app's own **Roles & Permissions** screen
 (tabs/table separation, header Add) and **Aircraft** (`AircraftPage.tsx`,
 header search + tab count pills). `GcpPeoplePage.tsx` is the GCP-side
 reference now built to this full shape.
+
+---
+
+## Standing rule: sidebar collapses to an icon rail
+
+`AppShell` (`patterns/AppShell.tsx`) has a `PanelLeftClose`/`PanelLeftOpen`
+toggle beside the logo, swapping the sidebar between `w-64` (256px, icon +
+label) and `w-16` (64px, icon only, labels moved to `title`/`aria-label` so
+nothing loses an accessible name). State lives in **`useUiStore`**
+(`stores/uiStore.ts`), **never `useState` inside `AppShell`** — every page
+mounts its own `AppShell`, so component state would snap the rail back open
+on every navigation. Collapsed, clicking a parent nav section (GCP, Projects…)
+expands the rail *and* opens that section, rather than being a dead click.
+No page needed any layout change for this — `<main>` was already
+`flex-1 min-w-0`, so it absorbs the reclaimed width on its own. `<main>` is
+also `overflow-x-hidden` (as well as `overflow-y-auto`): a wide table's own
+`overflow-x-auto` scroller still leaked its content width into `main`'s
+`scrollWidth`, letting the *whole page* — heading included — be dragged
+sideways off its gutter. That was a genuine pre-existing bug (confirmed by
+stashing the collapse feature and re-measuring — identical numbers), not a
+side effect of the collapse work; fixed the same day since it violated the
+same "no awkward empty gaps" instruction that drove the collapse feature.
+
+## Standing rule: narrow tables spread their columns, not dump space at the end
+
+A table with only a handful of short, fixed-width columns (a code, a badge,
+a boolean) **must not** use a trailing invisible spacer `<col />` to absorb
+extra screen width — that just moves the "empty void" from the middle of the
+table to the end, past Actions, which reads as "everything crammed left."
+Use **`proportionalWidths()`** (`lib/tableWidths.ts`) instead: pass the same
+pixel numbers the table already keeps for its `minWidth` floor, get back `%`
+widths in the same proportion, so every column shares a wide screen instead
+of one of them (or an invisible spacer) eating all of it. The *old* trailing-
+spacer pattern is still correct for a table that has one column which
+legitimately grows with real content (`AtaChaptersPage`'s Definition column,
+`ReportDetailPanel`'s dynamic report columns) — the fix is for the different
+case where **no** visible column has anything to grow into. Applied to
+`GcpDelegationTab`, `GcpCertBasesPage`, `GcpDdsTab`, `GcpMocTab`,
+`RegulationGroupsPage`'s detail pane. Before adding a new narrow reference
+table, use this from the start rather than the old spacer pattern.
+
+## Standing rule: a stored file/link is shown through `FileLink`, never raw
+
+**`patterns/FileLink.tsx`** is the one way a stored file/URL is rendered
+anywhere in the app — never a hand-rolled `<a>`, never printing the URL
+itself as visible text. Takes `url` and an optional `label`:
+- A real link (`isOpenableUrl(url)`) renders **permanently underlined**
+  (not hover-only — a filename in a table cell reads as data, not a
+  control, so hover-only underline is undiscoverable), accent blue,
+  `ExternalLink` icon, opens in a new tab. Default text when no `label` is
+  given is **"Go To"** — never the raw URL (a SharePoint link is 100+
+  unreadable characters with no filename in it). The full URL always stays
+  on native `title` for hover.
+- No URL at all → plain muted text with a `FileText` icon, never a dead
+  link.
+- Empty everything → `—`.
+
+**Approvals' document cells specifically say "Open PDF"** (`label={document
+? 'Open PDF' : undefined}`), not the filename and not the generic "Go To" —
+a client-specific wording choice for that one screen family
+(`ApprovalRevisionsPage`, `ApprovalDetailPage`, `ApprovalRevisionDrawer`).
+Don't generalize "Open PDF" to other `FileLink` call sites, and don't
+generalize "Go To" to Approvals' document cells — check the 2026-09-25
+`DECISIONS.md` entries if unsure which wording a given screen wants.
+
+## Standing rule: a reference code shows its name underneath, char-capped
+
+**`features/gcp/CodeWithSubname.tsx`** — code on top, name underneath capped
+to exactly **8 characters** + `…` (a literal character count, not
+`Truncate`'s line-clamp), full `code — name` on hover (`title` on the
+*wrapping* span, covering both lines — not just the name span, so hovering
+the code half of the cell also works). Used for Discipline/MOC/FOC codes in
+`FlowStepProject`'s table and `FlowStepPlan`'s GCP Data table, looked up by
+code against `useGcpStore`'s `disciplines`/`mocs`/`focs` lists. **Not** used
+on `GcpFocTab`/`GcpDisciplineTab` (People & Authority) — those already show
+code and full name as two untruncated columns side by side, so stacking and
+truncating them would remove information rather than add it.
 
 ---
 
@@ -543,14 +646,24 @@ gaps:
   entry, no per-person accrued balance.
 - **Hours Worked query/report (§2.2)** — unbuilt.
 - **GCP module** — now built (Certification Flow, People & Authority's FOC/
-  Delegation/Discipline tabs all with full View/Edit/Remove/Add, Regulations,
-  Reports); see its own section above. Still open within it: the **DDS Type
-  reference list** (11 legacy options, seen on a client screenshot but not
-  yet imported) hasn't replaced the 4 hard-coded `DDS_ID_OPTIONS` in
-  `FlowStepPlan.tsx`'s Compliance Plan step, and the standalone **Reference
-  Lists** page's own MOC/DDS tabs (`/gcp/reference`) are still `GcpTabPanel`
-  placeholders (a separate page from the now-live GCP People & Authority
-  page — don't confuse the two).
+  Delegation/Discipline tabs, Reference Lists' MOC/DDS tabs, Cert Basis,
+  Regulations, Reports — all live, full View/Edit/Remove/Add); see its own
+  section above. Still open within it: `FlowStepPlan.tsx`'s **DDS Id**
+  dropdown in the Compliance Plan step is still 4 hard-coded
+  `DDS_ID_OPTIONS`, not wired up to the now-live `DDS_TYPES` reference list
+  (10 real rows, already on the Reference Lists page) — see the GCP module
+  section above for the exact distinction.
+- **Production deploy is broken, not a code problem.** `.github/workflows/
+  deploy.yml`'s SSH step to `154.53.38.1` has been timing out (`Connection
+  timed out`) on every run since 2026-09-24 — confirmed the build itself
+  passes every time (`tsc`, `vite build`), only the `rsync` step to the
+  server fails, both on push and on a manual `workflow_dispatch` retry. This
+  needs someone with access to that server to check it's up and that SSH
+  (port 22) is reachable from GitHub Actions' IP ranges, not a code fix.
+  Until it's resolved, `tpmsv2.elisen.com` serves a stale build (last
+  successful deploy: 2026-09-23). **A Claude Artifact was published as a
+  working substitute** for showing the current build without needing that
+  server — see the live-link handoff note below.
 - **PDF/Excel export** — HTML/CSV/Text are live in `ExportMenu`; PDF/Excel
   pending a library choice.
 - **Design Approval Holder as free text vs. searchable select** — changed to
@@ -610,18 +723,38 @@ gaps:
 
 ## Handing off to a new account/session — practical checklist
 
-1. **Check `git status` before anything else.** As of 2026-09-24 this repo
-   had uncommitted work (the full Delegation tab, View actions added to
-   FOC/Discipline, and the header-search/tab-count layout pass) — confirm
-   whether that was committed and pushed before you continue, and if not,
-   do that first (with the user's go-ahead; never push without it, per
-   CLAUDE.md rule 16).
+1. **Check `git status` and `git log --oneline -5` before anything else,
+   every time** — don't trust this document's own snapshot of "what's
+   committed," it goes stale the moment new work lands. As of 2026-09-25,
+   `main` was fully committed and pushed (`0/0` ahead/behind
+   `origin/main`), tip `31efc45`, working tree clean except an empty,
+   content-free nested-repo folder (`Elisen Project/`, one `.gitattributes`
+   file, no source) that's deliberately left untracked — committing it as-is
+   would create a broken gitlink. Ask the user before doing anything with
+   that folder; don't silently `git add` it.
 2. Confirm the remote is still `https://github.com/ahtishamk466/Elisen.git`
    and the new account/session has push access to it (or knows it doesn't).
 3. Read this file in full, then `CLAUDE.md`, then skim `docs/COMPONENTS.md`.
 4. Re-establish the memory entries listed above if the new session's memory
-   store starts empty.
-5. Do **not** re-derive the anonymization mapping in `gcpFixtures.ts`'s
-   `FOC_LIST` from scratch, or re-fetch it from the legacy portal — the
-   placeholder names are already assigned and consistent; treat that file as
-   settled data, not a draft.
+   store starts empty — check whether `feedback_tabbed_page_layout` (or
+   equivalent) needs re-saving; the *rule itself* is safe either way since
+   it's also written into this file and into `COMPONENTS.md`, committed to
+   the repo, so a new session gets it just by reading the docs even with an
+   empty memory store.
+5. **`gcpFixtures.ts`'s `FOC_LIST` is settled, real data — do not
+   anonymize it.** This reverses an earlier version of this same checklist
+   item. The 63 `authoritySpecialist` names are the client's own real
+   people, read directly off `dev.elisen.com/foc/index` (no login needed)
+   at the client's explicit request, 2026-09-25. Do not replace them with
+   placeholders, and don't re-fetch/re-derive the list — it's confirmed
+   accurate against the live source.
+6. **A live Artifact link exists as a deploy substitute** — the production
+   deploy (`tpmsv2.elisen.com`) has been broken since 2026-09-24 (see Open
+   Questions above), unrelated to app code. If the user asks to "show the
+   current build" and the deploy still isn't fixed, republish the build as
+   a Claude Artifact rather than assuming the live URL is current: `vite
+   build --base ./` (relative asset paths, required for Artifact hosting),
+   then `Artifact` tool `publish` with `root: dist` and every file under
+   `dist/assets` and `dist/data` listed in `files`. Reuse the same
+   Artifact's URL across republishes (pass it as `url`) rather than creating
+   a new link each time, so the one you gave the user keeps working.
