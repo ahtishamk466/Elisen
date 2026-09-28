@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { UserAccessDrawer } from './UserAccessDrawer'
 import { useAccessStore } from '@/stores/accessStore'
+import { useToastStore } from '@/stores/toastStore'
 import { roleMembers } from '@/lib/accessDisplay'
 import type { AccessUser } from '@/types/access'
 
@@ -39,7 +40,7 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
 
   const [query, setQuery] = useState('')
   const [editing, setEditing] = useState<AccessUser | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const filtered = useMemo(() => {
     if (!query.trim()) return users
@@ -68,11 +69,11 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
     // Guard: never deactivate the last active Sysadmin.
     if (u.status === 'active' && u.roleIds.includes('sysadmin')
       && roleMembers('sysadmin', users).filter((x) => x.id !== u.id && x.status === 'active').length === 0) {
-      setToast(`${u.username} is the only active Sysadmin and can't be deactivated.`)
+      showToast(`${u.username} is the only active Sysadmin and can't be deactivated.`)
       return
     }
     updateUser(u.id, { status: u.status === 'active' ? 'inactive' : 'active' })
-    setToast(`${u.username} ${u.status === 'active' ? 'deactivated' : 'activated'}.`)
+    showToast(`${u.username} ${u.status === 'active' ? 'deactivated' : 'activated'}.`)
   }
 
   return (
@@ -91,7 +92,6 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         <div className="grid gap-lg mobile:grid-cols-3">
           <StatCard value={users.length} label="Total users" loading={loading} />
@@ -192,7 +192,7 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
           key={editing.id}
           user={editing}
           onClose={() => setEditing(null)}
-          onSave={(patch) => { updateUser(editing.id, patch); setToast(`Access updated for ${editing.username}.`) }}
+          onSave={(patch) => { updateUser(editing.id, patch); showToast(`Access updated for ${editing.username}.`) }}
         />
       )}
     </AppShell>

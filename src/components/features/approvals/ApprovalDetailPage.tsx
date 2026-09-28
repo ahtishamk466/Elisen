@@ -15,13 +15,13 @@ import { isOpenableUrl } from '@/components/patterns/UrlField'
 import { FileLink } from '@/components/patterns/FileLink'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { Alert } from '@/components/ui/Alert'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { ApprovalDrawer } from './ApprovalDrawer'
 import { ApprovalRevisionDrawer } from './ApprovalRevisionDrawer'
 import { useApprovalsStore } from '@/stores/approvalsStore'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useLookupStore } from '@/stores/lookupStore'
+import { useToastStore } from '@/stores/toastStore'
 import type { ApprovalRevision } from '@/types/documents'
 import { formatDate } from '@/lib/formatDate'
 import { DateText } from '@/components/patterns/DateText'
@@ -69,7 +69,7 @@ export function ApprovalDetailPage() {
   const [revDrawer, setRevDrawer] = useState<{ revision?: ApprovalRevision } | null>(null)
   const [deletingRev, setDeletingRev] = useState<ApprovalRevision | null>(null)
   const [deletingApproval, setDeletingApproval] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
   const [projectChoice, setProjectChoice] = useState('')
   const [aircraftChoice, setAircraftChoice] = useState('')
   const [serialChoice, setSerialChoice] = useState('')
@@ -150,7 +150,6 @@ export function ApprovalDetailPage() {
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         <button
           type="button"
@@ -337,7 +336,7 @@ export function ApprovalDetailPage() {
                 onAdd={() => {
                   linkAircraft(approval.id, aircraftChoice)
                   const m = catalog.find((a) => a.id === aircraftChoice)
-                  setToast(`${m?.modelNumber ?? 'Aircraft'} added to ${approval.number}.`)
+                  showToast(`${m?.modelNumber ?? 'Aircraft'} added to ${approval.number}.`)
                   setAircraftChoice('')
                 }}
                 rows={linkedAircraft.map((a) => ({
@@ -349,7 +348,7 @@ export function ApprovalDetailPage() {
                     // orphaned, so they go with it.
                     serials.filter((sn) => sn.aircraftId === a.id).forEach((sn) => unlinkSerial(approval.id, sn.id))
                     unlinkAircraft(approval.id, a.id)
-                    setToast(`${a.modelNumber} removed from ${approval.number}.`)
+                    showToast(`${a.modelNumber} removed from ${approval.number}.`)
                   },
                   removeLabel: 'Remove from approval',
                 }))}
@@ -372,14 +371,14 @@ export function ApprovalDetailPage() {
                 onAdd={() => {
                   linkSerial(approval.id, serialChoice)
                   const sn = serials.find((s) => s.id === serialChoice)
-                  setToast(`S/N ${sn?.serial ?? ''} added to ${approval.number}.`)
+                  showToast(`S/N ${sn?.serial ?? ''} added to ${approval.number}.`)
                   setSerialChoice('')
                 }}
                 rows={linkedSerials.map((sn) => ({
                   id: sn.id,
                   primary: sn.registration ? `${sn.serial}: ${sn.registration}` : sn.serial,
                   secondary: catalog.find((a) => a.id === sn.aircraftId)?.modelNumber ?? '',
-                  onRemove: () => { unlinkSerial(approval.id, sn.id); setToast(`S/N ${sn.serial} removed from ${approval.number}.`) },
+                  onRemove: () => { unlinkSerial(approval.id, sn.id); showToast(`S/N ${sn.serial} removed from ${approval.number}.`) },
                   removeLabel: 'Remove from approval',
                 }))}
               />
@@ -409,7 +408,7 @@ export function ApprovalDetailPage() {
                 onAdd={() => {
                   linkToProject(approval.id, projectChoice)
                   const p = projects.find((x) => x.id === projectChoice)
-                  setToast(`${p ? `${p.number}-${p.subNumber}` : 'Project'} linked to ${approval.number}.`)
+                  showToast(`${p ? `${p.number}-${p.subNumber}` : 'Project'} linked to ${approval.number}.`)
                   setProjectChoice('')
                 }}
                 rows={linkedProjects.map((p) => ({
@@ -419,7 +418,7 @@ export function ApprovalDetailPage() {
                   href: `/projects/${p.id}`,
                   onRemove: () => {
                     unlinkFromProject(approval.id, p.id)
-                    setToast(`${p.number}-${p.subNumber} unlinked from ${approval.number}.`)
+                    showToast(`${p.number}-${p.subNumber} unlinked from ${approval.number}.`)
                   },
                   removeLabel: 'Unlink from approval',
                 }))}
@@ -434,7 +433,7 @@ export function ApprovalDetailPage() {
           key={approval.id}
           initial={approval}
           onClose={() => setEditing(false)}
-          onSave={(a) => { updateApproval(approval.id, a); setToast(`${a.number} saved.`) }}
+          onSave={(a) => { updateApproval(approval.id, a); showToast(`${a.number} saved.`) }}
         />
       )}
       {revDrawer && (
@@ -443,7 +442,7 @@ export function ApprovalDetailPage() {
           approval={approval}
           initial={revDrawer.revision}
           onClose={() => setRevDrawer(null)}
-          onSaved={setToast}
+          onSaved={showToast}
         />
       )}
 
@@ -456,7 +455,7 @@ export function ApprovalDetailPage() {
         confirmLabel="Delete revision"
         tone="danger"
         onConfirm={() => {
-          if (deletingRev) { removeRevision(deletingRev.id); setToast(`${approval.number} revision ${deletingRev.revision} deleted.`) }
+          if (deletingRev) { removeRevision(deletingRev.id); showToast(`${approval.number} revision ${deletingRev.revision} deleted.`) }
           setDeletingRev(null)
         }}
         onCancel={() => setDeletingRev(null)}

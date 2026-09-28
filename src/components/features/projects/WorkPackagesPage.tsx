@@ -16,6 +16,7 @@ import { ActivityViewDrawer } from './ActivityViewDrawer'
 import { useWorkPackagesStore } from '@/stores/workPackagesStore'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useCatalogStore } from '@/stores/catalogStore'
+import { useToastStore } from '@/stores/toastStore'
 import { activityName } from '@/lib/catalog'
 import { formatHours, rollUpActivities } from '@/lib/projectHealth'
 import { WP_STATUS_LABEL, wpIndex } from '@/lib/workPackageDisplay'
@@ -54,7 +55,7 @@ export function WorkPackagesPage({ state = 'ready' }: { state?: PageState }) {
   const [viewingActivity, setViewingActivity] = useState<{ wp: WorkPackage; activity: WorkPackageActivity } | null>(null)
   const [deletingWp, setDeletingWp] = useState<WorkPackage | null>(null)
   const [removingActivity, setRemovingActivity] = useState<WorkPackageActivity | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
   const railRef = useRef<HTMLDivElement>(null)
 
   const loading = state === 'loading'
@@ -139,7 +140,6 @@ export function WorkPackagesPage({ state = 'ready' }: { state?: PageState }) {
       }
     >
       <div className="flex min-h-0 flex-1 flex-col gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         <div className="grid shrink-0 gap-lg mobile:grid-cols-2 laptop:grid-cols-4">
           <StatCard value={stats.packages} label="Work packages shown" loading={loading} />
@@ -269,7 +269,7 @@ export function WorkPackagesPage({ state = 'ready' }: { state?: PageState }) {
           onSubmit={(wp) => {
             if (wpDrawer.mode === 'edit') updateWp(wp.id, wp)
             else { addWp(wp); select(wp) }
-            setToast(`Work package "${wp.title}" saved.`)
+            showToast(`Work package "${wp.title}" saved.`)
           }}
         />
       )}
@@ -285,7 +285,7 @@ export function WorkPackagesPage({ state = 'ready' }: { state?: PageState }) {
           onSubmit={(a) => {
             if (activityDrawer.mode === 'edit') updateActivity(a.id, a)
             else addActivity(a)
-            setToast('Activity saved.')
+            showToast('Activity saved.')
           }}
         />
       )}
@@ -311,7 +311,7 @@ export function WorkPackagesPage({ state = 'ready' }: { state?: PageState }) {
         confirmLabel="Delete work package"
         tone="danger"
         onConfirm={() => {
-          if (deletingWp) { removeWp(deletingWp.id); setToast(`Work package "${deletingWp.title}" deleted.`) }
+          if (deletingWp) { removeWp(deletingWp.id); showToast(`Work package "${deletingWp.title}" deleted.`) }
           setDeletingWp(null)
         }}
         onCancel={() => setDeletingWp(null)}
@@ -330,7 +330,7 @@ export function WorkPackagesPage({ state = 'ready' }: { state?: PageState }) {
         confirmLabel={removeBlocked ? 'Close' : 'Remove activity'}
         tone={removeBlocked ? 'primary' : 'danger'}
         onConfirm={() => {
-          if (!removeBlocked && removingActivity) { removeActivity(removingActivity.id); setToast('Activity removed.') }
+          if (!removeBlocked && removingActivity) { removeActivity(removingActivity.id); showToast('Activity removed.') }
           setRemovingActivity(null)
         }}
         onCancel={() => setRemovingActivity(null)}

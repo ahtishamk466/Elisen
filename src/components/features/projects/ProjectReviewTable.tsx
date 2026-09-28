@@ -106,26 +106,41 @@ export function ProjectReviewTable({
           ? { role: 'tabpanel', 'aria-labelledby': `tab-${activeTabKey}`, tabIndex: 0 }
           : {})}
       >
-        <table className="w-full border-collapse text-left" style={{ minWidth: 1700 }}>
+        <table className="w-full border-collapse text-left" style={{ minWidth: 1820 }}>
           <caption className="sr-only">Projects review</caption>
           <thead>
             <tr className="border-b border-border-default bg-neutral-50">
-              {columns.map((c) => (
+              {columns.slice(0, -1).map((c) => (
                 <SortableTh key={c.label} sortKey={c.sort} ownsKeys={c.sorts?.map((o) => o.key)}
                   sort={sort} onSortChange={setSort}
-                  className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">
+                  className="whitespace-nowrap px-lg py-lg text-sm font-semibold text-text-secondary">
                   {c.sorts
                     ? <SortMenu label={c.label} options={c.sorts} sort={sort} onChange={setSort} />
                     : c.label}
                 </SortableTh>
               ))}
+              {/* Pinned to the scroll container's own right edge, not the
+                  table's — a wide row's Actions menu stays reachable without
+                  scrolling all the way across (client instruction,
+                  2026-09-28, the same treatment as Documents' tables).
+                  `shadow-sticky` goes on the overlay span, not the `<th>`
+                  itself — a `box-shadow` set directly on a table cell never
+                  paints under `border-collapse`. */}
+              <SortableTh className="sticky right-0 z-sticky whitespace-nowrap border-b border-b-neutral-300 border-l border-l-border-default bg-neutral-50 px-lg py-lg text-sm font-semibold text-text-secondary">
+                <span aria-hidden className="pointer-events-none absolute inset-0 shadow-sticky" />
+                {columns[columns.length - 1].label}
+              </SortableTh>
             </tr>
           </thead>
           <tbody>
             {loading
               ? Array.from({ length: 8 }, (_, i) => (
                   <tr key={i} className="border-b border-border-default last:border-b-0">
-                    {columns.map((c) => <td key={c.label} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                    {columns.slice(0, -1).map((c) => <td key={c.label} className="px-lg py-lg"><Skeleton className="h-4 w-full" /></td>)}
+                    <td className="sticky right-0 z-sticky border-l border-border-default bg-neutral-25 px-lg py-lg">
+                      <span aria-hidden className="pointer-events-none absolute inset-0 shadow-sticky" />
+                      <Skeleton className="h-4 w-full" />
+                    </td>
                   </tr>
                 ))
               : sorted.map((row) => {
@@ -136,9 +151,9 @@ export function ProjectReviewTable({
                     <tr
                       key={row.id}
                       onClick={() => onView(row)}
-                      className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
+                      className="group cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
                     >
-                      <td className="whitespace-nowrap px-lg py-base align-top">
+                      <td className="whitespace-nowrap px-lg py-lg align-top">
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); onView(row) }}
@@ -148,27 +163,27 @@ export function ProjectReviewTable({
                         </button>
                         <span className="block text-xs text-text-muted">{TYPE_LABEL[row.type]}</span>
                       </td>
-                      <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 180 }}>
+                      <td className="px-lg py-lg align-top text-sm text-text-primary" style={{ maxWidth: 180 }}>
                         <Truncate lines={1}>{row.companyName || '—'}</Truncate>
                       </td>
-                      <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 260 }}>
+                      <td className="px-lg py-lg align-top text-sm text-text-primary" style={{ maxWidth: 260 }}>
                         <Truncate>{row.title}</Truncate>
                       </td>
-                      <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{PRIORITY_LABEL[row.priority]}</td>
-                      <td className="whitespace-nowrap px-lg py-base align-top">
+                      <td className="whitespace-nowrap px-lg py-lg align-top text-sm text-text-primary">{PRIORITY_LABEL[row.priority]}</td>
+                      <td className="whitespace-nowrap px-lg py-lg align-top">
                         <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>
                       </td>
-                      <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 280 }}>
+                      <td className="px-lg py-lg align-top text-sm text-text-primary" style={{ maxWidth: 280 }}>
                         <Truncate>{row.comments || '—'}</Truncate>
                       </td>
-                      <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 280 }}>
+                      <td className="px-lg py-lg align-top text-sm text-text-primary" style={{ maxWidth: 280 }}>
                         <Truncate>{row.nextAction || '—'}</Truncate>
                       </td>
-                      <td className="px-lg py-base align-top text-sm text-text-primary"><DateText value={row.dueDate} /></td>
-                      <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">{aging ?? '—'}</td>
+                      <td className="px-lg py-lg align-top text-sm text-text-primary"><DateText value={row.dueDate} /></td>
+                      <td className="whitespace-nowrap px-lg py-lg align-top text-sm text-text-primary">{aging ?? '—'}</td>
                       {canSeeFinancials && (
                         <>
-                          <td className="whitespace-nowrap px-lg py-base align-top text-sm text-text-primary">
+                          <td className="whitespace-nowrap px-lg py-lg align-top text-sm text-text-primary">
                             {row.budgetHours > 0
                               ? `${HOURS.format(row.actualHours)} / ${HOURS.format(row.budgetHours)}`
                               : `${HOURS.format(row.actualHours)} / no budget`}
@@ -178,10 +193,14 @@ export function ProjectReviewTable({
                           </td>
                         </>
                       )}
-                      <td className="whitespace-nowrap px-lg py-base align-top">
+                      <td className="whitespace-nowrap px-lg py-lg align-top">
                         <Badge tone={row.active ? 'success' : 'neutral'}>{row.active ? 'Active' : 'Inactive'}</Badge>
                       </td>
-                      <td className="px-lg py-base align-top" onClick={(e) => e.stopPropagation()}>
+                      <td
+                        className="sticky right-0 z-sticky whitespace-nowrap border-l border-border-default bg-neutral-25 px-lg py-lg align-top transition-colors duration-fast group-hover:bg-accent-subtle"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span aria-hidden className="pointer-events-none absolute inset-0 shadow-sticky" />
                         <ActionsMenu
                           ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
                           items={[

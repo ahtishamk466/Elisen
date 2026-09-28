@@ -24,6 +24,7 @@ import { ApprovalFilterMenu, EMPTY_APPROVAL_FILTERS, approvalFilterChips, type A
 import { useApprovalsStore } from '@/stores/approvalsStore'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useLookupStore } from '@/stores/lookupStore'
+import { useToastStore } from '@/stores/toastStore'
 import type { Approval } from '@/types/documents'
 import { formatDate } from '@/lib/formatDate'
 
@@ -63,7 +64,7 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
   const [filters, setFilters] = useState<ApprovalFilters>(EMPTY_APPROVAL_FILTERS)
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit'; approval?: Approval } | null>(null)
   const [deleting, setDeleting] = useState<Approval | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
@@ -175,7 +176,6 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         <FilterChips
           chips={approvalFilterChips(filters, aircraftLabel, (f) => { setFilters(f); resetVisible() })}
@@ -302,7 +302,7 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
           onSave={(a) => {
             if (drawer.mode === 'edit') updateApproval(a.id, a)
             else addApproval(a)
-            setToast(`Approval "${a.number}" saved.`)
+            showToast(`Approval "${a.number}" saved.`)
           }}
         />
       )}
@@ -321,7 +321,7 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
         }
         confirmLabel="Delete approval"
         tone="danger"
-        onConfirm={() => { if (deleting) { removeApproval(deleting.id); setToast(`Approval "${deleting.number}" deleted.`) } setDeleting(null) }}
+        onConfirm={() => { if (deleting) { removeApproval(deleting.id); showToast(`Approval "${deleting.number}" deleted.`) } setDeleting(null) }}
         onCancel={() => setDeleting(null)}
       />
     </AppShell>

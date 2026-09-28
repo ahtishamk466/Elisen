@@ -25,6 +25,7 @@ import { PEOPLE } from '@/lib/projectFixtures'
 import { STATUS_LABEL, TYPE_LABEL } from '@/lib/projectDisplay'
 import { HEALTH_LABEL, rollUpProject, type HealthState } from '@/lib/projectHealth'
 import { useTccaStore } from '@/stores/tccaStore'
+import { useToastStore } from '@/stores/toastStore'
 import type { ProjectListRow } from '@/types/project'
 import type { AddProjectValues } from './useAddProjectForm'
 
@@ -68,7 +69,7 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
   // and every number is a zero-padded 4-digit string, so lexicographic order
   // matches numeric order.
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
   const [editingRow, setEditingRow] = useState<ProjectListRow | null>(null)
   const [deletingRow, setDeletingRow] = useState<ProjectListRow | null>(null)
 
@@ -166,13 +167,13 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
 
   const handleDuplicate = (row: ProjectListRow) => {
     duplicateRow(row.id)
-    setToast(`"${row.number}-${row.subNumber}" duplicated.`)
+    showToast(`"${row.number}-${row.subNumber}" duplicated.`)
   }
 
   const handleDeleteConfirmed = () => {
     if (!deletingRow) return
     removeRow(deletingRow.id)
-    setToast(`Project ${deletingRow.number}-${deletingRow.subNumber} deleted.`)
+    showToast(`Project ${deletingRow.number}-${deletingRow.subNumber} deleted.`)
     setDeletingRow(null)
   }
 
@@ -199,7 +200,7 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
           />
           <ExportMenu
             rows={sorted.map(({ row }) => row)}
-            onUnavailableFormat={(format) => setToast(`${format} export isn't wired up yet: HTML, CSV and Text are ready now.`)}
+            onUnavailableFormat={(format) => showToast(`${format} export isn't wired up yet: HTML, CSV and Text are ready now.`)}
           />
           <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setDrawerOpen(true)}>
             Add new project
@@ -208,7 +209,6 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         <FilterChips
           chips={projectFilterChips(filters, (f) => { setFilters(f); resetVisible() })}
@@ -316,7 +316,7 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
           // TCCA projects are opened in TCCA Projects; a new project only links
           // to the ones that already exist.
           v.tccaProjectIds.forEach((tccaId) => linkTccaToProject(tccaId, projectId))
-          setToast(
+          showToast(
             v.tccaProjectIds.length > 0
               ? `Project ${v.number}-${v.subNumber} created, with ${v.tccaProjectIds.length} TCCA project${v.tccaProjectIds.length === 1 ? '' : 's'} linked.`
               : `Project ${v.number}-${v.subNumber} created.`,
@@ -342,7 +342,7 @@ export function ProjectsListPage({ state = 'ready', canSeeFinancials = true }: P
               contactName: v.contact || '—',
               personResponsible: v.personResponsible,
             })
-            setToast(`Project ${v.number}-${v.subNumber} updated.`)
+            showToast(`Project ${v.number}-${v.subNumber} updated.`)
           }}
         />
       )}

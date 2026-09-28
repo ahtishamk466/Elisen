@@ -37,22 +37,26 @@ type SortKey = 'person' | 'projects' | 'packages' | 'actual' | 'budget'
     `px-base` rather than `px-sm`. */
 const GUTTER = 24
 
+/* +8px per column on top of `GUTTER` (client instruction, 2026-09-28): cells
+   pad at `px-lg` now, not `px-base` — 32px of padding per cell instead of
+   24px — so every column's floor needs the extra 8px to keep its measured
+   content from starting to crowd its neighbour. */
 const COLUMNS: { label: string; width: number; sort?: SortKey; sorts?: { key: SortKey; label: string }[] }[] = [
-  { label: 'Person', width: 176, sort: 'person' },
-  { label: 'Projects', width: 74 + GUTTER, sort: 'projects' },
-  { label: 'Packages', width: 84 + GUTTER, sort: 'packages' },
+  { label: 'Person', width: 184, sort: 'person' },
+  { label: 'Projects', width: 82 + GUTTER, sort: 'projects' },
+  { label: 'Packages', width: 92 + GUTTER, sort: 'packages' },
   {
     label: 'Actual / Budget',
-    width: 126 + GUTTER,
+    width: 134 + GUTTER,
     sorts: [{ key: 'actual', label: 'Actual' }, { key: 'budget', label: 'Budget' }],
   },
-  { label: 'Remaining', width: 90 + GUTTER, sort: 'remaining' },
-  { label: 'Used', width: 64 + GUTTER, sort: 'used' },
-  { label: 'Overtime', width: 80 + GUTTER, sort: 'overtime' },
-  { label: 'Banked', width: 68 + GUTTER, sort: 'banked' },
-  { label: 'Non-project', width: 100 + GUTTER, sort: 'nonProject' },
-  { label: 'Status', width: 124 + GUTTER, sort: 'status' },
-  { label: 'Actions', width: 126 + GUTTER },
+  { label: 'Remaining', width: 98 + GUTTER, sort: 'remaining' },
+  { label: 'Used', width: 72 + GUTTER, sort: 'used' },
+  { label: 'Overtime', width: 88 + GUTTER, sort: 'overtime' },
+  { label: 'Banked', width: 76 + GUTTER, sort: 'banked' },
+  { label: 'Non-project', width: 108 + GUTTER, sort: 'nonProject' },
+  { label: 'Status', width: 132 + GUTTER, sort: 'status' },
+  { label: 'Actions', width: 134 + GUTTER },
 ]
 
 /** The sum of every column's floor — the point below which the widths above
@@ -145,15 +149,29 @@ export function HoursByPersonTab({
         </caption>
         <thead>
           <tr className="border-b border-border-default bg-neutral-50">
-            {COLUMNS.map((c) => (
+            {COLUMNS.slice(0, -1).map((c) => (
               <SortableTh key={c.label} sortKey={c.sort} ownsKeys={c.sorts?.map((o) => o.key)} sort={sort} onSortChange={setSort}
                 style={{ width: c.width }}
-                className="whitespace-nowrap px-base py-base text-sm font-semibold text-text-secondary">
+                className="whitespace-nowrap px-lg py-lg text-sm font-semibold text-text-secondary">
                 {c.sorts
                   ? <SortMenu label={c.label} options={c.sorts} sort={sort} onChange={setSort} />
                   : c.label}
               </SortableTh>
             ))}
+            {/* Pinned to the scroll container's own right edge — a wide
+                row's action stays reachable without scrolling all the way
+                across (client instruction, 2026-09-28, the same treatment
+                as Documents/Projects Review). `shadow-sticky` goes on the
+                overlay span, not the `<th>` itself — a `box-shadow` set
+                directly on a table cell never paints under
+                `border-collapse`. */}
+            <SortableTh
+              style={{ width: COLUMNS[COLUMNS.length - 1].width }}
+              className="sticky right-0 z-sticky whitespace-nowrap border-b border-b-neutral-300 border-l border-l-border-default bg-neutral-50 px-lg py-lg text-sm font-semibold text-text-secondary"
+            >
+              <span aria-hidden className="pointer-events-none absolute inset-0 shadow-sticky" />
+              {COLUMNS[COLUMNS.length - 1].label}
+            </SortableTh>
           </tr>
         </thead>
         <tbody>
@@ -163,9 +181,9 @@ export function HoursByPersonTab({
               <tr
                 key={p.name}
                 onClick={() => navigate(`/hours-worked/person/${encodeURIComponent(p.name)}`)}
-                className="cursor-pointer border-b border-border-default transition-colors duration-fast hover:bg-accent-subtle"
+                className="group cursor-pointer border-b border-border-default transition-colors duration-fast hover:bg-accent-subtle"
               >
-                <td className="px-base py-base align-middle">
+                <td className="px-lg py-lg align-middle">
                   {/* The name is the link, so the row is reachable by keyboard
                       and reads as one destination — the whole-row click is the
                       mouse convenience on top, as on the projects table. */}
@@ -190,30 +208,30 @@ export function HoursByPersonTab({
                     </span>
                   </button>
                 </td>
-                <td className="whitespace-nowrap px-base py-base align-middle text-sm text-text-primary">{p.projectCount}</td>
-                <td className="whitespace-nowrap px-base py-base align-middle text-sm text-text-primary">{p.packageCount}</td>
-                <td className="whitespace-nowrap px-base py-base align-middle text-sm text-text-primary">
+                <td className="whitespace-nowrap px-lg py-lg align-middle text-sm text-text-primary">{p.projectCount}</td>
+                <td className="whitespace-nowrap px-lg py-lg align-middle text-sm text-text-primary">{p.packageCount}</td>
+                <td className="whitespace-nowrap px-lg py-lg align-middle text-sm text-text-primary">
                   {p.health.budget > 0 ? `${formatHours(p.health.actual)} / ${formatHours(p.health.budget)}` : `${formatHours(p.health.actual)} / no budget`}
                 </td>
-                <td className={`whitespace-nowrap px-base py-base align-middle text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
+                <td className={`whitespace-nowrap px-lg py-lg align-middle text-sm ${over ? 'font-semibold text-danger' : 'text-text-primary'}`}>
                   {p.health.budget > 0 ? `${over ? '−' : ''}${formatHours(Math.abs(p.health.remaining))}` : '—'}
                 </td>
-                <td className="whitespace-nowrap px-base py-base align-middle">
+                <td className="whitespace-nowrap px-lg py-lg align-middle">
                   <span className="block text-sm text-text-primary">{formatPct(p.health.progressPct)}</span>
                   <span className="mt-xxss block" style={{ width: 44 }}>
                     <ProgressMeter health={p.health} size="sm" ariaLabel={`${p.name} budget across all projects`} />
                   </span>
                 </td>
-                <td className="whitespace-nowrap px-base py-base align-middle text-sm text-text-primary">
+                <td className="whitespace-nowrap px-lg py-lg align-middle text-sm text-text-primary">
                   {p.overtime > 0 ? formatHours(p.overtime) : '—'}
                 </td>
-                <td className="whitespace-nowrap px-base py-base align-middle text-sm text-text-primary">
+                <td className="whitespace-nowrap px-lg py-lg align-middle text-sm text-text-primary">
                   {p.banked > 0 ? formatHours(p.banked) : '—'}
                 </td>
-                <td className="whitespace-nowrap px-base py-base align-middle text-sm text-text-primary">
+                <td className="whitespace-nowrap px-lg py-lg align-middle text-sm text-text-primary">
                   {p.nonProjectHours > 0 ? formatHours(p.nonProjectHours) : '—'}
                 </td>
-                <td className="px-base py-base align-middle">
+                <td className="px-lg py-lg align-middle">
                   {/* Two lines at most: where they stand, and the one flag that
                       needs acting on. The over-budget count came out — the Used
                       percentage and its meter already carry that, and the
@@ -228,7 +246,11 @@ export function HoursByPersonTab({
                     )}
                   </span>
                 </td>
-                <td className="whitespace-nowrap px-base py-base align-middle" onClick={(e) => e.stopPropagation()}>
+                <td
+                  className="sticky right-0 z-sticky whitespace-nowrap border-l border-border-default bg-neutral-25 px-lg py-lg align-middle transition-colors duration-fast group-hover:bg-accent-subtle"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span aria-hidden className="pointer-events-none absolute inset-0 shadow-sticky" />
                   {/* A direct action rather than a 3-dot menu: there is exactly
                       one thing to do with a row here, and a menu that opens to
                       reveal a single item is a click this doesn't need. */}

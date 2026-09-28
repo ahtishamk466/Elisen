@@ -19,6 +19,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { AircraftModelDrawer } from './AircraftModelDrawer'
 import { AircraftSerialDrawer } from './AircraftSerialDrawer'
 import { useLookupStore } from '@/stores/lookupStore'
+import { useToastStore } from '@/stores/toastStore'
 import type { AircraftModel, AircraftSerial } from '@/types/lookup'
 
 export type PageState = 'ready' | 'loading' | 'error'
@@ -90,7 +91,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
   const [serialDrawer, setSerialDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; serial?: AircraftSerial; aircraftId?: string } | null>(null)
   const [deletingModel, setDeletingModel] = useState<AircraftModel | null>(null)
   const [deletingSerial, setDeletingSerial] = useState<AircraftSerial | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const loading = state === 'loading'
   const serialsOf = (id: string) => serials.filter((s) => s.aircraftId === id)
@@ -191,7 +192,6 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         {!loading && rowCount === 0 ? (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
@@ -319,7 +319,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
           mode={modelDrawer.mode}
           initial={modelDrawer.model}
           onClose={() => setModelDrawer(null)}
-          onSave={(m) => { saveAircraft(m); setToast(`Aircraft ${m.modelNumber} saved.`) }}
+          onSave={(m) => { saveAircraft(m); showToast(`Aircraft ${m.modelNumber} saved.`) }}
         />
       )}
       {serialDrawer && (
@@ -329,7 +329,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
           initial={serialDrawer.serial}
           aircraftId={serialDrawer.aircraftId}
           onClose={() => setSerialDrawer(null)}
-          onSave={(sn) => { saveSerial(sn); setToast(`Serial ${sn.serial} saved.`) }}
+          onSave={(sn) => { saveSerial(sn); showToast(`Serial ${sn.serial} saved.`) }}
         />
       )}
 
@@ -344,7 +344,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
         confirmLabel="Delete aircraft"
         tone="danger"
         onConfirm={() => {
-          if (deletingModel) { removeAircraft(deletingModel.id); setToast(`${deletingModel.modelNumber} deleted.`) }
+          if (deletingModel) { removeAircraft(deletingModel.id); showToast(`${deletingModel.modelNumber} deleted.`) }
           setDeletingModel(null)
         }}
         onCancel={() => setDeletingModel(null)}
@@ -358,7 +358,7 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
         confirmLabel="Delete serial number"
         tone="danger"
         onConfirm={() => {
-          if (deletingSerial) { removeSerial(deletingSerial.id); setToast(`Serial ${deletingSerial.serial} deleted.`) }
+          if (deletingSerial) { removeSerial(deletingSerial.id); showToast(`Serial ${deletingSerial.serial} deleted.`) }
           setDeletingSerial(null)
         }}
         onCancel={() => setDeletingSerial(null)}

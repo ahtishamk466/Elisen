@@ -14,6 +14,7 @@ import { Alert } from '@/components/ui/Alert'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { UploadBackupDrawer } from './UploadBackupDrawer'
 import { useBackupStore } from '@/stores/backupStore'
+import { useToastStore } from '@/stores/toastStore'
 import { formatBackupSize, formatRelativeTime } from '@/lib/backupFixtures'
 import type { DatabaseBackup } from '@/types/backup'
 
@@ -55,7 +56,7 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
   const [uploading, setUploading] = useState(false)
   const [restoring, setRestoring] = useState<DatabaseBackup | null>(null)
   const [deleting, setDeleting] = useState<DatabaseBackup | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const loading = state === 'loading'
 
@@ -82,7 +83,7 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
           <Button
             size="md"
             leadingIcon={<Plus size={16} />}
-            onClick={() => { const b = createBackup(); setToast(`Backup created: ${b.name}`) }}
+            onClick={() => { const b = createBackup(); showToast(`Backup created: ${b.name}`) }}
           >
             Create Backup
           </Button>
@@ -90,7 +91,6 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         {!loading && backups.length === 0 ? (
           <div className="rounded-sm border border-border-default bg-neutral-25">
@@ -99,7 +99,7 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
               title="No backup files yet"
               description="Create a backup of the live database, or upload an existing .sql file."
               action={
-                <Button leadingIcon={<Plus size={16} />} onClick={() => { const b = createBackup(); setToast(`Backup created: ${b.name}`) }}>
+                <Button leadingIcon={<Plus size={16} />} onClick={() => { const b = createBackup(); showToast(`Backup created: ${b.name}`) }}>
                   Create Backup
                 </Button>
               }
@@ -159,7 +159,7 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
       {uploading && (
         <UploadBackupDrawer
           onClose={() => setUploading(false)}
-          onSave={(file) => { uploadBackup(file.name, file.size); setToast(`Backup file uploaded: ${file.name}`) }}
+          onSave={(file) => { uploadBackup(file.name, file.size); showToast(`Backup file uploaded: ${file.name}`) }}
         />
       )}
 
@@ -175,7 +175,7 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
         }
         confirmLabel="Restore database"
         tone="danger"
-        onConfirm={() => { if (restoring) setToast(`Database restored from ${restoring.name}.`); setRestoring(null) }}
+        onConfirm={() => { if (restoring) showToast(`Database restored from ${restoring.name}.`); setRestoring(null) }}
         onCancel={() => setRestoring(null)}
       />
 
@@ -185,7 +185,7 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
         description={deleting ? `"${deleting.name}" will be permanently removed from the server. This can't be undone.` : ''}
         confirmLabel="Delete file"
         tone="danger"
-        onConfirm={() => { if (deleting) { removeBackup(deleting.id); setToast(`Backup file "${deleting.name}" deleted.`) } setDeleting(null) }}
+        onConfirm={() => { if (deleting) { removeBackup(deleting.id); showToast(`Backup file "${deleting.name}" deleted.`) } setDeleting(null) }}
         onCancel={() => setDeleting(null)}
       />
     </AppShell>

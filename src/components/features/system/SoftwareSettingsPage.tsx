@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { SettingDrawer } from './SettingDrawer'
 import { SoftwareSettingsFilterMenu, EMPTY_SETTING_FILTERS, settingFilterChips, type SettingFilters } from './SoftwareSettingsFilterMenu'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useToastStore } from '@/stores/toastStore'
 import type { SoftwareSetting } from '@/types/setting'
 
 type SortKey = 'number' | 'type' | 'section' | 'key' | 'value' | 'status' | 'description'
@@ -49,7 +50,7 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
   const [filters, setFilters] = useState<SettingFilters>(EMPTY_SETTING_FILTERS)
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit'; setting?: SoftwareSetting } | null>(null)
   const [deleting, setDeleting] = useState<SoftwareSetting | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const sections = useMemo(
     () => Array.from(new Set(settings.map((s) => s.section).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
@@ -113,7 +114,6 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         <FilterChips
           chips={settingFilterChips(filters, (f) => { setFilters(f); resetVisible() })}
@@ -188,8 +188,8 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
                               items={[
                                 { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setDrawer({ mode: 'edit', setting: s }) },
                                 s.active
-                                  ? { label: 'Deactivate', icon: <CircleOff size={16} />, onSelect: () => { updateSetting(s.id, { active: false }); setToast(`"${s.key}" deactivated. The app will ignore it.`) } }
-                                  : { label: 'Activate', icon: <CircleCheck size={16} />, onSelect: () => { updateSetting(s.id, { active: true }); setToast(`"${s.key}" activated.`) } },
+                                  ? { label: 'Deactivate', icon: <CircleOff size={16} />, onSelect: () => { updateSetting(s.id, { active: false }); showToast(`"${s.key}" deactivated. The app will ignore it.`) } }
+                                  : { label: 'Activate', icon: <CircleCheck size={16} />, onSelect: () => { updateSetting(s.id, { active: true }); showToast(`"${s.key}" activated.`) } },
                                 { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(s), tone: 'danger' },
                               ]}
                             />
@@ -213,7 +213,7 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
           initial={drawer.setting}
           sections={sections}
           onClose={() => setDrawer(null)}
-          onSave={(setting) => { saveSetting(setting); setToast(`Setting "${setting.key}" saved.`) }}
+          onSave={(setting) => { saveSetting(setting); showToast(`Setting "${setting.key}" saved.`) }}
         />
       )}
 
@@ -227,7 +227,7 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
         }
         confirmLabel="Delete setting"
         tone="danger"
-        onConfirm={() => { if (deleting) { removeSetting(deleting.id); setToast(`Setting "${deleting.key}" deleted.`) } setDeleting(null) }}
+        onConfirm={() => { if (deleting) { removeSetting(deleting.id); showToast(`Setting "${deleting.key}" deleted.`) } setDeleting(null) }}
         onCancel={() => setDeleting(null)}
       />
     </AppShell>

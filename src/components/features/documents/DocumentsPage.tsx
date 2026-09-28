@@ -23,6 +23,7 @@ import { RevisionDrawer } from '@/components/features/projects/RevisionDrawer'
 import { RevisionViewDrawer } from './RevisionViewDrawer'
 import { useDocumentsStore } from '@/stores/documentsStore'
 import { useProjectsStore } from '@/stores/projectsStore'
+import { useToastStore } from '@/stores/toastStore'
 import { KIND_LABEL, REVISION_STATUS_LABEL, REVISION_STATUS_TONE } from '@/lib/documentDisplay'
 import type { DocRevision, DocumentKind, ProjectDocument } from '@/types/documents'
 import { DateText } from '@/components/patterns/DateText'
@@ -62,7 +63,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
   const [viewing, setViewing] = useState<Row | null>(null)
   const [deletingRev, setDeletingRev] = useState<Row | null>(null)
   const [deletingDoc, setDeletingDoc] = useState<ProjectDocument | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const isDrawing = kind === 'drawing'
   const label = KIND_LABEL[kind]
@@ -131,25 +132,43 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
      date needs (so every date broke over two lines) while Status sat at
      115px holding an 82px badge. Each width below is its column's own
      content floor — heading or widest value, whichever is wider — plus the
-     16px its two `px-sm` pads supply. Under `table-fixed` any width beyond
-     the sum is shared out **proportionally**, so a wider screen loosens
-     every column a little rather than pouring it all into one. */
+     32px its two `px-lg` pads supply (client instruction, 2026-09-28: more
+     breathing room between columns than `px-base`/24px gave, so +8px per
+     column here on top of the earlier +8px `px-sm` → `px-base` pass — 16px
+     more than the original tight `px-sm` padding, total). Under
+     `table-fixed` any width beyond the sum is shared out
+     **proportionally**, so a wider screen loosens every column a little
+     rather than pouring it all into one. */
   const columns: { label: string; width: number; sort?: SortKey }[] = isDrawing
     ? [
-        { label: 'Number', width: 90, sort: 'number' }, { label: 'Revision', width: 72, sort: 'revision' },
-        { label: 'Title / Type', width: 96, sort: 'title' }, { label: 'Aircraft', width: 92, sort: 'aircraft' },
-        { label: 'ATA', width: 58, sort: 'ata' }, { label: 'Opened', width: 118, sort: 'opened' },
-        { label: 'Due', width: 118, sort: 'due' }, { label: 'Next Action', width: 96, sort: 'nextAction' },
-        { label: 'Status', width: 82, sort: 'status' }, { label: 'Created For', width: 84, sort: 'createdFor' },
-        { label: 'Used In', width: 68, sort: 'usedIn' }, { label: 'Actions', width: 60 },
+        { label: 'Number', width: 106, sort: 'number' }, { label: 'Revision', width: 88, sort: 'revision' },
+        /* Wide enough to read at least ~15 characters before the ellipsis
+           takes over (client instruction, 2026-09-28) — the old 112px/108px
+           left barely 80px/76px of actual text room once `px-lg`'s 32px of
+           padding came out, clipping "LIGHT/GASPER BEZEL" down to
+           "LIGHT/GA…" and "BD-700-1A11" down to "BD-700-1…". */
+        { label: 'Title / Type', width: 190, sort: 'title' }, { label: 'Aircraft', width: 150, sort: 'aircraft' },
+        { label: 'ATA', width: 74, sort: 'ata' }, { label: 'Opened', width: 134, sort: 'opened' },
+        { label: 'Due', width: 134, sort: 'due' }, { label: 'Next Action', width: 112, sort: 'nextAction' },
+        { label: 'Status', width: 98, sort: 'status' }, { label: 'Created For', width: 100, sort: 'createdFor' },
+        /* Wide enough for one full, untruncated project number ("3241-00",
+           the widest real value is ~7 chars) — the chips stack vertically
+           here (client instruction, 2026-09-28: up to 2 chips one above the
+           other, then "+N more" on its own line below, not squeezed onto
+           one line together) so the column only needs one chip's width, not
+           a chip plus the button side by side. 84px left only ~20px of
+           content width once `px-lg`'s 32px of padding came out of it, so a
+           single-line chip used to clip to one character with no visible
+           ellipsis — the full number must always show, never truncated. */
+        { label: 'Used In', width: 124, sort: 'usedIn' }, { label: 'Actions', width: 76 },
       ]
     : [
-        { label: 'Number', width: 96, sort: 'number' }, { label: 'Revision', width: 72, sort: 'revision' },
-        { label: 'Title / Type', width: 116, sort: 'title' }, { label: 'Owner', width: 104, sort: 'owner' },
-        { label: 'Opened', width: 118, sort: 'opened' }, { label: 'Due', width: 118, sort: 'due' },
-        { label: 'Next Action', width: 104, sort: 'nextAction' }, { label: 'Status', width: 86, sort: 'status' },
-        { label: 'Created For', width: 88, sort: 'createdFor' }, { label: 'Used In', width: 72, sort: 'usedIn' },
-        { label: 'Actions', width: 64 },
+        { label: 'Number', width: 112, sort: 'number' }, { label: 'Revision', width: 88, sort: 'revision' },
+        { label: 'Title / Type', width: 132, sort: 'title' }, { label: 'Owner', width: 120, sort: 'owner' },
+        { label: 'Opened', width: 134, sort: 'opened' }, { label: 'Due', width: 134, sort: 'due' },
+        { label: 'Next Action', width: 120, sort: 'nextAction' }, { label: 'Status', width: 102, sort: 'status' },
+        { label: 'Created For', width: 104, sort: 'createdFor' }, { label: 'Used In', width: 124, sort: 'usedIn' },
+        { label: 'Actions', width: 80 },
       ]
 
   /* Derived, so the table's declared minimum can never drift from the widths
@@ -215,7 +234,6 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         {!loading && rows.length === 0 ? (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
@@ -239,20 +257,39 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                 <caption className="sr-only">{label.plural}, with the project each revision was created for and every project it's used on</caption>
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
-                    {columns.map((c) => (
+                    {columns.slice(0, -1).map((c) => (
                       <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
                         style={{ width: c.width }}
-                        className="whitespace-nowrap px-sm py-base align-middle text-xs font-semibold text-text-secondary">
+                        className="whitespace-nowrap px-lg py-lg align-middle text-xs font-semibold text-text-secondary">
                         {c.label}
                       </SortableTh>
                     ))}
+                    {/* Pinned to the scroll container's own right edge, not the
+                        table's — a wide row's Actions menu stays reachable
+                        without scrolling all the way across (client
+                        instruction, 2026-09-28). `shadow-sticky` goes on the
+                        overlay span, not the `<th>` itself: a `box-shadow` set
+                        directly on a table cell never paints under
+                        `border-collapse` (verified live — it computes
+                        correctly but simply doesn't render). */}
+                    <SortableTh
+                      style={{ width: columns[columns.length - 1].width }}
+                      className="sticky right-0 z-sticky whitespace-nowrap border-b border-b-neutral-300 border-l border-l-border-default bg-neutral-50 px-lg py-lg align-middle text-xs font-semibold text-text-secondary"
+                    >
+                      <span aria-hidden className="pointer-events-none absolute inset-0 shadow-sticky" />
+                      {columns[columns.length - 1].label}
+                    </SortableTh>
                   </tr>
                 </thead>
                 <tbody>
                   {loading
                     ? Array.from({ length: 6 }, (_, i) => (
                         <tr key={i} className="border-b border-border-default last:border-b-0">
-                          {columns.map((c) => <td key={c.label} className="px-sm py-base"><Skeleton className="h-4 w-full" /></td>)}
+                          {columns.slice(0, -1).map((c) => <td key={c.label} className="px-lg py-lg"><Skeleton className="h-4 w-full" /></td>)}
+                          <td className="sticky right-0 z-sticky border-l border-border-default bg-neutral-25 px-lg py-lg">
+                            <span aria-hidden className="pointer-events-none absolute inset-0 shadow-sticky" />
+                            <Skeleton className="h-4 w-full" />
+                          </td>
                         </tr>
                       ))
                     : sorted.slice(0, visibleCount).map((row) => {
@@ -262,59 +299,63 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                           <tr
                             key={rev.id}
                             onClick={() => setViewing({ doc, rev })}
-                            className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
+                            className="group cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
                           >
-                            <td className="px-sm py-base align-middle text-sm font-semibold text-text-primary">
+                            <td className="px-lg py-lg align-middle text-sm font-semibold text-text-primary">
                               <span className="block truncate" title={doc.number}>{doc.number}</span>
                             </td>
-                            <td className="whitespace-nowrap px-sm py-base align-middle text-sm font-semibold text-text-primary">
+                            <td className="whitespace-nowrap px-lg py-lg align-middle text-sm font-semibold text-text-primary">
                               {rev.rev}
                             </td>
                             {/* Title leads, type qualifies it underneath. */}
-                            <td className="px-sm py-base align-middle text-sm text-text-primary">
+                            <td className="px-lg py-lg align-middle text-sm text-text-primary">
                               <span className="block truncate" title={doc.title}>{doc.title}</span>
                               <span className="block truncate text-xs text-text-muted">{doc.type}</span>
                             </td>
-                            <td className="px-sm py-base align-middle text-sm text-text-primary">
+                            <td className="px-lg py-lg align-middle text-sm text-text-primary">
                               {isDrawing
                                 ? <span className="block truncate">{doc.aircraft || '—'}</span>
                                 : <PersonCell name={doc.owner} />}
                             </td>
                             {isDrawing && (
-                              <td className="whitespace-nowrap px-sm py-base align-middle text-sm tabular-nums text-text-primary">
+                              <td className="whitespace-nowrap px-lg py-lg align-middle text-sm tabular-nums text-text-primary">
                                 {doc.ataChapter || '—'}
                               </td>
                             )}
                             {/* One line: these two columns are now sized to the
                                 widest date they hold, so there is no reason to
                                 let `DateText` fall back to its stacked form. */}
-                            <td className="whitespace-nowrap px-sm py-base align-middle text-sm tabular-nums text-text-primary">
+                            <td className="whitespace-nowrap px-lg py-lg align-middle text-sm tabular-nums text-text-primary">
                               <DateText value={rev.openedDate} />
                             </td>
-                            <td className="whitespace-nowrap px-sm py-base align-middle text-sm tabular-nums text-text-primary">
+                            <td className="whitespace-nowrap px-lg py-lg align-middle text-sm tabular-nums text-text-primary">
                               <DateText value={rev.dueDate} />
                             </td>
-                            <td className="px-sm py-base align-middle">
+                            <td className="px-lg py-lg align-middle">
                               {rev.nextAction ? <PersonCell name={rev.nextAction} /> : <span className="text-sm text-text-muted">—</span>}
                             </td>
-                            <td className="whitespace-nowrap px-sm py-base align-middle">
+                            <td className="whitespace-nowrap px-lg py-lg align-middle">
                               <Badge tone={REVISION_STATUS_TONE[rev.status]}>{REVISION_STATUS_LABEL[rev.status]}</Badge>
                             </td>
                             {/* Origin, one project — separate from Used In
                                 (client instruction, 2026-09-25): a drawing can
                                 be created for a project and reused on others
                                 entirely, or never actually used on its own. */}
-                            <td className="px-sm py-base align-middle text-sm text-text-primary">
+                            <td className="px-lg py-lg align-middle text-sm text-text-primary">
                               <span className="block truncate">{createdForLabel(rev) ?? '—'}</span>
                             </td>
                             {/* The count is the point: it's what makes deleting
                                 a reused revision obviously dangerous. */}
-                            <td className="px-sm py-base align-middle">
+                            <td className="px-lg py-lg align-middle">
                               {labels.length === 0
                                 ? <span className="text-sm text-text-muted">—</span>
-                                : <ChipOverflow items={labels} max={1} label="projects" onShowAll={() => setViewing({ doc, rev })} />}
+                                : <ChipOverflow items={labels} max={2} stack label="projects" onShowAll={() => setViewing({ doc, rev })} />}
                             </td>
-                            <td className="px-sm py-base align-middle" onClick={(e) => e.stopPropagation()}>
+                            <td
+                              className="sticky right-0 z-sticky whitespace-nowrap border-l border-border-default bg-neutral-25 px-lg py-lg align-middle transition-colors duration-fast group-hover:bg-accent-subtle"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <span aria-hidden className="pointer-events-none absolute inset-0 shadow-sticky" />
                               <ActionsMenu
                                 ariaLabel={`Actions for ${doc.number} rev ${rev.rev}`}
                                 items={actionsFor(row)}
@@ -339,7 +380,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
           kind={kind}
           initial={docDrawer.doc}
           onClose={() => setDocDrawer(null)}
-          onSaved={setToast}
+          onSaved={showToast}
         />
       )}
       {viewing && (
@@ -359,7 +400,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
           document={revDrawer.doc}
           initial={revDrawer.rev}
           onClose={() => setRevDrawer(null)}
-          onSaved={setToast}
+          onSaved={showToast}
         />
       )}
 
@@ -383,7 +424,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
           if (deletingRev) {
             const last = revisionCount(deletingRev.doc.id) === 1
             removeRevision(deletingRev.rev.id)
-            setToast(last
+            showToast(last
               ? `${deletingRev.doc.number} deleted. Its only revision was removed.`
               : `${deletingRev.doc.number} rev ${deletingRev.rev.rev} deleted.`)
           }
@@ -403,7 +444,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
         confirmLabel={`Delete ${label.singular}`}
         tone="danger"
         onConfirm={() => {
-          if (deletingDoc) { removeDocument(deletingDoc.id); setToast(`${deletingDoc.number} and its revisions deleted.`) }
+          if (deletingDoc) { removeDocument(deletingDoc.id); showToast(`${deletingDoc.number} and its revisions deleted.`) }
           setDeletingDoc(null)
         }}
         onCancel={() => setDeletingDoc(null)}

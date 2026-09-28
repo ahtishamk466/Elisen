@@ -558,6 +558,17 @@ export const ChipOverflowExample: Story = {
           <ChipOverflow items={[]} label="tasks" />
         </div>
       </div>
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">`stack` — one chip per line, for a narrow column (Documents' Used In)</p>
+        <div className="flex gap-2xl">
+          <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ width: 140 }}>
+            <ChipOverflow items={['3014-00', '0751-00']} label="projects" stack onShowAll={() => {}} />
+          </div>
+          <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ width: 140 }}>
+            <ChipOverflow items={['1103-00', '3100-00', '3241-00']} label="projects" stack onShowAll={() => {}} />
+          </div>
+        </div>
+      </div>
     </div>
   ),
 }

@@ -12,6 +12,14 @@ export interface ChipOverflowProps {
    * the full list properly.
    */
   onShowAll?: () => void
+  /**
+   * Chips stack one per line instead of sharing a row — for a column that has
+   * its own vertical room (client instruction, 2026-09-28: Documents' Used In
+   * column, where a short code like a project number reads better as a small
+   * list than squeezed onto one line with the count button). Never truncates
+   * — a stacked chip is exactly as wide as its content, not a fixed cap.
+   */
+  stack?: boolean
 }
 
 /**
@@ -24,7 +32,7 @@ export interface ChipOverflowProps {
  * broken by the next one. The count is a button, not a hint: clicking it shows
  * the full list, so nothing is hidden, only folded.
  */
-export function ChipOverflow({ items, max = 2, label, onShowAll }: ChipOverflowProps) {
+export function ChipOverflow({ items, max = 2, label, onShowAll, stack = false }: ChipOverflowProps) {
   const [open, setOpen] = useState(false)
   if (items.length === 0) return <span className="text-sm text-text-muted">—</span>
   const shown = open && !onShowAll ? items : items.slice(0, max)
@@ -32,32 +40,47 @@ export function ChipOverflow({ items, max = 2, label, onShowAll }: ChipOverflowP
 
   /* In table-row mode the chips share one line and truncate; a long task name
      would otherwise wrap the cell to a second and third line, which is the very
-     thing this component exists to prevent. */
-  const inRow = !!onShowAll
+     thing this component exists to prevent. `stack` opts out of both — each
+     chip gets its own line instead, so there's no shared width to truncate
+     against. */
+  const inRow = !!onShowAll && !stack
+
+  const moreButton = items.length > max && (
+    <button
+      type="button"
+      aria-expanded={onShowAll ? undefined : open}
+      aria-label={open && !onShowAll ? `Show fewer ${label}` : `Show all ${items.length} ${label}`}
+      onClick={(e) => { e.stopPropagation(); if (onShowAll) onShowAll(); else setOpen((v) => !v) }}
+      className="shrink-0 whitespace-nowrap text-xs font-medium text-text-primary underline underline-offset-2 transition-colors duration-fast hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
+    >
+      {open && !onShowAll ? 'Show less' : `+${hidden} more`}
+    </button>
+  )
+
+  const chip = (t: string) => (
+    <span
+      key={t}
+      title={inRow ? t : undefined}
+      style={inRow ? { maxWidth: 96 } : undefined}
+      className={`rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary ${inRow ? 'truncate' : 'whitespace-nowrap'}`}
+    >
+      {t}
+    </span>
+  )
+
+  if (stack) {
+    return (
+      <span className="flex flex-col items-start gap-xxss">
+        {shown.map(chip)}
+        {moreButton}
+      </span>
+    )
+  }
 
   return (
     <span className={`flex min-w-0 items-center gap-xs ${inRow ? 'flex-nowrap' : 'flex-wrap'}`}>
-      {shown.map((t) => (
-        <span
-          key={t}
-          title={inRow ? t : undefined}
-          style={inRow ? { maxWidth: 96 } : undefined}
-          className={`rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary ${inRow ? 'truncate' : 'whitespace-nowrap'}`}
-        >
-          {t}
-        </span>
-      ))}
-      {items.length > max && (
-        <button
-          type="button"
-          aria-expanded={onShowAll ? undefined : open}
-          aria-label={open && !onShowAll ? `Show fewer ${label}` : `Show all ${items.length} ${label}`}
-          onClick={(e) => { e.stopPropagation(); if (onShowAll) onShowAll(); else setOpen((v) => !v) }}
-          className="shrink-0 whitespace-nowrap text-xs font-medium text-text-primary underline underline-offset-2 transition-colors duration-fast hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
-        >
-          {open && !onShowAll ? 'Show less' : `+${hidden} more`}
-        </button>
-      )}
+      {shown.map(chip)}
+      {moreButton}
     </span>
   )
 }

@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { CompanyDrawer } from './CompanyDrawer'
 import { useLookupStore } from '@/stores/lookupStore'
+import { useToastStore } from '@/stores/toastStore'
 import type { Company, CompanyContact } from '@/types/lookup'
 
 /** Show at most this many contact chips inline; the rest collapse into a
@@ -78,7 +79,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
   const [query, setQuery] = useState('')
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; company?: Company } | null>(null)
   const [deleting, setDeleting] = useState<Company | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const contactsOf = (companyId: string) => contacts.filter((c) => c.companyId === companyId)
 
@@ -136,7 +137,6 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         {!loading && filtered.length === 0 ? (
           <div className="rounded-sm border border-border-default bg-neutral-25">
@@ -203,8 +203,8 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
                               { label: 'View', icon: <Eye size={16} />, onSelect: () => setDrawer({ mode: 'view', company: c }) },
                               { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setDrawer({ mode: 'edit', company: c }) },
                               c.active
-                                ? { label: 'Deactivate', icon: <CircleOff size={16} />, onSelect: () => { updateCompany(c.id, { active: false }); setToast(`${c.name} deactivated, hidden from pickers.`) } }
-                                : { label: 'Activate', icon: <CircleCheck size={16} />, onSelect: () => { updateCompany(c.id, { active: true }); setToast(`${c.name} activated.`) } },
+                                ? { label: 'Deactivate', icon: <CircleOff size={16} />, onSelect: () => { updateCompany(c.id, { active: false }); showToast(`${c.name} deactivated, hidden from pickers.`) } }
+                                : { label: 'Activate', icon: <CircleCheck size={16} />, onSelect: () => { updateCompany(c.id, { active: true }); showToast(`${c.name} activated.`) } },
                               { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(c), tone: 'danger' },
                             ]}
                           />
@@ -228,7 +228,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
           initial={drawer.company}
           initialContacts={drawer.company ? contactsOf(drawer.company.id) : []}
           onClose={() => setDrawer(null)}
-          onSave={(company, cts) => { saveCompany(company, cts); setToast(`Company "${company.name}" saved.`) }}
+          onSave={(company, cts) => { saveCompany(company, cts); showToast(`Company "${company.name}" saved.`) }}
         />
       )}
 
@@ -242,7 +242,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
         }
         confirmLabel="Delete company"
         tone="danger"
-        onConfirm={() => { if (deleting) { removeCompany(deleting.id); setToast(`Company "${deleting.name}" deleted.`) } setDeleting(null) }}
+        onConfirm={() => { if (deleting) { removeCompany(deleting.id); showToast(`Company "${deleting.name}" deleted.`) } setDeleting(null) }}
         onCancel={() => setDeleting(null)}
       />
     </AppShell>

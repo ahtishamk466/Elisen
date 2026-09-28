@@ -25,6 +25,7 @@ import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore
 import { useTimesheetStore } from '@/stores/timesheetStore'
 import { useWorkPackagesStore } from '@/stores/workPackagesStore'
 import { useCatalogStore } from '@/stores/catalogStore'
+import { useToastStore } from '@/stores/toastStore'
 
 const CATEGORIES: ReportCategory[] = ['project', 'time', 'gcp']
 
@@ -73,7 +74,7 @@ export function ReportsPage({ state = 'ready' }: { state?: PageState }) {
 
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<'' | ReportCategory>('')
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
   const [searchParams, setSearchParams] = useSearchParams()
   const railRef = useRef<HTMLDivElement>(null)
 
@@ -113,7 +114,7 @@ export function ReportsPage({ state = 'ready' }: { state?: PageState }) {
   }
 
   const handleDownload = (result: ReportResult, format: ReportFormat) => {
-    setToast(downloadReportAs(result, format))
+    showToast(downloadReportAs(result, format))
   }
 
   if (state === 'error') {
@@ -152,7 +153,6 @@ export function ReportsPage({ state = 'ready' }: { state?: PageState }) {
       }
     >
       <div className="flex min-h-0 flex-1 flex-col gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         {state === 'loading' ? (
           <div className="grid min-h-0 flex-1 gap-lg laptop:grid-cols-[320px_minmax(0,1fr)]">

@@ -15,6 +15,7 @@ import { ProjectFilterMenu, EMPTY_PROJECT_FILTERS, projectFilterChips, type Proj
 import { ExportMenu } from './ExportMenu'
 import { AddProjectDrawer } from './AddProjectDrawer'
 import { useProjectsStore } from '@/stores/projectsStore'
+import { useToastStore } from '@/stores/toastStore'
 import { PEOPLE } from '@/lib/projectFixtures'
 import { REVIEW_PRESETS, byPriority, matchesPreset } from '@/lib/reviewPresets'
 import type { ProjectListRow } from '@/types/project'
@@ -49,7 +50,7 @@ export function ProjectReviewPage({ state = 'ready', canSeeFinancials = true }: 
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<ProjectFilters>(EMPTY_PROJECT_FILTERS)
   const [editingRow, setEditingRow] = useState<ProjectListRow | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const preset = REVIEW_PRESETS.find((p) => p.key === presetKey) ?? REVIEW_PRESETS[0]
 
@@ -135,13 +136,12 @@ export function ProjectReviewPage({ state = 'ready', canSeeFinancials = true }: 
           />
           <ExportMenu
             rows={filtered}
-            onUnavailableFormat={(format) => setToast(`${format} export isn't wired up yet: HTML, CSV and Text are ready now.`)}
+            onUnavailableFormat={(format) => showToast(`${format} export isn't wired up yet: HTML, CSV and Text are ready now.`)}
           />
         </>
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         <FilterChips
           chips={projectFilterChips(filters, (f) => { setFilters(f); resetPage() })}
@@ -204,7 +204,7 @@ export function ProjectReviewPage({ state = 'ready', canSeeFinancials = true }: 
               openedDate: v.openedDate, dueDate: v.dueDate,
               nextAction: v.nextAction, comments: v.comments,
             })
-            setToast(`Project ${v.number}-${v.subNumber} updated.`)
+            showToast(`Project ${v.number}-${v.subNumber} updated.`)
             setEditingRow(null)
           }}
         />

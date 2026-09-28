@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { RolesTab } from './RolesTab'
 import { PermissionsTab } from './PermissionsTab'
+import { useToastStore } from '@/stores/toastStore'
 
 const TABS = ['Roles', 'Permissions'] as const
 type Tab = (typeof TABS)[number]
@@ -17,7 +18,7 @@ export type PageState = 'ready' | 'loading' | 'error'
     what access *means*, in one place — see docs/DECISIONS.md. */
 export function RolesPermissionsPage({ state = 'ready' }: { state?: PageState }) {
   const [tab, setTab] = useState<Tab>('Roles')
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
   // Lifted from the tabs so search + CTA can live in the shared header row.
   const [permQuery, setPermQuery] = useState('')
   const [addingRole, setAddingRole] = useState(false)
@@ -46,7 +47,6 @@ export function RolesPermissionsPage({ state = 'ready' }: { state?: PageState })
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         <nav className="flex gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg" aria-label="Roles and permissions sections">
           {TABS.map((t) => (
@@ -72,9 +72,9 @@ export function RolesPermissionsPage({ state = 'ready' }: { state?: PageState })
             {Array.from({ length: 6 }, (_, i) => <Skeleton key={i} className="h-6 w-full" />)}
           </div>
         ) : tab === 'Roles' ? (
-          <RolesTab onToast={setToast} adding={addingRole} setAdding={setAddingRole} />
+          <RolesTab onToast={showToast} adding={addingRole} setAdding={setAddingRole} />
         ) : (
-          <PermissionsTab onToast={setToast} query={permQuery} adding={addingPermission} setAdding={setAddingPermission} />
+          <PermissionsTab onToast={showToast} query={permQuery} adding={addingPermission} setAdding={setAddingPermission} />
         )}
       </div>
     </AppShell>

@@ -21,6 +21,7 @@ import { TaskDrawer } from './TaskDrawer'
 import { useCatalogStore } from '@/stores/catalogStore'
 import { useWorkPackagesStore } from '@/stores/workPackagesStore'
 import { useTimesheetStore } from '@/stores/timesheetStore'
+import { useToastStore } from '@/stores/toastStore'
 import { activitiesForTask, isMisconfigured, tasksForActivity, type Catalog } from '@/lib/catalog'
 import type { Activity, Task } from '@/types/catalog'
 
@@ -102,7 +103,7 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
   const [taskDrawer, setTaskDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; task?: Task; presetActivityId?: string } | null>(null)
   const [deletingActivity, setDeletingActivity] = useState<Activity | null>(null)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const loading = state === 'loading'
 
@@ -170,10 +171,10 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
     const { assignments, entries } = activityUsage(deletingActivity.id)
     if (assignments + entries > 0) {
       setActivityActive(deletingActivity.id, false)
-      setToast(`“${deletingActivity.name}” retired. Existing records keep it; it can no longer be picked.`)
+      showToast(`“${deletingActivity.name}” retired. Existing records keep it; it can no longer be picked.`)
     } else {
       removeActivity(deletingActivity.id)
-      setToast(`Activity “${deletingActivity.name}” deleted.`)
+      showToast(`Activity “${deletingActivity.name}” deleted.`)
     }
     setDeletingActivity(null)
   }
@@ -181,10 +182,10 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
     if (!deletingTask) return
     if (taskUsage(deletingTask.name) > 0) {
       setTaskActive(deletingTask.id, false)
-      setToast(`“${deletingTask.name}” retired. Logged hours keep it; it can no longer be picked.`)
+      showToast(`“${deletingTask.name}” retired. Logged hours keep it; it can no longer be picked.`)
     } else {
       removeTask(deletingTask.id)
-      setToast(`Task “${deletingTask.name}” deleted.`)
+      showToast(`Task “${deletingTask.name}” deleted.`)
     }
     setDeletingTask(null)
   }
@@ -229,7 +230,6 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         {brokenCount > 0 && (
           <Alert tone="danger" title={`${brokenCount} ${brokenCount === 1 ? 'activity requires' : 'activities require'} a task but have none linked`}>
@@ -371,7 +371,7 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
           onClose={() => setActivityDrawer(null)}
           onSubmit={(a, taskIds) => {
             saveActivity(a, taskIds)
-            setToast(activityDrawer.mode === 'create' ? `Activity “${a.name}” added.` : `Activity “${a.name}” saved.`)
+            showToast(activityDrawer.mode === 'create' ? `Activity “${a.name}” added.` : `Activity “${a.name}” saved.`)
           }}
         />
       )}
@@ -386,7 +386,7 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
           onClose={() => setTaskDrawer(null)}
           onSubmit={(t, activityIds) => {
             saveTask(t, activityIds)
-            setToast(taskDrawer.mode === 'create' ? `Task “${t.name}” added.` : `Task “${t.name}” saved.`)
+            showToast(taskDrawer.mode === 'create' ? `Task “${t.name}” added.` : `Task “${t.name}” saved.`)
           }}
         />
       )}

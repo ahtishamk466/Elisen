@@ -19,6 +19,7 @@ import { AtaChapterDrawer } from './AtaChapterDrawer'
 import { AtaSubChapterDrawer } from './AtaSubChapterDrawer'
 import { useLookupStore } from '@/stores/lookupStore'
 import { useDocumentsStore } from '@/stores/documentsStore'
+import { useToastStore } from '@/stores/toastStore'
 import type { AtaChapter, AtaSubChapter } from '@/types/lookup'
 
 export type PageState = 'ready' | 'loading' | 'error'
@@ -103,7 +104,7 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
   const [sectionDrawer, setSectionDrawer] = useState<{ mode: 'create' | 'edit'; chapter: AtaChapter; section?: AtaSubChapter } | null>(null)
   const [deletingChapter, setDeletingChapter] = useState<AtaChapter | null>(null)
   const [deletingSection, setDeletingSection] = useState<AtaSubChapter | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
   const railRef = useRef<HTMLDivElement>(null)
 
   const loading = state === 'loading'
@@ -178,10 +179,10 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
     if (!deletingChapter) return
     if (deletingChapterUse > 0) {
       updateChapter(deletingChapter.id, { active: false })
-      setToast(`Chapter ${deletingChapter.chapter} retired. Drawings keep their codes; it can no longer be picked.`)
+      showToast(`Chapter ${deletingChapter.chapter} retired. Drawings keep their codes; it can no longer be picked.`)
     } else {
       removeChapter(deletingChapter.id)
-      setToast(`Chapter ${deletingChapter.chapter} deleted.`)
+      showToast(`Chapter ${deletingChapter.chapter} deleted.`)
     }
     setDeletingChapter(null)
   }
@@ -189,10 +190,10 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
     if (!deletingSection || !selected) return
     if (deletingSectionUse > 0) {
       updateSubChapter(deletingSection.id, { active: false })
-      setToast(`Sub chapter ${selected.chapter}-${deletingSection.section} retired. Drawings keep their codes.`)
+      showToast(`Sub chapter ${selected.chapter}-${deletingSection.section} retired. Drawings keep their codes.`)
     } else {
       removeSubChapter(deletingSection.id)
-      setToast(`Sub chapter ${selected.chapter}-${deletingSection.section} deleted.`)
+      showToast(`Sub chapter ${selected.chapter}-${deletingSection.section} deleted.`)
     }
     setDeletingSection(null)
   }
@@ -226,7 +227,6 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
       }
     >
       <div className="flex min-h-0 flex-1 flex-col gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         {/* Same StatCard tiles as every other list page, and they follow the
             search: filter to one chapter and the counts describe that chapter. */}
@@ -414,7 +414,7 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
           onSubmit={(c) => {
             if (chapterDrawer.mode === 'edit') updateChapter(c.id, c)
             else { addChapter(c); select(c) }
-            setToast(`Chapter ${c.chapter} saved.`)
+            showToast(`Chapter ${c.chapter} saved.`)
           }}
         />
       )}
@@ -428,7 +428,7 @@ export function AtaChaptersPage({ state = 'ready' }: { state?: PageState }) {
           onSubmit={(s) => {
             if (sectionDrawer.mode === 'edit') updateSubChapter(s.id, s)
             else addSubChapter(s)
-            setToast(`Sub chapter ${sectionDrawer.chapter.chapter}-${s.section} saved.`)
+            showToast(`Sub chapter ${sectionDrawer.chapter.chapter}-${s.section} saved.`)
           }}
         />
       )}

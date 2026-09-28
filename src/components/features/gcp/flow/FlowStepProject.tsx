@@ -18,6 +18,7 @@ import { useTccaStore } from '@/stores/tccaStore'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useGcpStore } from '@/stores/gcpStore'
 import { useGcpFlowStore } from '@/stores/gcpFlowStore'
+import { useToastStore } from '@/stores/toastStore'
 import { TccaProjectDrawer } from '@/components/features/tcca/TccaProjectDrawer'
 import { CodeWithSubname } from '../CodeWithSubname'
 import type { TccaProject } from '@/types/tcca'
@@ -80,6 +81,7 @@ export function FlowStepProject({ projectId, onPick, state = 'ready', query, onQ
   const navigate = useNavigate()
   const tccaProjects = useTccaStore((s) => s.tccaProjects)
   const duplicateTcca = useTccaStore((s) => s.duplicateTcca)
+  const showToast = useToastStore((s) => s.show)
   const updateTcca = useTccaStore((s) => s.updateTcca)
   const removeTcca = useTccaStore((s) => s.removeTcca)
   const projects = useProjectsStore((s) => s.rows)
@@ -326,7 +328,7 @@ export function FlowStepProject({ projectId, onPick, state = 'ready', query, onQ
                               items={[
                                 { label: progress.actionLabel, icon: <ArrowRight size={16} />, onSelect: () => onPick(t.id) },
                                 { label: 'View', icon: <Eye size={16} />, onSelect: () => navigate(`/tcca-projects/${t.id}`) },
-                                { label: 'Duplicate', icon: <Copy size={16} />, onSelect: () => duplicateTcca(t.id) },
+                                { label: 'Duplicate', icon: <Copy size={16} />, onSelect: () => { duplicateTcca(t.id); showToast(`"${t.number}" duplicated.`) } },
                                 { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditingProject(t) },
                                 { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeletingProject(t), tone: 'danger' },
                               ]}

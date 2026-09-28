@@ -7240,3 +7240,200 @@ names read off the live list — `AP-01` is genuinely `Taifur Rahman`, matching
 the client's own example verbatim. Matched by `code` (unique per row) rather
 than row position, since the fixture's own ordering doesn't follow the
 live list's.
+
+## 2026-09-28 — Global toast system replaces the inline "Alert as confirmation" pattern
+
+**Context:** Every action confirmation in the app ("Project saved.", "Entry
+deleted.", "3322-00 duplicated.") rendered as a permanent-looking `Alert`
+banner sitting under the page's own heading, inside the page's normal
+layout flow. The client flagged this as wrong on Projects List and asked
+for the fix everywhere in the app, not just that screen: a real toast that
+appears for a few seconds with a close (×) icon, then disappears on its own
+or on click.
+
+**Choice:** Added `useToastStore` (Zustand — `toasts: []`, `show(message,
+tone?)`, `dismiss(id)`), a presentational `ui/Toast.tsx`, and
+`patterns/ToastViewport.tsx` (subscribes to the store, stacks bottom-right
+at `z-toast`, 5s auto-dismiss per toast via its own timer, manual × always
+available). `ToastViewport` is mounted once in `AppShell`, so it's live on
+every route without any page doing anything.
+
+Migrated every page that had its own `const [toast, setToast] =
+useState<string | null>(null)` + `{toast && <Alert tone="info"
+title={toast} />}` pair (~24 files across access, approvals, documents, gcp,
+lookups, profile, projects, reports, system and timesheet) to call
+`showToast(message)` from the shared store instead, and deleted their local
+state and inline banner entirely. Left untouched: the handful of `<Alert
+tone="info">` usages that are genuinely permanent contextual banners (e.g.
+`TaskDrawer`'s "N logged entries name this", `AuditCleanTab`'s "Deleting
+audit records is permanent") — those aren't action confirmations and
+correctly stay in the page's layout.
+
+This is a global rule, not a per-screen one: any new "X saved/deleted/
+duplicated" confirmation added anywhere in the app from now on goes through
+`useToastStore`, never a page-local `Alert`.
+
+## 2026-09-28 — Toast restyled: white bordered pill, success check, top-center
+
+**Context:** Same day as the toast system's introduction — the client sent
+a reference screenshot (a white rounded pill, green checkmark, message,
+close ×) and asked the toast to match it exactly: white background, the
+same border every card/stat container already uses, a light shadow, and
+fixed top-center on every screen rather than a corner.
+
+**Choice:** `Toast` (`ui/Toast.tsx`) is now a hug-width pill —
+`rounded-sm border border-border-default bg-neutral-25 shadow-sm` — with
+`CircleCheck` (green, `text-success`) for the default tone and `CircleAlert`
+(red) for `danger`, replacing the earlier fixed-360px box and info-blue
+icon. Renamed the tone union from `'info' | 'danger'` to `'success' |
+'danger'` since every real call site is confirming a completed action, not
+giving neutral information — `useToastStore`'s default tone changed to
+match, so no call site needed updating. `ToastViewport` now positions the
+stack `fixed left-1/2 top-lg -translate-x-1/2` instead of bottom-right.
+
+## 2026-09-28 — Documents tables (Deliverables/Design Data): sticky Actions, more generous padding
+
+**Context:** Client instruction, pointing at Projects List as the reference
+and a screenshot of the Documents → Deliverables table: both Deliverables
+and Design Data tables (11 and 12 columns respectively, in `DocumentsPage.tsx`)
+should get more generous padding so they read as spacious rather than
+cramped even as more data is added, and the Actions column should stay
+pinned to the right edge while the rest of the row scrolls underneath it
+horizontally — both tables are wide enough to need horizontal scroll
+(unlike Projects List, which fits without one).
+
+**Choice:** Reused the sticky-column pattern already established on
+`FlowStepProject`'s table (`sticky right-0 z-sticky border-l
+border-border-default`, plus a `shadow-sticky` overlay `<span>` — a
+`box-shadow` set directly on a table cell doesn't paint under
+`border-collapse`, verified live) rather than inventing a new one. Applied
+it to just the last (`Actions`) column in both of `DocumentsPage`'s column
+sets — no header/body scroll-sync split table was needed here (unlike
+`FlowStepProject`, which also has to sync a separately-scrolling sticky
+header), since this table's `<thead>` scrolls together with its body inside
+one `overflow-x-auto` wrapper. The row's own hover tint
+(`hover:bg-accent-subtle`) is mirrored on the sticky cell via `group`/
+`group-hover:bg-accent-subtle`, so the pinned column doesn't look
+disconnected from the row it belongs to.
+
+Padding went from `px-sm py-base` (16px total per cell) to `px-base py-lg`
+(24px), matching `ProjectsTable`'s own more generous `px-base` and adding
+`py-lg` on top for extra breathing room. Every column's declared pixel
+width grew by 8px to keep the same measured content floor under the larger
+padding — an unwidened column would have started clipping content it fit
+before.
+
+## 2026-09-28 — Toast: wider pill, standardized duplicate wording, documented in Storybook
+
+**Context:** The toast looked cramped for a short message, sitting right up
+against the search bar below it. The client asked for a touch more length,
+and for the exact "duplicated" wording (`"3322-00" duplicated.`) to be the
+standard for every copy/duplicate action in the app, saved as a canonical
+example in Storybook rather than something each screen re-invents.
+
+**Choice:** `Toast` now has a 320px `minWidth`; the message (`flex-1`) fills
+it so the close × always sits at the pill's own right edge rather than
+hugging short text, and padding/gap grew slightly (`pl-xl pr-lg`,
+`gap-base`) for more breathing room. Added `Toast.stories.tsx`'s
+`DuplicateConfirmation` story as the documented reference for this exact
+wording — `"${record}" duplicated.` — and fixed a real gap it surfaced:
+`FlowStepProject`'s TCCA project "Duplicate" action (in the GCP
+Certification Flow's step 1) called `duplicateTcca()` with no confirmation
+at all. It now shows `"${t.number}" duplicated.` via the same
+`useToastStore`, matching `ProjectsListPage`'s wording exactly.
+
+## 2026-09-28 — Documents tables: another padding pass for more breathing room
+
+**Context:** Follow-up to the same-day padding increase — the client asked
+for still more space between columns.
+
+**Choice:** Bumped `DocumentsPage`'s table padding again, `px-base py-lg`
+(24px) → `px-lg py-lg` (32px), and every column's declared width by another
++8px to preserve each column's measured content floor under the wider
+padding — the same mechanical adjustment as the earlier `px-sm` → `px-base`
+pass, one step further. Sticky Actions column and its `shadow-sticky`
+overlay unaffected by the change other than the same padding bump.
+
+## 2026-09-28 — Used In column: fixed a real truncation bug, then switched to a vertical chip stack
+
+**Context:** The client flagged the Documents tables' "Used In" column
+showing a project number clipped to a single character with no ellipsis. The
+actual cause: the column was only 84-88px wide, and once `px-lg`'s 32px of
+padding came out of that, there wasn't enough room left to render even one
+short chip plus the "+N more" button on one line — the cell clipped the
+overflow before the chip's own 96px truncation cap ever mattered. A follow-up
+instruction then specified the intended shape directly, from a screenshot:
+up to 2 chips stacked vertically, then "+N more" on its own line below when
+there's a 3rd.
+
+**Choice:** Added a `stack` prop to `ChipOverflow` (`patterns/ChipOverflow.tsx`)
+— renders `flex-col` instead of the row layout, one chip per line, and never
+truncates (no shared row width to protect, unlike the row/`onShowAll` mode
+which still caps each chip at 96px for callers like `WorkPackageCard`'s task
+list). `DocumentsPage` now passes `max={2} stack` instead of `max={1}`;
+`ChipOverflowExample`'s Storybook story documents both the 2-chip and
+3-chip (2 shown + "+1 more") cases side by side. The column's declared width
+came back down from the 168px the row-mode fix needed to 124px, since a
+stacked column only has to fit one chip's width, not a chip and the button
+side by side.
+
+## 2026-09-28 — Projects Review table: same treatment as Documents (sticky Actions, generous padding)
+
+**Context:** Client instruction, pointing at the Documents tables' just-
+finished treatment as the model: apply the same to Projects Review
+(`ProjectReviewTable.tsx`) — one table shared by all 8 preset tabs (All,
+Priorities, Outstanding RFQs, Completed RFQs, Internal, External, Top Aces,
+Duncan), so this one change covers every tab automatically.
+
+**Choice:** Same two moves as Documents, same reasoning:
+- Padding `px-lg py-base` → `px-lg py-lg` on every header/body/skeleton
+  cell.
+- Actions column pinned `sticky right-0 z-sticky` with the `shadow-sticky`
+  overlay span (`box-shadow` doesn't paint under `border-collapse` directly
+  on a cell) and a matching background per state (`bg-neutral-25` at rest,
+  `group-hover:bg-accent-subtle` on row hover, via `group` on the `<tr>`).
+
+This table has no `table-fixed`/explicit column widths (columns size to
+their own content, with only a few `Truncate` cells capped by `maxWidth`),
+so — unlike Documents — no column-width recalculation was needed; only the
+table's own `minWidth` grew slightly (1700 → 1820) to account for the
+padding increase.
+
+## 2026-09-28 — Design Data's Title/Type and Aircraft columns widened
+
+**Context:** Client instruction: Design Data's Title/Type (112px) and
+Aircraft (108px) columns were too narrow — once `px-lg`'s 32px of padding
+came out, barely 80px of actual text room was left, clipping "LIGHT/GASPER
+BEZEL" down to "LIGHT/GA…" and "BD-700-1A11" down to "BD-700-1…". Asked for
+at least ~15 characters visible before truncating, with enough width that
+the text doesn't feel cramped.
+
+**Choice:** Widened Title/Type 112px → 190px and Aircraft 108px → 150px (the
+`isDrawing` column set only — Deliverables' own Title/Type stays as it was,
+not part of this ask). Real data now mostly displays in full rather than
+truncating at all ("LIGHT/GASPER BEZEL", "BD-700-1A11", "Falcon 2000EX",
+"DHC-8-202" all fit); the `Truncate` component's own ellipsis still
+protects the rare longer value, same as every other column in this table.
+
+## 2026-09-28 — Hours Worked tables: same treatment (sticky Actions, generous padding)
+
+**Context:** Client instruction, pointing at Documents/Projects Review as
+the model: apply the same to Hours Worked's two tabs, By Person
+(`HoursByPersonTab.tsx`) and All Entries (`TimesheetTable.tsx`).
+
+**Choice:** Same two moves, same reasoning as the earlier passes:
+- Padding `px-base py-base` (24px) → `px-lg py-lg` (32px) on every header/
+  body/skeleton cell in both tables; every column's declared width grew
+  +8px to preserve its measured content floor under the wider padding (the
+  same mechanical adjustment `DocumentsPage`/`ProjectReviewTable` already
+  went through).
+- The last column pinned `sticky right-0 z-sticky` with the `shadow-sticky`
+  overlay span and a matching background per row state
+  (`group`/`group-hover:bg-accent-subtle`) — By Person's is a single "View
+  Details" `Button`, not an `ActionsMenu`, but the same sticky treatment
+  applies regardless of what the column holds.
+
+`TimesheetTable.tsx` is shared with the standalone Timesheet page
+(`TimesheetListPage.tsx`), so that screen gets the same improvement as a
+side effect — not separately requested, but the natural consequence of one
+shared component.

@@ -21,6 +21,7 @@ import { enrichTimesheetRows } from '@/lib/timesheetLookup'
 import { isNonProjectActivity } from '@/lib/catalog'
 import { inPeriod, periodRange } from '@/lib/hoursPeriod'
 import { useCatalogStore } from '@/stores/catalogStore'
+import { useToastStore } from '@/stores/toastStore'
 import { CURRENT_EMPLOYEE } from '@/lib/timesheetFixtures'
 import type { TimesheetEntry } from '@/types/timesheet'
 import type { TimesheetEntryValues } from './useTimesheetEntryForm'
@@ -61,7 +62,7 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
   const [filters, setFilters] = useState<TimesheetFilters>(EMPTY_FILTERS)
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; row?: TimesheetEntry } | null>(null)
   const [deletingRow, setDeletingRow] = useState<TimesheetEntry | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const ownRows = useMemo(() => rows.filter((r) => r.employeeName === CURRENT_EMPLOYEE), [rows])
   const enriched = useMemo(() => enrichTimesheetRows(ownRows, projects, workPackages, deliverables, catalogActivities), [ownRows, projects, workPackages, deliverables])
@@ -101,16 +102,16 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
 
   const handleDuplicate = (row: TimesheetEntry) => {
     duplicateEntry(row.id)
-    setToast('Entry duplicated.')
+    showToast('Entry duplicated.')
   }
   const handleToggleValidated = (row: TimesheetEntry) => {
     updateRow(row.id, { validated: !row.validated })
-    setToast(row.validated ? 'Entry unmarked as validated.' : 'Entry marked as validated.')
+    showToast(row.validated ? 'Entry unmarked as validated.' : 'Entry marked as validated.')
   }
   const handleDeleteConfirmed = () => {
     if (!deletingRow) return
     removeRow(deletingRow.id)
-    setToast('Entry deleted.')
+    showToast('Entry deleted.')
     setDeletingRow(null)
   }
 
@@ -137,7 +138,6 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         <FilterChips
           chips={timesheetFilterChips(filters, projects, (f) => { setFilters(f); resetVisible() })}
@@ -203,7 +203,7 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
               hoursRegular: Number(v.hoursRegular) || 0, hoursOvertime: Number(v.hoursOvertime) || 0,
               bankHoursRegular: Number(v.bankHoursRegular) || 0, comment: v.comment,
             })
-            setToast('Entry updated.')
+            showToast('Entry updated.')
           } else {
             addRow({
               id: crypto.randomUUID(), employeeName: CURRENT_EMPLOYEE, projectId: v.projectId, workPackageId: v.workPackageId,
@@ -211,7 +211,7 @@ export function TimesheetListPage({ state = 'ready' }: TimesheetListPageProps) {
               hoursRegular: Number(v.hoursRegular) || 0, hoursOvertime: Number(v.hoursOvertime) || 0,
               bankHoursRegular: Number(v.bankHoursRegular) || 0, comment: v.comment, validated: false, active: true,
             })
-            setToast('Entry created.')
+            showToast('Entry created.')
           }
         }}
       />

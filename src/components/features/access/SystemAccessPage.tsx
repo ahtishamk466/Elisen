@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useAccessStore } from '@/stores/accessStore'
+import { useToastStore } from '@/stores/toastStore'
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -21,7 +22,7 @@ export function SystemAccessPage({ state = 'ready' }: { state?: PageState }) {
   const [query, setQuery] = useState('')
   const [newRoute, setNewRoute] = useState('')
   const [routeError, setRouteError] = useState('')
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const filtered = useMemo(
     () => routes.filter((r) => r.includes(query.toLowerCase().trim())),
@@ -35,7 +36,7 @@ export function SystemAccessPage({ state = 'ready' }: { state?: PageState }) {
     if (routes.includes(path)) { setRouteError('That route is already registered.'); return }
     addRoute(path)
     setNewRoute('')
-    setToast(`Route ${path} registered, attach it to a permission to guard it.`)
+    showToast(`Route ${path} registered, attach it to a permission to guard it.`)
   }
 
   if (state === 'error') {
@@ -49,7 +50,6 @@ export function SystemAccessPage({ state = 'ready' }: { state?: PageState }) {
   return (
     <AppShell title="Routes & Rules" activeItem="User Access" activeChild="Routes">
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
         <Alert tone="info" title="Advanced, the wiring behind roles and permissions">
           Day-to-day access management lives in Users and Roles &amp; Permissions. This page registers the raw
           routes the app exposes and lists the code-defined rules, usually developer territory.

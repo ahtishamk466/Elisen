@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { LayoutDashboard, FolderOpen, Clock, ListChecks, ShieldCheck, Database, Settings, ChevronDown, ChevronRight, KeyRound, Award, FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { SidebarProfile } from './SidebarProfile'
+import { ToastViewport } from './ToastViewport'
 import { useUiStore } from '@/stores/uiStore'
 
 /** Top-level items without children that have a real screen — rendered as
@@ -294,6 +295,8 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
           {children}
         </main>
       </div>
+
+      <ToastViewport />
     </div>
   )
 }

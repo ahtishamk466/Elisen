@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { ArrowRight, ClipboardCheck } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
-import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { CertPlanReportDrawer } from './CertPlanReportDrawer'
 import { CertRecordReportDrawer } from './CertRecordReportDrawer'
 import { RequirementMatrixReportDrawer } from './RequirementMatrixReportDrawer'
+import { useToastStore } from '@/stores/toastStore'
 
 const REPORTS = [
   { key: 'cert-plan', name: 'Certification Plan' },
@@ -28,10 +28,10 @@ type ReportKey = typeof REPORTS[number]['key']
     together and the page reads as three things to run, not a list to scan. */
 export function GcpReportsPage() {
   const [open, setOpen] = useState<ReportKey | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const download = (name: string) => {
-    setToast(`${name} downloaded.`)
+    showToast(`${name} downloaded.`)
   }
 
   return (
@@ -42,7 +42,6 @@ export function GcpReportsPage() {
       description="The reports available across every TCCA project."
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         {/* `flex-col` with the name block flexing, not step 5's plain grid:
             this page shows each report's full name (the flow's narrower

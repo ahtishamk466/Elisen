@@ -20,6 +20,7 @@ import { Alert } from '@/components/ui/Alert'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ApprovalRevisionDrawer } from './ApprovalRevisionDrawer'
 import { useApprovalsStore } from '@/stores/approvalsStore'
+import { useToastStore } from '@/stores/toastStore'
 import type { Approval, ApprovalRevision } from '@/types/documents'
 import { DateText } from '@/components/patterns/DateText'
 
@@ -56,7 +57,7 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
   const [query, setQuery] = useState('')
   const [drawer, setDrawer] = useState<{ revision?: ApprovalRevision } | null>(null)
   const [deleting, setDeleting] = useState<Row | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const rows = useMemo<Row[]>(() => {
     const q = query.toLowerCase().trim()
@@ -114,7 +115,6 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         {!loading && rows.length === 0 ? (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
@@ -223,7 +223,7 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
           key={drawer.revision?.id ?? 'new'}
           initial={drawer.revision}
           onClose={() => setDrawer(null)}
-          onSaved={setToast}
+          onSaved={showToast}
         />
       )}
 
@@ -238,7 +238,7 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
         onConfirm={() => {
           if (deleting) {
             removeRevision(deleting.revision.id)
-            setToast(`${deleting.approval?.number ?? 'Approval'} revision ${deleting.revision.revision} deleted.`)
+            showToast(`${deleting.approval?.number ?? 'Approval'} revision ${deleting.revision.revision} deleted.`)
           }
           setDeleting(null)
         }}

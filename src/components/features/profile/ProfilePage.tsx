@@ -3,6 +3,7 @@ import { AppShell } from '@/components/patterns/AppShell'
 import { Alert } from '@/components/ui/Alert'
 import { ProfileDetailsTab } from './ProfileDetailsTab'
 import { ChangePasswordTab } from './ChangePasswordTab'
+import { useToastStore } from '@/stores/toastStore'
 
 const TABS = ['Profile', 'Change Password'] as const
 type Tab = (typeof TABS)[number]
@@ -17,7 +18,7 @@ export type PageState = 'ready' | 'loading' | 'error'
  */
 export function ProfilePage({ state = 'ready' }: { state?: PageState }) {
   const [tab, setTab] = useState<Tab>('Profile')
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   if (state === 'error') {
     return (
@@ -32,14 +33,13 @@ export function ProfilePage({ state = 'ready' }: { state?: PageState }) {
   return (
     <AppShell title="Profile" activeItem="" activeChild="">
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         <nav className="flex gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg" aria-label="Profile sections">
           {TABS.map((t) => (
             <button
               key={t}
               type="button"
-              onClick={() => { setTab(t); setToast(null) }}
+              onClick={() => setTab(t)}
               aria-current={tab === t ? 'page' : undefined}
               className={`whitespace-nowrap border-b-2 py-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
                 ${tab === t ? 'border-text-primary font-semibold text-text-primary' : 'border-transparent text-text-muted hover:text-text-primary'}`}
@@ -51,7 +51,7 @@ export function ProfilePage({ state = 'ready' }: { state?: PageState }) {
 
         {tab === 'Profile'
           ? <ProfileDetailsTab loading={state === 'loading'} />
-          : <ChangePasswordTab loading={state === 'loading'} onChanged={setToast} />}
+          : <ChangePasswordTab loading={state === 'loading'} onChanged={showToast} />}
       </div>
     </AppShell>
   )

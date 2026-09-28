@@ -39,32 +39,36 @@ interface Column {
 
 const GUTTER = 24
 
+/* +8px per column on top of `GUTTER` (client instruction, 2026-09-28): cells
+   pad at `px-lg` now, not `px-base` — 32px of padding per cell instead of
+   24px — so every column's floor needs the extra 8px to keep its measured
+   content from starting to crowd its neighbour. */
 const BASE_COLUMNS: Column[] = [
-  { label: 'Project', width: 126 + GUTTER, sort: 'project' },
-  { label: 'Work Package', width: 114 + GUTTER, sort: 'workPackage' },
+  { label: 'Project', width: 134 + GUTTER, sort: 'project' },
+  { label: 'Work Package', width: 122 + GUTTER, sort: 'workPackage' },
   {
     label: 'Activity / Task',
-    width: 112 + GUTTER,
+    width: 120 + GUTTER,
     sorts: [{ key: 'activity', label: 'Activity' }, { key: 'task', label: 'Task' }],
   },
-  { label: 'Deliverable', width: 94 + GUTTER, sort: 'deliverable' },
-  { label: 'Date', width: 92 + GUTTER, sort: 'date' },
-  { label: 'Hrs RG', width: 65 + GUTTER, sort: 'hoursRegular' },
-  { label: 'Hrs OT', width: 65 + GUTTER, sort: 'hoursOvertime' },
-  { label: 'Bk Hrs', width: 63 + GUTTER, sort: 'bankHours' },
-  { label: 'Comment', width: 96 + GUTTER, sort: 'comment' },
+  { label: 'Deliverable', width: 102 + GUTTER, sort: 'deliverable' },
+  { label: 'Date', width: 100 + GUTTER, sort: 'date' },
+  { label: 'Hrs RG', width: 73 + GUTTER, sort: 'hoursRegular' },
+  { label: 'Hrs OT', width: 73 + GUTTER, sort: 'hoursOvertime' },
+  { label: 'Bk Hrs', width: 71 + GUTTER, sort: 'bankHours' },
+  { label: 'Comment', width: 104 + GUTTER, sort: 'comment' },
   /* "Valid." rather than "Validated": the heading, not the Yes/No under it,
      was setting this column's width. */
-  { label: 'Valid.', width: 56 + GUTTER, sort: 'validated' },
-  { label: 'Active', width: 68 + GUTTER, sort: 'active' },
-  { label: 'Actions', width: 59 + GUTTER },
+  { label: 'Valid.', width: 64 + GUTTER, sort: 'validated' },
+  { label: 'Active', width: 76 + GUTTER, sort: 'active' },
+  { label: 'Actions', width: 67 + GUTTER },
 ]
 /* Same columns, Comment dropped — its 7% redistributed to the columns that
    most benefit (Project, Activity/Task carry the longest text). Used where
    Comment isn't shown in the table at all (Hours Worked → All Entries),
    rather than just hiding a cell, so no column sits at an orphaned width. */
 const COLUMNS_NO_COMMENT: Column[] = BASE_COLUMNS.filter((c) => c.label !== 'Comment')
-const EMPLOYEE_COLUMN: Column = { label: 'Employee', width: 84 + GUTTER, sort: 'employee' }
+const EMPLOYEE_COLUMN: Column = { label: 'Employee', width: 92 + GUTTER, sort: 'employee' }
 
 export interface TimesheetTableProps {
   rows: EnrichedTimesheetRow[]
@@ -145,34 +149,50 @@ export function TimesheetTable({
         <caption className="sr-only">Timesheet entries</caption>
         <thead>
           <tr className="border-b border-border-default bg-neutral-50">
-            {columns.map((c) => (
+            {columns.slice(0, -1).map((c) => (
               <SortableTh key={c.label} sortKey={c.sort} ownsKeys={c.sorts?.map((o) => o.key)} sort={sort} onSortChange={setSort}
                 style={{ width: c.width }}
-                className="whitespace-nowrap px-base py-base text-sm font-semibold text-text-secondary">
+                className="whitespace-nowrap px-lg py-lg text-sm font-semibold text-text-secondary">
                 {c.sorts
                   ? <SortMenu label={c.label} options={c.sorts} sort={sort} onChange={setSort} />
                   : c.label}
               </SortableTh>
             ))}
+            {/* Pinned to the scroll container's own right edge (client
+                instruction, 2026-09-28, the same treatment as Documents/
+                Projects Review/Hours by Person). `shadow-sticky` goes on the
+                overlay span — a `box-shadow` set directly on a table cell
+                never paints under `border-collapse`. */}
+            <SortableTh
+              style={{ width: columns[columns.length - 1].width }}
+              className="sticky right-0 z-sticky whitespace-nowrap border-b border-b-neutral-300 border-l border-l-border-default bg-neutral-50 px-lg py-lg text-sm font-semibold text-text-secondary"
+            >
+              <span aria-hidden className="pointer-events-none absolute inset-0 shadow-sticky" />
+              {columns[columns.length - 1].label}
+            </SortableTh>
           </tr>
         </thead>
         <tbody>
           {loading
             ? Array.from({ length: 6 }, (_, i) => (
                 <tr key={i} className="border-b border-border-default last:border-b-0">
-                  {columns.map((c) => (
-                    <td key={c.label} className="px-base py-base"><Skeleton className="h-4 w-full" /></td>
+                  {columns.slice(0, -1).map((c) => (
+                    <td key={c.label} className="px-lg py-lg"><Skeleton className="h-4 w-full" /></td>
                   ))}
+                  <td className="sticky right-0 z-sticky border-l border-border-default bg-neutral-25 px-lg py-lg">
+                    <span aria-hidden className="pointer-events-none absolute inset-0 shadow-sticky" />
+                    <Skeleton className="h-4 w-full" />
+                  </td>
                 </tr>
               ))
             : sorted.map((row) => (
                 <tr
                   key={row.id}
                   onClick={() => onView?.(row)}
-                  className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
+                  className="group cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
                 >
-                  {showEmployee && <td className="px-base py-base align-middle"><PersonCell name={row.employeeName} /></td>}
-                  <td className="px-base py-base align-middle">
+                  {showEmployee && <td className="px-lg py-lg align-middle"><PersonCell name={row.employeeName} /></td>}
+                  <td className="px-lg py-lg align-middle">
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); onView?.(row) }}
@@ -185,30 +205,34 @@ export function TimesheetTable({
                       <span className="block truncate text-xs text-text-secondary">{row.projectDescription}</span>
                     </button>
                   </td>
-                  <td className="px-base py-base align-middle text-sm text-text-primary">
+                  <td className="px-lg py-lg align-middle text-sm text-text-primary">
                     <span className="block truncate">{row.workPackageTitle}</span>
                   </td>
-                  <td className="px-base py-base align-middle">
+                  <td className="px-lg py-lg align-middle">
                     <span className="block truncate text-sm text-text-primary">{row.activityTitle}</span>
                     <span className="block truncate text-xs text-text-secondary">{row.task || '—'}</span>
                   </td>
-                  <td className="px-base py-base align-middle text-sm text-text-primary">
+                  <td className="px-lg py-lg align-middle text-sm text-text-primary">
                     <span className="block truncate">{row.deliverableNumber || '—'}</span>
                   </td>
-                  <td className="px-base py-base align-middle text-sm text-text-primary"><DateText value={row.workingDate} /></td>
-                  <td className="px-base py-base align-middle text-sm text-text-primary">{row.hoursRegular.toFixed(2)}</td>
-                  <td className="px-base py-base align-middle text-sm text-text-primary">{row.hoursOvertime.toFixed(2)}</td>
-                  <td className="px-base py-base align-middle text-sm text-text-primary">{row.bankHoursRegular.toFixed(2)}</td>
+                  <td className="px-lg py-lg align-middle text-sm text-text-primary"><DateText value={row.workingDate} /></td>
+                  <td className="px-lg py-lg align-middle text-sm text-text-primary">{row.hoursRegular.toFixed(2)}</td>
+                  <td className="px-lg py-lg align-middle text-sm text-text-primary">{row.hoursOvertime.toFixed(2)}</td>
+                  <td className="px-lg py-lg align-middle text-sm text-text-primary">{row.bankHoursRegular.toFixed(2)}</td>
                   {showComment && (
-                    <td className="px-base py-base align-middle text-sm text-text-primary"><span className="block truncate">{row.comment || '—'}</span></td>
+                    <td className="px-lg py-lg align-middle text-sm text-text-primary"><span className="block truncate">{row.comment || '—'}</span></td>
                   )}
-                  <td className="px-base py-base align-middle">
+                  <td className="px-lg py-lg align-middle">
                     <Badge tone={row.validated ? 'success' : 'neutral'}>{row.validated ? 'Yes' : 'No'}</Badge>
                   </td>
-                  <td className="px-base py-base align-middle">
+                  <td className="px-lg py-lg align-middle">
                     <Badge tone={row.active ? 'success' : 'danger'}>{row.active ? 'Active' : 'Inactive'}</Badge>
                   </td>
-                  <td className="px-base py-base align-middle" onClick={(e) => e.stopPropagation()}>
+                  <td
+                    className="sticky right-0 z-sticky border-l border-border-default bg-neutral-25 px-lg py-lg align-middle transition-colors duration-fast group-hover:bg-accent-subtle"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span aria-hidden className="pointer-events-none absolute inset-0 shadow-sticky" />
                     <ActionsMenu ariaLabel={`Actions for timesheet entry on ${formatDate(row.workingDate)}`} items={actionsFor(row)} />
                   </td>
                 </tr>

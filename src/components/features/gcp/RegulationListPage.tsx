@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useGcpStore } from '@/stores/gcpStore'
+import { useToastStore } from '@/stores/toastStore'
 import { codeName, sourceLabel, subpartLabel, subpartParts, subsectionLabel, subsectionParts } from '@/lib/gcpDisplay'
 import type { Regulation } from '@/types/gcp'
 import { GcpRegulationsTabs } from './GcpRegulationsTabs'
@@ -81,7 +82,7 @@ export function RegulationListPage({ state = 'ready' }: { state?: PageState }) {
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'copy'; regulation?: Regulation } | null>(null)
   const [viewing, setViewing] = useState<Regulation | null>(null)
   const [deleting, setDeleting] = useState<Regulation | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const loading = state === 'loading'
   const hasFilters = Object.values(filters).some(Boolean)
@@ -123,7 +124,7 @@ export function RegulationListPage({ state = 'ready' }: { state?: PageState }) {
   const confirmDelete = () => {
     if (!deleting) return
     removeRegulation(deleting.id)
-    setToast(`Regulation ${deleting.section} at ${deleting.amdt} deleted.`)
+    showToast(`Regulation ${deleting.section} at ${deleting.amdt} deleted.`)
     setDeleting(null)
   }
 
@@ -167,7 +168,6 @@ export function RegulationListPage({ state = 'ready' }: { state?: PageState }) {
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
         <FilterChips
           chips={regulationFilterChips(filters, subparts, subsections, (f) => { setFilters(f); resetVisible() })}
           onClearAll={() => { setFilters(EMPTY_REGULATION_FILTERS); resetVisible() }}
@@ -279,7 +279,7 @@ export function RegulationListPage({ state = 'ready' }: { state?: PageState }) {
           onSubmit={(r) => {
             if (drawer.mode === 'edit') updateRegulation(r.id, r)
             else addRegulation(r)
-            setToast(`Regulation ${r.section} at ${r.amdt} saved.`)
+            showToast(`Regulation ${r.section} at ${r.amdt} saved.`)
           }}
         />
       )}

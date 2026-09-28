@@ -9,13 +9,13 @@ import { useSyncedScroll } from '@/components/patterns/useSyncedScroll'
 import { proportionalWidths } from '@/lib/tableWidths'
 import { Truncate } from '@/components/patterns/Truncate'
 import { useTableSort } from '@/components/patterns/useTableSort'
-import { Alert } from '@/components/ui/Alert'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useGcpStore } from '@/stores/gcpStore'
 import { useGcpFlowStore } from '@/stores/gcpFlowStore'
 import { useTccaStore } from '@/stores/tccaStore'
+import { useToastStore } from '@/stores/toastStore'
 import { codeName, subpartParts, subsectionParts } from '@/lib/gcpDisplay'
 import type { CertBasis, Regulation } from '@/types/gcp'
 import { CertBasisDrawer } from './CertBasisDrawer'
@@ -82,7 +82,7 @@ export function GcpCertBasesPage() {
   const [query, setQuery] = useState('')
   const [basisDrawer, setBasisDrawer] = useState<{ mode: 'create' | 'edit'; basis?: CertBasis } | null>(null)
   const [importOpen, setImportOpen] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
   const [deletingBasis, setDeletingBasis] = useState<CertBasis | null>(null)
   const [viewing, setViewing] = useState<Regulation | null>(null)
   const [editing, setEditing] = useState<Regulation | null>(null)
@@ -144,7 +144,6 @@ export function GcpCertBasesPage() {
         </>
       }
     >
-      {toast && <div className="mb-lg shrink-0"><Alert tone="info" title={toast} /></div>}
 
       {bases.length === 0 ? (
         <div className="rounded-sm border border-border-default bg-neutral-25">
@@ -257,7 +256,7 @@ export function GcpCertBasesPage() {
           onClose={() => setImportOpen(false)}
           onImport={(file, projectId) => {
             const project = tccaProjects.find((t) => t.id === projectId)
-            setToast(`"${file.name}" received for ${project?.number ?? 'the selected project'}. Cert basis import needs a real backend, so nothing was actually processed yet.`)
+            showToast(`"${file.name}" received for ${project?.number ?? 'the selected project'}. Cert basis import needs a real backend, so nothing was actually processed yet.`)
           }}
         />
       )}

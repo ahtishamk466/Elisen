@@ -25,6 +25,7 @@ import { summarisePeople } from '@/lib/hoursByPerson'
 import { isNonProjectActivity } from '@/lib/catalog'
 import { inPeriod, periodRange } from '@/lib/hoursPeriod'
 import { useCatalogStore } from '@/stores/catalogStore'
+import { useToastStore } from '@/stores/toastStore'
 import { EMPLOYEES, PAYROLL_GROUPS, employeeByName } from '@/lib/employeeFixtures'
 import { PEOPLE } from '@/lib/projectFixtures'
 import type { TimesheetEntry } from '@/types/timesheet'
@@ -95,7 +96,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
   })
   const [drawer, setDrawer] = useState<{ mode: 'create' | 'edit' | 'view'; row?: TimesheetEntry } | null>(null)
   const [deletingRow, setDeletingRow] = useState<TimesheetEntry | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const showToast = useToastStore((s) => s.show)
 
   const enriched = useMemo(() => enrichTimesheetRows(rows, projects, workPackages, deliverables, catalogActivities), [rows, projects, workPackages, deliverables, catalogActivities])
 
@@ -176,16 +177,16 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
 
   const handleDuplicate = (row: TimesheetEntry) => {
     duplicateEntry(row.id)
-    setToast('Entry duplicated.')
+    showToast('Entry duplicated.')
   }
   const handleToggleValidated = (row: TimesheetEntry) => {
     updateRow(row.id, { validated: !row.validated })
-    setToast(row.validated ? 'Entry unmarked as validated.' : 'Entry marked as validated.')
+    showToast(row.validated ? 'Entry unmarked as validated.' : 'Entry marked as validated.')
   }
   const handleDeleteConfirmed = () => {
     if (!deletingRow) return
     removeRow(deletingRow.id)
-    setToast('Entry deleted.')
+    showToast('Entry deleted.')
     setDeletingRow(null)
   }
 
@@ -224,7 +225,6 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
       }
     >
       <div className="grid gap-lg">
-        {toast && <Alert tone="info" title={toast} />}
 
         <FilterChips
           chips={timesheetFilterChips(filters, projects, (f) => { setFilters(f); resetVisible() })}
@@ -329,7 +329,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
               hoursRegular: Number(v.hoursRegular) || 0, hoursOvertime: Number(v.hoursOvertime) || 0,
               bankHoursRegular: Number(v.bankHoursRegular) || 0, comment: v.comment,
             })
-            setToast('Entry updated.')
+            showToast('Entry updated.')
           } else {
             addRow({
               id: crypto.randomUUID(), employeeName: v.employeeName, projectId: v.projectId, workPackageId: v.workPackageId,
@@ -337,7 +337,7 @@ export function HoursWorkedPage({ state = 'ready' }: HoursWorkedPageProps) {
               hoursRegular: Number(v.hoursRegular) || 0, hoursOvertime: Number(v.hoursOvertime) || 0,
               bankHoursRegular: Number(v.bankHoursRegular) || 0, comment: v.comment, validated: false, active: true,
             })
-            setToast('Entry created.')
+            showToast('Entry created.')
           }
         }}
       />
