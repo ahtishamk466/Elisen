@@ -6,9 +6,9 @@ export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl'
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
   sm: 'h-7 px-sm gap-xs text-xs',
-  md: 'h-9 px-base gap-xs text-sm',
-  lg: 'h-11 px-lg gap-sm text-sm',
-  xl: 'h-14 px-xl gap-sm text-base',
+  md: 'h-8 px-base gap-xs text-sm',
+  lg: 'h-10 px-lg gap-sm text-sm',
+  xl: 'h-12 px-xl gap-sm text-base',
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {

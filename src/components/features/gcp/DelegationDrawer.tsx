@@ -69,7 +69,7 @@ export function DelegationDrawer({ mode, initial, onClose, onSubmit }: Delegatio
         </>
       }
     >
-      <FormSection title="Delegation" subtitle="Which rule numbers this FOC code may sign for.">
+      <FormSection title="Delegation" subtitle="Which rule numbers this FOC code may make findings on, per its delegation letter.">
         <FormField label="Section Root" htmlFor="delegation-section-root" required error={errors.sectionRoot}>
           <SearchableSelect
             id="delegation-section-root"

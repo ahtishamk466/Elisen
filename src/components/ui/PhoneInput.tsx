@@ -33,7 +33,7 @@ export interface PhoneInputProps {
 }
 
 /** One field, not two — a fixed-width code+flag segment on the left, a
-    divider, then the number. Same tokens as Input/Select (h-11, rounded-sm,
+    divider, then the number. Same tokens as Input/Select (h-10, rounded-sm,
     border-border-default, shadow-textfield) merged into a single box, and
     full-width like every other field so forms line up on one right edge.
     The code segment is a `SearchableSelect variant="bare"`, so its open state
@@ -47,7 +47,7 @@ export function PhoneInput({
   const codeId = id ? `${id}-code` : undefined
   return (
     <div
-      className={`flex h-11 items-center rounded-sm border bg-neutral-25 shadow-textfield transition-colors duration-fast
+      className={`flex h-10 items-center rounded-sm border bg-neutral-25 shadow-textfield transition-colors duration-fast
         ${error ? 'border-danger' : 'border-border-default focus-within:border-text-primary'}
         ${disabled ? 'opacity-40' : ''}`}
     >

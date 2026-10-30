@@ -39,7 +39,7 @@ export function GcpReferencePage() {
       activeItem="GCP"
       activeChild="Reference Lists"
       title="Reference Lists"
-      description="The short lists a compliance item is built from."
+      description="Means of Compliance (MOC) codes and Detailed Design Specification (DDS) types."
       headerActions={
         <>
           <div className="min-w-0" style={{ width: 320 }}>

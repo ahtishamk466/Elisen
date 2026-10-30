@@ -125,7 +125,7 @@ export function GcpCertBasesPage() {
       activeItem="GCP"
       activeChild="Cert Basis"
       title="Cert Basis"
-      description="Each aircraft's rule set: which regulation, at which amendment."
+      description="Each aircraft's rules from its Type Certificate Data Sheet (TCDS): which regulation, at which amendment."
       fill
       headerActions={
         <>

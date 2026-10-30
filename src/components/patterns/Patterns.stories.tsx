@@ -408,14 +408,14 @@ export const SelectionStandard: Story = { render: () => <SelectionStandardDemo /
 /**
  * THE toolbar row. Every control that sits in a horizontal row with a button —
  * page-header search, a Filters trigger, an Export menu, a primary CTA, an
- * inline "pick a record → Link" row — is **36px tall**. Buttons are already
- * 36px at their default `md` size, so fields in these rows take `size="sm"`.
+ * inline "pick a record → Link" row — is **32px tall**. Buttons are already
+ * 32px at their default `md` size, so fields in these rows take `size="sm"`.
  *
- * Stacked form fields keep the 44px default: nothing sits beside them to
+ * Stacked form fields keep the 40px default: nothing sits beside them to
  * disagree with, and the extra height is the comfortable target for typing.
  * The rule is about *rows*, not about fields in general.
  *
- * Getting this wrong is quietly expensive — a 44px input next to a 36px button
+ * Getting this wrong is quietly expensive — a 40px input next to a 32px button
  * has 4px of visual offset top and bottom, which reads as a rendering bug
  * rather than a style choice, and it shows up on every screen at once.
  */
@@ -425,7 +425,7 @@ function ToolbarRowStandardDemo() {
   return (
     <div className="grid gap-2xl p-lg">
       <div className="grid gap-sm">
-        <p className="text-xs font-semibold text-text-secondary">Page header: search · filters · export · CTA, all 36px</p>
+        <p className="text-xs font-semibold text-text-secondary">Page header: search · filters · export · CTA, all 32px</p>
         <div className="flex flex-wrap items-center gap-sm rounded-sm border border-border-default bg-neutral-25 p-base">
           <div className="min-w-0" style={{ width: 320 }}>
             <label htmlFor="tb-search" className="sr-only">Search projects</label>
@@ -439,7 +439,7 @@ function ToolbarRowStandardDemo() {
       </div>
 
       <div className="grid gap-sm">
-        <p className="text-xs font-semibold text-text-secondary">Inline link row: select + action, both 36px</p>
+        <p className="text-xs font-semibold text-text-secondary">Inline link row: select + action, both 32px</p>
         <div className="grid gap-sm rounded-sm border border-border-default bg-neutral-25 p-base">
           <label htmlFor="tb-attach" className="text-sm font-semibold text-text-primary">Select an aircraft to link</label>
           <div className="flex flex-wrap items-center gap-sm">
@@ -459,7 +459,7 @@ function ToolbarRowStandardDemo() {
       </div>
 
       <div className="grid gap-sm">
-        <p className="text-xs font-semibold text-text-secondary">Stacked form field, 44px, unchanged</p>
+        <p className="text-xs font-semibold text-text-secondary">Stacked form field, 40px, unchanged</p>
         <div className="grid gap-xs rounded-sm border border-border-default bg-neutral-25 p-base" style={{ maxWidth: 380 }}>
           <label htmlFor="tb-form" className="text-sm font-semibold text-text-primary">Model No</label>
           <Input id="tb-form" placeholder="e.g. RV-14A" />

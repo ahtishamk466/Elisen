@@ -60,7 +60,7 @@ export function FocDrawer({ mode, initial, onClose, onSubmit }: FocDrawerProps) 
         </>
       }
     >
-      <FormSection title="FOC" subtitle="Who can find or recommend compliance under this code.">
+      <FormSection title="FOC" subtitle="Finding of Compliance code: who signs that a design meets a rule. (C) codes only recommend.">
         <FormField label="Code" htmlFor="foc-code" required error={errors.code}>
           <Input id="foc-code" value={code} error={!!errors.code} placeholder="e.g. AP-01(C)"
             onChange={(e) => { setCode(e.target.value); setErrors((p) => ({ ...p, code: undefined })) }} />
@@ -74,7 +74,7 @@ export function FocDrawer({ mode, initial, onClose, onSubmit }: FocDrawerProps) 
             onChange={(e) => setSpecialty(e.target.value)} />
         </FormField>
         <Checkbox
-          label="Default"
+          label="Default: offered on every rule, not only where delegated"
           checked={isDefault}
           onChange={(e) => setIsDefault(e.target.checked)}
         />

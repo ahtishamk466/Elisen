@@ -135,7 +135,11 @@ export interface Foc {
   code: string
   authoritySpecialist: string
   specialty: string
-  /** `Default` — the FOC offered first when a rule's own default isn't set. */
+  /** `Default` — offered in a rule's FOC picker whatever the Delegation list
+      says (candidates `(C)`, CEs, outside DARs, TCCA). Delegate codes are
+      `false`: they appear only on rules they hold a delegation for. Inferred
+      from the data (the 8 `false` codes are exactly the ones with Delegation
+      rows) and the 2026-09-09 legacy demo. */
   isDefault: boolean
 }
 

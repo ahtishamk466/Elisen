@@ -50,7 +50,7 @@ export function GcpPeoplePage() {
       activeItem="GCP"
       activeChild="People & Authority"
       title="People & Authority"
-      description="Who can find or recommend compliance, and on which rules."
+      description="Who can make a Finding of Compliance (FOC), on which rules, in which discipline."
       headerActions={
         <>
           <div className="min-w-0" style={{ width: 320 }}>

@@ -61,7 +61,7 @@ export function DisciplineDrawer({ mode, initial, onClose, onSubmit }: Disciplin
         </>
       }
     >
-      <FormSection title="Discipline" subtitle="The technical discipline a compliance item is filed under.">
+      <FormSection title="Discipline" subtitle="A DAO (Design Approval Organization) discipline that compliance work is filed under.">
         <FormField label="DAO Specialty Code" htmlFor="disc-code" required error={errors.daoSpecialtyCode}>
           <Input id="disc-code" value={daoSpecialtyCode} error={!!errors.daoSpecialtyCode} placeholder="e.g. A1"
             onChange={(e) => { setDaoSpecialtyCode(e.target.value); setErrors((p) => ({ ...p, daoSpecialtyCode: undefined })) }} />

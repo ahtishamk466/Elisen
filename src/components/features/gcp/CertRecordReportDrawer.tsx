@@ -82,11 +82,11 @@ export function CertRecordReportDrawer({ defaultTccaProjectId, onClose, onDownlo
           <Input id="cr-date" type="date" value={reportDate}
             onChange={(e) => setReportDate(e.target.value)} />
         </FormField>
-        <FormField label="Foc Codes Section" htmlFor="cr-foc" fullWidth>
+        <FormField label="FOC Codes Section" htmlFor="cr-foc" fullWidth>
           <Input id="cr-foc" value={focCodesSection} placeholder="e.g. AP-01"
             onChange={(e) => setFocCodesSection(e.target.value)} />
         </FormField>
-        <FormField label="Moc Codes Section" htmlFor="cr-moc" fullWidth>
+        <FormField label="MOC Codes Section" htmlFor="cr-moc" fullWidth>
           <Input id="cr-moc" value={mocCodesSection} placeholder="e.g. DR"
             onChange={(e) => setMocCodesSection(e.target.value)} />
         </FormField>
@@ -94,7 +94,7 @@ export function CertRecordReportDrawer({ defaultTccaProjectId, onClose, onDownlo
           <Input id="cr-compliance" value={complianceReportsSection} placeholder="e.g. Section 9.0"
             onChange={(e) => setComplianceReportsSection(e.target.value)} />
         </FormField>
-        <FormField label="Mdl Number And Rev" htmlFor="cr-mdl" fullWidth>
+        <FormField label="MDL Number and Rev" htmlFor="cr-mdl" fullWidth>
           <Input id="cr-mdl" value={mdlNumberAndRev} placeholder="e.g. MDL-01 Rev A"
             onChange={(e) => setMdlNumberAndRev(e.target.value)} />
         </FormField>

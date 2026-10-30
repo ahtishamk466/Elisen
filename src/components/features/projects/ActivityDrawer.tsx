@@ -105,7 +105,7 @@ export function ActivityDrawer({ mode, workPackage, usedActivityIds, initial, on
         </FormField>
         <FormField label="Tasks" htmlFor="act-tasks"
           help="Set in Reference Data → Activities & Tasks.">
-          <div id="act-tasks" className="flex min-h-11 flex-wrap items-center gap-xs rounded-sm border border-border-default bg-neutral-50 px-base py-sm">
+          <div id="act-tasks" className="flex min-h-10 flex-wrap items-center gap-xs rounded-sm border border-border-default bg-neutral-50 px-base py-sm">
             {tasks.length === 0 ? (
               <span className="text-sm text-text-muted">{activityId ? 'No tasks associated with this activity.' : 'Pick an activity to see its tasks.'}</span>
             ) : (

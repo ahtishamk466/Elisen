@@ -16,7 +16,7 @@ export interface RequirementMatrixReportDrawerProps {
   onDownload?: () => void
 }
 
-/** "Requirement Cross reference – Matrix" report parameters — the shortest
+/** "Requirement Cross Reference Matrix" report parameters — the shortest
     of the three, exactly as the legacy Reports screen collects them. */
 export function RequirementMatrixReportDrawer({ defaultTccaProjectId, onClose, onDownload }: RequirementMatrixReportDrawerProps) {
   const tccaProjects = useTccaStore((s) => s.tccaProjects)
@@ -29,7 +29,7 @@ export function RequirementMatrixReportDrawer({ defaultTccaProjectId, onClose, o
     <Drawer
       open
       onClose={onClose}
-      title="Requirement Cross reference – Matrix — Enter Parameters"
+      title="Requirement Cross Reference Matrix — Enter Parameters"
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>

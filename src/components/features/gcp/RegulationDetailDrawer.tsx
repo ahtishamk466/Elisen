@@ -65,7 +65,7 @@ export function RegulationDetailDrawer({ regulation: r, subpart, subsection, onC
             <span className="whitespace-pre-wrap">{r.requirementText}</span>
           </DetailField>
           <div className="mt-lg">
-            <DetailField label="Default Moc Text">
+            <DetailField label="Default MOC Text">
               <span className="whitespace-pre-wrap">{r.defaultMocText}</span>
             </DetailField>
           </div>

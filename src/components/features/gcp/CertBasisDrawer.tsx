@@ -98,7 +98,7 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
             onChange={(e) => { setAircraftModel(e.target.value); setError('') }} />
         </FormField>
         <FormField label="TCDS Number" htmlFor="basis-tcds" fullWidth
-          help="Leave blank for a project-specific basis — one with no type certificate of its own.">
+          help="The Type Certificate Data Sheet the basis comes from. Blank for a project-specific basis.">
           <Input id="basis-tcds" value={tcdsNumber} placeholder="e.g. A-123"
             onChange={(e) => setTcdsNumber(e.target.value)} />
         </FormField>

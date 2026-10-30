@@ -13,7 +13,7 @@ export interface SelectProps {
   error?: boolean
   disabled?: boolean
   className?: string
-  /** `sm` (36px) for toolbar rows; `md` (44px) for form fields. */
+  /** `sm` (32px) for toolbar rows; `md` (40px) for form fields. */
   size?: 'sm' | 'md'
   'aria-label'?: string
   /** `<option>` elements, exactly as before. */

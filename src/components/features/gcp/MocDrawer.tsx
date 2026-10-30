@@ -59,7 +59,7 @@ export function MocDrawer({ mode, initial, onClose, onSubmit }: MocDrawerProps) 
         </>
       }
     >
-      <FormSection title="Means of Compliance" subtitle="How compliance with a rule is shown.">
+      <FormSection title="Means of Compliance" subtitle="Means of Compliance: how compliance with a rule is shown.">
         <FormField label="Code" htmlFor="moc-code" required error={errors.code}>
           <Input id="moc-code" value={code} error={!!errors.code} placeholder="e.g. DR"
             onChange={(e) => { setCode(e.target.value); setErrors((p) => ({ ...p, code: undefined })) }} />

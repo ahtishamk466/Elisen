@@ -112,7 +112,7 @@ export function RegulationDrawer({ mode, initial, onClose, onSubmit }: Regulatio
           <Input id="reg-section" value={section} error={!!errors.section} placeholder="e.g. 23.21(a)"
             onChange={(e) => { setSection(e.target.value); setErrors((p) => ({ ...p, section: undefined })) }} />
         </FormField>
-        <FormField label="Amdt" htmlFor="reg-amdt" required error={errors.amdt} help="IR is the rule as first issued.">
+        <FormField label="Amdt" htmlFor="reg-amdt" required error={errors.amdt} help="Amendment. IR is the rule as first issued.">
           <Input id="reg-amdt" value={amdt} error={!!errors.amdt} placeholder="e.g. 23-34"
             onChange={(e) => { setAmdt(e.target.value); setErrors((p) => ({ ...p, amdt: undefined })) }} />
         </FormField>
@@ -157,7 +157,7 @@ export function RegulationDrawer({ mode, initial, onClose, onSubmit }: Regulatio
             placeholder="The rule's own wording, as it prints in the certification plan..."
             onChange={(e) => { setRequirementText(e.target.value); setErrors((p) => ({ ...p, requirementText: undefined })) }} />
         </FormField>
-        <FormField label="Default Moc Text" htmlFor="reg-moc" fullWidth
+        <FormField label="Default MOC Text" htmlFor="reg-moc" fullWidth
           help="Offered as the method statement when this rule is planned on a project.">
           <Textarea id="reg-moc" rows={4} value={defaultMocText}
             placeholder="e.g. Design review will demonstrate compliance..."
@@ -167,7 +167,7 @@ export function RegulationDrawer({ mode, initial, onClose, onSubmit }: Regulatio
 
       <FormSection title="Placement" subtitle="What delegation is granted against, and whether the rule can be picked.">
         <FormField label="Section Root" htmlFor="reg-root" required error={errors.sectionRoot}
-          help="Leave blank to take the suggestion.">
+          help="The rule number delegation is granted against. Blank takes the suggestion.">
           <Input id="reg-root" value={sectionRoot} error={!!errors.sectionRoot} placeholder={derivedRoot || 'e.g. 23.0021'}
             onChange={(e) => { setSectionRoot(e.target.value); setErrors((p) => ({ ...p, sectionRoot: undefined })) }} />
         </FormField>

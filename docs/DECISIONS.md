@@ -7437,3 +7437,95 @@ the model: apply the same to Hours Worked's two tabs, By Person
 (`TimesheetListPage.tsx`), so that screen gets the same improvement as a
 side effect — not separately requested, but the natural consequence of one
 shared component.
+
+## 2026-10-30 — GCP Data drawer picks from the reference lists, delegates first
+**Context:** `GcpItemDrawer` (Compliance Plan → GCP Data) still had four
+free-text fields, with a comment saying Discipline/MOC/FOC/Delegation "are
+not in the system yet" — stale since 2026-09-25, when all four went live with
+real data. In the 2026-09-09 GCP walkthrough recording, Harris showed the
+legacy GCP Update screen: the FOC dropdown lists the people delegated for the
+rule's paragraph above a line and everyone else (candidates `(C)`, CEs,
+outside DARs, TCCA) below it, and Deliverable Number only offers documents
+associated with the project. He called this the point of the database: it
+stops Elisen naming a delegate for a rule they hold no delegation for, the
+mistake Transport Canada's 2014 audit found.
+**Choice:** DAO Specialty Code, MOC Code, FOC Code and Deliverable # are
+`SearchableSelect`s over `useGcpStore`'s lists, using the same `CODE -- NAME`
+labels as the Create GCP drawer. FOC orders delegates for the rule's Section
+Root first, each marked "Delegated for this rule". Deliverable # lists
+deliverables with a revision linked to the TCCA project (`tccaStore.docLinks`).
+A saved value no longer in a list stays pickable, marked "Not in the current
+list". Delegation's own `active` flag is **not** applied: the legacy picker
+listed AP-08/09/14 on 25.1301 although all three are `active: false` in the
+fixture.
+**Revised the same day: which FOCs go below the line.** The first version
+listed all 63 codes after the delegates. The FOC list's own Default column
+shows the legacy rule. The 8 codes with `Default: No` (AP-01/04/08/09/10/12/14,
+DAR 386) are exactly the codes with Delegation rows. Everyone with `Yes` is a
+candidate, CE, outside DAR or TCCA, which is what Harris's demo showed below
+the line. So the picker is now the rule's delegates first, then only the
+Default codes. A delegate is never offered on a rule they aren't delegated
+for. FocDrawer's checkbox now reads "Default: offered on every rule, not only
+where delegated", which answers that open question.
+**Rationale:** The legacy screen's own behaviour, as the client demonstrated
+it. A text hint plus ordering stands in for the legacy divider, because
+`SearchableSelect` has no grouped-options support. Adding that is a `ui/`
+change, proposed separately rather than built here.
+
+## 2026-10-30 — Compact type, spacing and control heights (~12% smaller)
+**Context:** The user had to zoom the browser far out to see a data screen
+whole. This conflicts with DESIGN.md's type scale (body text 14px, from the
+source spec). I flagged the conflict and offered three options: compact
+everything, smaller text only, or denser tables only. The user chose
+**compact everything**.
+**Choice:**
+- Type scale 12/14/16/18/20/24/32/40 → 11/13/14/16/18/22/28/36px, with line
+  heights to match.
+- Spacing tokens base/lg/xl/2xl/3xl/4xl/5xl/6xl 12/16/20/24/32/40/48/60 →
+  10/14/18/20/28/36/42/52px. xxss/xs/sm (2/4/8) are unchanged, so small gaps
+  stay legible.
+- Control heights: toolbar-row 36 → 32px, stacked fields 44 → 40px, Button
+  `lg` 44 → 40px, `xl` 56 → 48px. Button `sm` stays 28px; 24px would sit on
+  the WCAG 2.2 minimum target size.
+- Everything changed through the tokens and the `ui/` controls, plus two
+  feature spots that must match a control's height: GCP's joined
+  Prev/rule/Next strip, and ActivityDrawer's task field.
+- Avatars, icon tiles, px column widths and skeleton rows are untouched.
+  Tables keep their widths, so columns gain room as text shrinks.
+**Rationale:** One proportional pass behaves like browser zoom at ~88% but is
+built in, without `zoom` or a root font-size hack. Both of those would break
+the viewport-filling layouts (`AppShell fill`) and portal panel positioning.
+The radius, colour and z-index tokens are unaffected.
+
+## 2026-10-30 — GCP: one name per thing, acronyms spelled out where they're used
+**Context:** The user asked for the GCP screens to explain their terms (e.g.
+FOC) and to check naming against the legacy TPMS. The new app kept the
+legacy labels almost word for word, with no acronym explained anywhere. It
+also had the same thing under two names: "Deliverable #" and "Deliverable
+Number"; "Default Moc Text" beside "MOC Code"; "Foc/Moc Codes Section";
+"Mdl Number And Rev"; "Requirement Cross reference – Matrix". The user chose
+explanations **in place**, not a glossary drawer, and **General
+Certification Plan** as GCP's expansion. Harris's 2026-09-09 recording, as
+machine-transcribed, says "general compliance program", so the client may
+want a say.
+**Choice:**
+- Labels tidied to one name each: Deliverable Number, Default MOC Text,
+  FOC/MOC Codes Section, MDL Number and Rev, Requirement Cross Reference
+  Matrix.
+- Acronyms spelled out in the help lines, drawer subtitles and page
+  descriptions that already existed, worded from Harris's 2026-09-09
+  walkthrough:
+  - FOC is Finding of Compliance (who signs; `(C)` codes only recommend).
+  - MOC is Means of Compliance; DAO is Design Approval Organization.
+  - DDS is Detailed Design Specification (new Part 23 work only).
+  - TCDS is Type Certificate Data Sheet; Amdt is Amendment (IR = as first
+    issued).
+  - Section Root is the rule number delegation is granted against.
+- GCP is spelled out on the GCP Projects page's own one-line description and
+  in Create GCP's subtitle.
+**Rationale:** Uses the existing FormField `help`, FormSection `subtitle` and
+AppShell `description` slots, so no new component and one short line per
+field (form standard 9c). Still unexplained, because Harris didn't explain
+them: Delegation's "Limitation" and the Regulation Checklist screen. These
+are open client questions. FOC's "Default" was worked out from the data (see
+the GCP Data drawer entry above).

@@ -203,7 +203,7 @@ export function GcpFlowPage() {
       ) : step === 1 ? (
         <div className="min-w-0">
           <h1 className="text-2xl font-bold text-text-primary">GCP Projects</h1>
-          <p className="mt-xxss text-sm text-text-secondary">Choose a project to build its compliance plan.</p>
+          <p className="mt-xxss text-sm text-text-secondary">Choose a TCCA project to build its General Certification Plan (GCP).</p>
         </div>
       ) : undefined}
       /* Step 1 is a plain landing table, not a wizard step — its search
@@ -281,7 +281,7 @@ export function GcpFlowPage() {
                       box: a single bordered strip with the dropdown as its
                       `bare` middle segment, divided into its three chunks by
                       the segment borders rather than gaps between controls. */}
-                  <div className="flex h-9 items-center overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+                  <div className="flex h-8 items-center overflow-hidden rounded-sm border border-border-default bg-neutral-25">
                     <Button
                       variant="tertiary"
                       size="sm"
@@ -413,7 +413,7 @@ export function GcpFlowPage() {
             </>
           }
         >
-          <FormSection title="GCP Projects" subtitle="Pick the TCCA project to start certification planning for.">
+          <FormSection title="GCP Projects" subtitle="Pick the TCCA project to start its General Certification Plan (GCP) for.">
             <FormField label="TCCA Project" htmlFor="create-gcp-project" required fullWidth>
               <SearchableSelect
                 id="create-gcp-project"
@@ -446,7 +446,8 @@ export function GcpFlowPage() {
                 options={createAmdtOptions.map((a) => ({ value: a, label: a }))}
               />
             </FormField>
-            <FormField label="DAO Specialty Code" htmlFor="create-gcp-dao" fullWidth>
+            <FormField label="DAO Specialty Code" htmlFor="create-gcp-dao" fullWidth
+              help="The Design Approval Organization discipline doing the work.">
               <SearchableSelect
                 id="create-gcp-dao"
                 value={createDao}
@@ -455,7 +456,8 @@ export function GcpFlowPage() {
                 options={disciplines.filter((d) => d.active).map((d) => ({ value: d.daoSpecialtyCode, label: `${d.daoSpecialtyCode} -- ${d.elisenDiscipline}` }))}
               />
             </FormField>
-            <FormField label="MOC Code" htmlFor="create-gcp-moc" fullWidth>
+            <FormField label="MOC Code" htmlFor="create-gcp-moc" fullWidth
+              help="Means of Compliance: how this rule will be shown.">
               <SearchableSelect
                 id="create-gcp-moc"
                 value={createMoc}
@@ -465,7 +467,7 @@ export function GcpFlowPage() {
               />
             </FormField>
             <FormField label="FOC Code" htmlFor="create-gcp-foc" fullWidth
-              help="The dropdown lists individuals authorized to make FOC recommendations for this paragraph.">
+              help="Finding of Compliance: who signs that the design meets this rule.">
               <SearchableSelect
                 id="create-gcp-foc"
                 value={createFoc}

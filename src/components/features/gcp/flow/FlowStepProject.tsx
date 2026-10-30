@@ -43,7 +43,7 @@ const COLUMNS: { label: string; sort?: SortKey; style?: CSSProperties }[] = [
   { label: 'Discipline', sort: 'discipline', style: { width: 130 } },
   { label: 'MOC', sort: 'moc', style: { width: 100 } },
   { label: 'FOC', sort: 'foc', style: { width: 100 } },
-  { label: 'Deliverable #', sort: 'deliverable', style: { width: 190 } },
+  { label: 'Deliverable Number', sort: 'deliverable', style: { width: 190 } },
   { label: 'Applicable', sort: 'applicable', style: { width: 110 } },
   { label: 'Affected', sort: 'affected', style: { width: 100 } },
   { label: 'Opened', sort: 'opened', style: { width: 120 } },

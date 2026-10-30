@@ -162,7 +162,7 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
                 <caption className="sr-only">GCP data for {current.rule.section}</caption>
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
-                    {['DAO Specialty Code', 'MOC Code', 'FOC Code', 'Deliverable #', 'Active'].map((h) => (
+                    {['DAO Specialty Code', 'MOC Code', 'FOC Code', 'Deliverable Number', 'Active'].map((h) => (
                       <th key={h} scope="col" className="whitespace-nowrap px-base py-base text-sm font-semibold text-text-secondary">{h}</th>
                     ))}
                     {/* Actions scrolls with the rest here, unlike every other
@@ -223,6 +223,8 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
           initial={drawer.item}
           planEntryId={current.entry.id}
           ruleLabel={`${current.rule.section} · ${current.rule.amdt}`}
+          sectionRoot={current.rule.sectionRoot}
+          tccaProjectId={current.entry.projectId}
           onClose={() => setDrawer(null)}
         />
       )}

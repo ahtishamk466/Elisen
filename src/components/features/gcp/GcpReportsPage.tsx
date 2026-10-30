@@ -10,7 +10,7 @@ import { useToastStore } from '@/stores/toastStore'
 const REPORTS = [
   { key: 'cert-plan', name: 'Certification Plan' },
   { key: 'cert-record', name: 'Certification Record' },
-  { key: 'requirement-matrix', name: 'Requirement Cross reference – Matrix' },
+  { key: 'requirement-matrix', name: 'Requirement Cross Reference Matrix' },
 ] as const
 
 type ReportKey = typeof REPORTS[number]['key']
@@ -75,7 +75,7 @@ export function GcpReportsPage() {
         <CertRecordReportDrawer onClose={() => setOpen(null)} onDownload={() => download('Certification Record')} />
       )}
       {open === 'requirement-matrix' && (
-        <RequirementMatrixReportDrawer onClose={() => setOpen(null)} onDownload={() => download('Requirement Cross reference – Matrix')} />
+        <RequirementMatrixReportDrawer onClose={() => setOpen(null)} onDownload={() => download('Requirement Cross Reference Matrix')} />
       )}
     </AppShell>
   )

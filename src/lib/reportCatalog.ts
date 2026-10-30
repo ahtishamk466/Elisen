@@ -72,5 +72,5 @@ export const REPORT_CATALOG: ReportDef[] = [
   // GCP — the whole module is deferred with the client
   { id: 'gcp-cert-plan', name: 'Certification Plan', description: 'The certification plan document for a GCP program.', category: 'gcp', status: 'pending', pendingReason: 'GCP module is deferred', params: [] },
   { id: 'gcp-cert-record', name: 'Certification Record', description: 'The certification record for a completed GCP program.', category: 'gcp', status: 'pending', pendingReason: 'GCP module is deferred', params: [] },
-  { id: 'gcp-req-matrix', name: 'Requirement Cross reference: Matrix', description: 'Requirements mapped to the deliverables that satisfy them.', category: 'gcp', status: 'pending', pendingReason: 'GCP module is deferred', params: [] },
+  { id: 'gcp-req-matrix', name: 'Requirement Cross Reference Matrix', description: 'Requirements mapped to the deliverables that satisfy them.', category: 'gcp', status: 'pending', pendingReason: 'GCP module is deferred', params: [] },
 ]

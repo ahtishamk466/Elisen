@@ -89,37 +89,45 @@ or Tailwind's default palette (CLAUDE.md rule 4).
 Family: `"Rethink Sans", Inter, system-ui, sans-serif`
 Weights in use: 400 (Regular), 500 (Medium), 600 (SemiBold), 700 (Bold)
 
+**Compact scale (2026-10-30).** About 12% under the source spec (shown in
+brackets) so a data screen fits without browser zoom. The user asked for it,
+and it overrides the source spec. See DECISIONS.md.
+
 | Level | Size | Line-height |
 |---|---|---|
-| xs | 12px | 16px |
-| sm | 14px | 20px |
-| base | 16px | 24px |
-| lg | 18px | 26px |
-| xl | 20px | 28px |
-| 2xl | 24px | 32px |
-| 3xl | 32px | 40px |
-| 4xl | 40px | 48px |
+| xs | 11px (12) | 16px (16) |
+| sm | 13px (14) | 18px (20) |
+| base | 14px (16) | 20px (24) |
+| lg | 16px (18) | 24px (26) |
+| xl | 18px (20) | 26px (28) |
+| 2xl | 22px (24) | 28px (32) |
+| 3xl | 28px (32) | 36px (40) |
+| 4xl | 36px (40) | 44px (48) |
 
 Note: source spec showed 3xl/Bold at 30px/40px — treated as a typo,
 normalized to 32px across all weights at that level.
 
 ### Spacing
 
-Base unit: 4px grid.
+Base unit: 2px grid. Compact, 2026-10-30; the source spec's 4px-grid values
+are in brackets.
 
 | Token | Value |
 |---|---|
-| xxss | 2px |
-| xs | 4px |
-| sm | 8px |
-| base | 12px |
-| lg | 16px |
-| xl | 20px |
-| 2xl | 24px |
-| 3xl | 32px |
-| 4xl | 40px |
-| 5xl | 48px |
-| 6xl | 60px |
+| xxss | 2px (2) |
+| xs | 4px (4) |
+| sm | 8px (8) |
+| base | 10px (12) |
+| lg | 14px (16) |
+| xl | 18px (20) |
+| 2xl | 20px (24) |
+| 3xl | 28px (32) |
+| 4xl | 36px (40) |
+| 5xl | 42px (48) |
+| 6xl | 52px (60) |
+
+Control heights follow the same pass: 32px in toolbar rows (was 36px), 40px
+for stacked form fields (was 44px). See COMPONENTS.md → Control heights.
 
 ### Stat pair (label + value)
 
@@ -129,8 +137,8 @@ hand-roll it:**
 
 | Part | Size | Weight | Colour |
 |---|---|---|---|
-| Label | 12px (`text-xs`) | Regular (400) | Neutral 500 (`text-text-muted`) |
-| Value | 14px (`text-sm`) | SemiBold (600) | Neutral 950 (`text-text-primary`) |
+| Label | 11px (`text-xs`) | Regular (400) | Neutral 500 (`text-text-muted`) |
+| Value | 13px (`text-sm`) | SemiBold (600) | Neutral 950 (`text-text-primary`) |
 
 Spacing between them: **2px** (`mt-xxss`).
 

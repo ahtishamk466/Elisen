@@ -94,40 +94,43 @@
   /* Typography */
   --font-family-sans: "Rethink Sans", Inter, system-ui, sans-serif;
 
-  --font-size-xs: 12px;
+  /* Compact scale, 2026-10-30: about 12% under the original source spec
+     (12/14/16/18/20/24/32/40) so a data screen fits without browser zoom.
+     See docs/DECISIONS.md. */
+  --font-size-xs: 11px;
   --line-height-xs: 16px;
-  --font-size-sm: 14px;
-  --line-height-sm: 20px;
-  --font-size-base: 16px;
-  --line-height-base: 24px;
-  --font-size-lg: 18px;
-  --line-height-lg: 26px;
-  --font-size-xl: 20px;
-  --line-height-xl: 28px;
-  --font-size-2xl: 24px;
-  --line-height-2xl: 32px;
-  --font-size-3xl: 32px;
-  --line-height-3xl: 40px;
-  --font-size-4xl: 40px;
-  --line-height-4xl: 48px;
+  --font-size-sm: 13px;
+  --line-height-sm: 18px;
+  --font-size-base: 14px;
+  --line-height-base: 20px;
+  --font-size-lg: 16px;
+  --line-height-lg: 24px;
+  --font-size-xl: 18px;
+  --line-height-xl: 26px;
+  --font-size-2xl: 22px;
+  --line-height-2xl: 28px;
+  --font-size-3xl: 28px;
+  --line-height-3xl: 36px;
+  --font-size-4xl: 36px;
+  --line-height-4xl: 44px;
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* Spacing (4px grid) */
+  /* Spacing (2px grid, compact 2026-10-30 — was 2/4/8/12/16/20/24/32/40/48/60) */
   --spacing-xxss: 2px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
-  --spacing-base: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 20px;
-  --spacing-2xl: 24px;
-  --spacing-3xl: 32px;
-  --spacing-4xl: 40px;
-  --spacing-5xl: 48px;
-  --spacing-6xl: 60px;
+  --spacing-base: 10px;
+  --spacing-lg: 14px;
+  --spacing-xl: 18px;
+  --spacing-2xl: 20px;
+  --spacing-3xl: 28px;
+  --spacing-4xl: 36px;
+  --spacing-5xl: 42px;
+  --spacing-6xl: 52px;
 
   /* Shape — 8px is the standard corner radius for rectangular surfaces
      (buttons, cards, tables, inputs, dialogs). Superseded 4px on 2026-08-07 —
