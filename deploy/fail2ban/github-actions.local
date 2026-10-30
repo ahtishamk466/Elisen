@@ -1,0 +1,8 @@
+# /etc/fail2ban/jail.d/github-actions.local
+#
+# Never ban GitHub Actions runners in the sshd jail: deploy.yml rsyncs to this
+# server from them, and their shared Azure IPs are often already banned for
+# someone else's scanning (2026-10-30 deploy failure). SSH here is key-only,
+# so exempting these ranges does not open password guessing.
+[sshd]
+ignorecommand = /usr/local/sbin/f2b-is-github-actions <ip>

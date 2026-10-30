@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { layoutRect } from '@/components/ui/usePanelPosition'
 
 export interface DropdownPosition {
   left: number
@@ -37,19 +38,20 @@ export function useDropdown<Trigger extends HTMLElement>(menuWidth: number) {
     const MIN_HEIGHT = 180
 
     const place = () => {
-      const r = triggerRef.current?.getBoundingClientRect()
-      if (!r) return
-      const below = window.innerHeight - r.bottom - GAP - MARGIN
+      if (!triggerRef.current) return
+      // Page CSS px, not screen px — the app is zoomed (see layoutRect).
+      const r = layoutRect(triggerRef.current)
+      const below = r.viewportHeight - r.bottom - GAP - MARGIN
       const above = r.top - GAP - MARGIN
       const openUp = below < MIN_HEIGHT && above > below
       setPosition({
         // Anchoring upward by `bottom` needs no height measurement, so a tall
         // menu can't first render off-screen and then jump.
         ...(openUp
-          ? { bottom: Math.max(MARGIN, window.innerHeight - r.top + GAP) }
+          ? { bottom: Math.max(MARGIN, r.viewportHeight - r.top + GAP) }
           : { top: r.bottom + GAP }),
         // Right-aligned to the trigger, then clamped inside the viewport.
-        left: Math.max(MARGIN, Math.min(r.right - menuWidth, window.innerWidth - menuWidth - MARGIN)),
+        left: Math.max(MARGIN, Math.min(r.right - menuWidth, r.viewportWidth - menuWidth - MARGIN)),
         maxHeight: Math.max(MIN_HEIGHT, openUp ? above : below),
       })
     }

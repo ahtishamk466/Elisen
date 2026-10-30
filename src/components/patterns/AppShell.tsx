@@ -140,7 +140,7 @@ export function AppShell({ activeItem = 'Projects', activeChild = 'Projects List
        scrolls itself, so the sidebar and the page heading stay put and only
        the content below them moves. Scrolling the whole document instead used
        to carry the nav and the title off the top of the screen. */
-    <div className="flex h-screen overflow-hidden bg-neutral-50">
+    <div className="flex h-viewport overflow-hidden bg-neutral-50">
       {/* Full height of that frame, with the nav list scrolling internally, so
           the profile footer stays above the fold at any scroll position.
 

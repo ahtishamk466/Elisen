@@ -5,9 +5,9 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   leadingIcon?: ReactNode
   trailingIcon?: ReactNode
   /**
-   * `md` (40px) is the form default. `sm` (32px) is for toolbar rows — page
+   * `md` (44px) is the form default. `sm` (36px) is for toolbar rows — page
    * headers and inline "field + button" pairs — where the field must sit level
-   * with a default Button, which is 32px.
+   * with a default Button, which is 36px.
    */
   size?: 'sm' | 'md'
 }
@@ -18,7 +18,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 ) {
   return (
     <div
-      className={`flex ${size === 'sm' ? 'h-8' : 'h-10'} items-center gap-sm rounded-sm border bg-neutral-25 px-base shadow-textfield transition-colors duration-fast
+      className={`flex ${size === 'sm' ? 'h-9' : 'h-11'} items-center gap-sm rounded-sm border bg-neutral-25 px-base shadow-textfield transition-colors duration-fast
         ${error ? 'border-danger' : 'border-border-default focus-within:border-text-primary'}
         ${disabled ? 'opacity-40' : ''} ${className}`}
     >

@@ -17,7 +17,7 @@ export interface MultiSelectProps {
   showChips?: boolean
   disabled?: boolean
   error?: boolean
-  /** `sm` (32px) for toolbar rows; `md` (40px) for form fields. */
+  /** `sm` (36px) for toolbar rows; `md` (44px) for form fields. */
   size?: 'sm' | 'md'
   /** Lists at or under this length skip the search box — a search field over
       four options is noise. Above it, typing is the only sane way through. */
@@ -158,7 +158,7 @@ export function MultiSelect({
         aria-controls={`${id}-listbox`}
         aria-invalid={error || undefined}
         onClick={() => setOpen((v) => !v)}
-        className={`flex ${size === 'sm' ? 'h-8' : 'h-10'} w-full items-center gap-sm rounded-sm border bg-neutral-25 px-base text-left text-sm shadow-textfield transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-text-primary
+        className={`flex ${size === 'sm' ? 'h-9' : 'h-11'} w-full items-center gap-sm rounded-sm border bg-neutral-25 px-base text-left text-sm shadow-textfield transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-text-primary
           ${error ? 'border-danger' : 'border-border-default hover:border-text-primary'}
           ${disabled ? 'cursor-not-allowed opacity-40' : ''}`}
       >

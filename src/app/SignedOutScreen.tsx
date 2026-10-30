@@ -9,7 +9,7 @@ export function SignedOutScreen() {
   const signIn = useSessionStore((s) => s.signIn)
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-50 px-lg">
+    <main className="flex min-h-viewport items-center justify-center bg-neutral-50 px-lg">
       <div className="w-full rounded-sm border border-border-default bg-neutral-25 p-2xl text-center" style={{ maxWidth: 420 }}>
         <img src="/logo-elisen.svg" alt="Elisen" width={600} height={104} className="mx-auto h-6 w-auto" />
         <span aria-hidden className="mt-2xl inline-flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-text-muted">

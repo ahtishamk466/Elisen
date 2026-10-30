@@ -89,45 +89,37 @@ or Tailwind's default palette (CLAUDE.md rule 4).
 Family: `"Rethink Sans", Inter, system-ui, sans-serif`
 Weights in use: 400 (Regular), 500 (Medium), 600 (SemiBold), 700 (Bold)
 
-**Compact scale (2026-10-30).** About 12% under the source spec (shown in
-brackets) so a data screen fits without browser zoom. The user asked for it,
-and it overrides the source spec. See DECISIONS.md.
-
 | Level | Size | Line-height |
 |---|---|---|
-| xs | 11px (12) | 16px (16) |
-| sm | 13px (14) | 18px (20) |
-| base | 14px (16) | 20px (24) |
-| lg | 16px (18) | 24px (26) |
-| xl | 18px (20) | 26px (28) |
-| 2xl | 22px (24) | 28px (32) |
-| 3xl | 28px (32) | 36px (40) |
-| 4xl | 36px (40) | 44px (48) |
+| xs | 12px | 16px |
+| sm | 14px | 20px |
+| base | 16px | 24px |
+| lg | 18px | 26px |
+| xl | 20px | 28px |
+| 2xl | 24px | 32px |
+| 3xl | 32px | 40px |
+| 4xl | 40px | 48px |
 
 Note: source spec showed 3xl/Bold at 30px/40px — treated as a typo,
 normalized to 32px across all weights at that level.
 
 ### Spacing
 
-Base unit: 2px grid. Compact, 2026-10-30; the source spec's 4px-grid values
-are in brackets.
+Base unit: 4px grid.
 
 | Token | Value |
 |---|---|
-| xxss | 2px (2) |
-| xs | 4px (4) |
-| sm | 8px (8) |
-| base | 10px (12) |
-| lg | 14px (16) |
-| xl | 18px (20) |
-| 2xl | 20px (24) |
-| 3xl | 28px (32) |
-| 4xl | 36px (40) |
-| 5xl | 42px (48) |
-| 6xl | 52px (60) |
-
-Control heights follow the same pass: 32px in toolbar rows (was 36px), 40px
-for stacked form fields (was 44px). See COMPONENTS.md → Control heights.
+| xxss | 2px |
+| xs | 4px |
+| sm | 8px |
+| base | 12px |
+| lg | 16px |
+| xl | 20px |
+| 2xl | 24px |
+| 3xl | 32px |
+| 4xl | 40px |
+| 5xl | 48px |
+| 6xl | 60px |
 
 ### Stat pair (label + value)
 
@@ -137,8 +129,8 @@ hand-roll it:**
 
 | Part | Size | Weight | Colour |
 |---|---|---|---|
-| Label | 11px (`text-xs`) | Regular (400) | Neutral 500 (`text-text-muted`) |
-| Value | 13px (`text-sm`) | SemiBold (600) | Neutral 950 (`text-text-primary`) |
+| Label | 12px (`text-xs`) | Regular (400) | Neutral 500 (`text-text-muted`) |
+| Value | 14px (`text-sm`) | SemiBold (600) | Neutral 950 (`text-text-primary`) |
 
 Spacing between them: **2px** (`mt-xxss`).
 
@@ -180,6 +172,25 @@ Border widths: `default: 1px` · `strong: 2px`
 
 Durations: `fast: 150ms` · `base: 250ms` · `slow: 400ms`
 Easing: `standard: cubic-bezier(0.4, 0, 0.2, 1)` · `enter: cubic-bezier(0, 0, 0.2, 1)` · `exit: cubic-bezier(0.4, 0, 1, 1)`
+
+### UI scale
+
+`--ui-scale: 0.8`. The whole app renders at 80% of every size on this page, like
+browser zoom set to 80%, so a data screen fits a 1440×900 laptop. Text,
+spacing, control heights, px column widths and icons all shrink together. User
+request, 2026-10-30. It replaced the same day's token-by-token "compact" pass,
+which shrank text and spacing but left px widths and the sidebar full-size.
+
+- **Design at 100%.** Every token and spec on this page is the unscaled value.
+  Never pre-shrink a size to make room; change `--ui-scale` instead.
+- **Applied once**, as `zoom` on `<html>` (`globals.css`).
+- **Full window height** is `h-viewport` / `min-h-viewport`, never
+  `h-screen`. Under zoom, `100vh` is measured before the scale shrinks it, so
+  `h-screen` leaves a blank band at the bottom.
+- **Screen coordinates.** Code that turns screen coordinates
+  (`getBoundingClientRect`, `window.inner*`) into CSS px goes through
+  `layoutRect()` in `ui/usePanelPosition.ts`. That measures the screen ÷ layout
+  ratio, so portalled panels line up with their triggers in any browser.
 
 ### Breakpoints
 

@@ -9,7 +9,7 @@ Updated as components are added or changed.
 | Component | Variants | Location | Purpose |
 |-----------|----------|----------|---------|
 | Button | primary / secondary / tertiary / danger × sm, md, lg, xl × default, hover, focus, active, loading, disabled | `ui/Button.tsx` | All actions; icon slots either side |
-| Input | default, focused, typed, error, disabled; optional leading/trailing icons × `sm` (32px) / `md` (40px, default) | `ui/Input.tsx` | Single-line text, number and date entry. `size="sm"` for any field sitting in a **toolbar row** beside a button; `md` for stacked form fields — see "Control heights" below |
+| Input | default, focused, typed, error, disabled; optional leading/trailing icons × `sm` (36px) / `md` (44px, default) | `ui/Input.tsx` | Single-line text, number and date entry. `size="sm"` for any field sitting in a **toolbar row** beside a button; `md` for stacked form fields — see "Control heights" below |
 | Textarea | default, error, disabled | `ui/Textarea.tsx` | Multi-line text (descriptions, comments) |
 | RichTextEditor | `toolbar="full"` / `"compact"` × default, focused, error, disabled | `ui/RichTextEditor.tsx` | Formatted HTML text — DDS Text and Regulation Requirement Text in `FlowStepPlan`, the two legacy fields stored as rich HTML rather than plain text. Built on Tiptap (`@tiptap/react` + `starter-kit`, `underline`, `subscript`, `superscript`, `link`, `image`, `extension-table`, `placeholder`). `full` covers every mark plus lists/indent/table/image (legacy DDS Text toolbar); `compact` is marks + link + image only (legacy Requirement Text toolbar, a lighter editor for a mostly-pasted citation). Deliberately omits the legacy editor's cut/copy/paste, fullscreen and Source-view icons — the browser's own clipboard and zoom already do that job, and a decorative button that doesn't do anything is worse than no button. Rendered HTML uses the `.rte-content` styles in `styles/globals.css` (no Tailwind typography plugin in this project) |
 | Select | default, error, disabled, placeholder × `sm` / `md`; controlled or `defaultValue` | `ui/Select.tsx` | Single-choice from a known list. **A thin adapter over `SearchableSelect`** — it keeps the old `<Select><option/></Select>` API so all ~60 existing call sites get the standardized dropdown (radio markers, portal rendering, keyboard support, search once the list is long) without being rewritten. `onChange` stays event-shaped (`e.target.value`). For new code prefer `SearchableSelect` (options array) or `MultiSelect` |
@@ -291,7 +291,7 @@ modules **"List, CRUD"**:
 
 - **The workspace creates, edits and deletes.** `ApprovalsPage`,
   `DocumentsPage`, Reference Data → Aircraft.
-- **A project only links.** An inline link row — a 32px `SearchableSelect`
+- **A project only links.** An inline link row — a 36px `SearchableSelect`
   listing the whole pool with already-linked entries `disabled` +
   `disabledReason`, and a **Link to project** button. No create path, no editing
   of the record's own identity. Plus a `Manage in …` button to the workspace,
@@ -520,18 +520,19 @@ Regression guard: `Patterns/Overview` → **DropdownLayering** opens a
 `SearchableSelect`, a `MultiSelect` and a `PhoneInput` inside a `Drawer`. If any
 panel is invisible there, the scale has regressed.
 
-### Control heights — 32px in a row, 40px stacked
+### Control heights — 36px in a row, 44px stacked
 
 Two heights, and which one you use is decided by the *layout*, not the control:
 
-Compact pass, 2026-10-30: these were 36px and 44px (see DECISIONS.md).
+Heights are design values. On screen the app renders at `--ui-scale` (80%, see
+DESIGN.md → UI scale), so these show as about 29px and 35px.
 
-- **32px (`size="sm"` on fields, default `md` on Button)** — anything in a
+- **36px (`size="sm"` on fields, default `md` on Button)** — anything in a
   horizontal row with a button: page-header search, the Filters trigger, the
   Export menu, the primary CTA, and inline "pick a record → Attach" rows.
-  Buttons are 32px at their default size, so a 40px field beside one sits 4px
+  Buttons are 36px at their default size, so a 44px field beside one sits 4px
   proud top and bottom, which reads as a rendering bug rather than a choice.
-- **40px (`size="md"`, the default)** — stacked form fields inside a form,
+- **44px (`size="md"`, the default)** — stacked form fields inside a form,
   drawer or filter panel. Nothing sits beside them to disagree with, and the
   extra height is the comfortable target for typing.
 

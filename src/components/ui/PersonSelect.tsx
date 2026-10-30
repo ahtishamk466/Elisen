@@ -10,7 +10,7 @@ export interface PersonSelectProps {
   emptyLabel?: string
   error?: boolean
   disabled?: boolean
-  /** `sm` (32px) in toolbar rows and filter panels; `md` (40px) in forms. */
+  /** `sm` (36px) in toolbar rows and filter panels; `md` (44px) in forms. */
   size?: 'sm' | 'md'
   ariaLabel?: string
 }

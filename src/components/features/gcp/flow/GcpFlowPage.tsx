@@ -281,7 +281,7 @@ export function GcpFlowPage() {
                       box: a single bordered strip with the dropdown as its
                       `bare` middle segment, divided into its three chunks by
                       the segment borders rather than gaps between controls. */}
-                  <div className="flex h-8 items-center overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+                  <div className="flex h-9 items-center overflow-hidden rounded-sm border border-border-default bg-neutral-25">
                     <Button
                       variant="tertiary"
                       size="sm"

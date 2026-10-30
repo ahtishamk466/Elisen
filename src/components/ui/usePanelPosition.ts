@@ -19,6 +19,27 @@ const MIN_HEIGHT = 160
 const MAX_HEIGHT = 320
 
 /**
+ * An element's box and the viewport in the page's own CSS px. The app renders
+ * zoomed (`--ui-scale`, globals.css): `getBoundingClientRect` and
+ * `window.inner*` report screen px, but a `position: fixed` panel is laid out
+ * in zoomed CSS px. The ratio is measured (screen width ÷ layout width) rather
+ * than read off the zoom, so it holds in browsers that report either way.
+ */
+export function layoutRect(el: HTMLElement) {
+  const b = el.getBoundingClientRect()
+  const s = el.offsetWidth ? b.width / el.offsetWidth : 1
+  return {
+    top: b.top / s,
+    bottom: b.bottom / s,
+    left: b.left / s,
+    right: b.right / s,
+    width: b.width / s,
+    viewportWidth: window.innerWidth / s,
+    viewportHeight: window.innerHeight / s,
+  }
+}
+
+/**
  * Places a portalled dropdown panel against its trigger, **inside the
  * viewport**.
  *
@@ -46,11 +67,11 @@ export function usePanelPosition(
       return
     }
     const place = () => {
-      const r = triggerRef.current?.getBoundingClientRect()
-      if (!r) return
+      if (!triggerRef.current) return
+      const r = layoutRect(triggerRef.current)
 
       const width = Math.max(r.width, minWidth)
-      const spaceBelow = window.innerHeight - r.bottom - GAP - MARGIN
+      const spaceBelow = r.viewportHeight - r.bottom - GAP - MARGIN
       const spaceAbove = r.top - GAP - MARGIN
       const openUp = spaceBelow < MIN_HEIGHT && spaceAbove > spaceBelow
       const available = openUp ? spaceAbove : spaceBelow
@@ -59,9 +80,9 @@ export function usePanelPosition(
         // Anchoring upward by `bottom` means the panel's height never has to be
         // measured first, so it can't flicker into place.
         ...(openUp
-          ? { bottom: Math.max(MARGIN, window.innerHeight - r.top + GAP) }
+          ? { bottom: Math.max(MARGIN, r.viewportHeight - r.top + GAP) }
           : { top: r.bottom + GAP }),
-        left: Math.max(MARGIN, Math.min(r.left, window.innerWidth - width - MARGIN)),
+        left: Math.max(MARGIN, Math.min(r.left, r.viewportWidth - width - MARGIN)),
         width,
         maxHeight: Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, available)),
       })

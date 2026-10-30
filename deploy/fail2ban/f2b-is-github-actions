@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+"""fail2ban `ignorecommand` for the sshd jail.
+
+Exits 0 (fail2ban then never bans the IP) when the IP is inside GitHub
+Actions' published ranges, 1 otherwise. `deploy.yml` rsyncs to this server
+from GitHub-hosted runners, whose shared Azure IPs are often already banned
+for someone else's scanning. Ranges are kept in RANGES by
+f2b-github-actions-refresh.
+"""
+import ipaddress
+import sys
+
+RANGES = '/etc/fail2ban/github-actions-ranges.txt'
+
+try:
+    ip = ipaddress.ip_address(sys.argv[1])
+    with open(RANGES) as f:
+        nets = (ipaddress.ip_network(line.strip()) for line in f if line.strip())
+        sys.exit(0 if any(ip in n for n in nets if n.version == ip.version) else 1)
+except (IndexError, ValueError, OSError):
+    sys.exit(1)

@@ -7529,3 +7529,61 @@ field (form standard 9c). Still unexplained, because Harris didn't explain
 them: Delegation's "Limitation" and the Regulation Checklist screen. These
 are open client questions. FOC's "Default" was worked out from the data (see
 the GCP Data drawer entry above).
+
+## 2026-10-30 — 80% UI scale via one `zoom`, replacing the token compact pass
+**Context:** After the ~12% token compact pass (entry above) shipped, the user
+said the page was "still very zoomed in" on their 1440×900 MacBook Air. They
+asked for it to look like browser zoom at 80%. The token pass only shrank
+text, spacing and control heights. About 340 rem-based utility classes (the
+256px sidebar, icon boxes) and about 140 px widths set inline (table columns)
+stayed full-size, so it could never feel like browser zoom.
+**Choice:**
+- **The compact pass is reverted.** Tokens and control heights are back to
+  DESIGN.md's spec values.
+- **Added `--ui-scale: 0.8`, applied once as `zoom` on `<html>`.**
+- **Two fixes the browser showed were needed under zoom:**
+  - `h-screen` filled only 80% of the window (720 of 900px). New
+    `h-viewport` / `min-h-viewport` utilities divide `100vh` by the scale.
+    They're used in AppShell and SignedOutScreen, the only two users.
+  - Portalled panels would open at 80% of the right position, because
+    `getBoundingClientRect` reports screen px but the panel is laid out in
+    zoomed CSS px. The new `layoutRect()` in `ui/usePanelPosition.ts`
+    measures the screen ÷ layout ratio instead of assuming the zoom.
+    `usePanelPosition` and `useDropdown`, the only two coordinate users,
+    go through it.
+- **Verified at 1440×900 in Chromium:**
+  - the shell fills the full 900px
+  - drawers cover the window edge to edge
+  - a SearchableSelect and a row ActionsMenu open 3px under their triggers,
+    edges aligned
+  - GCP Projects shows 14 rows, up from about 10
+- **Not verified in Safari.**
+**Rationale:**
+- It's the one mechanism that scales all three ways sizes are written:
+  px tokens, rem utilities and inline px.
+- It matches what the user asked for, browser zoom at 80%.
+- DESIGN.md stays the 100% source of truth; the density is one number.
+- Storybook imports `globals.css`, so stories also render at 80%.
+
+## 2026-10-30 — fail2ban never bans GitHub Actions runners
+**Context:** The deploy of `d1b1250` failed: rsync from the GitHub runner got
+`ssh: connect to host 154.53.38.1 port 22: Connection timed out`. Six of
+fail2ban's 157 sshd bans fell inside GitHub Actions' published ranges.
+Runners use shared Azure IPs that other people use for scanning. The jail's
+`ignoreip` already exempted 13/8, 20/8, 40/8, 52/8 and 104/8, but not the
+4.x, 74.x and 172.x ranges GitHub also uses. The six were unbanned by hand
+and the re-run deployed.
+**Choice:** `deploy/fail2ban/`:
+- An `ignorecommand` (`f2b-is-github-actions`) exempts any IP inside the
+  current ranges from `api.github.com/meta`.
+- A daily cron (`f2b-github-actions-refresh`) refreshes the ranges and lifts
+  any bans inside them.
+- `install.sh` puts both on the server. Documented in DEPLOY.md
+  → Troubleshooting.
+**Rationale:**
+- It tracks GitHub's own list rather than hand-picked /8s, which went stale.
+- SSH on the server is key-only (`PasswordAuthentication no`,
+  `KbdInteractiveAuthentication no`), so exempting these ranges doesn't open
+  password guessing.
+- The install was left to the user. Claude Code's auto mode classes it as
+  weakening a security control.

@@ -44,6 +44,21 @@ rsync -az --delete -e "ssh -i ~/.ssh/id_rsa" dist/ aqeel@154.53.38.1:/var/www/tp
 
 ## Troubleshooting
 
+### Deploy fails with `ssh: connect to host 154.53.38.1 port 22: Connection timed out`
+fail2ban dropped the GitHub runner's IP. Runners use shared Azure IPs that are
+often banned for someone else's scanning (2026-10-30: 6 of 157 bans were
+inside GitHub Actions' ranges). The fix lives in [`deploy/fail2ban/`](../deploy/fail2ban/):
+
+- `f2b-is-github-actions` is the sshd jail's `ignorecommand`, so fail2ban never
+  bans an IP inside GitHub Actions' published ranges.
+- `f2b-github-actions-refresh` reloads those ranges from `api.github.com/meta`
+  daily (`/etc/cron.d/f2b-github-actions`) and lifts any bans inside them.
+- Install or re-install from the repo root: `sh deploy/fail2ban/install.sh "/path/to/id_rsa"`.
+  Then re-run the failed job in GitHub Actions.
+
+SSH on the server is key-only (`PasswordAuthentication no`), so the
+exemption doesn't open password guessing.
+
 ### Deploy fails with `Connection closed` / rsync 255
 Usually SSH never authenticated within `LoginGraceTime` (~120s):
 

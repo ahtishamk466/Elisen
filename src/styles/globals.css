@@ -2,7 +2,24 @@
 @config "../../tailwind.config.ts";
 @import "./tokens.css";
 
+/* Full window height under the --ui-scale zoom. `100vh` is measured before
+   the zoom shrinks it, so `h-screen` would leave a blank band at the bottom. */
+@utility h-viewport {
+  height: calc(100vh / var(--ui-scale));
+}
+@utility min-h-viewport {
+  min-height: calc(100vh / var(--ui-scale));
+}
+
 @layer base {
+  /* The whole app renders at --ui-scale (tokens.css), like browser zoom:
+     text, spacing, controls, px column widths and icons shrink together.
+     Code that turns screen coordinates into CSS px divides by it
+     (`uiScale()` in ui/usePanelPosition.ts). */
+  html {
+    zoom: var(--ui-scale);
+  }
+
   body {
     background-color: var(--color-neutral-50);
     color: var(--color-text-primary);

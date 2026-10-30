@@ -25,10 +25,10 @@ export const AllStates: Story = {
 
 /**
  * Two heights, and the choice is not cosmetic:
- * - `sm` (32px) for anything sitting in a **toolbar row** next to a button —
- *   page-header search, an inline "field + Attach" row. Buttons are 32px, so
- *   a 40px field beside one reads as a misalignment bug.
- * - `md` (40px, default) for **stacked form fields** inside a form or drawer,
+ * - `sm` (36px) for anything sitting in a **toolbar row** next to a button —
+ *   page-header search, an inline "field + Attach" row. Buttons are 36px, so
+ *   a 44px field beside one reads as a misalignment bug.
+ * - `md` (44px, default) for **stacked form fields** inside a form or drawer,
  *   where the extra height is the comfortable tap target and nothing sits
  *   beside it to disagree with.
  */
@@ -36,7 +36,7 @@ export const Sizes: Story = {
   render: () => (
     <div className="grid gap-2xl p-lg">
       <div className="grid gap-sm">
-        <p className="text-xs font-semibold text-text-secondary">sm, 32px, matches a button in a toolbar row</p>
+        <p className="text-xs font-semibold text-text-secondary">sm, 36px, matches a button in a toolbar row</p>
         <div className="flex items-center gap-sm">
           <div className="min-w-0 flex-1">
             <label htmlFor="in-sm" className="sr-only">Search</label>
@@ -46,7 +46,7 @@ export const Sizes: Story = {
         </div>
       </div>
       <div className="grid gap-sm">
-        <p className="text-xs font-semibold text-text-secondary">md, 40px, default, for stacked form fields</p>
+        <p className="text-xs font-semibold text-text-secondary">md, 44px, default, for stacked form fields</p>
         <label htmlFor="in-md" className="text-sm font-semibold text-text-primary">Model No</label>
         <Input id="in-md" placeholder="e.g. RV-14A" />
       </div>

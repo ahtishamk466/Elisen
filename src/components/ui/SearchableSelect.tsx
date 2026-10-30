@@ -24,7 +24,7 @@ export interface SearchableSelectProps {
   emptyLabel?: string
   disabled?: boolean
   error?: boolean
-  /** `sm` (32px) for toolbar rows; `md` (40px) for form fields. */
+  /** `sm` (36px) for toolbar rows; `md` (44px) for form fields. */
   size?: 'sm' | 'md'
   /**
    * `field` — a standalone form control, with its own border and height.
@@ -144,7 +144,7 @@ export function SearchableSelect({
         className={`flex w-full items-center gap-sm px-base text-left text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-text-primary
           ${variant === 'bare'
             ? 'h-full bg-transparent'
-            : `${size === 'sm' ? 'h-8' : 'h-10'} rounded-sm border bg-neutral-25 shadow-textfield ${error ? 'border-danger' : 'border-border-default hover:border-text-primary'}`}
+            : `${size === 'sm' ? 'h-9' : 'h-11'} rounded-sm border bg-neutral-25 shadow-textfield ${error ? 'border-danger' : 'border-border-default hover:border-text-primary'}`}
           ${disabled ? 'cursor-not-allowed opacity-40' : ''}`}
       >
         <span className={`min-w-0 flex-1 truncate ${selected ? 'text-text-primary' : 'text-text-muted'}`}>

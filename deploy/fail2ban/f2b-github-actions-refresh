@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+"""Refresh GitHub Actions' IP ranges for fail2ban, then lift any current sshd
+bans inside them. Runs daily from /etc/cron.d/f2b-github-actions, and once by
+hand at install time. See docs/DEPLOY.md.
+"""
+import ipaddress
+import json
+import os
+import subprocess
+import tempfile
+import urllib.request
+
+RANGES = '/etc/fail2ban/github-actions-ranges.txt'
+
+with urllib.request.urlopen('https://api.github.com/meta', timeout=30) as r:
+    cidrs = json.load(r)['actions']
+# A short or empty answer means the API misbehaved; keep the last good list.
+if len(cidrs) < 100:
+    raise SystemExit(f'refusing a suspiciously short range list ({len(cidrs)} entries)')
+nets = [ipaddress.ip_network(c) for c in cidrs]
+
+fd, tmp = tempfile.mkstemp(dir=os.path.dirname(RANGES))
+with os.fdopen(fd, 'w') as f:
+    f.write('\n'.join(cidrs) + '\n')
+os.chmod(tmp, 0o644)
+os.replace(tmp, RANGES)
+
+banned = subprocess.run(['fail2ban-client', 'get', 'sshd', 'banip'],
+                        capture_output=True, text=True).stdout.split()
+for entry in banned:
+    try:
+        ip = ipaddress.ip_address(entry)
+    except ValueError:
+        continue
+    if any(ip in n for n in nets if n.version == ip.version):
+        subprocess.run(['fail2ban-client', 'set', 'sshd', 'unbanip', entry], capture_output=True)
+        print('unbanned', entry)
