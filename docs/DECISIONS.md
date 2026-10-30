@@ -7587,3 +7587,31 @@ and the re-run deployed.
   password guessing.
 - The install was left to the user. Claude Code's auto mode classes it as
   weakening a security control.
+
+## 2026-10-30 — tpmsv2 gzips JSON as well as HTML/CSS/JS
+**Context:** On a slow route from the user's Mac to the Contabo server
+(~346 ms RTT, ~16 KB/s at times; the server itself was idle), the live page
+stayed blank for minutes. I first blamed the 10.4 MB `timesheet.json`. That
+was wrong: `loadCore()` never fetches it, and only the four timesheet screens
+call `useTimesheetStore().ensureLoaded()`. The real cost was in what blocks
+first render. That's the core JSON, which Apache sent uncompressed (the
+global `deflate.conf` has no `application/json`), and the 1.46 MB `App-*.js`
+bundle.
+**Choice:** The tpmsv2 `:443` vhost gets its own
+`AddOutputFilterByType DEFLATE` list: the global types plus
+`application/json` and `image/svg+xml`.
+- **A mistake on the way:** the first edit listed only JSON and SVG. A vhost
+  `AddOutputFilterByType` *replaces* the global list, so for about 20
+  minutes HTML, CSS and JS went out uncompressed. The App bundle then took
+  152 s in the browser. Fixed by repeating the global types in the vhost.
+- **Verified with browser `Accept-Encoding`:**
+  - App bundle: 1.46 MB → 357 KB
+  - CSS: 76 KB → 14 KB
+  - projects.json: 647 → 83 KB
+  - timesheet.json: 10.4 MB → 860 KB
+  - A cold first load is ~0.93 MB in total, about 5 MB before.
+- The live GCP page now shows its table in about 5 s on that route.
+- The legacy `tpms`/`dev` vhosts and the module setup are unchanged.
+**Rationale:** Text assets compress 4–12×. A per-site list keeps the change
+off the legacy sites. No code change was needed: the timesheet was already
+loaded only where it's used.

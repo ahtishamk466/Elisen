@@ -34,6 +34,7 @@ Never commit the private key.
 | Docroot | `/var/www/tpmsv2` |
 | Vhost | `/etc/apache2/sites-available/tpmsv2.conf` (+ Let’s Encrypt SSL) |
 | URL | https://tpmsv2.elisen.com |
+| Compression | The tpmsv2 `:443` vhost (`tpmsv2-le-ssl.conf`) has its own `AddOutputFilterByType DEFLATE` list: HTML, CSS, JS, XML, wasm, **JSON** and SVG. A vhost list *replaces* the global `deflate.conf` one rather than adding to it, so keep the global types in it when editing. App bundle 1.46 MB → 357 KB, timesheet.json 10.4 MB → 860 KB. Backups on the server: `tpmsv2-le-ssl.conf.bak-2026-10-30` (original) and `.bak-2026-10-30b`. |
 
 ## Manual one-shot deploy
 
