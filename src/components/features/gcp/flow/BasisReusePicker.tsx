@@ -56,7 +56,7 @@ export function BasisReusePicker({ initialBasisId, onDraft }: {
         </FormField>
       </div>
       {selected && (
-        <div className="rounded-sm border border-border-default bg-neutral-25 px-lg py-base">
+        <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
           <CertBasisSummary basis={selected} />
         </div>
       )}

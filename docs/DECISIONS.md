@@ -7925,3 +7925,52 @@ every other edit.
 - A dropped `.docx`: named error.
 - In the drawer: 1617_TIA went from 26 to 29 rules, with a toast.
 - No console errors.
+
+## 2026-10-30 — Certification Basis card header: tinted band, empty figures hidden
+**Context:** The user found the basis card hard to scan. The name, five
+figures and the rules table's header all sat on white or near-white, and two
+figures read "—" for nearly every legacy basis.
+**Choice:** The GCP Projects summary shape:
+- the header on white, with an icon tile and a `text-xl` name over its
+  description
+- the figures on an inset `bg-neutral-100` band
+- Basis on the TCDS and Source Document shown only when they have a value
+
+`CertBasisSummary` now does its own padding, so the page and step 2's reuse
+picker just give it a box.
+**Rationale:** Three blocks (who, figures, rules), each with its own
+background, read faster than one flat sheet. It reuses a header the client
+already sees on every GCP project, so nothing new to learn.
+
+## 2026-10-30 — Rules are added one exact rule at a time
+**Context:** The user found Regulation Section and Regulation Amendment hard
+to use. With the real data they offered 2,737 sections and 233 amendments,
+and they attached every chosen section at every chosen amendment. On
+A4N_23-14 (402 rules) the drawer read "Attaches 520 regulations", so any
+change to either picker would have added 118 wrong rules. Two options were
+mocked up with real rules:
+- **A:** Section, then Amendment, then Add
+- **B:** one search over every rule, as in the legacy Bulk Create
+
+The user asked for a recommendation; A was built.
+**Choice:**
+- `RulePicker` is used by the Certification Basis drawer and by step 2's
+  Pick by hand.
+- Section is searchable by number or title. Amendment lists only that
+  section's versions; ones already in the basis or on the list are greyed
+  out with the reason.
+- Add Rule puts exactly that rule on the list, which has Remove buttons.
+- A second version of a section is allowed but called out first.
+- In the drawer:
+  - on Edit, rules are added only, as in the legacy Bulk Create; removing
+    stays on the rules table
+  - Regulations now sits above Source Document (user request)
+**Rationale:** It keeps the client's two separate fields (2026-09-24) and
+makes wrong combinations impossible. The amendment-level builder and the
+Import remain the bulk routes. The drawer dropped from 203 to 134 lines.
+Verified at 1440×900:
+- typing 23.1309 narrows to it
+- 23-14 shows as already in the basis
+- adding 23-34 warns first, then saves 403 rules (not 520), and the card
+  flags 23.1309 as a duplicate
+- step 2's Continue waits for a rule

@@ -96,7 +96,7 @@ export function GcpCertBasesPage() {
 
           {selected ? (
             <section aria-label={`Certification basis ${selected.aircraftModel}`} className="flex min-h-0 flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-              <div className="shrink-0 px-lg py-lg">
+              <div className="shrink-0">
                 <CertBasisSummary basis={selected} onKeepLatest={() => setTrimming(selected)} actions={
                   <>
                     <Button variant="secondary" size="sm" leadingIcon={<Pencil size={14} />}

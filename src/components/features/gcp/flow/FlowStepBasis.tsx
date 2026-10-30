@@ -87,7 +87,7 @@ export function FlowStepBasis({ project, onBack, onNext }: { project: TccaProjec
 
       {mode === 'level' && <BasisLevelBuilder projectNumber={project.number} existing={owned} onDraft={setDraft} />}
       {mode === 'reuse' && <BasisReusePicker initialBasisId={shared ? existing?.id : undefined} onDraft={setDraft} />}
-      {mode === 'hand' && <BasisHandPicker projectNumber={project.number} existing={owned} onDraft={setDraft} />}
+      {mode === 'hand' && <BasisHandPicker existing={owned} onDraft={setDraft} />}
 
       <div className="flex items-center justify-between">
         <Button variant="secondary" leadingIcon={<ArrowLeft size={16} />} onClick={onBack}>Back</Button>

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { Drawer } from '@/components/patterns/Drawer'
 import { FileDropzone } from '@/components/patterns/FileDropzone'
@@ -8,10 +8,9 @@ import { FormField } from '@/components/patterns/FormField'
 import { UrlField } from '@/components/patterns/UrlField'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { MultiSelect } from '@/components/ui/MultiSelect'
-import { useGcpStore } from '@/stores/gcpStore'
 import { checkPdf, formatBytes, PDF_MAX_BYTES } from '@/lib/pdfCheck'
 import type { CertBasis } from '@/types/gcp'
+import { RulePicker } from './RulePicker'
 
 export interface CertBasisDrawerProps {
   mode: 'create' | 'edit'
@@ -22,15 +21,12 @@ export interface CertBasisDrawerProps {
 
 /** A basis's own identity: the aircraft model and, for one read straight off
     a type certificate, its TCDS number — blank for a project-specific basis,
-    which has none. Regulation Section and Regulation Amdt attach its rule
-    set directly here — the same cascading `MultiSelect` pair and "both
-    fields pick a real regulation" rule as GCP Projects' own Certification
-    Basis step (client instruction, 2026-09-24: this drawer had no way to
-    attach a regulation at all before, only Import or that step). Import
-    stays for building a basis from an FAA/TCCA export in one pass. */
+    which has none. Its rules are added here one exact rule at a time
+    (`RulePicker`): on create they are the basis's rules; on edit they are
+    added to it, and removing one stays on the page's rules table, as in the
+    legacy Bulk Create. Import stays for adding a whole export in one pass. */
 export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisDrawerProps) {
   const isEdit = mode === 'edit'
-  const regulations = useGcpStore((s) => s.regulations)
   const [aircraftModel, setAircraftModel] = useState(initial?.aircraftModel ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [tcdsNumber, setTcdsNumber] = useState(initial?.tcdsNumber ?? '')
@@ -58,51 +54,7 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
     else setFile(f)
   }
 
-  const existingRegs = useMemo(
-    () => (initial?.regulationIds ?? []).map((id) => regulations.find((r) => r.id === id)).filter((r): r is NonNullable<typeof r> => !!r),
-    [initial, regulations],
-  )
-  const [sections, setSections] = useState<string[]>(() => [...new Set(existingRegs.map((r) => r.section))])
-  const [amdts, setAmdts] = useState<string[]>(() => [...new Set(existingRegs.map((r) => r.amdt))])
-
-  const sectionOptions = useMemo(() => [...new Set(regulations.map((r) => r.section))].sort(), [regulations])
-
-  /* Same cascade as `FlowStepBasis`: Amdt narrows to whichever section(s)
-     are picked, Section itself is never narrowed by Amdt. */
-  const amdtOptions = useMemo(() => {
-    const pool = sections.length === 0 ? regulations : regulations.filter((r) => sections.includes(r.section))
-    return [...new Set(pool.map((r) => r.amdt))].sort()
-  }, [regulations, sections])
-
-  /* Untouched pickers keep the basis's own rules on save: rebuilding them from
-     section × amdt pulls in every pool regulation that matches, so opening
-     Edit just to add a PDF used to add rules too. */
-  const [regsTouched, setRegsTouched] = useState(false)
-
-  const handleSectionsChange = (next: string[]) => {
-    setRegsTouched(true)
-    setSections(next)
-    if (next.length > 0) {
-      const stillValid = new Set(regulations.filter((r) => next.includes(r.section)).map((r) => r.amdt))
-      setAmdts((prev) => prev.filter((a) => stillValid.has(a)))
-    }
-  }
-
-  const handleAmdtsChange = (next: string[]) => {
-    setRegsTouched(true)
-    if (sections.length === 0 && next.length > 0) {
-      const parentSections = [...new Set(regulations.filter((r) => next.includes(r.amdt)).map((r) => r.section))]
-      setSections(parentSections)
-    }
-    setAmdts(next)
-  }
-
-  /* A regulation only counts as attached once both a section and an amdt
-     are picked — same rule as `FlowStepBasis`, so a section alone doesn't
-     silently attach every amendment under it. */
-  const matched = sections.length > 0 && amdts.length > 0
-    ? regulations.filter((r) => sections.includes(r.section) && amdts.includes(r.amdt))
-    : []
+  const [ruleIds, setRuleIds] = useState<string[]>([])
 
   const submit = () => {
     if (!aircraftModel.trim()) { setError('Aircraft model is required.'); return }
@@ -120,7 +72,7 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
       tcdsUrl: tcdsUrl.trim(),
       basisStatement: basisStatement.trim(),
       sourceDocument,
-      regulationIds: isEdit && !regsTouched ? initial!.regulationIds : matched.map((r) => r.id),
+      regulationIds: isEdit ? [...initial!.regulationIds, ...ruleIds] : ruleIds,
     })
     onClose()
   }
@@ -160,6 +112,10 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
             onChange={(e) => setBasisStatement(e.target.value)} />
         </FormField>
       </FormSection>
+      <FormSection title="Regulations" subtitle={isEdit ? 'Rules to add to this basis. Remove a rule from its rules table.' : 'The rules this basis applies, each at one amendment.'}>
+        <RulePicker idPrefix="basis-rule" value={ruleIds} onChange={setRuleIds} existing={initial?.regulationIds}
+          listLabel={isEdit ? 'Rules to add' : 'Rules in this basis'} />
+      </FormSection>
       <FormSection title="Source Document" subtitle="The PDF the rules were read from, kept so the basis can be checked against it.">
         {doc && !file && (
           <div className="flex items-center gap-sm rounded-sm border border-border-default bg-neutral-25 px-lg py-sm">
@@ -172,31 +128,6 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
         <FileDropzone label={doc ? 'Replace Document' : 'Upload Document'} accept=".pdf" file={file} error={fileError}
           hint={checking ? 'Checking the file…' : `PDF only, up to ${formatBytes(PDF_MAX_BYTES)}`}
           onSelect={pickFile} onReject={() => setFileError('Only PDF files (.pdf) can be uploaded.')} />
-      </FormSection>
-      <FormSection title="Regulations" subtitle="The rules this basis attaches — pick both a section and an amendment to attach one.">
-        <FormField label="Regulation Section" htmlFor="basis-section" fullWidth>
-          <MultiSelect
-            id="basis-section"
-            value={sections}
-            onChange={handleSectionsChange}
-            placeholder="Select regulation section…"
-            emptyLabel="No sections in the rule pool yet."
-            showChips={false}
-            options={sectionOptions.map((s) => ({ value: s, label: s }))}
-          />
-        </FormField>
-        <FormField label="Regulation Amendment" htmlFor="basis-amdt" fullWidth
-          help={matched.length > 0 ? `Attaches ${matched.length} regulation${matched.length === 1 ? '' : 's'}.` : undefined}>
-          <MultiSelect
-            id="basis-amdt"
-            value={amdts}
-            onChange={handleAmdtsChange}
-            placeholder="Select regulation amendment…"
-            emptyLabel="No amendments in the rule pool yet."
-            showChips={false}
-            options={amdtOptions.map((a) => ({ value: a, label: a }))}
-          />
-        </FormField>
       </FormSection>
     </Drawer>
   )
