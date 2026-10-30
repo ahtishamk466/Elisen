@@ -55,7 +55,7 @@ export function TccaProjectsTab({ tcca }: { tcca: TccaProject }) {
           <EmptyState
             icon={<FolderOpen size={48} strokeWidth={1.5} />}
             title="No Elisen project linked"
-            description="Baseline and DAO work legitimately has no project. Otherwise, link the project this Transport Canada work belongs to."
+            description="Baseline and Design Approval Organization (DAO) work legitimately has no project. Otherwise, link the project this Transport Canada work belongs to."
           />
         </div>
       ) : (

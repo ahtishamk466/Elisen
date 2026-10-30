@@ -32,7 +32,7 @@ export function regulationFilterChips(
 ): FilterChip[] {
   const clear = (key: keyof RegulationFilters) => () => onChange({ ...filters, [key]: '' })
   const defs: { key: keyof RegulationFilters; label: string; value: string }[] = [
-    { key: 'amdt', label: 'Amdt', value: filters.amdt },
+    { key: 'amdt', label: 'Amendment', value: filters.amdt },
     { key: 'subpartCode', label: 'Subpart', value: filters.subpartCode ? subpartLabel(filters.subpartCode, subparts) : '' },
     { key: 'subsectionCode', label: 'Subsection', value: filters.subsectionCode ? subsectionLabel(filters.subsectionCode, subsections) : '' },
     { key: 'sectionRoot', label: 'Section Root', value: filters.sectionRoot },
@@ -96,7 +96,7 @@ export function RegulationFilterMenu({
             style={{ ...position, width: MENU_WIDTH }}
           >
             <div className="grid gap-xs">
-              <label htmlFor="rf-amdt" className="text-xs font-semibold text-text-secondary">Amdt</label>
+              <label htmlFor="rf-amdt" className="text-xs font-semibold text-text-secondary">Amendment</label>
               <Select id="rf-amdt" value={draft.amdt} placeholder="Any amendment" onChange={(e) => setDraft((d) => ({ ...d, amdt: e.target.value }))}>
                 {amdts.map((a) => <option key={a} value={a}>{a}</option>)}
               </Select>

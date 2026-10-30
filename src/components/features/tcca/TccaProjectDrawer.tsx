@@ -193,7 +193,7 @@ export function TccaProjectDrawer({ open, mode, initial, onClose, onSubmit }: Tc
 
         <FormSection title="Link & Notes" subtitle="The Elisen project this relates to. More projects can be linked later from either side.">
           <FormField label="Elisen Project" htmlFor="tcca-project"
-            help="Unlink only for baseline or DAO work.">
+            help="Unlink only for baseline or Design Approval Organization (DAO) work.">
             <SearchableSelect
               id="tcca-project" value={projectId} onChange={touch(setProjectId)}
               options={projects.map((p) => ({ value: p.id, label: `${p.number}-${p.subNumber}`, hint: p.title }))}

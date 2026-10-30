@@ -36,13 +36,13 @@ type SortKey = 'number' | 'elisenProject' | 'regulation' | 'amdt' | 'regTitle' |
    consistent with a reader sorting by what they can see, not a hidden field. */
 const COLUMNS: { label: string; sort?: SortKey; style?: CSSProperties }[] = [
   { label: 'TCCA Project', sort: 'number', style: { width: 240 } },
-  { label: 'Elisen Project #', sort: 'elisenProject', style: { width: 170 } },
+  { label: 'Elisen Project Number', sort: 'elisenProject', style: { width: 200 } },
   { label: 'Regulation', sort: 'regulation', style: { width: 140 } },
-  { label: 'Amdt', sort: 'amdt', style: { width: 100 } },
-  { label: 'Reg Title', sort: 'regTitle', style: { width: 200 } },
+  { label: 'Amendment', sort: 'amdt', style: { width: 130 } },
+  { label: 'Regulation Title', sort: 'regTitle', style: { width: 200 } },
   { label: 'Discipline', sort: 'discipline', style: { width: 130 } },
-  { label: 'MOC', sort: 'moc', style: { width: 100 } },
-  { label: 'FOC', sort: 'foc', style: { width: 100 } },
+  { label: 'Means of Compliance (MOC)', sort: 'moc', style: { width: 250 } },
+  { label: 'Finding of Compliance (FOC)', sort: 'foc', style: { width: 260 } },
   { label: 'Deliverable Number', sort: 'deliverable', style: { width: 190 } },
   { label: 'Applicable', sort: 'applicable', style: { width: 110 } },
   { label: 'Affected', sort: 'affected', style: { width: 100 } },

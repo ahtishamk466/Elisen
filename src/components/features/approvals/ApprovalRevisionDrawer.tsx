@@ -44,7 +44,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 type RevisionSortKey = 'rev' | 'date' | 'change' | 'document'
 
 const REVISION_COLUMNS: { label: string; sort?: RevisionSortKey }[] = [
-  { label: 'Rev', sort: 'rev' },
+  { label: 'Revision', sort: 'rev' },
   { label: 'Date', sort: 'date' },
   { label: 'Change', sort: 'change' },
   { label: 'Document', sort: 'document' },

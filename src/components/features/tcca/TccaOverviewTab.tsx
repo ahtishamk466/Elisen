@@ -65,7 +65,7 @@ export function TccaOverviewTab({ tcca }: TccaOverviewTabProps) {
         </p>
         <ul className="mt-lg grid gap-sm">
           {linked.length === 0 && (
-            <li className="text-sm text-text-muted">No linked project, baseline / DAO organizational work.</li>
+            <li className="text-sm text-text-muted">No linked project, baseline / Design Approval Organization (DAO) work.</li>
           )}
           {linked.map((p, i) => (
             <li key={p.id} className="flex items-center justify-between gap-lg rounded-sm border border-border-default px-base py-sm">

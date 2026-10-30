@@ -101,7 +101,7 @@ export function BasisLevelBuilder({ projectNumber, existing, onDraft }: {
         <FormField label="Basis name" htmlFor="basis-name" fullWidth>
           <Input id="basis-name" value={name} placeholder={projectNumber} onChange={(e) => setName(e.target.value)} />
         </FormField>
-        <FormField label="TCDS number" htmlFor="basis-tcds-number" fullWidth>
+        <FormField label="Type Certificate Data Sheet (TCDS) number" htmlFor="basis-tcds-number" fullWidth>
           <Input id="basis-tcds-number" value={tcdsNumber} placeholder="e.g. A-177" onChange={(e) => setTcdsNumber(e.target.value)} />
         </FormField>
         <FormField label="TCDS link" htmlFor="basis-tcds-url" fullWidth>

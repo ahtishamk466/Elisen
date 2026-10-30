@@ -87,7 +87,7 @@ export function AircraftSerialDrawer({ mode, initial, aircraftId, onClose, onSav
             <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
               <DetailField label="Aircraft" nowrap>{model?.modelNumber}</DetailField>
               <DetailField label="Serial No" nowrap>{values.serial}</DetailField>
-              <DetailField label="Reg. No" nowrap>{values.registration}</DetailField>
+              <DetailField label="Registration Number" nowrap>{values.registration}</DetailField>
               <DetailField label="Status">{values.active ? 'Active' : 'Inactive'}</DetailField>
             </div>
           </DetailCard>

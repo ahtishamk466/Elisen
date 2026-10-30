@@ -42,7 +42,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 type RevisionSortKey = 'rev' | 'opened' | 'due' | 'closed' | 'nextAction' | 'status' | 'file'
 
 const REVISION_COLUMNS: { label: string; sort?: RevisionSortKey }[] = [
-  { label: 'Rev', sort: 'rev' },
+  { label: 'Revision', sort: 'rev' },
   { label: 'Opened', sort: 'opened' },
   { label: 'Due', sort: 'due' },
   { label: 'Closed', sort: 'closed' },

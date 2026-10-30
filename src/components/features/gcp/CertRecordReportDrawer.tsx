@@ -82,11 +82,11 @@ export function CertRecordReportDrawer({ defaultTccaProjectId, onClose, onDownlo
           <Input id="cr-date" type="date" value={reportDate}
             onChange={(e) => setReportDate(e.target.value)} />
         </FormField>
-        <FormField label="FOC Codes Section" htmlFor="cr-foc" fullWidth>
+        <FormField label="Finding of Compliance (FOC) Codes Section" htmlFor="cr-foc" fullWidth>
           <Input id="cr-foc" value={focCodesSection} placeholder="e.g. AP-01"
             onChange={(e) => setFocCodesSection(e.target.value)} />
         </FormField>
-        <FormField label="MOC Codes Section" htmlFor="cr-moc" fullWidth>
+        <FormField label="Means of Compliance (MOC) Codes Section" htmlFor="cr-moc" fullWidth>
           <Input id="cr-moc" value={mocCodesSection} placeholder="e.g. DR"
             onChange={(e) => setMocCodesSection(e.target.value)} />
         </FormField>
@@ -94,7 +94,7 @@ export function CertRecordReportDrawer({ defaultTccaProjectId, onClose, onDownlo
           <Input id="cr-compliance" value={complianceReportsSection} placeholder="e.g. Section 9.0"
             onChange={(e) => setComplianceReportsSection(e.target.value)} />
         </FormField>
-        <FormField label="MDL Number and Rev" htmlFor="cr-mdl" fullWidth>
+        <FormField label="MDL Number and Revision" htmlFor="cr-mdl" fullWidth>
           <Input id="cr-mdl" value={mdlNumberAndRev} placeholder="e.g. MDL-01 Rev A"
             onChange={(e) => setMdlNumberAndRev(e.target.value)} />
         </FormField>
@@ -102,7 +102,7 @@ export function CertRecordReportDrawer({ defaultTccaProjectId, onClose, onDownlo
           <Input id="cr-application" value={applicationName} placeholder="e.g. Elisen & associes inc."
             onChange={(e) => setApplicationName(e.target.value)} />
         </FormField>
-        <FormField label="Design Approval Doc" htmlFor="cr-design-doc" fullWidth>
+        <FormField label="Design Approval Document" htmlFor="cr-design-doc" fullWidth>
           <Input id="cr-design-doc" value={designApprovalDoc} placeholder="e.g. A-177"
             onChange={(e) => setDesignApprovalDoc(e.target.value)} />
         </FormField>

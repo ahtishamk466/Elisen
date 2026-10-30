@@ -4,6 +4,16 @@ One line per component: name, variants, location, purpose.
 
 Updated as components are added or changed.
 
+**Naming in labels (2026-10-30).** A domain abbreviation in a field label,
+column header, tab or drawer title is written **Full Name (ABBR)**, e.g.
+Finding of Compliance (FOC), Means of Compliance (MOC), Design Approval
+Organization (DAO) Specialty Code, Detailed Design Specification (DDS) Type,
+Type Certificate Data Sheet (TCDS) Number. A later label in the same form or
+table may use the short form. Plain short words are written out: Amendment,
+Revision, Registration Number, Regulation Title, Number (not #), Document.
+Kept short: TCCA and GCP in menu and page names, ATA, real values ("STC
+SA25-200") and the client's TCCA checklist wording.
+
 ## /components/ui — design system primitives
 
 | Component | Variants | Location | Purpose |

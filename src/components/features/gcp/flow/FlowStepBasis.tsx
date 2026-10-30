@@ -18,7 +18,7 @@ export type BasisDraft =
 type Mode = 'level' | 'reuse' | 'hand'
 
 const MODES: { mode: Mode; title: string; description: string }[] = [
-  { mode: 'level', title: 'Build from amendment level', description: 'Part and level from the TCDS pick each rule’s amendment.' },
+  { mode: 'level', title: 'Build from amendment level', description: 'Part and level from the Type Certificate Data Sheet (TCDS) pick each rule’s amendment.' },
   { mode: 'reuse', title: 'Start from an existing basis', description: 'Reuse a basis already built for this aircraft.' },
   { mode: 'hand', title: 'Pick rules by hand', description: 'Choose sections and amendments one by one.' },
 ]

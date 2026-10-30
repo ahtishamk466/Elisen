@@ -80,9 +80,9 @@ export function BasisHandPicker({ projectNumber, existing, onDraft }: {
             placeholder="Select regulation section…" emptyLabel="No sections in the rule pool yet."
             options={sectionOptions.map((s) => ({ value: s, label: s }))} />
         </FormField>
-        <FormField label="Regulation Amdt" htmlFor="flow-amdt" fullWidth>
+        <FormField label="Regulation Amendment" htmlFor="flow-amdt" fullWidth>
           <MultiSelect id="flow-amdt" value={amdts} onChange={handleAmdtsChange}
-            placeholder="Select regulation amdt…" emptyLabel="No amendments in the rule pool yet."
+            placeholder="Select regulation amendment…" emptyLabel="No amendments in the rule pool yet."
             options={amdtOptions.map((a) => ({ value: a, label: a }))} />
         </FormField>
       </div>
@@ -98,7 +98,7 @@ export function BasisHandPicker({ projectNumber, existing, onDraft }: {
             <caption className="sr-only">Regulations this basis will attach to {projectNumber}</caption>
             <thead>
               <tr className="border-b border-border-default bg-neutral-50">
-                {['Regulation Section', 'Regulation Amdt'].map((h) => (
+                {['Regulation Section', 'Regulation Amendment'].map((h) => (
                   <th key={h} scope="col" className="px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
                 ))}
               </tr>

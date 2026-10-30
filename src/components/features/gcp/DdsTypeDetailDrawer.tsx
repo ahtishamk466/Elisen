@@ -35,7 +35,7 @@ export function DdsTypeDetailDrawer({ ddsType: d, onClose, onEdit }: DdsTypeDeta
         </>
       }
     >
-      <DetailCard title="DDS Type">
+      <DetailCard title="Detailed Design Specification (DDS) Type">
         <DetailField label="Type">{d.type}</DetailField>
         <div className="mt-lg">
           <DetailField label="DDS Text">{htmlToText(d.ddsText)}</DetailField>

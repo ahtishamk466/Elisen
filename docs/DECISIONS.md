@@ -7786,3 +7786,46 @@ Verified:
 - 12 real PDFs on this Mac all pass.
 - In the drawer at 1440×900: renamed HTML → error, .docx dropped → error,
   valid PDF → saved, link served as `application/pdf`, Remove → "—".
+
+## 2026-10-30 — Labels spell abbreviations out: "Finding of Compliance (FOC)"
+**Context:** The user asked to replace abbreviations such as FOC with their
+names. This goes further than the same day's "acronyms spelled out where
+they're used", which kept the short labels and explained them in help
+lines. The user chose:
+- the **Full Name (ABBR)** form (over the full name alone, or short forms
+  in tables)
+- menu and page names stay short
+**Choice:**
+- Labels, column headers, tabs and drawer titles now read:
+  - Finding of Compliance (FOC)
+  - Means of Compliance (MOC)
+  - Design Approval Organization (DAO) Specialty Code
+  - Detailed Design Specification (DDS) Type and Id
+  - Type Certificate Data Sheet (TCDS) Number
+  - Amendment, Revision, Registration Number, Regulation Title, Elisen
+    Project Number, Design Approval Document, MDL Number and Revision
+- A later mention in the same form or table keeps the short form (TCDS Link,
+  DDS Text).
+- "FOC Code" and "MOC Code" become just the name: the value is the code.
+- Help lines and subtitles that only expanded an acronym now say what the
+  field is for instead ("Who signs. Delegates for this rule come first.").
+- STC is spelled out in the two help sentences that used it.
+- Columns widened so headers stay on one line: GCP Projects (Amendment,
+  MOC, FOC, Elisen Project Number), Delegation's FOC, Amendment in
+  Regulations, Certification Basis and Scope Rules, and DDS Type.
+**Not changed:**
+- TCCA and GCP in menus and page names (user's choice).
+- ATA, a standard's own name.
+- Example values ("e.g. STC SA25-200", "Amdt 25-1 to 25-98").
+- "Baseline / DAO" as a cell value.
+- Code comments, data and Storybook demos.
+- The TCCA Project Completion Checklist. It is the client's confirmed
+  wording, and several of its terms are defined nowhere in the app: SOC,
+  MDL, MSI 53, FMS, LOI/LOS, UND, NDWL, PCC.
+- Work Package's "Sr #", whose meaning is unclear.
+These are open questions for the client.
+**Rationale:** New users read the name, and specialists still see the code
+they use with Transport Canada. Verified at 1440×900 on GCP Projects, step 4
+and its GCP Data drawer, People & Authority, Reference Lists, Regulations and
+Certification Basis: no header or tab is clipped and there are no console
+errors.

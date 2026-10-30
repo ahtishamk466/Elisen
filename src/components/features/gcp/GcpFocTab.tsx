@@ -72,7 +72,7 @@ export function GcpFocTab({ createOpen, onCreateOpenChange, query }: GcpFocTabPr
       ) : (
         <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
           <table className="w-full border-collapse text-left">
-            <caption className="sr-only">FOC codes</caption>
+            <caption className="sr-only">Finding of Compliance (FOC) codes</caption>
             <thead>
               <tr className="border-b border-border-default bg-neutral-50">
                 {COLUMNS.map((c) => (

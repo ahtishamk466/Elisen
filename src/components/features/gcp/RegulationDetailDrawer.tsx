@@ -36,7 +36,7 @@ export function RegulationDetailDrawer({ regulation: r, subpart, subsection, onC
         <DetailCard title="Rule">
           <div className="grid grid-cols-2 gap-lg">
             <DetailField label="Section">{r.section}</DetailField>
-            <DetailField label="Amdt"><GcpChip value={r.amdt} label="amendments" /></DetailField>
+            <DetailField label="Amendment"><GcpChip value={r.amdt} label="amendments" /></DetailField>
             <DetailField label="Subpart">{subpart}</DetailField>
             <DetailField label="Subsection">{subsection}</DetailField>
           </div>
@@ -65,7 +65,7 @@ export function RegulationDetailDrawer({ regulation: r, subpart, subsection, onC
             <span className="whitespace-pre-wrap">{r.requirementText}</span>
           </DetailField>
           <div className="mt-lg">
-            <DetailField label="Default MOC Text">
+            <DetailField label="Default Means of Compliance (MOC) Text">
               <span className="whitespace-pre-wrap">{r.defaultMocText}</span>
             </DetailField>
           </div>

@@ -52,7 +52,7 @@ export function FocDrawer({ mode, initial, onClose, onSubmit }: FocDrawerProps) 
     <Drawer
       open
       onClose={onClose}
-      title={isEdit ? `Edit FOC “${initial!.code}”` : 'Add FOC'}
+      title={isEdit ? `Edit Finding of Compliance (FOC) Code “${initial!.code}”` : 'Add Finding of Compliance (FOC) Code'}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
@@ -60,7 +60,7 @@ export function FocDrawer({ mode, initial, onClose, onSubmit }: FocDrawerProps) 
         </>
       }
     >
-      <FormSection title="FOC" subtitle="Finding of Compliance code: who signs that a design meets a rule. (C) codes only recommend.">
+      <FormSection title="FOC Code" subtitle="Who signs that a design meets a rule. (C) codes only recommend.">
         <FormField label="Code" htmlFor="foc-code" required error={errors.code}>
           <Input id="foc-code" value={code} error={!!errors.code} placeholder="e.g. AP-01(C)"
             onChange={(e) => { setCode(e.target.value); setErrors((p) => ({ ...p, code: undefined })) }} />

@@ -15,7 +15,7 @@ import { DdsTypeDrawer } from './DdsTypeDrawer'
 type SortKey = 'type' | 'ddsText'
 
 const COLUMNS: { label: string; sort: SortKey; width: number }[] = [
-  { label: 'DDS Type', sort: 'type', width: 360 },
+  { label: 'Detailed Design Specification (DDS) Type', sort: 'type', width: 400 },
   /* Legacy DDS Text is blank on every one of the 10 real rows (see
      DDS_TYPES in gcpFixtures.ts) — an unconstrained column would render as
      a huge, entirely empty void next to a narrow DDS Type column, which

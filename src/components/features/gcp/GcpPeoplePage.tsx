@@ -13,7 +13,7 @@ import { GcpFocTab } from './GcpFocTab'
 /** Who may sign, for which rule, in which technical field — the three lists
     that decide what the compliance-item picker offers. */
 const TABS = [
-  { key: 'foc', label: 'FOC', addLabel: 'Add FOC', searchPlaceholder: 'Search by code, specialist or specialty...' },
+  { key: 'foc', label: 'Finding of Compliance (FOC)', addLabel: 'Add FOC', searchPlaceholder: 'Search by code, specialist or specialty...' },
   { key: 'delegation', label: 'Delegation', addLabel: 'Add Delegation', searchPlaceholder: 'Search by section root or FOC code...' },
   { key: 'discipline', label: 'Discipline', addLabel: 'Add Discipline', searchPlaceholder: 'Search by code or discipline...' },
 ] as const

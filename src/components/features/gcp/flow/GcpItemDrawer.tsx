@@ -105,20 +105,20 @@ export function GcpItemDrawer({ mode, planEntryId, initial, ruleLabel, sectionRo
       }
     >
       <FormSection title="GCP Data" subtitle="Who shows compliance with this rule, how, and where it is written.">
-        <FormField label="DAO Specialty Code" htmlFor="item-dao"
-          help="The Design Approval Organization discipline doing the work.">
+        <FormField label="Design Approval Organization (DAO) Specialty Code" htmlFor="item-dao"
+          help="The discipline doing the work.">
           <SearchableSelect id="item-dao" value={daoSpecialtyCode} onChange={setDaoSpecialtyCode}
-            placeholder="Select DAO specialty code…" options={withCurrent(daoOptions, daoSpecialtyCode)} />
+            placeholder="Select a DAO specialty code…" options={withCurrent(daoOptions, daoSpecialtyCode)} />
         </FormField>
-        <FormField label="MOC Code" htmlFor="item-moc"
-          help="Means of Compliance: how this rule will be shown.">
+        <FormField label="Means of Compliance (MOC)" htmlFor="item-moc"
+          help="How this rule will be shown.">
           <SearchableSelect id="item-moc" value={mocCode} onChange={setMocCode}
-            placeholder="Select MOC code…" options={withCurrent(mocOptions, mocCode)} />
+            placeholder="Select a means of compliance code…" options={withCurrent(mocOptions, mocCode)} />
         </FormField>
-        <FormField label="FOC Code" htmlFor="item-foc"
-          help="Finding of Compliance: who signs. Delegates for this rule come first.">
+        <FormField label="Finding of Compliance (FOC)" htmlFor="item-foc"
+          help="Who signs. Delegates for this rule come first.">
           <SearchableSelect id="item-foc" value={focCode} onChange={setFocCode}
-            placeholder="Select FOC code…" options={withCurrent(focOptions, focCode)} />
+            placeholder="Select a finding of compliance code…" options={withCurrent(focOptions, focCode)} />
         </FormField>
         <FormField label="Deliverable Number" htmlFor="item-deliverable"
           help="The report this rule's evidence goes into.">

@@ -329,7 +329,7 @@ export function GcpFlowPage() {
                   <ReadOnlyField label="Subsection Code">{currentPlanRow.rule.subsectionCode}</ReadOnlyField>
                   <ReadOnlyField label="Subsection Title">{currentSubsection?.title}</ReadOnlyField>
                   <ReadOnlyField label="Regulation Section">{currentPlanRow.rule.section}</ReadOnlyField>
-                  <ReadOnlyField label="Regulation Amdt">{currentPlanRow.rule.amdt}</ReadOnlyField>
+                  <ReadOnlyField label="Regulation Amendment">{currentPlanRow.rule.amdt}</ReadOnlyField>
                   <ReadOnlyField label="Regulation Title">{currentPlanRow.rule.title}</ReadOnlyField>
                   <div className="min-w-0">
                     <dt className="text-xs font-normal text-text-muted">Regulation Url</dt>
@@ -437,42 +437,42 @@ export function GcpFlowPage() {
                 options={createSectionOptions.map((s) => ({ value: s, label: s }))}
               />
             </FormField>
-            <FormField label="Regulation Amdt" htmlFor="create-gcp-amdt" required fullWidth>
+            <FormField label="Regulation Amendment" htmlFor="create-gcp-amdt" required fullWidth>
               <SearchableSelect
                 id="create-gcp-amdt"
                 value={createAmdt}
                 onChange={setCreateAmdt}
-                placeholder="Select regulation amdt…"
+                placeholder="Select regulation amendment…"
                 options={createAmdtOptions.map((a) => ({ value: a, label: a }))}
               />
             </FormField>
-            <FormField label="DAO Specialty Code" htmlFor="create-gcp-dao" fullWidth
-              help="The Design Approval Organization discipline doing the work.">
+            <FormField label="Design Approval Organization (DAO) Specialty Code" htmlFor="create-gcp-dao" fullWidth
+              help="The discipline doing the work.">
               <SearchableSelect
                 id="create-gcp-dao"
                 value={createDao}
                 onChange={setCreateDao}
-                placeholder="Select DAO specialty code…"
+                placeholder="Select a DAO specialty code…"
                 options={disciplines.filter((d) => d.active).map((d) => ({ value: d.daoSpecialtyCode, label: `${d.daoSpecialtyCode} -- ${d.elisenDiscipline}` }))}
               />
             </FormField>
-            <FormField label="MOC Code" htmlFor="create-gcp-moc" fullWidth
-              help="Means of Compliance: how this rule will be shown.">
+            <FormField label="Means of Compliance (MOC)" htmlFor="create-gcp-moc" fullWidth
+              help="How this rule will be shown.">
               <SearchableSelect
                 id="create-gcp-moc"
                 value={createMoc}
                 onChange={setCreateMoc}
-                placeholder="Select MOC code…"
+                placeholder="Select a means of compliance code…"
                 options={mocs.map((m) => ({ value: m.code, label: `${m.code} -- ${m.description}` }))}
               />
             </FormField>
-            <FormField label="FOC Code" htmlFor="create-gcp-foc" fullWidth
-              help="Finding of Compliance: who signs that the design meets this rule.">
+            <FormField label="Finding of Compliance (FOC)" htmlFor="create-gcp-foc" fullWidth
+              help="Who signs that the design meets this rule.">
               <SearchableSelect
                 id="create-gcp-foc"
                 value={createFoc}
                 onChange={setCreateFoc}
-                placeholder="Select FOC code…"
+                placeholder="Select a finding of compliance code…"
                 options={focs.map((f) => ({ value: f.code, label: `${f.code} -- ${f.authoritySpecialist}` }))}
               />
             </FormField>

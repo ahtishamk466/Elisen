@@ -25,7 +25,7 @@ export function FocDetailDrawer({ foc: f, onClose, onEdit }: FocDetailDrawerProp
         </>
       }
     >
-      <DetailCard title="FOC">
+      <DetailCard title="Finding of Compliance (FOC)">
         <div className="grid grid-cols-2 gap-lg">
           <DetailField label="Code">{f.code}</DetailField>
           <DetailField label="Default">

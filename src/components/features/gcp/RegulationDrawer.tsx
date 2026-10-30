@@ -58,7 +58,7 @@ export function RegulationDrawer({ mode, initial, onClose, onSubmit }: Regulatio
   const submit = () => {
     const e: typeof errors = {}
     if (!section.trim()) e.section = 'Section is required.'
-    if (!amdt.trim()) e.amdt = 'Amdt is required. Use IR for the rule as first issued.'
+    if (!amdt.trim()) e.amdt = 'Amendment is required. Use IR for the rule as first issued.'
     if (!title.trim()) e.title = 'Title is required.'
     if (!subpartCode) e.subpartCode = 'Subpart Code is required.'
     if (!subsectionCode) e.subsectionCode = 'Subsection Code is required.'
@@ -112,7 +112,7 @@ export function RegulationDrawer({ mode, initial, onClose, onSubmit }: Regulatio
           <Input id="reg-section" value={section} error={!!errors.section} placeholder="e.g. 23.21(a)"
             onChange={(e) => { setSection(e.target.value); setErrors((p) => ({ ...p, section: undefined })) }} />
         </FormField>
-        <FormField label="Amdt" htmlFor="reg-amdt" required error={errors.amdt} help="Amendment. IR is the rule as first issued.">
+        <FormField label="Amendment" htmlFor="reg-amdt" required error={errors.amdt} help="IR is the rule as first issued.">
           <Input id="reg-amdt" value={amdt} error={!!errors.amdt} placeholder="e.g. 23-34"
             onChange={(e) => { setAmdt(e.target.value); setErrors((p) => ({ ...p, amdt: undefined })) }} />
         </FormField>
@@ -157,7 +157,7 @@ export function RegulationDrawer({ mode, initial, onClose, onSubmit }: Regulatio
             placeholder="The rule's own wording, as it prints in the certification plan..."
             onChange={(e) => { setRequirementText(e.target.value); setErrors((p) => ({ ...p, requirementText: undefined })) }} />
         </FormField>
-        <FormField label="Default MOC Text" htmlFor="reg-moc" fullWidth
+        <FormField label="Default Means of Compliance (MOC) Text" htmlFor="reg-moc" fullWidth
           help="Offered as the method statement when this rule is planned on a project.">
           <Textarea id="reg-moc" rows={4} value={defaultMocText}
             placeholder="e.g. Design review will demonstrate compliance..."

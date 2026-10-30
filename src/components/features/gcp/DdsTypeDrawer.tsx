@@ -47,7 +47,7 @@ export function DdsTypeDrawer({ mode, initial, onClose, onSubmit }: DdsTypeDrawe
     <Drawer
       open
       onClose={onClose}
-      title={isEdit ? `Edit DDS Type “${initial!.type}”` : 'Add DDS Type'}
+      title={isEdit ? `Edit Detailed Design Specification (DDS) Type “${initial!.type}”` : 'Add Detailed Design Specification (DDS) Type'}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
@@ -55,7 +55,7 @@ export function DdsTypeDrawer({ mode, initial, onClose, onSubmit }: DdsTypeDrawe
         </>
       }
     >
-      <FormSection title="DDS Type" subtitle="A Detailed Design Specification (DDS) kind, used on new Part 23 work.">
+      <FormSection title="DDS Type" subtitle="Used on new Part 23 work.">
         <FormField label="Type" htmlFor="dds-type" required error={errors.type} fullWidth>
           <Input id="dds-type" value={type} error={!!errors.type} placeholder="e.g. Published ASTM"
             onChange={(e) => { setType(e.target.value); setErrors((p) => ({ ...p, type: undefined })) }} />

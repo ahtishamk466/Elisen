@@ -12,8 +12,8 @@ import { GcpMocTab } from './GcpMocTab'
 /** Two short lists that are only ever picked from inside a compliance item —
     both live now (see docs/COMPONENTS.md, "Tabbed page layout"). */
 const TABS = [
-  { key: 'moc', label: 'MOC', addLabel: 'Add MOC', searchPlaceholder: 'Search by code, title or description...' },
-  { key: 'dds', label: 'DDS', addLabel: 'Add DDS Type', searchPlaceholder: 'Search by type or text...' },
+  { key: 'moc', label: 'Means of Compliance (MOC)', addLabel: 'Add MOC', searchPlaceholder: 'Search by code, title or description...' },
+  { key: 'dds', label: 'Detailed Design Specification (DDS)', addLabel: 'Add DDS Type', searchPlaceholder: 'Search by type or text...' },
 ] as const
 
 export function GcpReferencePage() {

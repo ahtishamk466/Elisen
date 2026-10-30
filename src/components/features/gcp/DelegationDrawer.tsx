@@ -81,7 +81,7 @@ export function DelegationDrawer({ mode, initial, onClose, onSubmit }: Delegatio
             onChange={(v) => { setSectionRoot(v); setErrors((p) => ({ ...p, sectionRoot: undefined })) }}
           />
         </FormField>
-        <FormField label="FOC Code" htmlFor="delegation-foc-code" required error={errors.focCode}>
+        <FormField label="Finding of Compliance (FOC)" htmlFor="delegation-foc-code" required error={errors.focCode}>
           <SearchableSelect
             id="delegation-foc-code"
             value={focCode}

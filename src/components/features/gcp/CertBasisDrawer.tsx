@@ -140,8 +140,8 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
           <Input id="basis-model" value={aircraftModel} error={!!error} placeholder="e.g. CL-650"
             onChange={(e) => { setAircraftModel(e.target.value); setError('') }} />
         </FormField>
-        <FormField label="TCDS Number" htmlFor="basis-tcds" fullWidth
-          help="The Type Certificate Data Sheet the basis comes from. Blank for a project-specific basis.">
+        <FormField label="Type Certificate Data Sheet (TCDS) Number" htmlFor="basis-tcds" fullWidth
+          help="Blank for a project-specific basis.">
           <Input id="basis-tcds" value={tcdsNumber} placeholder="e.g. A-123"
             onChange={(e) => setTcdsNumber(e.target.value)} />
         </FormField>
@@ -167,7 +167,7 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
           hint={checking ? 'Checking the file…' : `PDF only, up to ${formatBytes(PDF_MAX_BYTES)}`}
           onSelect={pickFile} onReject={() => setFileError('Only PDF files (.pdf) can be uploaded.')} />
       </FormSection>
-      <FormSection title="Regulations" subtitle="The rules this basis attaches — pick both a section and an amdt to attach one.">
+      <FormSection title="Regulations" subtitle="The rules this basis attaches — pick both a section and an amendment to attach one.">
         <FormField label="Regulation Section" htmlFor="basis-section" fullWidth>
           <MultiSelect
             id="basis-section"
@@ -179,13 +179,13 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
             options={sectionOptions.map((s) => ({ value: s, label: s }))}
           />
         </FormField>
-        <FormField label="Regulation Amdt" htmlFor="basis-amdt" fullWidth
+        <FormField label="Regulation Amendment" htmlFor="basis-amdt" fullWidth
           help={matched.length > 0 ? `Attaches ${matched.length} regulation${matched.length === 1 ? '' : 's'}.` : undefined}>
           <MultiSelect
             id="basis-amdt"
             value={amdts}
             onChange={handleAmdtsChange}
-            placeholder="Select regulation amdt…"
+            placeholder="Select regulation amendment…"
             emptyLabel="No amendments in the rule pool yet."
             showChips={false}
             options={amdtOptions.map((a) => ({ value: a, label: a }))}

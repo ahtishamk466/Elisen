@@ -79,7 +79,7 @@ export function ProjectApprovalsTab({ projectId }: { projectId: string }) {
             title="No approvals linked to this project"
             description={approvals.length === 0
               ? 'No certificates exist yet. They are created in the Approvals workspace. Once one exists, you can link it to this project below.'
-              : 'Choose a certificate below to link it to this project. Its own STC, or an earlier approval it modifies.'}
+              : 'Choose a certificate below to link it to this project. Its own Supplemental Type Certificate (STC), or an earlier approval it modifies.'}
             action={
               <Button variant="secondary" leadingIcon={<ExternalLink size={16} />} onClick={() => navigate('/approvals')}>
                 Open Approvals workspace

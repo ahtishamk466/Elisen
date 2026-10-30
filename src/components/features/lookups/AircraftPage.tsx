@@ -43,7 +43,7 @@ const MODEL_COLUMNS: { label: string; sort?: ModelSortKey }[] = [
 ]
 const SERIAL_COLUMNS: { label: string; sort?: SerialSortKey }[] = [
   { label: 'Serial No', sort: 'serial' },
-  { label: 'Reg. No', sort: 'registration' },
+  { label: 'Registration Number', sort: 'registration' },
   { label: 'Aircraft', sort: 'aircraft' },
   { label: 'Owner', sort: 'owner' },
   { label: 'Company', sort: 'company' },

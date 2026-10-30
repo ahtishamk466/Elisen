@@ -392,7 +392,7 @@ export function ApprovalDetailPage() {
                 emptyDescription="Select a project below, or link this certificate from the project's own Approvals tab. Both do the same thing."
                 selectId="ap-link-project"
                 selectLabel="Select a project to link"
-                selectHelp="One certificate can serve several projects, a change project references the STC it amends."
+                selectHelp="One certificate can serve several projects, a change project references the Supplemental Type Certificate (STC) it amends."
                 placeholder="Search projects by number, title or company..."
                 emptyLabel="No projects exist yet."
                 options={projects.map((p) => ({

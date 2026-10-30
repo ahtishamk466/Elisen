@@ -14,7 +14,7 @@ type SortKey = 'section' | 'amdt' | 'title' | 'note'
 
 const COLUMNS: { label: string; sort: SortKey; width: number }[] = [
   { label: 'Section', sort: 'section', width: 150 },
-  { label: 'Amdt', sort: 'amdt', width: 110 },
+  { label: 'Amendment', sort: 'amdt', width: 130 },
   { label: 'Title', sort: 'title', width: 380 },
   { label: 'Note', sort: 'note', width: 160 },
 ]

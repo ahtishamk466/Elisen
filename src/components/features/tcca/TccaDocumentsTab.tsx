@@ -21,7 +21,7 @@ import { DateText } from '@/components/patterns/DateText'
 type SortKey = 'number' | 'title' | 'project' | 'involvement' | 'sent' | 'status'
 
 const COLUMNS: { label: string; sort?: SortKey }[] = [
-  { label: 'Number / Rev', sort: 'number' },
+  { label: 'Number / Revision', sort: 'number' },
   { label: 'Title', sort: 'title' },
   { label: 'From Project', sort: 'project' },
   { label: 'Involvement', sort: 'involvement' },

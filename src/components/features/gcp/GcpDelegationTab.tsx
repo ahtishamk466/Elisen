@@ -17,7 +17,7 @@ type SortKey = 'sectionRoot' | 'focCode' | 'limitation' | 'active'
 
 const COLUMNS: { label: string; sort: SortKey; style?: CSSProperties }[] = [
   { label: 'Section Root', sort: 'sectionRoot', style: { width: 200 } },
-  { label: 'FOC Code', sort: 'focCode', style: { width: 160 } },
+  { label: 'Finding of Compliance (FOC)', sort: 'focCode', style: { width: 260 } },
   { label: 'Limitation', sort: 'limitation', style: { width: 130 } },
   { label: 'Active', sort: 'active', style: { width: 100 } },
 ]

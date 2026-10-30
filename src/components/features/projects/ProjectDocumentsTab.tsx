@@ -110,14 +110,14 @@ export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProp
      shape as the Documents workspace, so a revision reads identically on both. */
   const columns: { label: string; sort?: SortKey }[] = isDrawing
     ? [
-        { label: 'Number', sort: 'number' }, { label: 'Rev', sort: 'revision' },
+        { label: 'Number', sort: 'number' }, { label: 'Revision', sort: 'revision' },
         { label: 'Title / Type', sort: 'title' }, { label: 'Aircraft', sort: 'aircraft' },
         { label: 'ATA', sort: 'ata' }, { label: 'Opened', sort: 'opened' },
         { label: 'Next Action', sort: 'nextAction' }, { label: 'Status', sort: 'status' },
         { label: 'Actions' },
       ]
     : [
-        { label: 'Number', sort: 'number' }, { label: 'Rev', sort: 'revision' },
+        { label: 'Number', sort: 'number' }, { label: 'Revision', sort: 'revision' },
         { label: 'Title / Type', sort: 'title' }, { label: 'Owner', sort: 'owner' },
         { label: 'Opened', sort: 'opened' }, { label: 'Due', sort: 'due' },
         { label: 'Next Action', sort: 'nextAction' }, { label: 'Status', sort: 'status' },

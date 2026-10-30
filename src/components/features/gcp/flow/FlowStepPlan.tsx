@@ -99,7 +99,7 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
           />
         </FormField>
 
-        <FormField label="DDS Id" htmlFor="plan-dds-id" fullWidth>
+        <FormField label="Detailed Design Specification (DDS) Id" htmlFor="plan-dds-id" fullWidth>
           <Select id="plan-dds-id" value={current.entry.ddsType}
             onChange={(e) => updatePlanEntry(current.entry.id, { ddsType: e.target.value })}>
             <option value="">Select…</option>
@@ -123,7 +123,7 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
           onChange={(e) => updatePlanEntry(current.entry.id, { complete: e.target.checked })}
         />
 
-        <FormField label="MOC Text" htmlFor="plan-moc-text" fullWidth>
+        <FormField label="Means of Compliance (MOC) Text" htmlFor="plan-moc-text" fullWidth>
           <Textarea id="plan-moc-text" rows={4} value={current.entry.methodText}
             placeholder="e.g. Design review will demonstrate compliance..."
             onChange={(e) => updatePlanEntry(current.entry.id, { methodText: e.target.value })} />
@@ -162,7 +162,7 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
                 <caption className="sr-only">GCP data for {current.rule.section}</caption>
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
-                    {['DAO Specialty Code', 'MOC Code', 'FOC Code', 'Deliverable Number', 'Active'].map((h) => (
+                    {['Design Approval Organization (DAO) Specialty Code', 'Means of Compliance (MOC)', 'Finding of Compliance (FOC)', 'Deliverable Number', 'Active'].map((h) => (
                       <th key={h} scope="col" className="whitespace-nowrap px-base py-base text-sm font-semibold text-text-secondary">{h}</th>
                     ))}
                     {/* Actions scrolls with the rest here, unlike every other

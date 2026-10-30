@@ -21,7 +21,7 @@ const COLUMNS: { label: string; width: number }[] = [
   { label: 'Subpart', width: 150 },
   { label: 'Subsection', width: 150 },
   { label: 'Section', width: 100 },
-  { label: 'Amdt', width: 80 },
+  { label: 'Amendment', width: 130 },
   { label: 'Title', width: 260 },
   { label: 'Source', width: 110 },
   { label: 'Assigned', width: 90 },
@@ -156,7 +156,7 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
           </p>
           <div className="min-w-0" style={{ width: 280 }}>
             <label htmlFor="scope-rules-search" className="sr-only">Search rules</label>
-            <Input id="scope-rules-search" size="sm" leadingIcon={<Search size={16} />} placeholder="Search by section, amdt or title..."
+            <Input id="scope-rules-search" size="sm" leadingIcon={<Search size={16} />} placeholder="Search by section, amendment or title..."
               value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
         </div>

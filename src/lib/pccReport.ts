@@ -44,7 +44,7 @@ export function downloadCompletionChecklist(
 <p class="meta">${esc(tcca.description)}</p>
 <p class="meta">Status: ${TCCA_STATUS_LABEL[tcca.status]} · Opened ${tcca.openedDate}${tcca.closedDate ? ` · Closed ${tcca.closedDate}` : ''}</p>
 <h2>Related Elisen Projects</h2>
-<p class="meta">${linkedProjects.length ? linkedProjects.map((p) => `${p.number}-${p.subNumber}: ${esc(p.title)}`).join('<br>') : 'None, baseline / DAO organizational work.'}</p>
+<p class="meta">${linkedProjects.length ? linkedProjects.map((p) => `${p.number}-${p.subNumber}: ${esc(p.title)}`).join('<br>') : 'None, baseline / Design Approval Organization (DAO) work.'}</p>
 <h2>Next Action</h2><p class="meta">${esc(tcca.nextAction || '—')}</p>
 <h2>Comments</h2><p class="meta">${esc(tcca.comments || '—')}</p>
 <h2>Checklist</h2>

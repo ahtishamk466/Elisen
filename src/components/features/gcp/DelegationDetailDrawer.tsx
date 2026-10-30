@@ -28,7 +28,7 @@ export function DelegationDetailDrawer({ delegation: d, onClose, onEdit }: Deleg
       <DetailCard title="Delegation">
         <div className="grid grid-cols-2 gap-lg">
           <DetailField label="Section Root">{d.sectionRoot}</DetailField>
-          <DetailField label="FOC Code">{d.focCode}</DetailField>
+          <DetailField label="Finding of Compliance (FOC)">{d.focCode}</DetailField>
         </div>
         <div className="mt-lg grid grid-cols-2 gap-lg">
           <DetailField label="Limitation">

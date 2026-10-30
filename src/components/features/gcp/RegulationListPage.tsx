@@ -39,7 +39,7 @@ type SortKey = 'section' | 'amdt' | 'title' | 'subpart' | 'subsection' | 'root' 
    viewport, so the nine columns are read without scrolling sideways. */
 const COLUMNS: { label: string; sort?: SortKey; width: number }[] = [
   { label: 'Section', sort: 'section', width: 112 },
-  { label: 'Amdt', sort: 'amdt', width: 76 },
+  { label: 'Amendment', sort: 'amdt', width: 120 },
   { label: 'Title', sort: 'title', width: 158 },
   { label: 'Subpart', sort: 'subpart', width: 124 },
   { label: 'Subsection', sort: 'subsection', width: 124 },
