@@ -7974,3 +7974,11 @@ Verified at 1440×900:
 - adding 23-34 warns first, then saves 403 rules (not 520), and the card
   flags 23.1309 as a duplicate
 - step 2's Continue waits for a rule
+
+## 2026-10-30 — Certification Basis card keeps its one-line title
+**Context:** The user didn't like the larger title tried with the tinted
+band: an icon tile and a `text-xl` name over its description.
+**Choice:** The title row is one line again: name, then description, then
+the actions. The tinted figures band and the hidden empty figures stay.
+**Rationale:** The band alone separates the title, the figures and the
+rules table; the bigger title added height without helping anyone scan.

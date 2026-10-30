@@ -1,5 +1,4 @@
 import { useMemo, type ReactNode } from 'react'
-import { FolderKanban } from 'lucide-react'
 import { ChipOverflow } from '@/components/patterns/ChipOverflow'
 import { FileLink } from '@/components/patterns/FileLink'
 import { Stat } from '@/components/patterns/Stat'
@@ -22,10 +21,11 @@ import type { CertBasis, Regulation } from '@/types/gcp'
  * Unboxed and unpadded: the Certification Basis page puts it at the top of
  * the same card as the basis's rules (one box, not a header card over a table
  * card, the 2026-09-24 complaint); step 2's reuse picker gives it a box of its
- * own. Same shape as the GCP Projects summary: header on white with an icon
- * tile, figures on an inset tinted band, so the name, the figures and the
- * rules table read as three blocks. A figure with nothing to show is left out
- * rather than printed as "—" (user request, 2026-10-30: too much to scan).
+ * own. The title row is one line, name then description; the figures sit on
+ * an inset tinted band, so the title, the figures and the rules table read as
+ * three blocks. A figure with nothing to show is left out rather than printed
+ * as "—" (user request, 2026-10-30: too much to scan). The user kept the band
+ * but not the larger icon title tried with it.
  */
 export function CertBasisSummary({ basis, actions, onKeepLatest }: {
   basis: CertBasis
@@ -46,15 +46,10 @@ export function CertBasisSummary({ basis, actions, onKeepLatest }: {
 
   return (
     <div>
-      <header className="flex flex-wrap items-center gap-sm px-lg py-lg">
-        <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-accent-subtle text-accent">
-          <FolderKanban size={22} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate text-xl font-semibold text-text-primary">{basis.aircraftModel}</h2>
-          <p className="truncate text-sm text-text-secondary">{basis.description || (basis.tcdsNumber ? `TCDS ${basis.tcdsNumber}` : 'Project-specific')}</p>
-        </div>
-        <span className="flex shrink-0 items-center gap-sm">
+      <header className="flex flex-wrap items-center gap-sm px-lg py-base">
+        <h2 className="truncate text-base font-semibold text-text-primary">{basis.aircraftModel}</h2>
+        <span className="min-w-0 text-sm text-text-muted">{basis.description || (basis.tcdsNumber ? `TCDS ${basis.tcdsNumber}` : 'Project-specific')}</span>
+        <span className="ml-auto flex shrink-0 items-center gap-sm">
           {basis.tcdsUrl && <FileLink url={basis.tcdsUrl} label="Open TCDS" />}
           {actions}
         </span>
