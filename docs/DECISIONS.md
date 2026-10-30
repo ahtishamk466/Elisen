@@ -7671,3 +7671,22 @@ per aircraft, reused, one version per rule. The rule is enforced in the
 builder, not left to the reader. Still open:
 - Import is still a stub.
 - The bundled pool is Part 23 only, so a Part 25 basis needs the full pool.
+
+## 2026-10-30 — UrlField fills its field; reuse-mode button label
+**Context:** Two problems found while taking screenshots of the deployed
+Cert Basis work.
+- `UrlField` (the link input plus Go To) put its `Input` in a flex row
+  without letting it grow, so the box shrank to its content width. That
+  broke the drawer form standard ("every control is the full width of the
+  field column") in all six drawers that use it: Cert Basis, Regulation,
+  Document, Revision, Approval Revision, and step 2's builder.
+- Step 2's Continue button said "Attach  regulations & continue" (with a
+  double space) in reuse mode before a basis was picked.
+**Choice:** `UrlField` gives its `Input` `flex-1 min-w-0`. The Continue
+label now follows the mode, not the draft. Verified at 1440×900:
+- the Cert Basis drawer's link row is 479px, the same as its other fields
+- the Regulation drawer's link row is 315px, again matching its other fields
+- reuse mode reads "Use this basis & continue" and stays disabled until a
+  basis is picked
+**Rationale:** Both are bugs against standards that already exist, so no new
+pattern is needed.

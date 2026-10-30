@@ -24,7 +24,9 @@ export function UrlField({ id, value, onChange, placeholder = 'Link to the file.
   const openable = isOpenableUrl(value)
   return (
     <div className="flex gap-sm">
-      <Input id={id} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+      {/* `flex-1 min-w-0`: in this row the input would otherwise shrink to its
+          content width, breaking the form standard's full-width control. */}
+      <Input id={id} className="min-w-0 flex-1" value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
       <Button
         variant="secondary"
         className="shrink-0"

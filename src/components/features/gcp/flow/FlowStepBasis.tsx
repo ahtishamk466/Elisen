@@ -92,7 +92,9 @@ export function FlowStepBasis({ project, onBack, onNext }: { project: TccaProjec
       <div className="flex items-center justify-between">
         <Button variant="secondary" leadingIcon={<ArrowLeft size={16} />} onClick={onBack}>Back</Button>
         <Button disabled={!draft} onClick={continueWithBasis}>
-          {draft?.kind === 'link' ? 'Use this basis & continue' : `Attach ${count || ''} regulation${count === 1 ? '' : 's'} & continue`}
+          {mode === 'reuse'
+            ? 'Use this basis & continue'
+            : count > 0 ? `Attach ${count} regulation${count === 1 ? '' : 's'} & continue` : 'Attach regulations & continue'}
         </Button>
       </div>
     </section>
