@@ -8,8 +8,6 @@ import { EmptyState } from '@/components/patterns/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { useGcpStore } from '@/stores/gcpStore'
 import { useGcpFlowStore } from '@/stores/gcpFlowStore'
-import { useTccaStore } from '@/stores/tccaStore'
-import { useToastStore } from '@/stores/toastStore'
 import { codeName, subpartParts, subsectionParts } from '@/lib/gcpDisplay'
 import { duplicateSections, keepLatest } from '@/lib/certBasisLevel'
 import type { CertBasis, Regulation } from '@/types/gcp'
@@ -39,11 +37,9 @@ export function GcpCertBasesPage() {
   const bases = useGcpFlowStore((s) => s.bases)
   const saveBasis = useGcpFlowStore((s) => s.saveBasis)
   const regulations = useGcpStore((s) => s.regulations)
-  const tccaProjects = useTccaStore((s) => s.tccaProjects)
   const subparts = useGcpStore((s) => s.subparts)
   const subsections = useGcpStore((s) => s.subsections)
   const updateRegulation = useGcpStore((s) => s.updateRegulation)
-  const showToast = useToastStore((s) => s.show)
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [query, setQuery] = useState('')
@@ -139,11 +135,7 @@ export function GcpCertBasesPage() {
       )}
 
       {importOpen && (
-        <CertBasisImportDrawer onClose={() => setImportOpen(false)}
-          onImport={(file, projectId) => {
-            const project = tccaProjects.find((t) => t.id === projectId)
-            showToast(`"${file.name}" received for ${project?.number ?? 'the selected project'}. Certification basis import needs a real backend, so nothing was actually processed yet.`)
-          }} />
+        <CertBasisImportDrawer initialBasisId={selected?.id} onClose={() => setImportOpen(false)} onImported={select} />
       )}
 
       {trimming && (

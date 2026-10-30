@@ -7877,3 +7877,51 @@ Verified at 1440×900:
 - Regulations shows all 3,973, 25 at a time.
 - The loading, error and Try Again states work.
 - No console errors.
+
+## 2026-10-30 — Cert Basis Import works like the legacy one
+**Context:** The legacy app and the new app were compared screen by screen.
+The legacy Cert Basis Import picks a **Master Cert Basis** and an `.xlsx`
+file, then:
+- reads every sheet from row 2 to the first empty row, columns A–H (Section,
+  Amdt, Title, Subpart id, Subsection id, URL, Sort, Section Root)
+- creates any regulation the library lacks (matched on Section + Amdt)
+- links each rule to the basis, skipping ones already there
+- does all of this in one transaction
+
+The new drawer asked for a TCCA project (client instruction, 2026-09-24)
+and imported nothing.
+**Choice:**
+- The drawer now targets a **Certification Basis**, as the legacy screen
+  does. This replaces the 2026-09-24 TCCA Project field: a project reaches
+  its rules through its linked basis.
+- `lib/xlsx.ts` reads `.xlsx` in the browser with no new package (the user
+  chose this over adding a library or CSV only).
+- `planImport` applies the legacy rules. The whole file is checked first and
+  a summary is shown; one bad row blocks the import, like the legacy
+  transaction.
+- Stricter than the legacy code, which saved whatever it read:
+  - Section and Amendment are required.
+  - Values are capped at 255 characters (the legacy column size).
+  - A URL must be http(s).
+  - A subpart or subsection must be a known id or code.
+**Security:** checks run before and during reading:
+- `.xlsx` only, browser MIME, at most 10 MB, name at most 200 characters
+- the ZIP signature
+- each unpacked part capped at 50 MB as it streams, so zip bombs stop
+- encrypted and Zip64 files refused
+- only the parts a sheet needs are opened
+- the XML is parsed by the browser, which never loads external entities
+- values are rendered as text
+
+**Needs server enforcement:** when imports reach a backend, the server must
+repeat all of this. Imported data lives in the browser until reload, like
+every other edit.
+**Verified:**
+- Crafted workbooks covering shared, inline and rich-text strings, a numeric
+  section, a second sheet with an `x:` namespace prefix, a repeated row and a
+  gap: 5 rows, 3 added, 2 skipped, 2 regulations created.
+- A bad workbook: 3 row problems, Import disabled.
+- A renamed text file and a 62 KB file that unpacks to 60 MB: both refused.
+- A dropped `.docx`: named error.
+- In the drawer: 1617_TIA went from 26 to 29 rules, with a toast.
+- No console errors.

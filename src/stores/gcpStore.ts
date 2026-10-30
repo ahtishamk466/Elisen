@@ -22,6 +22,8 @@ interface GcpState {
   ddsTypes: DdsType[]
 
   addRegulation: (r: Regulation) => void
+  /** Several at once, for an import: one store update, not one per row. */
+  addRegulations: (rs: Regulation[]) => void
   updateRegulation: (id: string, patch: Partial<Regulation>) => void
   removeRegulation: (id: string) => void
 
@@ -90,6 +92,7 @@ export const useGcpStore = create<GcpState>((set, get) => ({
   ddsTypes: DDS_TYPES,
 
   addRegulation: (r) => set((s) => ({ regulations: [r, ...s.regulations] })),
+  addRegulations: (rs) => set((s) => ({ regulations: [...rs, ...s.regulations] })),
   updateRegulation: (id, patch) => set((s) => ({
     regulations: s.regulations.map((r) => (r.id === id ? { ...r, ...patch } : r)),
   })),
