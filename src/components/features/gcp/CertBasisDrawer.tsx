@@ -1,5 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { Trash2 } from 'lucide-react'
 import { Drawer } from '@/components/patterns/Drawer'
+import { FileDropzone } from '@/components/patterns/FileDropzone'
+import { FileLink } from '@/components/patterns/FileLink'
 import { FormSection } from '@/components/patterns/FormSection'
 import { FormField } from '@/components/patterns/FormField'
 import { UrlField } from '@/components/patterns/UrlField'
@@ -7,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { MultiSelect } from '@/components/ui/MultiSelect'
 import { useGcpStore } from '@/stores/gcpStore'
+import { checkPdf, formatBytes, PDF_MAX_BYTES } from '@/lib/pdfCheck'
 import type { CertBasis } from '@/types/gcp'
 
 export interface CertBasisDrawerProps {
@@ -32,6 +36,26 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
   const [tcdsUrl, setTcdsUrl] = useState(initial?.tcdsUrl ?? '')
   const [basisStatement, setBasisStatement] = useState(initial?.basisStatement ?? '')
   const [error, setError] = useState('')
+  const [doc, setDoc] = useState(initial?.sourceDocument)
+  const [file, setFile] = useState<File | null>(null)
+  const [fileError, setFileError] = useState('')
+  const [checking, setChecking] = useState(false)
+  const lastPick = useRef<File | null>(null)
+
+  /* Every pick passes `checkPdf` before it's kept; a later pick wins over a
+     slower earlier one still being read. */
+  const pickFile = async (f: File | null) => {
+    lastPick.current = f
+    setFile(null)
+    setFileError('')
+    setChecking(!!f)
+    if (!f) return
+    const problem = await checkPdf(f)
+    if (lastPick.current !== f) return
+    setChecking(false)
+    if (problem) setFileError(problem)
+    else setFile(f)
+  }
 
   const existingRegs = useMemo(
     () => (initial?.regulationIds ?? []).map((id) => regulations.find((r) => r.id === id)).filter((r): r is NonNullable<typeof r> => !!r),
@@ -49,7 +73,13 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
     return [...new Set(pool.map((r) => r.amdt))].sort()
   }, [regulations, sections])
 
+  /* Untouched pickers keep the basis's own rules on save: rebuilding them from
+     section × amdt pulls in every pool regulation that matches, so opening
+     Edit just to add a PDF used to add rules too. */
+  const [regsTouched, setRegsTouched] = useState(false)
+
   const handleSectionsChange = (next: string[]) => {
+    setRegsTouched(true)
     setSections(next)
     if (next.length > 0) {
       const stillValid = new Set(regulations.filter((r) => next.includes(r.section)).map((r) => r.amdt))
@@ -58,6 +88,7 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
   }
 
   const handleAmdtsChange = (next: string[]) => {
+    setRegsTouched(true)
     if (sections.length === 0 && next.length > 0) {
       const parentSections = [...new Set(regulations.filter((r) => next.includes(r.amdt)).map((r) => r.section))]
       setSections(parentSections)
@@ -74,6 +105,11 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
 
   const submit = () => {
     if (!aircraftModel.trim()) { setError('Aircraft model is required.'); return }
+    /* Typed as PDF, so the browser only ever opens it in its PDF viewer. */
+    const sourceDocument = file
+      ? { name: file.name, size: file.size, url: URL.createObjectURL(new Blob([file], { type: 'application/pdf' })) }
+      : doc
+    if (initial?.sourceDocument && initial.sourceDocument !== sourceDocument) URL.revokeObjectURL(initial.sourceDocument.url)
     onSubmit({
       ...initial,
       id: isEdit ? initial!.id : crypto.randomUUID(),
@@ -81,7 +117,8 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
       tcdsNumber: tcdsNumber.trim(),
       tcdsUrl: tcdsUrl.trim(),
       basisStatement: basisStatement.trim(),
-      regulationIds: matched.map((r) => r.id),
+      sourceDocument,
+      regulationIds: isEdit && !regsTouched ? initial!.regulationIds : matched.map((r) => r.id),
     })
     onClose()
   }
@@ -90,15 +127,15 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
     <Drawer
       open
       onClose={onClose}
-      title={isEdit ? `Edit Cert Basis "${initial!.aircraftModel}"` : 'Add Cert Basis'}
+      title={isEdit ? `Edit Certification Basis "${initial!.aircraftModel}"` : 'Add Certification Basis'}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit}>{isEdit ? 'Save Changes' : 'Create'}</Button>
+          <Button onClick={submit} loading={checking}>{isEdit ? 'Save Changes' : 'Create'}</Button>
         </>
       }
     >
-      <FormSection title="Cert Basis" subtitle="Which aircraft, or which project, this rule set is for.">
+      <FormSection title="Certification Basis" subtitle="Which aircraft, or which project, this rule set is for.">
         <FormField label="Aircraft Model" htmlFor="basis-model" required error={error} fullWidth>
           <Input id="basis-model" value={aircraftModel} error={!!error} placeholder="e.g. CL-650"
             onChange={(e) => { setAircraftModel(e.target.value); setError('') }} />
@@ -116,6 +153,19 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
           <Input id="basis-statement" value={basisStatement} placeholder="e.g. Part 25, Amdt 25-1 to 25-98, plus 25.2 at 25-72"
             onChange={(e) => setBasisStatement(e.target.value)} />
         </FormField>
+      </FormSection>
+      <FormSection title="Source Document" subtitle="The PDF the rules were read from, kept so the basis can be checked against it.">
+        {doc && !file && (
+          <div className="flex items-center gap-sm rounded-sm border border-border-default bg-neutral-25 px-lg py-sm">
+            <div className="min-w-0 flex-1 text-sm"><FileLink url={doc.url} label={doc.name} /></div>
+            <span className="shrink-0 text-xs text-text-muted">{formatBytes(doc.size)}</span>
+            <Button variant="tertiary" size="sm" leadingIcon={<Trash2 size={14} />} aria-label={`Remove ${doc.name}`}
+              onClick={() => setDoc(undefined)}>Remove</Button>
+          </div>
+        )}
+        <FileDropzone label={doc ? 'Replace Document' : 'Upload Document'} accept=".pdf" file={file} error={fileError}
+          hint={checking ? 'Checking the file…' : `PDF only, up to ${formatBytes(PDF_MAX_BYTES)}`}
+          onSelect={pickFile} onReject={() => setFileError('Only PDF files (.pdf) can be uploaded.')} />
       </FormSection>
       <FormSection title="Regulations" subtitle="The rules this basis attaches — pick both a section and an amdt to attach one.">
         <FormField label="Regulation Section" htmlFor="basis-section" fullWidth>

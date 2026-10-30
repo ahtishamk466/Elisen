@@ -17,6 +17,9 @@ export interface FileDropzoneProps {
   hint?: string
   /** Label of the button inside the zone. */
   buttonLabel?: string
+  /** Called with a file `accept` turned away, so the caller can say why.
+      Without it a wrong file is dropped silently. */
+  onReject?: (file: File) => void
 }
 
 /** Stacked-files illustration, the client's own asset — decorative, so it's
@@ -34,7 +37,7 @@ function FilesIllustration() {
  * the zone, are conveniences layered on top of it.
  */
 export function FileDropzone({
-  label, required, accept, file, onSelect, error, hint, buttonLabel = 'Upload File',
+  label, required, accept, file, onSelect, error, hint, buttonLabel = 'Upload File', onReject,
 }: FileDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
@@ -44,11 +47,16 @@ export function FileDropzone({
     return accept.split(',').some((ext) => candidate.name.toLowerCase().endsWith(ext.trim().toLowerCase()))
   }
 
+  const take = (candidate: File | null | undefined) => {
+    const ok = !candidate || accepts(candidate)
+    onSelect(candidate && ok ? candidate : null)
+    if (candidate && !ok) onReject?.(candidate)
+  }
+
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDragging(false)
-    const dropped = e.dataTransfer.files[0]
-    onSelect(dropped && accepts(dropped) ? dropped : null)
+    take(e.dataTransfer.files[0])
   }
 
   return (
@@ -95,8 +103,7 @@ export function FileDropzone({
         className="sr-only"
         tabIndex={-1}
         onChange={(e) => {
-          const picked = e.target.files?.[0] ?? null
-          onSelect(picked && accepts(picked) ? picked : null)
+          take(e.target.files?.[0])
           // Let the same file be re-picked after a Remove.
           e.target.value = ''
         }}

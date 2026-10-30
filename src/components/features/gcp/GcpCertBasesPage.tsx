@@ -1,32 +1,38 @@
-import { useState } from 'react'
-import { Download, FolderKanban, Plus, Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { Download, FolderKanban, ListTree, Pencil, Plus, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
+import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { useGcpStore } from '@/stores/gcpStore'
 import { useGcpFlowStore } from '@/stores/gcpFlowStore'
 import { useTccaStore } from '@/stores/tccaStore'
 import { useToastStore } from '@/stores/toastStore'
 import { codeName, subpartParts, subsectionParts } from '@/lib/gcpDisplay'
-import { duplicateSections, keepLatest, levelLabel } from '@/lib/certBasisLevel'
+import { duplicateSections, keepLatest } from '@/lib/certBasisLevel'
 import type { CertBasis, Regulation } from '@/types/gcp'
 import { CertBasisDrawer } from './CertBasisDrawer'
 import { CertBasisImportDrawer } from './CertBasisImportDrawer'
+import { CertBasisRail } from './CertBasisRail'
 import { CertBasisSummary } from './CertBasisSummary'
-import { CertBasisTable, type CertBasisRow } from './CertBasisTable'
+import { CertBasisTable } from './CertBasisTable'
 import { RegulationDetailDrawer } from './RegulationDetailDrawer'
 import { RegulationDrawer } from './RegulationDrawer'
 
+const regsIn = (b: CertBasis, byId: Map<string, Regulation>) =>
+  b.regulationIds.map((id) => byId.get(id)).filter((r): r is Regulation => !!r)
+
 /**
- * Cert Basis — one flat table of every basis↔regulation link (client
- * instruction, 2026-09-25; see `CertBasisTable`). The **basis filter** in the
- * header narrows it to one basis and shows that basis's summary above the
- * table: its TCDS source, how it was built, which projects use it, and the
- * one-version-per-rule check with a "keep the latest version" fix. Linking a
- * basis to a project happens in GCP Projects' Certification basis step.
+ * Certification Basis — every basis listed once on the left, the selected one on the
+ * right: its name once, its source and usage, the duplicate check, and only
+ * its own rules, in **one** card that fills the height. The user's request,
+ * 2026-10-30: the flat table repeated each basis's name on every row and was
+ * too congested for a normal user. Reverses the 2026-09-25 "one flat table",
+ * avoiding what the 2026-09-24 master–detail was rejected for: a separate
+ * header card over a separate table, and dead space under a short table.
+ * Same rail shape as Regulation Groups; the selection lives in `?basis=`.
  */
 export function GcpCertBasesPage() {
   const bases = useGcpFlowStore((s) => s.bases)
@@ -37,9 +43,9 @@ export function GcpCertBasesPage() {
   const subsections = useGcpStore((s) => s.subsections)
   const updateRegulation = useGcpStore((s) => s.updateRegulation)
   const showToast = useToastStore((s) => s.show)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [query, setQuery] = useState('')
-  const [basisFilter, setBasisFilter] = useState('')
   const [basisDrawer, setBasisDrawer] = useState<{ mode: 'create' | 'edit'; basis?: CertBasis } | null>(null)
   const [importOpen, setImportOpen] = useState(false)
   const [deletingBasis, setDeletingBasis] = useState<CertBasis | null>(null)
@@ -48,95 +54,99 @@ export function GcpCertBasesPage() {
   const [editing, setEditing] = useState<Regulation | null>(null)
   const [removingReg, setRemovingReg] = useState<{ basis: CertBasis; regulation: Regulation } | null>(null)
 
-  const regsOf = (b: CertBasis) => b.regulationIds
-    .map((id) => regulations.find((r) => r.id === id))
-    .filter((r): r is Regulation => !!r)
+  const regById = useMemo(() => new Map(regulations.map((r) => [r.id, r])), [regulations])
+  const regsOf = (b: CertBasis) => regsIn(b, regById)
+  const needsFixing = new Set(bases.filter((b) => duplicateSections(regsOf(b)).length > 0).map((b) => b.id))
 
-  const selected = bases.find((b) => b.id === basisFilter)
   const q = query.trim().toLowerCase()
-  const filtered = (selected ? [selected] : bases).filter((b) => !q
+  const filtered = bases.filter((b) => !q
     || `${b.aircraftModel} ${b.tcdsNumber}`.toLowerCase().includes(q)
     || regsOf(b).some((r) => `${r.section} ${r.amdt} ${r.title}`.toLowerCase().includes(q)))
-  const rows: CertBasisRow[] = filtered.flatMap((b): CertBasisRow[] => {
-    const regs = regsOf(b)
-    return regs.length > 0 ? regs.map((r) => ({ basis: b, regulation: r })) : [{ basis: b, regulation: null }]
-  })
-
+  const selected = filtered.find((b) => b.id === searchParams.get('basis')) ?? filtered[0] ?? null
+  const selectedRules = useMemo(() => (selected ? regsIn(selected, regById) : []), [selected, regById])
+  const select = (b: CertBasis) => {
+    const p = new URLSearchParams(searchParams)
+    p.set('basis', b.id)
+    setSearchParams(p, { replace: true })
+  }
   const trimCount = trimming ? regsOf(trimming).length - keepLatest(trimming, regsOf(trimming)).length : 0
 
   return (
     <AppShell
       activeItem="GCP"
-      activeChild="Cert Basis"
-      title="Cert Basis"
+      activeChild="Certification Basis"
+      title="Certification Basis"
       description="Each aircraft's rules from its Type Certificate Data Sheet (TCDS): which regulation, at which amendment."
       fill
       headerActions={
         <>
-          <div className="min-w-0" style={{ width: 240 }}>
-            <SearchableSelect id="cert-basis-filter" size="sm" value={basisFilter} onChange={setBasisFilter}
-              ariaLabel="Show one cert basis" placeholder="All cert bases"
-              options={[{ value: '', label: 'All cert bases' }, ...bases.map((b) => ({
-                value: b.id, label: b.aircraftModel,
-                hint: `${b.regulationIds.length} rules · ${levelLabel(b)}${duplicateSections(regsOf(b)).length ? ' · has duplicates' : ''}`,
-              }))]} />
-          </div>
-          <div className="min-w-0" style={{ width: 260 }}>
-            <label htmlFor="cert-bases-search" className="sr-only">Search Cert Basis and their regulations</label>
-            <Input id="cert-bases-search" size="sm" leadingIcon={<Search size={16} />}
-              placeholder="Search by aircraft, TCDS or regulation..."
-              value={query} onChange={(e) => setQuery(e.target.value)} />
-          </div>
           <Button variant="secondary" leadingIcon={<Download size={16} />} onClick={() => setImportOpen(true)}>Import</Button>
-          <Button leadingIcon={<Plus size={16} />} onClick={() => setBasisDrawer({ mode: 'create' })}>Add Cert Basis</Button>
+          <Button leadingIcon={<Plus size={16} />} onClick={() => setBasisDrawer({ mode: 'create' })}>Add Certification Basis</Button>
         </>
       }
     >
-      {selected && (
-        <div className="mb-lg shrink-0">
-          <CertBasisSummary basis={selected} onKeepLatest={() => setTrimming(selected)} />
-        </div>
-      )}
-
       {bases.length === 0 ? (
         <div className="rounded-sm border border-border-default bg-neutral-25">
-          <EmptyState icon={<FolderKanban size={48} strokeWidth={1.5} />} title="No Cert Basis yet"
+          <EmptyState icon={<FolderKanban size={48} strokeWidth={1.5} />} title="No certification basis yet"
             description="Add one for an aircraft's type certificate, or import a regulation export to build one automatically."
-            action={<Button leadingIcon={<Plus size={16} />} onClick={() => setBasisDrawer({ mode: 'create' })}>Add Cert Basis</Button>} />
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="rounded-sm border border-border-default bg-neutral-25">
-          <EmptyState icon={<FolderKanban size={48} strokeWidth={1.5} />} title="No Cert Basis match your search"
-            description="Try another aircraft, TCDS or regulation."
-            action={<Button variant="secondary" onClick={() => { setQuery(''); setBasisFilter('') }}>Clear search</Button>} />
+            action={<Button leadingIcon={<Plus size={16} />} onClick={() => setBasisDrawer({ mode: 'create' })}>Add Certification Basis</Button>} />
         </div>
       ) : (
-        <CertBasisTable rows={rows} pool={regulations}
-          onView={setViewing} onEditRegulation={setEditing}
-          onRemove={(basis, regulation) => setRemovingReg({ basis, regulation })}
-          onEditBasis={(basis) => setBasisDrawer({ mode: 'edit', basis })}
-          onDeleteBasis={setDeletingBasis} />
+        <div className="grid min-h-0 flex-1 gap-lg laptop:grid-cols-[320px_minmax(0,1fr)]">
+          <CertBasisRail bases={filtered} selectedId={selected?.id} needsFixing={needsFixing}
+            query={query} onQueryChange={setQuery} onSelect={select} />
+
+          {selected ? (
+            <section aria-label={`Certification basis ${selected.aircraftModel}`} className="flex min-h-0 flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+              <div className="shrink-0 px-lg py-lg">
+                <CertBasisSummary basis={selected} onKeepLatest={() => setTrimming(selected)} actions={
+                  <>
+                    <Button variant="secondary" size="sm" leadingIcon={<Pencil size={14} />}
+                      onClick={() => setBasisDrawer({ mode: 'edit', basis: selected })}>Edit</Button>
+                    <ActionsMenu ariaLabel={`More actions for ${selected.aircraftModel}`} items={[
+                      { label: 'Delete Certification Basis', icon: <Trash2 size={16} />, onSelect: () => setDeletingBasis(selected), tone: 'danger' },
+                    ]} />
+                  </>
+                } />
+              </div>
+              {selectedRules.length === 0 ? (
+                <div className="border-t border-border-default">
+                  <EmptyState icon={<ListTree size={48} strokeWidth={1.5} />} title="No regulations yet"
+                    description="Build this basis's rules in GCP Projects' Certification Basis step, or edit it here." />
+                </div>
+              ) : (
+                <CertBasisTable basis={selected} rules={selectedRules} pool={regulations}
+                  onView={setViewing} onEditRegulation={setEditing}
+                  onRemove={(regulation) => setRemovingReg({ basis: selected, regulation })} />
+              )}
+            </section>
+          ) : (
+            <div className="rounded-sm border border-border-default bg-neutral-25">
+              <EmptyState icon={<FolderKanban size={48} strokeWidth={1.5} />} title="No certification basis matches your search"
+                description="Try another aircraft, TCDS or regulation."
+                action={<Button variant="secondary" onClick={() => setQuery('')}>Clear Search</Button>} />
+            </div>
+          )}
+        </div>
       )}
 
       {basisDrawer && (
         <CertBasisDrawer mode={basisDrawer.mode} initial={basisDrawer.basis}
-          onClose={() => setBasisDrawer(null)} onSubmit={(b) => saveBasis(b)} />
+          onClose={() => setBasisDrawer(null)} onSubmit={(b) => { saveBasis(b); select(b) }} />
       )}
 
       {importOpen && (
-        <CertBasisImportDrawer
-          onClose={() => setImportOpen(false)}
+        <CertBasisImportDrawer onClose={() => setImportOpen(false)}
           onImport={(file, projectId) => {
             const project = tccaProjects.find((t) => t.id === projectId)
-            showToast(`"${file.name}" received for ${project?.number ?? 'the selected project'}. Cert basis import needs a real backend, so nothing was actually processed yet.`)
-          }}
-        />
+            showToast(`"${file.name}" received for ${project?.number ?? 'the selected project'}. Certification basis import needs a real backend, so nothing was actually processed yet.`)
+          }} />
       )}
 
       {trimming && (
         <ConfirmDialog open title={`Keep the latest version in "${trimming.aircraftModel}"?`}
           description={`Removes ${trimCount} older version${trimCount === 1 ? '' : 's'} from this basis, so each rule appears once. The regulations stay in the library.`}
-          confirmLabel="Keep latest"
+          confirmLabel="Keep Latest Version"
           onConfirm={() => { saveBasis({ ...trimming, regulationIds: keepLatest(trimming, regsOf(trimming)) }); setTrimming(null) }}
           onCancel={() => setTrimming(null)} />
       )}
@@ -146,8 +156,8 @@ export function GcpCertBasesPage() {
           description={`${regsOf(deletingBasis).length} regulation${regsOf(deletingBasis).length === 1 ? '' : 's'} allocated to this basis will no longer be attached to it. This cannot be undone.`}
           confirmLabel="Delete" tone="danger"
           onConfirm={() => {
+            if (deletingBasis.sourceDocument) URL.revokeObjectURL(deletingBasis.sourceDocument.url)
             useGcpFlowStore.setState((s) => ({ bases: s.bases.filter((b) => b.id !== deletingBasis.id) }))
-            if (basisFilter === deletingBasis.id) setBasisFilter('')
             setDeletingBasis(null)
           }}
           onCancel={() => setDeletingBasis(null)} />
@@ -166,7 +176,7 @@ export function GcpCertBasesPage() {
 
       {removingReg && (
         <ConfirmDialog open title={`Remove "${removingReg.regulation.section} · ${removingReg.regulation.amdt}" from this basis?`}
-          description="The regulation stays in the library; only its place in this cert basis is removed."
+          description="The regulation stays in the library; only its place in this certification basis is removed."
           confirmLabel="Remove" tone="danger"
           onConfirm={() => {
             const { basis, regulation } = removingReg

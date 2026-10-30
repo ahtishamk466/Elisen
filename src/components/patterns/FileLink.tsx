@@ -35,7 +35,10 @@ export interface FileLinkProps {
  * links, approval document cells): one file-link style, changed in one place.
  */
 export function FileLink({ url = '', label }: FileLinkProps) {
-  const openable = isOpenableUrl(url)
+  /* `blob:` is a file uploaded in this session (no backend yet) — made by the
+     app itself, so safe to open; its hover shows the name, not the token. */
+  const isBlob = url.startsWith('blob:')
+  const openable = isOpenableUrl(url) || isBlob
   /* Plain text (no label, no openable link) has nothing to show at all —
      "—", same as every other empty value in the app. But once there's a
      real link to open, "Go To" is always a valid thing to say even with no
@@ -60,7 +63,7 @@ export function FileLink({ url = '', label }: FileLinkProps) {
       href={url.trim()}
       target="_blank"
       rel="noopener noreferrer"
-      title={url}
+      title={isBlob ? text : url}
       /* Underlined always, not just on hover (client instruction,
          2026-09-25: "blue or underline jis se pata lage ke ye clickable
          hai"). A file name in a table cell reads as data, not as a control,

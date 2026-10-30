@@ -45,7 +45,7 @@ export function CertBasisImportDrawer({ onClose, onImport }: CertBasisImportDraw
     <Drawer
       open
       onClose={onClose}
-      title="Import Cert Basis"
+      title="Import Certification Basis"
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
@@ -53,7 +53,7 @@ export function CertBasisImportDrawer({ onClose, onImport }: CertBasisImportDraw
         </>
       }
     >
-      <FormSection title="Import Cert Basis" subtitle="Which project this import is for, then the export file to build its rule set from.">
+      <FormSection title="Import Certification Basis" subtitle="Which project this import is for, then the export file to build its rule set from.">
         <FormField label="TCCA Project" htmlFor="import-project" required error={projectError} fullWidth>
           <SearchableSelect
             id="import-project"

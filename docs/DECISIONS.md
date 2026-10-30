@@ -7690,3 +7690,99 @@ label now follows the mode, not the draft. Verified at 1440×900:
   basis is picked
 **Rationale:** Both are bugs against standards that already exist, so no new
 pattern is needed.
+
+## 2026-10-30 — Cert Basis page: list on the left, the selected basis on the right
+**Context:** The user found the flat Cert Basis table too congested for a
+normal user: every row repeated the basis name ("1568 -Top Aces 1623" on
+each of its rules), and the basis filter, search and summary were spread
+across the header. They asked for the bases listed on the left and the
+selected basis's values on the right.
+**Choice:** Master–detail, with the same rail shape as Regulation Groups:
+- Left: `CertBasisRail`, with search at its top, one row per basis, a
+  rule-count pill, and a warning icon when the basis has duplicate rules.
+- Right: **one** card. `CertBasisSummary` (name, Open TCDS, Edit, Delete
+  menu, Rules, Built From, Basis on the TCDS, Used By, and the duplicate
+  warning with Keep Latest Version) sits above `CertBasisTable` (Section,
+  Amdt, Title, Note), which fills the rest of the height.
+- The selection lives in `?basis=`.
+- `Alert` gains a `warning` tone: duplicates are allowed but need fixing,
+  which is not a danger.
+- Labels are Title Case: Built From, Used By, Keep Latest Version, Picked by
+  Hand.
+**Rationale:** This reverses the 2026-09-25 "one flat table" decision. That
+decision came from client messages in another team member's sessions, not
+from Harris's walkthrough. It keeps what was wrong with the 2026-09-24
+master–detail fixed:
+- no separate header card stacked over a separate table card
+- no dead space under a short table, because the table fills the card
+Verified at 1440×900: selection updates the URL and the detail, search
+narrows the list and shows the no-match state, and the focus ring is
+visible. At 768 it stacks with no horizontal scroll.
+
+## 2026-10-30 — "Cert Basis" is now "Certification Basis" in the UI
+**Context:** The user asked whether "Cert Basis" is the right name in
+aviation. The regulators' term is the full one:
+- FAA: "type certification basis" (14 CFR 21.17)
+- EASA: "type-certification basis" (21.B.80)
+- Transport Canada: its TCDS has a "Certification Basis" section
+
+"Cert Basis" is an informal engineers' short form. Step 2 of GCP Projects
+already said "Certification Basis", so the page and the step didn't match.
+**Choice:** Every visible label now says Certification Basis: the nav item,
+page heading, Add/Import/Edit/Delete labels, drawer titles, the list header,
+empty states, the reuse picker and screen-reader text.
+**Unchanged:**
+- The route `/gcp/cert-bases`, so bookmarks still work.
+- Code names (`CertBasis*`).
+- The TCCA checklist item "Application, Cert Basis, MOC, LOI/LOS", which is
+  that checklist's own wording.
+**Rationale:** Use the term the regulators and the TCDS use. Verified at
+1440×900: the sidebar label fits without truncating and stays highlighted.
+
+## 2026-10-30 — A certification basis keeps its source PDF
+**Context:** In the 2026-09-09 walkthrough (47:18), Harris called the TCDS
+"the document… that I'm going to pull out to tell me which rules to use". He
+goes back to it to "check that I did this right" when a rule looks wrong.
+A link (TCDS Link) can break or point at a newer issue. The user asked to
+upload the actual document, with type, size and security checks.
+**Choice:**
+- `CertBasis.sourceDocument` holds `{ name, size, url }`.
+- The drawer has a **Source Document** section: Upload or Replace, and
+  Remove.
+- The basis card shows it as a Source Document stat that opens the PDF in a
+  new tab.
+- Only PDF, up to 20 MB. `checkPdf` rejects, in plain words:
+  - a wrong extension
+  - a name over 200 characters
+  - a non-PDF MIME type
+  - an empty file
+  - an oversize file
+  - a file not starting with `%PDF-` (e.g. a renamed .exe or .html)
+  - a PDF whose dictionaries carry `/JavaScript`, `/JS`, `/Launch`,
+    `/EmbeddedFile(s)` or `/RichMedia`, including `#xx`-escaped names
+- The file is stored as a `blob:` URL typed `application/pdf`, so the
+  browser only opens it in its PDF viewer. It is released on replace,
+  remove and basis delete.
+- `FileDropzone` gained `onReject`, so a wrong file gets a message instead
+  of nothing.
+
+Fixed on the way: saving Edit rebuilt the rules from section × amdt and
+added matching pool regulations (8 → 9 rules on "1568 -Top Aces 1623").
+Untouched pickers now keep the basis's own rules.
+**Needs server enforcement:** These checks run in the browser, so they are
+a convenience, not security. Compressed object streams are not scanned, and
+there is no backend yet: a file lasts until reload. When uploads reach a
+server, it must:
+- repeat every check above
+- virus-scan the file
+- store it outside the web root under a generated name
+- serve it with `Content-Type: application/pdf`,
+  `Content-Disposition: inline` and `X-Content-Type-Options: nosniff`
+**Rationale:** Keep the exact document a basis was built from, so the
+basis can be checked against its source. PDF only, because TCDSs from TCCA,
+FAA and EASA are PDFs, and one allowed type keeps the attack surface small.
+Verified:
+- 14 crafted files behave as expected.
+- 12 real PDFs on this Mac all pass.
+- In the drawer at 1440×900: renamed HTML → error, .docx dropped → error,
+  valid PDF → saved, link served as `application/pdf`, Remove → "—".

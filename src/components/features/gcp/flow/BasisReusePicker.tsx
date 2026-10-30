@@ -36,7 +36,7 @@ export function BasisReusePicker({ initialBasisId, onDraft }: {
   if (bases.length === 0) {
     return (
       <div className="rounded-sm border border-border-default bg-neutral-25">
-        <EmptyState icon={<FolderKanban size={48} strokeWidth={1.5} />} title="No cert basis to start from yet"
+        <EmptyState icon={<FolderKanban size={48} strokeWidth={1.5} />} title="No certification basis to start from yet"
           description="Build one from an amendment level first; later projects on the same aircraft can then reuse it." />
       </div>
     )
@@ -45,9 +45,9 @@ export function BasisReusePicker({ initialBasisId, onDraft }: {
   return (
     <div className="grid gap-base">
       <div className="rounded-sm border border-border-default bg-neutral-25 px-lg py-lg">
-        <FormField label="Cert basis" htmlFor="reuse-basis" fullWidth
+        <FormField label="Certification Basis" htmlFor="reuse-basis" fullWidth
           help="Shared, not copied: a later edit to the basis applies to every project that uses it.">
-          <SearchableSelect id="reuse-basis" value={basisId} onChange={setBasisId} placeholder="Select a cert basis…"
+          <SearchableSelect id="reuse-basis" value={basisId} onChange={setBasisId} placeholder="Select a certification basis…"
             options={bases.map((b) => ({
               value: b.id,
               label: b.aircraftModel,
@@ -55,7 +55,11 @@ export function BasisReusePicker({ initialBasisId, onDraft }: {
             }))} />
         </FormField>
       </div>
-      {selected && <CertBasisSummary basis={selected} />}
+      {selected && (
+        <div className="rounded-sm border border-border-default bg-neutral-25 px-lg py-base">
+          <CertBasisSummary basis={selected} />
+        </div>
+      )}
     </div>
   )
 }

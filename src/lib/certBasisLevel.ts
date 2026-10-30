@@ -90,8 +90,8 @@ export function chosenByMap(basis: CertBasis, regs: Regulation[], pool: Regulati
   return new Map(regs.map((r) => [r.id, picked.has(r.id) ? 'level' as const : 'override' as const]))
 }
 
-/** "Part 25 · up to 25-98", "Part 23 · latest", or "Picked by hand". */
+/** "Part 25 · up to 25-98", "Part 23 · latest", or "Picked by Hand". */
 export function levelLabel(basis: CertBasis): string {
-  if (!basis.level) return 'Picked by hand'
+  if (!basis.level) return 'Picked by Hand'
   return `Part ${basis.level.part} · ${basis.level.amdt === LATEST ? 'latest' : `up to ${basis.level.amdt}`}`
 }

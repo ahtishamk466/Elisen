@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { FileLink } from '@/components/patterns/FileLink'
 import { Stat } from '@/components/patterns/Stat'
 import { Alert } from '@/components/ui/Alert'
@@ -10,14 +10,23 @@ import { duplicateSections, levelLabel } from '@/lib/certBasisLevel'
 import type { CertBasis, Regulation } from '@/types/gcp'
 
 /**
- * One cert basis at a glance: where it came from (TCDS, its wording, a link
+ * One cert basis at a glance: its name once, where it came from (TCDS, a link
  * to check it against), how it was built, how many rules it holds and which
- * TCCA projects use it — plus the one-version-per-rule check. A basis applies
- * each rule at one amendment (Harris, 2026-09-09), so a section carried at
- * two amendments is flagged, with `onKeepLatest` offering the fix where the
+ * TCCA projects use it, plus the one-version-per-rule check. A basis applies
+ * each rule at one amendment (Harris, 2026-09-09), so a section carried at two
+ * amendments raises a warning, with `onKeepLatest` offering the fix where the
  * caller allows editing.
+ *
+ * Unboxed: the Cert Basis page puts it at the top of the same card as the
+ * basis's rules (one box, not a header card over a table card — the
+ * 2026-09-24 complaint); step 2's reuse picker gives it a box of its own.
  */
-export function CertBasisSummary({ basis, onKeepLatest }: { basis: CertBasis; onKeepLatest?: () => void }) {
+export function CertBasisSummary({ basis, actions, onKeepLatest }: {
+  basis: CertBasis
+  /** Basis-level buttons, e.g. Edit and the Delete menu, at the header's end. */
+  actions?: ReactNode
+  onKeepLatest?: () => void
+}) {
   const regulations = useGcpStore((s) => s.regulations)
   const projectBasis = useGcpFlowStore((s) => s.projectBasis)
   const tccaProjects = useTccaStore((s) => s.tccaProjects)
@@ -30,33 +39,37 @@ export function CertBasisSummary({ basis, onKeepLatest }: { basis: CertBasis; on
   const usedBy = tccaProjects.filter((t) => projectBasis[t.id] === basis.id).map((t) => t.number)
 
   return (
-    <section className="grid gap-base rounded-sm border border-border-default bg-neutral-25 px-lg py-base" aria-label={`Cert basis ${basis.aircraftModel}`}>
-      <div className="flex flex-wrap items-baseline gap-sm">
-        <h2 className="text-base font-semibold text-text-primary">{basis.aircraftModel}</h2>
+    <div className="grid gap-base">
+      <div className="flex flex-wrap items-center gap-sm">
+        <h2 className="truncate text-base font-semibold text-text-primary">{basis.aircraftModel}</h2>
         <span className="text-sm text-text-muted">{basis.tcdsNumber ? `TCDS ${basis.tcdsNumber}` : 'Project-specific'}</span>
-        {basis.tcdsUrl && <span className="ml-auto"><FileLink url={basis.tcdsUrl} label="Open TCDS" /></span>}
+        <span className="ml-auto flex items-center gap-sm">
+          {basis.tcdsUrl && <FileLink url={basis.tcdsUrl} label="Open TCDS" />}
+          {actions}
+        </span>
       </div>
 
-      <dl className="grid grid-cols-2 gap-base tablet:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-base tablet:grid-cols-3 laptop:grid-cols-5">
         <Stat dl label="Rules">{regs.length}</Stat>
-        <Stat dl label="Built from">{levelLabel(basis)}</Stat>
+        <Stat dl label="Built From">{levelLabel(basis)}</Stat>
         <Stat dl label="Basis on the TCDS">{basis.basisStatement || undefined}</Stat>
-        <Stat dl label="Used by">{usedBy.length > 0 ? usedBy.join(', ') : 'No projects yet'}</Stat>
+        <Stat dl label="Source Document"><FileLink url={basis.sourceDocument?.url} label={basis.sourceDocument?.name} /></Stat>
+        <Stat dl label="Used By">{usedBy.length > 0 ? usedBy.join(', ') : 'No projects yet'}</Stat>
       </dl>
 
       {dupes.length > 0 && (
-        <Alert title={`${dupes.length} rule${dupes.length === 1 ? ' has' : 's have'} more than one version`}>
+        <Alert tone="warning" title={`${dupes.length} rule${dupes.length === 1 ? ' appears' : 's appear'} more than once (${dupes.map((v) => v[0].section).join(', ')})`}>
           {/* Phrasing content only — `Alert` renders its children inside a <p>. */}
           A basis applies each rule at one amendment.{' '}
           {dupes.slice(0, 3).map((v) => `${v[0].section}: ${v.map((r) => r.amdt).join(', ')}`).join(' · ')}
           {dupes.length > 3 ? ` · and ${dupes.length - 3} more` : ''}
           {onKeepLatest && (
             <span className="mt-sm block">
-              <Button variant="secondary" size="sm" onClick={onKeepLatest}>Keep the latest version</Button>
+              <Button variant="secondary" size="sm" onClick={onKeepLatest}>Keep Latest Version</Button>
             </span>
           )}
         </Alert>
       )}
-    </section>
+    </div>
   )
 }

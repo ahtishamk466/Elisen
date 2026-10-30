@@ -91,6 +91,11 @@ export interface CertBasis {
   tcdsUrl?: string
   /** The basis as the TCDS words it, e.g. "Part 25, Amdt 25-1 to 25-98, plus 25.2 at 25-72". */
   basisStatement?: string
+  /** The PDF the rules were read from (the TCDS, or what a project-specific
+      basis was built from), to go back to "and check that I did this right"
+      (Harris, 2026-09-09). `url` is a `blob:` URL for this session: there is
+      no backend to upload to yet. */
+  sourceDocument?: { name: string; size: number; url: string }
   /** Set when built from an amendment level (step 2's builder): the Part and
       level it was built to, or `latest`. A rule whose version differs from
       what that level picks is one of the basis's overrides. */

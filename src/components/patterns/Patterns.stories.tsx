@@ -252,11 +252,14 @@ export const SectionTabsExample: Story = { render: () => <div className="p-lg"><
     clicking anywhere in the zone, are conveniences on top of it. */
 function FileDropzoneDemo() {
   const [file, setFile] = useState<File | null>(null)
+  const [error, setError] = useState('')
   return (
     <div className="grid gap-3xl">
+      {/* `onReject` names a file `accept` turned away — drop a non-.sql file. */}
       <FileDropzone
         label="Upload File" required accept=".sql" hint="SQL backup files only (.sql)"
-        file={file} onSelect={setFile}
+        file={file} error={error} onSelect={(f) => { setFile(f); setError('') }}
+        onReject={(f) => setError(`"${f.name}" isn't a .sql file.`)}
       />
       <FileDropzone
         label="Upload File" required accept=".sql" hint="SQL backup files only (.sql)"
