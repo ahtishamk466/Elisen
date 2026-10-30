@@ -106,12 +106,18 @@ export function MultiSelect({
 
   const showSearch = options.length > searchThreshold
 
+  /* The panel only mounts once its position is known, so focus waits for
+     that — keyed on `open` alone it fired first, found no input, and left
+     keyboard users on the trigger, unable to type or arrow through. */
+  const panelShown = open && position !== null
   useEffect(() => {
     // Without a search box there's nothing to type into, so the panel itself
     // takes focus — arrow keys and Enter must still work either way.
-    if (open) (showSearch ? inputRef.current : panelRef.current)?.focus()
-    else { setQuery(''); setActiveIndex(0) }
-  }, [open, showSearch])
+    if (panelShown) (showSearch ? inputRef.current : panelRef.current)?.focus()
+  }, [panelShown, showSearch])
+  useEffect(() => {
+    if (!open) { setQuery(''); setActiveIndex(0) }
+  }, [open])
 
   useEffect(() => {
     if (!open) return

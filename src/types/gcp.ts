@@ -84,8 +84,17 @@ export interface CertBasis {
       a project-specific basis, which has no TCDS. */
   tcdsNumber: string
   /** Regulation ids from the rule pool — each already carries its own
-      amendment, title, subpart and subsection codes. */
+      amendment, title, subpart and subsection codes. One per section: a
+      basis applies each rule at one amendment. */
   regulationIds: string[]
+  /** Link to the TCDS document, so the basis can be checked against its source. */
+  tcdsUrl?: string
+  /** The basis as the TCDS words it, e.g. "Part 25, Amdt 25-1 to 25-98, plus 25.2 at 25-72". */
+  basisStatement?: string
+  /** Set when built from an amendment level (step 2's builder): the Part and
+      level it was built to, or `latest`. A rule whose version differs from
+      what that level picks is one of the basis's overrides. */
+  level?: { part: string; amdt: string }
 }
 
 /** One affected rule on one project, with everything planned for it. */

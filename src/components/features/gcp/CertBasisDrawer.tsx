@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Drawer } from '@/components/patterns/Drawer'
 import { FormSection } from '@/components/patterns/FormSection'
 import { FormField } from '@/components/patterns/FormField'
+import { UrlField } from '@/components/patterns/UrlField'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { MultiSelect } from '@/components/ui/MultiSelect'
@@ -28,6 +29,8 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
   const regulations = useGcpStore((s) => s.regulations)
   const [aircraftModel, setAircraftModel] = useState(initial?.aircraftModel ?? '')
   const [tcdsNumber, setTcdsNumber] = useState(initial?.tcdsNumber ?? '')
+  const [tcdsUrl, setTcdsUrl] = useState(initial?.tcdsUrl ?? '')
+  const [basisStatement, setBasisStatement] = useState(initial?.basisStatement ?? '')
   const [error, setError] = useState('')
 
   const existingRegs = useMemo(
@@ -72,9 +75,12 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
   const submit = () => {
     if (!aircraftModel.trim()) { setError('Aircraft model is required.'); return }
     onSubmit({
+      ...initial,
       id: isEdit ? initial!.id : crypto.randomUUID(),
       aircraftModel: aircraftModel.trim(),
       tcdsNumber: tcdsNumber.trim(),
+      tcdsUrl: tcdsUrl.trim(),
+      basisStatement: basisStatement.trim(),
       regulationIds: matched.map((r) => r.id),
     })
     onClose()
@@ -101,6 +107,14 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
           help="The Type Certificate Data Sheet the basis comes from. Blank for a project-specific basis.">
           <Input id="basis-tcds" value={tcdsNumber} placeholder="e.g. A-123"
             onChange={(e) => setTcdsNumber(e.target.value)} />
+        </FormField>
+        <FormField label="TCDS Link" htmlFor="basis-tcds-url" fullWidth>
+          <UrlField id="basis-tcds-url" value={tcdsUrl} onChange={setTcdsUrl} placeholder="Link to the TCDS document..." />
+        </FormField>
+        <FormField label="Basis as Written on the TCDS" htmlFor="basis-statement" fullWidth
+          help="Copy the certification basis line, so the rules can be checked against it.">
+          <Input id="basis-statement" value={basisStatement} placeholder="e.g. Part 25, Amdt 25-1 to 25-98, plus 25.2 at 25-72"
+            onChange={(e) => setBasisStatement(e.target.value)} />
         </FormField>
       </FormSection>
       <FormSection title="Regulations" subtitle="The rules this basis attaches — pick both a section and an amdt to attach one.">

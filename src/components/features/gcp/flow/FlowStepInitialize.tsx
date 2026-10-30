@@ -33,11 +33,11 @@ const TABLE_WIDTH = COLUMNS.reduce((sum, c) => sum + c.width, 0)
  * marked Assigned or not by this modification. Confirming writes the
  * certification plan, so only the assigned rules travel to step 4.
  *
- * Applicable here is the whole rule pool, the same way the legacy Cert Plan
- * Initialize screen scopes from everything the aircraft's type certificate
- * carries (hundreds of rows) rather than a hand-picked handful — the basis
- * built in step 2 confirms the project has rules to scope; it doesn't narrow
- * which ones show up here.
+ * Applicable here is the project's certification basis from step 2, the way
+ * the legacy Cert Plan Initialize screen lists it (528 rules for A-26-0082
+ * out of a 3,973-rule pool, Harris's 2026-09-09 demo). This reverses the
+ * 2026-09-23 "whole rule pool" choice at the user's request, 2026-10-30: with
+ * the full pool imported, listing all of it would bury the rules that apply.
  */
 export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaProject; onBack: () => void; onNext: () => void }) {
   const regulations = useGcpStore((s) => s.regulations)
@@ -46,8 +46,17 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
   const planEntries = useGcpFlowStore((s) => s.planEntries)
   const initializePlan = useGcpFlowStore((s) => s.initializePlan)
   const [query, setQuery] = useState('')
+  const bases = useGcpFlowStore((s) => s.bases)
+  const projectBasis = useGcpFlowStore((s) => s.projectBasis)
 
-  const rules = regulations
+  /* Step 2 always links a basis before this step opens; the pool is only a
+     fallback for a project reached some other way. */
+  const rules = useMemo(() => {
+    const ids = bases.find((b) => b.id === projectBasis[project.id])?.regulationIds
+    if (!ids) return regulations
+    const inBasis = new Set(ids)
+    return regulations.filter((r) => inBasis.has(r.id))
+  }, [bases, projectBasis, project.id, regulations])
 
   /* Subpart tabs — so picking which rules apply reads as "find the right
      category, then work down its list" instead of scanning one flat pool

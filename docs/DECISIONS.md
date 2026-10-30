@@ -7615,3 +7615,59 @@ bundle.
 **Rationale:** Text assets compress 4–12×. A per-site list keeps the change
 off the legacy sites. No code change was needed: the timesheet was already
 loaded only where it's used.
+
+## 2026-10-30 — Cert Basis follows Harris's walkthrough: amendment-level builder, reuse, basis-only Scope Rules
+**Context:** A review of Cert Basis against Harris's 2026-09-09 GCP
+walkthrough found four gaps.
+- A basis could hold several versions of one rule: the seeded "1568 -Top
+  Aces 1623" had 23.1 three times and 23.2 twice.
+- Choosing each rule's amendment was manual, though Harris's rule is
+  mechanical: under a TCDS basis of Part P at level L, each rule applies at
+  its latest amendment at or below L.
+- A basis couldn't be reused across projects.
+- Scope Rules listed the whole pool. Legacy Initialize listed 528 of 3,973
+  for A-26-0082.
+
+The user approved mockups, then chose to include the two parts that reverse
+2026-09-23 decisions: reuse, and Scope Rules showing the basis only. They kept
+the flat Cert Basis table (2026-09-25) with a basis filter rather than my
+mockup's master–detail list.
+**Choice:**
+- `lib/certBasisLevel.ts` holds the logic:
+  - `amdtOrder` orders amendments (IR = 0, `25-72` = 72; dates and letters
+    are unordered).
+  - `pickForLevel` applies the level rule.
+  - `duplicateSections` and `keepLatest` check for and fix duplicates.
+  - `chosenByMap` and `levelLabel` describe how each rule got in.
+- **Verified on real data:**
+  - 25.1301 at level 25-98 gives IR, and "latest" gives 25-152.
+  - Part 23 at 23-7 gives 260 rules, with 91 not at that level.
+- **Step 2** (`FlowStepBasis`) is three `RadioCard` modes:
+  - **Build from amendment level** (new): Part plus level, with per-rule
+    Applies overrides for TCDS exceptions.
+  - **Start from an existing basis** (new): links a shared basis.
+  - **Pick rules by hand**: the old step, unchanged.
+- A basis shared with other projects is never edited from step 2; building
+  saves a new one.
+- **Scope Rules** lists only the project's basis.
+- **Cert Basis page:**
+  - A basis filter, and a `CertBasisSummary` showing TCDS, Open TCDS, how it
+    was built and which projects use it.
+  - A duplicate-version `Alert` with "Keep the latest version".
+  - Status (the regulation's own Active flag, mostly "Inactive" and
+    unrelated to the basis) is replaced by **Chosen by**.
+- `CertBasis` gains optional `tcdsUrl`, `basisStatement` and `level`. The
+  drawer edits the first two.
+- `FlowStepBasis` and `GcpCertBasesPage` were split under 200 lines, as the
+  user agreed: `BasisLevelBuilder`, `BasisReusePicker`, `BasisHandPicker`,
+  `CertBasisSummary` and `CertBasisTable`.
+
+**Also fixed (pre-existing):** `SearchableSelect` and `MultiSelect`
+focused their search box on `open`, before the portalled panel had mounted.
+Focus never left the trigger, so keyboard users could open a list but not
+type or arrow through it. Focus now waits until the panel is shown.
+**Rationale:** It reproduces how Harris certifies: from the TCDS level, once
+per aircraft, reused, one version per rule. The rule is enforced in the
+builder, not left to the reader. Still open:
+- Import is still a stub.
+- The bundled pool is Part 23 only, so a Part 25 basis needs the full pool.
