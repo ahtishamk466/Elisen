@@ -18,6 +18,7 @@ import { GcpRegulationsTabs } from './GcpRegulationsTabs'
 import { GcpChip } from './GcpChip'
 import { RegulationGroupDrawer } from './RegulationGroupDrawer'
 import { RegulationGroupSectionDrawer } from './RegulationGroupSectionDrawer'
+import { useGcpData } from './GcpDataGate'
 
 const COLUMNS: { label: string; sort?: 'root' | 'active'; width: number }[] = [
   { label: 'Regulation Section Root', sort: 'root', width: 280 },
@@ -43,6 +44,8 @@ const COL_WIDTHS = proportionalWidths(COLUMNS.map((c) => c.width))
  * belongs to.
  */
 export function RegulationGroupsPage() {
+  // The section picker reads the regulations; start their load.
+  useGcpData()
   const groups = useGcpStore((s) => s.groups)
   const groupSections = useGcpStore((s) => s.groupSections)
   const addGroup = useGcpStore((s) => s.addGroup)

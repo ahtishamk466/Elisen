@@ -1,8 +1,15 @@
 import { create } from 'zustand'
-import { DDS_TYPES, DELEGATIONS, DISCIPLINES, FOC_LIST, MOC_LIST, REGULATION_GROUPS, REGULATION_GROUP_SECTIONS, REGULATIONS, SUBPARTS, SUBSECTIONS } from '@/lib/gcpFixtures'
+import { DDS_TYPES, DELEGATIONS, DISCIPLINES, FOC_LIST, MOC_LIST, REGULATION_GROUPS, REGULATION_GROUP_SECTIONS, SUBPARTS } from '@/lib/gcpFixtures'
+import { loadGcp } from '@/lib/dataset'
+import { useGcpFlowStore } from './gcpFlowStore'
 import type { DdsType, Delegation, Discipline, Foc, Moc, Regulation, RegulationGroup, RegulationGroupSection, Subpart, Subsection } from '@/types/gcp'
 
 interface GcpState {
+  /** Regulations, subsections and certification bases come from the client's
+      database (`public/data`), fetched by `ensureGcpData` on the first GCP
+      screen; empty until `dataStatus` is `ready`. */
+  dataStatus: 'idle' | 'loading' | 'ready' | 'error'
+  ensureGcpData: () => void
   regulations: Regulation[]
   subparts: Subpart[]
   subsections: Subsection[]
@@ -58,10 +65,22 @@ interface GcpState {
   removeDdsType: (id: string) => void
 }
 
-export const useGcpStore = create<GcpState>((set) => ({
-  regulations: REGULATIONS,
+export const useGcpStore = create<GcpState>((set, get) => ({
+  dataStatus: 'idle',
+  ensureGcpData: () => {
+    if (get().dataStatus === 'loading' || get().dataStatus === 'ready') return
+    set({ dataStatus: 'loading' })
+    loadGcp().then(
+      ({ regulations, subsections, certBases }) => {
+        useGcpFlowStore.getState().hydrate(certBases.bases, certBases.projectBasis)
+        set({ regulations, subsections, dataStatus: 'ready' })
+      },
+      () => set({ dataStatus: 'error' }),
+    )
+  },
+  regulations: [],
   subparts: SUBPARTS,
-  subsections: SUBSECTIONS,
+  subsections: [],
   groups: REGULATION_GROUPS,
   groupSections: REGULATION_GROUP_SECTIONS,
   focs: FOC_LIST,

@@ -51,7 +51,7 @@ export function CertBasisRail({ bases, selectedId, needsFixing, query, onQueryCh
                       ${isSel ? 'border-accent bg-neutral-100' : 'border-transparent hover:bg-neutral-50'}`}>
                     <span className="grid min-w-0 flex-1 gap-xxss">
                       <span className={`block truncate text-sm text-text-primary ${isSel ? 'font-semibold' : ''}`}>{b.aircraftModel}</span>
-                      <span className="block truncate text-xs text-text-muted">{b.tcdsNumber ? `TCDS ${b.tcdsNumber}` : 'Project-specific'}</span>
+                      <span className="block truncate text-xs text-text-muted">{b.description || (b.tcdsNumber ? `TCDS ${b.tcdsNumber}` : 'Project-specific')}</span>
                     </span>
                     {flagged && <TriangleAlert size={16} className="shrink-0 text-warning" aria-hidden />}
                     <span aria-hidden className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full border border-border-default px-xs text-xs font-semibold tabular-nums text-text-secondary">

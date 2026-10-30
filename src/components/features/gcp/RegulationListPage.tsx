@@ -24,6 +24,7 @@ import { RegulationDrawer } from './RegulationDrawer'
 import { RegulationDetailDrawer } from './RegulationDetailDrawer'
 import { CodeWithName } from './CodeWithName'
 import { GcpChip } from './GcpChip'
+import { useGcpData } from './GcpDataGate'
 import {
   EMPTY_REGULATION_FILTERS, RegulationFilterMenu, regulationFilterChips, type RegulationFilters,
 } from './RegulationFilterMenu'
@@ -69,7 +70,12 @@ const optionsOf = (rows: Regulation[], pick: (r: Regulation) => string) =>
  * Filters menu with chips, the app's standard — the same columns are filterable,
  * they just no longer cost a second header row on a table this wide.
  */
-export function RegulationListPage({ state = 'ready' }: { state?: PageState }) {
+export function RegulationListPage({ state: forced = 'ready' }: { state?: PageState }) {
+  /* The rows are the client's 3,973 regulations, fetched on first visit; a
+     `state` other than ready (Storybook) wins over the real load. */
+  const dataStatus = useGcpData()
+  const state: PageState = forced !== 'ready' ? forced
+    : dataStatus === 'error' ? 'error' : dataStatus === 'ready' ? 'ready' : 'loading'
   const regulations = useGcpStore((s) => s.regulations)
   const subparts = useGcpStore((s) => s.subparts)
   const subsections = useGcpStore((s) => s.subsections)

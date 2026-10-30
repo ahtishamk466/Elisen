@@ -2,43 +2,38 @@ import { create } from 'zustand'
 import type { CertBasis, GcpItem, PlanEntry } from '@/types/gcp'
 
 /**
- * Demo seed only, so the Step 1 project table has something other than
- * em-dashes to show for Applicable / Affected / GCP Progress before anyone
- * has actually run Initialize on a project. Ids match two real TCCA projects
- * (`tp-60` "1568 -Top Aces 1623", `tp-64` "A-11-0007") and the ten fixture
- * regulations in `gcpFixtures.ts` — no client data invented, just wired up
- * early instead of waiting for a real Initialize pass.
+ * Demo plan only, so the GCP Projects table has something other than dashes
+ * for Applicable / Affected / GCP Progress before anyone runs Initialize: the
+ * first eight rules of `tp-60`'s real basis ("1568 -Top Aces 1623" uses
+ * A4N_23-14), five affected and three of those complete. The legacy plans
+ * themselves (`certplan`) are not imported yet.
  */
-function seedPlanEntries(): PlanEntry[] {
-  const forProject = (projectId: string, affectedCount: number, completeCount: number, total: number): PlanEntry[] =>
-    Array.from({ length: total }, (_, i) => {
-      const affected = i < affectedCount
-      return {
-        id: `seed-${projectId}-reg-${i + 1}`,
-        projectId,
-        regulationId: `reg-${i + 1}`,
-        affected,
-        methodText: '',
-        comments: '',
-        ddsType: '',
-        ddsText: '',
-        complete: affected && i < completeCount,
-      }
-    })
-  return [
-    ...forProject('tp-60', 5, 3, 8),
-    ...forProject('tp-64', 6, 6, 6),
-  ]
+function demoPlan(bases: CertBasis[], projectBasis: Record<string, string>): PlanEntry[] {
+  const basis = bases.find((b) => b.id === projectBasis['tp-60'])
+  return (basis?.regulationIds.slice(0, 8) ?? []).map((regulationId, i) => ({
+    id: `seed-tp-60-reg-${i + 1}`,
+    projectId: 'tp-60',
+    regulationId,
+    affected: i < 5,
+    methodText: '',
+    comments: '',
+    ddsType: '',
+    ddsText: '',
+    complete: i < 3,
+  }))
 }
 
 interface GcpFlowState {
-  /** Every basis built so far. Empty until one is created or imported. */
+  /** The client's bases from the legacy database, plus any built here. Empty
+      until `hydrate` runs with the GCP data (`useGcpStore.ensureGcpData`). */
   bases: CertBasis[]
   /** TCCA project id → basis id, the link the legacy "Associate" screen made. */
   projectBasis: Record<string, string>
   planEntries: PlanEntry[]
   items: GcpItem[]
 
+  /** Loads the database's bases and project links, and the demo plan on top. */
+  hydrate: (bases: CertBasis[], projectBasis: Record<string, string>) => void
   saveBasis: (basis: CertBasis) => void
   linkBasis: (projectId: string, basisId: string) => void
 
@@ -49,21 +44,6 @@ interface GcpFlowState {
   addItem: (item: GcpItem) => void
   updateItem: (id: string, patch: Partial<GcpItem>) => void
   removeItem: (id: string) => void
-}
-
-/**
- * The two bases `projectBasis` below already points at — without these, the
- * Cert Basis page had nothing to show (its rail read `bases`, which was
- * empty) and `FlowStepBasis` read an empty `regulationIds` for both seeded
- * projects. Same regulation ids `seedPlanEntries` already uses for each
- * project, so the counts agree everywhere (8 for tp-60, 6 for tp-64).
- */
-function seedBases(): CertBasis[] {
-  const regIds = (n: number) => Array.from({ length: n }, (_, i) => `reg-${i + 1}`)
-  return [
-    { id: 'seed-basis-tp-60', aircraftModel: '1568 -Top Aces 1623', tcdsNumber: '', regulationIds: regIds(8) },
-    { id: 'seed-basis-tp-64', aircraftModel: 'A-11-0007', tcdsNumber: '', regulationIds: regIds(6) },
-  ]
 }
 
 /**
@@ -80,11 +60,12 @@ function seedItems(): GcpItem[] {
 }
 
 export const useGcpFlowStore = create<GcpFlowState>((set) => ({
-  bases: seedBases(),
-  projectBasis: { 'tp-60': 'seed-basis-tp-60', 'tp-64': 'seed-basis-tp-64' },
-  planEntries: seedPlanEntries(),
+  bases: [],
+  projectBasis: {},
+  planEntries: [],
   items: seedItems(),
 
+  hydrate: (bases, projectBasis) => set({ bases, projectBasis, planEntries: demoPlan(bases, projectBasis) }),
   saveBasis: (basis) => set((s) => ({
     bases: s.bases.some((b) => b.id === basis.id)
       ? s.bases.map((b) => (b.id === basis.id ? basis : b))

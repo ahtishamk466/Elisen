@@ -4,6 +4,7 @@ import type { Company, CompanyContact, AircraftModel, AircraftSerial, AtaChapter
 import type { Approval, ApprovalRevision, DocRevision, ProjectDocument, ProjectRevisionLink } from '@/types/documents'
 import type { TccaDocLink, TccaProject } from '@/types/tcca'
 import type { TimesheetEntry } from '@/types/timesheet'
+import type { CertBasis, Regulation, Subsection } from '@/types/gcp'
 
 /**
  * The client's own records, served as JSON rather than compiled in.
@@ -19,6 +20,9 @@ import type { TimesheetEntry } from '@/types/timesheet'
  *   and it is ~450 KB over the wire.
  * - **Timesheet** is 31k rows and only four screens read it, so it loads on
  *   its own and those screens show their existing loading state until it lands.
+ * - **GCP** is every regulation and certification basis (~430 KB, mostly
+ *   regulation text). Only the GCP screens read it, so it loads the same way,
+ *   behind `GcpDataGate`.
  */
 export interface CoreData {
   projects: ProjectListRow[]
@@ -72,4 +76,27 @@ let timesheetPromise: Promise<TimesheetEntry[]> | null = null
 export function loadTimesheet(): Promise<TimesheetEntry[]> {
   timesheetPromise ??= fetchJson<TimesheetEntry[]>('timesheet')
   return timesheetPromise
+}
+
+export interface GcpData {
+  regulations: Regulation[]
+  subsections: Subsection[]
+  /** The legacy Master Cert Basis list with its rules, and TCCA project id →
+      basis id (`tccaproject.mastercertbasis_id`). */
+  certBases: { bases: CertBasis[]; projectBasis: Record<string, string> }
+}
+
+let gcpPromise: Promise<GcpData> | null = null
+
+/** Shared like the timesheet, but forgotten on failure so Retry refetches. */
+export function loadGcp(): Promise<GcpData> {
+  gcpPromise ??= Promise.all([
+    fetchJson<Regulation[]>('regulations'),
+    fetchJson<Subsection[]>('subsections'),
+    fetchJson<GcpData['certBases']>('certBases'),
+  ]).then(
+    ([regulations, subsections, certBases]) => ({ regulations, subsections, certBases }),
+    (error: unknown) => { gcpPromise = null; throw error },
+  )
+  return gcpPromise
 }

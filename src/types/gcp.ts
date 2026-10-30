@@ -78,8 +78,12 @@ export interface RegulationGroupSection {
  */
 export interface CertBasis {
   id: string
-  /** The aircraft model the basis is for, e.g. CL-650. */
+  /** The aircraft model the basis is for, e.g. CL-650. Legacy bases carry
+      their Master Cert Basis code here, model + TCDS (DHC-8-3XX_A-142). */
   aircraftModel: string
+  /** One line on what the basis covers, e.g. "TCCA TCDS A-142 for DHC-300
+      series" — the legacy Master Cert Basis description. */
+  description?: string
   /** The Transport Canada type certificate the rules were read from. Empty for
       a project-specific basis, which has no TCDS. */
   tcdsNumber: string

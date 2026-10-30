@@ -7829,3 +7829,51 @@ they use with Transport Canada. Verified at 1440×900 on GCP Projects, step 4
 and its GCP Data drawer, People & Authority, Reference Lists, Regulations and
 Certification Basis: no header or tab is clipped and there are no console
 errors.
+
+## 2026-10-30 — Every certification basis and regulation comes from the database
+**Context:** The user asked for all the certification bases from the
+database. The app had two invented bases and about 400 regulations copied by
+hand from the legacy screens. The 2026-10-26 dump holds:
+- 40 bases (`mastercertbasis`), with 14,310 links to rules (`certbasis`)
+- 3,973 regulations
+- 142 TCCA projects linked to a basis
+
+The bases use 3,958 of those regulations, so they need the whole regulation
+table.
+**Choice:**
+- `tools/4-build-gcp.py` reads the dump. It writes `regulations.json`,
+  `subsections.json` and `certBases.json` (the bases plus `projectBasis`).
+  - 2 exact duplicate links are dropped.
+  - Rules are ordered by the regulation sort key.
+  - A basis's TCDS number comes from its code, model + TCDS (DHC-8-3XX_A-142
+    → A-142). Seven codes have none (1617_TIA, A4N_23-14, …); they show
+    their description instead.
+  - A blank `active` maps to inactive, as on the legacy list. About 2,870 of
+    3,973 regulations show Inactive, which is the client's data.
+- **Loaded only on GCP screens:** ~430 KB gzipped, mostly regulation text.
+  Adding it to core would nearly double every page's first load, which
+  already takes ~13 s over the slow route measured today. `GcpDataGate`
+  shows loading, and Try Again on error.
+- The replaced `REGULATIONS` and `SUBSECTIONS` fixtures are deleted, as are
+  the invented bases "1568 -Top Aces 1623" and "A-11-0007".
+- `CertBasis` gains `description`. It is shown in the list, on the card and
+  in the drawer.
+- Used By is now `ChipOverflow`: A4N_23-14 serves 16 projects, which wrapped
+  to ten lines.
+- **Demo plan:** the GCP Projects demo plan now uses the first eight rules of
+  1568's real basis (A4N_23-14), with the same counts as before. A-11-0007
+  has no basis in the database, so its demo plan is gone.
+**Not imported yet:** the legacy compliance plans (`certplan`, 6,545 rows)
+and GCP Data (`gcp`). Step 1's Applicable, Affected and Status columns stay
+empty for real projects until those come in.
+**Rationale:** "The client's real data replaces every fixture" (2026-08-28),
+now for GCP too. The fixtures already said the rest would arrive with the
+client's export.
+
+Verified at 1440×900:
+- 40 bases, 13 flagged for repeated rules.
+- A4N_23-14: 402 rules, 16 projects.
+- 1568's step 2 opens on its real basis.
+- Regulations shows all 3,973, 25 at a time.
+- The loading, error and Try Again states work.
+- No console errors.

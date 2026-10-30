@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from 'react'
+import { ChipOverflow } from '@/components/patterns/ChipOverflow'
 import { FileLink } from '@/components/patterns/FileLink'
 import { Stat } from '@/components/patterns/Stat'
 import { Alert } from '@/components/ui/Alert'
@@ -42,7 +43,7 @@ export function CertBasisSummary({ basis, actions, onKeepLatest }: {
     <div className="grid gap-base">
       <div className="flex flex-wrap items-center gap-sm">
         <h2 className="truncate text-base font-semibold text-text-primary">{basis.aircraftModel}</h2>
-        <span className="text-sm text-text-muted">{basis.tcdsNumber ? `TCDS ${basis.tcdsNumber}` : 'Project-specific'}</span>
+        <span className="min-w-0 text-sm text-text-muted">{basis.description || (basis.tcdsNumber ? `TCDS ${basis.tcdsNumber}` : 'Project-specific')}</span>
         <span className="ml-auto flex items-center gap-sm">
           {basis.tcdsUrl && <FileLink url={basis.tcdsUrl} label="Open TCDS" />}
           {actions}
@@ -54,7 +55,8 @@ export function CertBasisSummary({ basis, actions, onKeepLatest }: {
         <Stat dl label="Built From">{levelLabel(basis)}</Stat>
         <Stat dl label="Basis on the TCDS">{basis.basisStatement || undefined}</Stat>
         <Stat dl label="Source Document"><FileLink url={basis.sourceDocument?.url} label={basis.sourceDocument?.name} /></Stat>
-        <Stat dl label="Used By">{usedBy.length > 0 ? usedBy.join(', ') : 'No projects yet'}</Stat>
+        {/* Up to 16 projects share one basis (A4N_23-14): two chips, then +N more. */}
+        <Stat dl label="Used By">{usedBy.length > 0 ? <ChipOverflow items={usedBy} max={2} label="projects" /> : 'No projects yet'}</Stat>
       </dl>
 
       {dupes.length > 0 && (

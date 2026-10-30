@@ -25,6 +25,7 @@ import { ReadOnlyField } from './ReadOnlyField'
 import { isOpenableUrl } from '@/components/patterns/UrlField'
 import { sourceLabel } from '@/lib/gcpDisplay'
 import type { PlanEntry } from '@/types/gcp'
+import { GcpDataGate } from '../GcpDataGate'
 
 export const FLOW_STEPS = [
   'Project',
@@ -231,6 +232,7 @@ export function GcpFlowPage() {
          back to the browser window instead of boxing itself in. */
       fill={step !== 4}
     >
+      <GcpDataGate>
       <div className="flex min-h-0 flex-1 flex-col gap-lg">
         {/* Step 1 is the plain "pick a project" landing table — no stepper,
             since nothing's been started yet. The stepper only makes sense
@@ -398,6 +400,7 @@ export function GcpFlowPage() {
           </div>
         )}
       </div>
+      </GcpDataGate>
 
       {createOpen && (
         <Drawer

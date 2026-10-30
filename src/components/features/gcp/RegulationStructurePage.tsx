@@ -18,6 +18,7 @@ import type { Subpart, Subsection } from '@/types/gcp'
 import { GcpRegulationsTabs } from './GcpRegulationsTabs'
 import { SubpartDrawer } from './SubpartDrawer'
 import { SubsectionDrawer } from './SubsectionDrawer'
+import { GcpDataGate } from './GcpDataGate'
 
 const COLUMNS: { label: string; sort?: 'id' | 'code' | 'title' | 'active'; width: number }[] = [
   { label: 'ID', sort: 'id', width: 64 },
@@ -126,6 +127,7 @@ export function RegulationStructurePage() {
       <div className="flex min-h-0 flex-1 flex-col gap-lg">
         <GcpRegulationsTabs active="Structure" />
 
+        <GcpDataGate>
         {filtered.length === 0 ? (
           <div className="rounded-sm border border-border-default bg-neutral-25">
             <EmptyState
@@ -295,6 +297,7 @@ export function RegulationStructurePage() {
             )}
           </div>
         )}
+        </GcpDataGate>
       </div>
 
       {subpartDrawer && (

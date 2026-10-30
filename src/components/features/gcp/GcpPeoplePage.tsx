@@ -9,6 +9,7 @@ import { useGcpStore } from '@/stores/gcpStore'
 import { GcpDelegationTab } from './GcpDelegationTab'
 import { GcpDisciplineTab } from './GcpDisciplineTab'
 import { GcpFocTab } from './GcpFocTab'
+import { useGcpData } from './GcpDataGate'
 
 /** Who may sign, for which rule, in which technical field — the three lists
     that decide what the compliance-item picker offers. */
@@ -27,6 +28,8 @@ const TABS = [
  * data screen. See docs/COMPONENTS.md, "Tabbed page layout".
  */
 export function GcpPeoplePage() {
+  // Delegation's Section Root picker reads the regulations; start their load.
+  useGcpData()
   const [searchParams, setSearchParams] = useSearchParams()
   const active = TABS.find((t) => t.key === searchParams.get('tab')) ?? TABS[0]
   const [createOpen, setCreateOpen] = useState(false)

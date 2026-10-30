@@ -32,6 +32,7 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
   const isEdit = mode === 'edit'
   const regulations = useGcpStore((s) => s.regulations)
   const [aircraftModel, setAircraftModel] = useState(initial?.aircraftModel ?? '')
+  const [description, setDescription] = useState(initial?.description ?? '')
   const [tcdsNumber, setTcdsNumber] = useState(initial?.tcdsNumber ?? '')
   const [tcdsUrl, setTcdsUrl] = useState(initial?.tcdsUrl ?? '')
   const [basisStatement, setBasisStatement] = useState(initial?.basisStatement ?? '')
@@ -114,6 +115,7 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
       ...initial,
       id: isEdit ? initial!.id : crypto.randomUUID(),
       aircraftModel: aircraftModel.trim(),
+      description: description.trim(),
       tcdsNumber: tcdsNumber.trim(),
       tcdsUrl: tcdsUrl.trim(),
       basisStatement: basisStatement.trim(),
@@ -139,6 +141,10 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
         <FormField label="Aircraft Model" htmlFor="basis-model" required error={error} fullWidth>
           <Input id="basis-model" value={aircraftModel} error={!!error} placeholder="e.g. CL-650"
             onChange={(e) => { setAircraftModel(e.target.value); setError('') }} />
+        </FormField>
+        <FormField label="Description" htmlFor="basis-description" fullWidth>
+          <Input id="basis-description" value={description} maxLength={255} placeholder="e.g. TCCA TCDS A-142 for DHC-8-300 series"
+            onChange={(e) => setDescription(e.target.value)} />
         </FormField>
         <FormField label="Type Certificate Data Sheet (TCDS) Number" htmlFor="basis-tcds" fullWidth
           help="Blank for a project-specific basis.">

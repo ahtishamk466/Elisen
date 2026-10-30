@@ -18,6 +18,7 @@ import { CertBasisImportDrawer } from './CertBasisImportDrawer'
 import { CertBasisRail } from './CertBasisRail'
 import { CertBasisSummary } from './CertBasisSummary'
 import { CertBasisTable } from './CertBasisTable'
+import { GcpDataGate } from './GcpDataGate'
 import { RegulationDetailDrawer } from './RegulationDetailDrawer'
 import { RegulationDrawer } from './RegulationDrawer'
 
@@ -60,7 +61,7 @@ export function GcpCertBasesPage() {
 
   const q = query.trim().toLowerCase()
   const filtered = bases.filter((b) => !q
-    || `${b.aircraftModel} ${b.tcdsNumber}`.toLowerCase().includes(q)
+    || `${b.aircraftModel} ${b.tcdsNumber} ${b.description ?? ''}`.toLowerCase().includes(q)
     || regsOf(b).some((r) => `${r.section} ${r.amdt} ${r.title}`.toLowerCase().includes(q)))
   const selected = filtered.find((b) => b.id === searchParams.get('basis')) ?? filtered[0] ?? null
   const selectedRules = useMemo(() => (selected ? regsIn(selected, regById) : []), [selected, regById])
@@ -85,6 +86,7 @@ export function GcpCertBasesPage() {
         </>
       }
     >
+      <GcpDataGate>
       {bases.length === 0 ? (
         <div className="rounded-sm border border-border-default bg-neutral-25">
           <EmptyState icon={<FolderKanban size={48} strokeWidth={1.5} />} title="No certification basis yet"
@@ -129,6 +131,7 @@ export function GcpCertBasesPage() {
           )}
         </div>
       )}
+      </GcpDataGate>
 
       {basisDrawer && (
         <CertBasisDrawer mode={basisDrawer.mode} initial={basisDrawer.basis}

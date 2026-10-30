@@ -51,13 +51,15 @@ def cols_for(table, ddl_text):
         if cm: cols.append(cm.group(1))
     return cols
 
-ddl=open('ddl.txt').read()
-out={}
-for fn in sorted(os.listdir('tbl')):
-    t=fn[:-4]
-    sql=open('tbl/'+fn, encoding='utf-8', errors='replace').read()
-    rows=parse_values(sql)
-    cols=cols_for(t, ddl)
-    out[t]={'cols':cols,'n':len(rows)}
-    json.dump({'cols':cols,'rows':rows}, open('json/%s.json'%t,'w'), ensure_ascii=False)
-for t in sorted(out): print(f"{t:32} {out[t]['n']:>7}  {len(out[t]['cols'] or [])} cols")
+# Guarded so 4-build-gcp.py can import the two parsers above.
+if __name__ == '__main__':
+    ddl=open('ddl.txt').read()
+    out={}
+    for fn in sorted(os.listdir('tbl')):
+        t=fn[:-4]
+        sql=open('tbl/'+fn, encoding='utf-8', errors='replace').read()
+        rows=parse_values(sql)
+        cols=cols_for(t, ddl)
+        out[t]={'cols':cols,'n':len(rows)}
+        json.dump({'cols':cols,'rows':rows}, open('json/%s.json'%t,'w'), ensure_ascii=False)
+    for t in sorted(out): print(f"{t:32} {out[t]['n']:>7}  {len(out[t]['cols'] or [])} cols")

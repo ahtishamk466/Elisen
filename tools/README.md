@@ -10,6 +10,19 @@ python3 3-build-fixtures.py  # json/*   -> out/*.ts + out/data/*.json
 ```
 
 Then copy `out/*.ts` into `src/lib/` and `out/data/*.json` into `public/data/`.
+
+GCP reference data has its own step, which reads the dump directly:
+
+```bash
+python3 4-build-gcp.py <pmtts_*.sql.gz>   # -> out/data/{regulations,subsections,certBases}.json
+```
+
+It exports every regulation, subsection and certification basis (the legacy
+Master Cert Basis list with its `certbasis` rules) and each TCCA project's
+basis (`tccaproject.mastercertbasis_id`). A basis's TCDS number is read from
+its code, model + TCDS (`DHC-8-3XX_A-142` → `A-142`); a code without one is a
+project-specific basis. These tables hold no people; the run stops if an email
+address reaches the output.
 Set `SRC` at the top of `1-split-dump.py` to the dump's path first.
 
 ## What is and is not imported
