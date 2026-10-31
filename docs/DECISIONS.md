@@ -8120,3 +8120,130 @@ User clarified exact standalone regulation 23.1 at amendment 23-34 (reg-4) had [
 The user explicitly authorized selecting one or several exact existing regulation records in one dropdown and adding the batch once in Create and Edit, superseding the earlier separate Section/Amendment picking interaction. RulePicker now uses the shared searchable checkbox MultiSelect with section/amendment/title identity, including No amendment recorded for actual blank values and separate IR. appendBasisRules preserves existing IDs, filters invalid staged IDs, and deduplicates exact IDs. Alternate versions remain allowed with warning. Selection is staged until Add selected(N), which is disabled when empty and clears staging after Add. Pending ticks also trigger the existing discard guard; added draft rows survive Back. No new Regulation validation, fabricated versions, project linking location or workflow steps change.
 
 An opt-in virtualized MultiSelect bounds the large regulation library to roughly fifteen mounted options while retaining search, keyboard active-option navigation and checkbox semantics; default consumers retain their original rendering. No new package. Regression checks cover different sections/versions, blank/IR preservation, duplicates, unknown IDs, single-record batches and alternate-version warning. Browser verified Create five exact records→one Add→save/reopen in disposable in-memory state, Edit batch addition, pending Cancel/Keep editing, duplicate disabled state and keyboard navigation. TypeScript/build passed. Layout-only rollback mirrors this functional RulePicker and pending guard, so it does not discard the multi-select or previous behavior fixes.
+
+
+## 2026-10-31 — Isolated contextual Regulations authoring trial
+
+The user approved trying clearer Subpart/Subsection/Regulation authoring in a separate worktree and branch before choosing whether to retain it. The trial lives in `/Users/rashda/.codex/worktrees/regulations-context-flow/Elisen`, branch `codex/regulations-context-flow`, preview `http://127.0.0.1:5181`; the original checkout and its Basis work remain untouched. No commit, merge or deployment is implied.
+
+Structure now provides Subpart → named Subsection/topic → exact Regulation/amendment records, with direct reading and contextual Add Regulation. A new rule receives the current Subpart/Subsection pair; an existing edit/copy always keeps its stored classification. The original global library Add remains available. Creating a missing Subpart or Subsection from a Regulation form temporarily replaces its visible drawer, retaining the parent draft, then selects the exact new entry and returns focus. Unsaved Regulation close/Cancel/Escape prompts discard, with keyboard focus contained and Keep editing restoring the draft. Escape inside a classification picker closes that picker without also closing the form.
+
+The actual source dataset has 74 subsections. Prefix-only parent filtering is unsafe: saved combinations include K with F01/B07, and special-condition/exemption or `-` classifications. `regulationStructure` combines prefix suggestions with actual saved pairs; form options keep all other existing classifications accessible. New cross-prefix Subsections retain a transient pair for the active Structure session until a saved Regulation establishes that pair. No stored taxonomy migration, strict prefix validation or reclassification is introduced.
+
+Regulations remain one exact record per Section and Amendment, unlike the one-Master-per-row Basis listing. The topic table never merges versions. Historical blank amendments display separately from IR and retain their original IDs/strings; new/edit Regulation validation still requires Amendment. Requirement/default MOC text, explicit Sort/Section Root overrides, existing source links and Active values round-trip with the previous validation semantics. No rich-text authoring change, new package, shared UI primitive, deletion-policy expansion or project-association change is part of this trial.
+
+Verification evidence is deliberately bounded: the primary's live user walkthrough verified C → C01 → Add Regulation with both classifications preselected. Other browser cases are not claimed complete here. The two focused regression scripts cover saved classification discovery, exact-pair amendments, draft/context precedence, cross-prefix round-trip, duplicate checks, blank/IR distinction and unchanged source text.
+
+Trial checks passed: TypeScript no-emit, Vite production build, both focused Regulation regression scripts and `git diff --check`. Vite retains its large-chunk advisory; it is not a build failure. No browser or foreground actions were used for these checks.
+
+
+## 2026-10-31 — Remove status text from the trial Subpart rail
+
+User requested removing Active/Inactive beneath Subpart names in Structure. The trial rail now omits this status label from visible and screen-reader row text. Stored active values, form controls and detail/table status displays retain their existing behavior.
+
+
+## 2026-10-31 — Rename Structure to Certification Topics
+
+User chose Certification Topics for the Regulations tab containing Subparts and Subsections. All four tab-strip consumers display the new label and the topic page selects it. The existing `?tab=structure` route remains the stable target so current links and the live review screen continue to work. Classification data and flow are unchanged.
+
+
+## 2026-10-31 — Shorten the Subpart create action
+
+User requested Add Subpart instead of Add New Subpart. Both the Certification Topics header and its empty-state action now use Add Subpart; creation behavior is unchanged.
+
+
+## 2026-10-31 — Shorten the Regulation Group create action
+
+User requested Add Group instead of Add New Group. The Groups header and empty-state action now use Add Group; creation behavior is unchanged.
+
+
+## 2026-10-31 — Simplify the selected Subpart header
+
+User requested removing the top Subpart/count summary and status. Certification Topics now omits the Subpart code/subsection-count line and Active/Inactive badge beneath/beside the selected Subpart title. The title, code mark and Edit/Delete menu remain. Stored values and navigation/table counts are unchanged.
+
+
+## 2026-10-31 — Remove the entire selected Subpart summary band
+
+User clarified that the complete title/code/menu band should disappear to give Subsections more vertical room and make scanning easier. Certification Topics now starts its right pane directly with Subsections or the selected topic content. Existing Subpart Edit/Delete actions move into rail-row menus alongside the selection buttons, never nested inside them; existing confirmations stay intact. The redundant top dividers on the content panels are removed. This supersedes the earlier partial summary cleanup.
+
+Subpart names use the same text treatment after the user-requested status removal, so inactive state is not conveyed by colour alone. Topic/Subsections headings are level two now that the former level-two summary heading has been removed.
+
+
+## 2026-10-31 — Restore Subsection Part ranges to the trial listing
+
+User identified that the simplified topic table omitted the Part ranges entered on each Subsection. The listing again shows Part 23, 25, 27 and 29 beside the code/title, with sortable saved values. X is preserved and missing values show an em dash. The removed Subpart summary band stays removed; a contained table scroll handles narrow widths. No stored range or form behavior changes.
+
+
+## 2026-10-31 — Keep Subsection code and title on one line
+
+User requested C01 and its topic title on a single line. The topic-open button now shows code — title in one row; the code never shrinks/wraps and long titles use existing one-line Truncate with full-text hover. No behavior or stored value changes.
+
+
+## 2026-10-31 — Collapsible Subpart navigation
+
+User requested collapsing the left Subpart panel to codes and restoring it on demand. An accessible Expand/Collapse Subparts button switches the local rail between its normal width and a 100px codes-only column, giving the released space to the Subsection/Regulation pane. Codes are the complete stored values (including AWO, APP and Non-ATC), not their abbreviated icon initials. Selected Subpart/topic, search and current data stay intact. Collapsed buttons retain full accessible names and native hover titles; expanding restores labels, counts and row actions. State is local to the mounted topic page; no persistent storage or global sidebar change.
+
+
+## 2026-10-31 — One selected-tab highlight across the app
+
+User explicitly requested a global consistent blue highlight and clean shared code. SectionTabs and TableTabs now use patterns/tabStyles.ts for the selected accent underline with semibold primary text. Equivalent handrolled strips in Project Detail, TCCA Detail, Approval Detail, Roles & Permissions, Audit Control and Profile now use SectionTabs without API/state/callback changes. Existing table keyboard navigation stays intact. Patterns/Overview includes TabHighlightConsistency for interactive comparison. Sidebar, focus and chip styles are outside this change.
+
+## 2026-10-31 — Preserve code-badge format when collapsing Subparts
+
+User requested the same code shape/style before and after collapse, including EX and ES. Both modes now render the same rounded accent badge markup and full original code; only surrounding labels/counts/actions hide. Longer stored codes can widen the same badge treatment instead of being replaced by initials or clipped.
+
+
+## 2026-10-31 — Reduce Subpart navigation horizontal spacing
+
+User clarified that all Subpart rows and the collapsed column occupy too much horizontal space, not only Non-ATC. The expanded/collapsed rail widths reduce from 320/100px to 280/64px; the pane gutter, row horizontal padding and code/name gaps are reduced using existing spacing tokens. Code badges retain their common shape and full stored codes in both modes. This supersedes the earlier trial rail widths.
+
+
+## 2026-10-31 — Topic row actions, contained Section text and hidden Checklist
+
+User requested missing Edit/Delete options on the topic Regulation table. Every row now has View/Edit/Delete through ActionsMenu; deletion uses the shared usage-aware dialog. The observed overlap was visual: long Section identifiers painted across Amendment, not duplicate data. Section gets a larger column and a constrained wrapping button/span; row height grows as needed and the full identifier remains visible. No amendment normalization, automatic version selection or historical record removal occurs. The user also requested hiding Checklist for now; it is removed from the Regulations tab navigation while its implementation/direct route are retained.
+
+Safe deletion is enforced at store level as well as in both row-menu dialogs: a Regulation referenced by any Basis or plan entry cannot be removed. The shared dialog displays counts and offers making an active used record inactive while retaining its references; already-inactive used records remain protected. Unused records still require the established delete confirmation. `node scripts/check-regulation-usage.mjs` covers Basis/plan references and missing/unused exact IDs using disposable process-only state. No source dataset or existing browser record was deleted in verification.
+
+
+## 2026-10-31 — Top-align Add Subsection
+
+User clarified that top alignment applies to the Add Subsection button, not table cells. Its header flex row now uses items-start, aligning the action to the top of the heading/description block.
+
+
+## 2026-10-31 — Inline topic back navigation
+
+User requested reclaiming the separate Subsections back-row space in the Regulations topic view. Its back arrow now sits beside the topic title (e.g. General), with an accessible Back to subsections label and native title. The back callback and return-focus behavior are unchanged.
+
+
+## 2026-10-31 — Compact topic search in the header
+
+User requested reducing the space occupied by topic search. The separate full-width labelled search row is replaced by a 320px small Input beside Add Regulation in the topic-title toolbar, with a screen-reader label. Controls wrap below the title on narrower screens. Search still filters Section, Amendment and Title and resets incremental reveal; no search logic or data changes.
+
+
+## 2026-10-31 — Remove Subsection navigation underlines
+
+User requested removing underlines from Subsection code/title buttons. The topic-open button omits the permanent underline and explicitly keeps text decoration none on hover, retaining its native button, accent text, keyboard focus and existing click behavior. Other links are unchanged.
+
+## 2026-10-31 — Remove topic Regulation navigation underlines
+
+User requested the same treatment on topic Regulation section numbers. Their view buttons now omit permanent and hover underlines while retaining accent text, keyboard focus, full wrapping identifiers and the existing detail drawer action.
+
+## 2026-10-31 — Name the parent workspace Regulatory Library
+
+User selected Regulatory Library as the GCP menu name because it contains Regulations, Certification Topics and Groups. The shared navigation label and all workspace AppShell headings/active-child labels use the new name, including the hidden Checklist route and regulation-load error shell. Internal tab names, routing and library data are unchanged.
+
+## 2026-10-31 — Clarify the Regulation Groups tab name
+
+User approved Regulation Groups for the former Groups tab. Section navigation, selected label and count use the new display name while the existing groups URL slug is preserved. The previously requested Add Group label remains unchanged.
+
+
+## 2026-10-31 — Remove duplicate selected Regulation Group header
+
+User requested the Regulation Groups right pane follow the compact Certification Topics treatment. The repeated selected group title, description, Active badge and header action menu are removed; the pane now begins with the h2 Regulation List heading and Add Regulation toolbar, followed by its existing table or empty state. The header toolbar has no orphan top divider, and the selected group's title remains the region's accessible name.
+
+Group Edit/Delete now belongs to each left rail row as an ActionsMenu sibling of the native selection button, preserving keyboard access without nested buttons. Title/description, explicit Inactive text, rule counts, URL selection, search, Add Group, existing group forms/deletion and regulation-row Edit/Remove behavior remain. RegulationGroupsPage is split into feature-local RegulationGroupRail and RegulationGroupRegulationsPanel to keep the page below 200 lines and isolate navigation from table presentation. Existing shared controls/tokens are reused; no data, source fixtures, packages or shared UI primitives change. Browser verification remains with the primary agent; this change adds no simulated group membership or records.
+
+
+## 2026-10-31 — Keep topic context bound to its explicitly selected Subpart
+
+Final review found that header search could filter away the URL-selected Subpart while leaving its topic resolved globally. The fallback parent could then be paired with that stale topic in Add Regulation. `selectedRegulationTopic` now opens a topic only when the effective selected Subpart still matches the explicit URL parent. Clearing search restores the original explicit context; global exact-topic lookup remains available for saved cross-prefix pairs and newly created topics. A focused regression checks filtered-away parent isolation, restoration, cross-prefix/new context and missing topic/parent cases without rewriting classifications.

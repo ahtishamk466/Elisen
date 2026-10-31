@@ -13,9 +13,9 @@ export function GcpRegulationsPage() {
     REGULATION_SECTIONS.find((s) => sectionSlug(s) === searchParams.get('tab')) ?? 'Regulations'
 
   switch (section) {
-    case 'Structure':
+    case 'Certification Topics':
       return <RegulationStructurePage />
-    case 'Groups':
+    case 'Regulation Groups':
       return <RegulationGroupsPage />
     case 'Checklist':
       return <RegulationChecklistPage />

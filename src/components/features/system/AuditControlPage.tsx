@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AppShell } from '@/components/patterns/AppShell'
+import { SectionTabs } from '@/components/patterns/SectionTabs'
 import { Alert } from '@/components/ui/Alert'
 import { AuditPanelTab } from './AuditPanelTab'
 import { AuditCleanTab } from './AuditCleanTab'
@@ -34,20 +35,7 @@ export function AuditControlPage({ state = 'ready' }: { state?: PageState }) {
     <AppShell title="Audit Control" activeItem="System" activeChild="Audit Control">
       <div className="grid gap-lg">
 
-        <nav className="flex gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg" aria-label="Audit sections">
-          {TABS.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              aria-current={tab === t ? 'page' : undefined}
-              className={`whitespace-nowrap border-b-2 py-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
-                ${tab === t ? 'border-text-primary font-semibold text-text-primary' : 'border-transparent text-text-muted hover:text-text-primary'}`}
-            >
-              {t}
-            </button>
-          ))}
-        </nav>
+        <SectionTabs tabs={TABS} active={tab} onChange={setTab} ariaLabel="Audit sections" />
 
         {tab === 'Panel'
           ? <AuditPanelTab loading={state === 'loading'} />

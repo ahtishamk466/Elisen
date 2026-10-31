@@ -33,8 +33,8 @@ export function RegulationChecklistPage() {
   return (
     <AppShell
       activeItem="GCP"
-      activeChild="Regulations"
-      title="Regulations"
+      activeChild="Regulatory Library"
+      title="Regulatory Library"
       description="The rule library shared by every certification basis."
     >
       <div className="grid gap-lg">

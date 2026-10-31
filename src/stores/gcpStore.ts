@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { DDS_TYPES, DELEGATIONS, DISCIPLINES, FOC_LIST, MOC_LIST, REGULATION_GROUPS, REGULATION_GROUP_SECTIONS, SUBPARTS } from '@/lib/gcpFixtures'
 import { loadGcp } from '@/lib/dataset'
+import { regulationUsage } from '@/lib/regulationUsage'
 import { useGcpFlowStore } from './gcpFlowStore'
 import type { DdsType, Delegation, Discipline, Foc, Moc, Regulation, RegulationGroup, RegulationGroupSection, Subpart, Subsection } from '@/types/gcp'
 
@@ -25,7 +26,8 @@ interface GcpState {
   /** Several at once, for an import: one store update, not one per row. */
   addRegulations: (rs: Regulation[]) => void
   updateRegulation: (id: string, patch: Partial<Regulation>) => void
-  removeRegulation: (id: string) => void
+  /** False when referenced or missing; existing Basis/plan links are retained. */
+  removeRegulation: (id: string) => boolean
 
   addSubpart: (s: Subpart) => void
   updateSubpart: (id: string, patch: Partial<Subpart>) => void
@@ -96,7 +98,12 @@ export const useGcpStore = create<GcpState>((set, get) => ({
   updateRegulation: (id, patch) => set((s) => ({
     regulations: s.regulations.map((r) => (r.id === id ? { ...r, ...patch } : r)),
   })),
-  removeRegulation: (id) => set((s) => ({ regulations: s.regulations.filter((r) => r.id !== id) })),
+  removeRegulation: (id) => {
+    const flow = useGcpFlowStore.getState()
+    if (regulationUsage(id, flow.bases, flow.planEntries).inUse || !get().regulations.some((r) => r.id === id)) return false
+    set((s) => ({ regulations: s.regulations.filter((r) => r.id !== id) }))
+    return true
+  },
 
   addSubpart: (sp) => set((s) => ({ subparts: [sp, ...s.subparts] })),
   updateSubpart: (id, patch) => set((s) => ({

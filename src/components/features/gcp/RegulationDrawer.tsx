@@ -1,181 +1,116 @@
+import { useEffect, useRef, useState } from 'react'
 import { amendmentLabel } from '@/lib/gcpDisplay'
-import { useState } from 'react'
 import { Drawer } from '@/components/patterns/Drawer'
-import { FormSection } from '@/components/patterns/FormSection'
-import { FormField } from '@/components/patterns/FormField'
-import { ActiveSelect } from '@/components/patterns/ActiveSelect'
-import { UrlField } from '@/components/patterns/UrlField'
+import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Textarea } from '@/components/ui/Textarea'
-import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { Regulation } from '@/types/gcp'
+import { RegulationClassification } from './RegulationClassification'
+import { RegulationFormFields } from './RegulationFormFields'
+import { SubpartDrawer } from './SubpartDrawer'
+import { SubsectionDrawer } from './SubsectionDrawer'
+import { buildRegulation, createRegulationDraft, validateRegulationDraft, type RegulationContext, type RegulationDraftErrors, type SetRegulationField } from './regulationDraft'
 
 export interface RegulationDrawerProps {
-  /** `copy` opens as a new record carrying another one's values — the legacy
-      list's copy action, which duplicated a rule to a new amendment. */
   mode: 'create' | 'edit' | 'copy'
   initial?: Regulation
+  /** Preselects a new rule's classification; edit/copy values take precedence. */
+  context?: RegulationContext
   onClose: () => void
   onSubmit: (r: Regulation) => void
 }
 
-/** Section root without its amendment, padded the way the stored keys are:
-    23.1 → 23.0001, 23.21(a) → 23.0021(a). The legacy sort key is that root
-    joined to the amendment, so both are offered rather than typed twice. */
-function rootOf(section: string) {
-  const m = section.trim().match(/^(\d+)\.(\d+)(.*)$/)
-  if (!m) return section.trim()
-  return `${m[1]}.${m[2].padStart(4, '0')}${m[3]}`
-}
-
-export function RegulationDrawer({ mode, initial, onClose, onSubmit }: RegulationDrawerProps) {
+export function RegulationDrawer({ mode, initial, context, onClose, onSubmit }: RegulationDrawerProps) {
   const isEdit = mode === 'edit'
   const regulations = useGcpStore((s) => s.regulations)
-  const subparts = useGcpStore((s) => s.subparts)
-  const subsections = useGcpStore((s) => s.subsections)
+  const addSubpart = useGcpStore((s) => s.addSubpart)
+  const addSubsection = useGcpStore((s) => s.addSubsection)
+  const [draft, setDraft] = useState(() => createRegulationDraft(initial, context))
+  const original = useRef(draft)
+  const [errors, setErrors] = useState<RegulationDraftErrors>({})
+  const [child, setChild] = useState<'subpart' | 'subsection' | null>(null)
+  const [discard, setDiscard] = useState(false)
+  const returnFocus = useRef<string | null>(null)
+  const dirty = JSON.stringify(draft) !== JSON.stringify(original.current)
 
-  const [section, setSection] = useState(initial?.section ?? '')
-  const [amdt, setAmdt] = useState(initial?.amdt ?? '')
-  const [title, setTitle] = useState(initial?.title ?? '')
-  const [subpartCode, setSubpartCode] = useState(initial?.subpartCode ?? '')
-  const [subsectionCode, setSubsectionCode] = useState(initial?.subsectionCode ?? '')
-  const [url, setUrl] = useState(initial?.url ?? '')
-  const [sort, setSort] = useState(initial?.sort ?? '')
-  const [requirementText, setRequirementText] = useState(initial?.requirementText ?? '')
-  const [defaultMocText, setDefaultMocText] = useState(initial?.defaultMocText ?? '')
-  const [sectionRoot, setSectionRoot] = useState(initial?.sectionRoot ?? '')
-  const [active, setActive] = useState(initial?.active ?? true)
-  const [errors, setErrors] = useState<{
-    section?: string; amdt?: string; title?: string
-    subpartCode?: string; subsectionCode?: string; sort?: string
-    requirementText?: string; sectionRoot?: string
-  }>({})
-
-  const derivedRoot = sectionRoot.trim() || (section.trim() ? rootOf(section) : '')
-  const derivedSort = sort.trim() || (derivedRoot && amdt.trim() ? `${derivedRoot}_${amdt.trim()}` : '')
-
-  const submit = () => {
-    const e: typeof errors = {}
-    if (!section.trim()) e.section = 'Section is required.'
-    if (!amdt.trim()) e.amdt = 'Amendment is required when creating or editing a regulation.'
-    if (!title.trim()) e.title = 'Title is required.'
-    if (!subpartCode) e.subpartCode = 'Subpart Code is required.'
-    if (!subsectionCode) e.subsectionCode = 'Subsection Code is required.'
-    if (!requirementText.trim()) e.requirementText = 'Requirement Text is required.'
-    if (!derivedSort) e.sort = 'Sort is required.'
-    if (!derivedRoot) e.sectionRoot = 'Section Root is required.'
-    if (!e.section && !e.amdt) {
-      const clash = regulations.find((r) => r.id !== (isEdit ? initial?.id : undefined)
-        && r.section === section.trim() && r.amdt === amdt.trim())
-      if (clash) e.amdt = `${clash.section} at ${clash.amdt} already exists — one record per rule and amendment.`
-    }
-    setErrors(e)
-    if (Object.keys(e).length > 0) return
-    onSubmit({
-      id: isEdit ? initial!.id : crypto.randomUUID(),
-      section: section.trim(),
-      amdt: amdt.trim(),
-      title: title.trim(),
-      subpartCode,
-      subsectionCode,
-      url: url.trim(),
-      sort: derivedSort,
-      requirementText: requirementText.trim(),
-      defaultMocText: defaultMocText.trim(),
-      sectionRoot: derivedRoot,
-      active,
-    })
-    onClose()
+  const setField: SetRegulationField = (key, value) => {
+    setDraft((previous) => ({ ...previous, [key]: value }))
+    setErrors((previous) => ({ ...previous, [key]: undefined }))
+  }
+  const close = () => {
+    if (!dirty) { onClose(); return }
+    returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement.id || 'reg-section' : 'reg-section'
+    setDiscard(true)
+  }
+  const openChild = (kind: 'subpart' | 'subsection') => {
+    returnFocus.current = `reg-add-${kind}`
+    setChild(kind)
   }
 
-  const title_ = isEdit
-    ? `Edit Regulation “${initial!.section} · ${amendmentLabel(initial!.amdt)}”`
-    : mode === 'copy'
-      ? `Copy of “${initial!.section} · ${amendmentLabel(initial!.amdt)}”`
-      : 'Add Regulation'
+  // Only one dialog is mounted at a time. The parent component and its draft
+  // stay mounted while a lookup is created, then focus returns to its trigger.
+  useEffect(() => {
+    if (child || discard || !returnFocus.current) return
+    const id = returnFocus.current
+    returnFocus.current = null
+    const frame = requestAnimationFrame(() => document.getElementById(id)?.focus())
+    return () => cancelAnimationFrame(frame)
+  }, [child, discard])
+
+  useEffect(() => {
+    if (!discard) return
+    const trap = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return
+      const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[role="alertdialog"] button:not([disabled])'))
+      const next = event.shiftKey ? buttons[buttons.length - 1] : buttons[0]
+      const edge = event.shiftKey ? buttons[0] : buttons[buttons.length - 1]
+      if (!buttons.includes(document.activeElement as HTMLButtonElement) || document.activeElement === edge) {
+        event.preventDefault()
+        next?.focus()
+      }
+    }
+    document.addEventListener('keydown', trap, true)
+    return () => document.removeEventListener('keydown', trap, true)
+  }, [discard])
+
+  const submit = () => {
+    const nextErrors = validateRegulationDraft(draft, regulations, isEdit ? initial?.id : undefined)
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) return
+    onSubmit(buildRegulation(draft, isEdit ? initial!.id : crypto.randomUUID()))
+    onClose()
+  }
+  const title = isEdit ? `Edit Regulation “${initial!.section} · ${amendmentLabel(initial!.amdt)}”`
+    : mode === 'copy' ? `Copy of “${initial!.section} · ${amendmentLabel(initial!.amdt)}”` : 'Add Regulation'
 
   return (
-    <Drawer
-      open
-      onClose={onClose}
-      title={title_}
-      footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit}>{isEdit ? 'Save Changes' : 'Create'}</Button>
-        </>
-      }
-    >
-      <FormSection title="Rule" subtitle="One record per rule at one amendment.">
-        <FormField label="Section" htmlFor="reg-section" required error={errors.section}>
-          <Input id="reg-section" value={section} error={!!errors.section} placeholder="e.g. 23.21(a)"
-            onChange={(e) => { setSection(e.target.value); setErrors((p) => ({ ...p, section: undefined })) }} />
-        </FormField>
-        <FormField label="Amendment" htmlFor="reg-amdt" required error={errors.amdt} help={isEdit && initial?.amdt === '' ? 'This record has no amendment recorded. You can link it to a basis without editing it.' : 'Use IR only for an explicitly recorded initial revision.'}>
-          <Input id="reg-amdt" value={amdt} error={!!errors.amdt} placeholder="e.g. 23-34"
-            onChange={(e) => { setAmdt(e.target.value); setErrors((p) => ({ ...p, amdt: undefined })) }} />
-        </FormField>
-        <FormField label="Title" htmlFor="reg-title" required error={errors.title}>
-          <Textarea id="reg-title" value={title} error={!!errors.title} placeholder="e.g. Proof of compliance."
-            onChange={(e) => { setTitle(e.target.value); setErrors((p) => ({ ...p, title: undefined })) }} />
-        </FormField>
-        <FormField label="Subpart Code" htmlFor="reg-subpart" required error={errors.subpartCode}>
-          <SearchableSelect
-            id="reg-subpart"
-            value={subpartCode}
-            error={!!errors.subpartCode}
-            placeholder="Select a Subpart Code"
-            emptyLabel="No subparts yet."
-            options={subparts.map((s) => ({ value: s.code, label: `${s.code} -- ${s.description}` }))}
-            onChange={(v) => { setSubpartCode(v); setErrors((p) => ({ ...p, subpartCode: undefined })) }}
-          />
-        </FormField>
-        <FormField label="Subsection Code" htmlFor="reg-subsection" required error={errors.subsectionCode}>
-          <SearchableSelect
-            id="reg-subsection"
-            value={subsectionCode}
-            error={!!errors.subsectionCode}
-            placeholder="Select a Subsection Code"
-            emptyLabel="No subsections yet."
-            options={subsections.map((s) => ({ value: s.code, label: `${s.code} -- ${s.title}` }))}
-            onChange={(v) => { setSubsectionCode(v); setErrors((p) => ({ ...p, subsectionCode: undefined })) }}
-          />
-        </FormField>
-        <FormField label="Url" htmlFor="reg-url" help="Where this rule's text can be read.">
-          <UrlField id="reg-url" value={url} onChange={setUrl} placeholder="Link to the rule text..." />
-        </FormField>
-        <FormField label="Sort" htmlFor="reg-sort" required error={errors.sort} help="Leave blank to take the suggestion.">
-          <Input id="reg-sort" value={sort} error={!!errors.sort} placeholder={derivedSort || 'e.g. 23.0021(a)_IR'}
-            onChange={(e) => { setSort(e.target.value); setErrors((p) => ({ ...p, sort: undefined })) }} />
-        </FormField>
-      </FormSection>
-
-      <FormSection title="Text" subtitle="What prints for this rule, and what a project starts from.">
-        <FormField label="Requirement Text" htmlFor="reg-requirement" required error={errors.requirementText} fullWidth>
-          <Textarea id="reg-requirement" rows={8} value={requirementText} error={!!errors.requirementText}
-            placeholder="The rule's own wording, as it prints in the certification plan..."
-            onChange={(e) => { setRequirementText(e.target.value); setErrors((p) => ({ ...p, requirementText: undefined })) }} />
-        </FormField>
-        <FormField label="Default Means of Compliance (MOC) Text" htmlFor="reg-moc" fullWidth
-          help="Offered as the method statement when this rule is planned on a project.">
-          <Textarea id="reg-moc" rows={4} value={defaultMocText}
-            placeholder="e.g. Design review will demonstrate compliance..."
-            onChange={(e) => setDefaultMocText(e.target.value)} />
-        </FormField>
-      </FormSection>
-
-      <FormSection title="Placement" subtitle="What delegation is granted against, and whether the rule can be picked.">
-        <FormField label="Section Root" htmlFor="reg-root" required error={errors.sectionRoot}
-          help="The rule number delegation is granted against. Blank takes the suggestion.">
-          <Input id="reg-root" value={sectionRoot} error={!!errors.sectionRoot} placeholder={derivedRoot || 'e.g. 23.0021'}
-            onChange={(e) => { setSectionRoot(e.target.value); setErrors((p) => ({ ...p, sectionRoot: undefined })) }} />
-        </FormField>
-        <FormField label="Active" htmlFor="reg-active" help="Inactive stays on old plans, out of pickers.">
-          <ActiveSelect id="reg-active" value={active} onChange={setActive} />
-        </FormField>
-      </FormSection>
-    </Drawer>
+    <>
+      <Drawer open={!child && !discard} onClose={close} title={title}
+        footer={<><Button variant="secondary" onClick={close}>Cancel</Button><Button onClick={submit}>{isEdit ? 'Save Changes' : 'Create'}</Button></>}>
+        <div className="space-y-lg" onKeyDown={(event) => {
+          // Portalled picker events still bubble through React. Let the
+          // picker close itself, then keep that Escape from closing the form.
+          if (event.key === 'Escape' && event.target instanceof Element && event.target.closest('[data-dropdown-panel]')) {
+            event.stopPropagation()
+          }
+        }}>
+          <RegulationClassification draft={draft} errors={errors} setField={setField} onAdd={openChild} />
+          <RegulationFormFields draft={draft} errors={errors} setField={setField} legacyBlankAmendment={isEdit && initial?.amdt === ''} />
+        </div>
+      </Drawer>
+      {child === 'subpart' && <SubpartDrawer mode="create" onClose={() => setChild(null)} onSubmit={(value) => {
+        addSubpart(value)
+        setField('subpartCode', value.code)
+      }} />}
+      {child === 'subsection' && <SubsectionDrawer mode="create" codePrefix={draft.subpartCode}
+        onClose={() => setChild(null)} onSubmit={(value) => {
+          addSubsection(value)
+          setField('subsectionCode', value.code)
+        }} />}
+      <ConfirmDialog open={discard} title="Discard regulation changes?"
+        description="Your unsaved regulation changes will be lost. Any subpart or subsection already created stays in the library."
+        confirmLabel="Discard changes" cancelLabel="Keep editing" tone="danger"
+        onConfirm={onClose} onCancel={() => setDiscard(false)} />
+    </>
   )
 }

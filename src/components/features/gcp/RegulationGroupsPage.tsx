@@ -1,37 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { FolderTree, ListTree, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { FolderTree, Plus, Search } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
-import { SortableTh } from '@/components/patterns/SortableTh'
-import { useTableSort } from '@/components/patterns/useTableSort'
-import { useSyncedScroll } from '@/components/patterns/useSyncedScroll'
-import { proportionalWidths } from '@/lib/tableWidths'
-import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { RegulationGroup, RegulationGroupSection } from '@/types/gcp'
 import { GcpRegulationsTabs } from './GcpRegulationsTabs'
-import { GcpChip } from './GcpChip'
 import { RegulationGroupDrawer } from './RegulationGroupDrawer'
 import { RegulationGroupSectionDrawer } from './RegulationGroupSectionDrawer'
+import { RegulationGroupRail } from './RegulationGroupRail'
+import { RegulationGroupRegulationsPanel } from './RegulationGroupRegulationsPanel'
 import { useGcpData } from './GcpDataGate'
-
-const COLUMNS: { label: string; sort?: 'root' | 'active'; width: number }[] = [
-  { label: 'Regulation Section Root', sort: 'root', width: 280 },
-  { label: 'Active', sort: 'active', width: 120 },
-  { label: 'Actions', width: 80 },
-]
-const TABLE_MIN_WIDTH = COLUMNS.reduce((sum, c) => sum + c.width, 0)
-/** `%` per column in the same proportion as the pixel weights above, so a
-    detail pane wider than three narrow columns grows all of them instead of
-    leaving the extra as dead space past Actions (client instruction,
-    2026-09-25 — see `lib/tableWidths.ts`). Replaces the old trailing
-    spacer `<col />`. */
-const COL_WIDTHS = proportionalWidths(COLUMNS.map((c) => c.width))
 
 /**
  * GCP → Regulations → Groups, as a **master–detail**, the same shape as
@@ -60,7 +42,6 @@ export function RegulationGroupsPage() {
   const [rulesDrawer, setRulesDrawer] = useState<string | null>(null)
   const [deletingGroup, setDeletingGroup] = useState<RegulationGroup | null>(null)
   const [deletingRule, setDeletingRule] = useState<RegulationGroupSection | null>(null)
-  const railRef = useRef<HTMLDivElement>(null)
 
   const rulesOf = (groupId: string) => groupSections.filter((s) => s.groupId === groupId)
 
@@ -84,22 +65,13 @@ export function RegulationGroupsPage() {
     setSearchParams(p, { replace: true })
   }
 
-  useEffect(() => {
-    railRef.current?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' })
-  }, [selected?.id])
-
   const selectedRules = selected ? rulesOf(selected.id) : []
-  const { sorted, sort, setSort } = useTableSort(selectedRules, {
-    root: (s) => s.sectionRoot,
-    active: (s) => s.active,
-  })
-  const { headerRef, onBodyScroll } = useSyncedScroll()
 
   return (
     <AppShell
       activeItem="GCP"
-      activeChild="Regulations"
-      title="Regulations"
+      activeChild="Regulatory Library"
+      title="Regulatory Library"
       description="The rule library shared by every certification basis."
       fill
       headerActions={
@@ -111,13 +83,13 @@ export function RegulationGroupsPage() {
               value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
           <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setGroupDrawer({ mode: 'create' })}>
-            Add New Group
+            Add Group
           </Button>
         </>
       }
     >
       <div className="flex min-h-0 flex-1 flex-col gap-lg">
-        <GcpRegulationsTabs active="Groups" counts={{ Groups: filtered.length }} />
+        <GcpRegulationsTabs active="Regulation Groups" counts={{ 'Regulation Groups': filtered.length }} />
 
         {filtered.length === 0 ? (
           <div className="rounded-sm border border-border-default bg-neutral-25">
@@ -129,141 +101,15 @@ export function RegulationGroupsPage() {
                 : 'Add a kind of modification, then attach the regulations it typically affects.'}
               action={query
                 ? <Button variant="secondary" onClick={() => setQuery('')}>Clear search</Button>
-                : <Button leadingIcon={<Plus size={16} />} onClick={() => setGroupDrawer({ mode: 'create' })}>Add New Group</Button>}
+                : <Button leadingIcon={<Plus size={16} />} onClick={() => setGroupDrawer({ mode: 'create' })}>Add Group</Button>}
             />
           </div>
         ) : (
           <div className="grid min-h-0 flex-1 gap-lg laptop:grid-cols-[320px_minmax(0,1fr)]">
-            {/* ------- The group rail ------- */}
-            <nav aria-label="Regulation groups" className="flex min-h-0 flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-              <div className="flex shrink-0 items-center gap-sm border-b border-border-default bg-neutral-50 px-base py-base">
-                <span className="min-w-0 flex-1 text-xs font-semibold text-text-secondary">Group</span>
-                <span className="shrink-0 text-xs font-semibold text-text-secondary">Regs</span>
-              </div>
-              <div ref={railRef} className="min-h-0 flex-1 overflow-y-auto">
-                <ul>
-                  {filtered.map((g) => {
-                    const isSel = g.id === selected?.id
-                    const count = rulesOf(g.id).length
-                    return (
-                      <li key={g.id} className="border-b border-border-default last:border-b-0">
-                        <button
-                          type="button"
-                          onClick={() => select(g)}
-                          aria-current={isSel ? 'true' : undefined}
-                          className={`flex w-full items-center gap-sm border-l-2 px-base py-base text-left transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-text-primary
-                            ${isSel ? 'border-accent bg-neutral-100' : 'border-transparent hover:bg-neutral-50'}`}
-                        >
-                          <span className="grid min-w-0 flex-1 gap-xxss">
-                            <span className={`block truncate text-sm ${isSel ? 'font-semibold' : ''} ${g.active ? 'text-text-primary' : 'text-text-muted'}`}>
-                              {g.title}
-                            </span>
-                            {/* What the group covers, under its name — the title
-                                alone reads as a label, not a choice. */}
-                            <span className="block truncate text-xs text-text-muted">{g.description}</span>
-                            {!g.active && <span className="block text-xs text-text-muted">Inactive</span>}
-                          </span>
-                          <span aria-hidden className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full border border-border-default px-xs text-xs font-semibold tabular-nums text-text-secondary">
-                            {count}
-                          </span>
-                          <span className="sr-only">
-                            {g.title}, {count} regulation{count === 1 ? '' : 's'}{g.active ? '' : ', inactive'}
-                          </span>
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            </nav>
-
-            {/* ------- The selected group ------- */}
-            {selected && (
-              <section aria-label={selected.title} className="flex min-h-0 flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-                <header className="flex shrink-0 flex-wrap items-center gap-sm px-lg py-lg">
-                  <div className="grid min-w-0 flex-1 gap-xxss">
-                    <h2 className="truncate text-sm font-semibold text-text-primary">{selected.title}</h2>
-                    <p className="text-xs text-text-muted">{selected.description}</p>
-                  </div>
-                  <Badge tone={selected.active ? 'success' : 'neutral'}>{selected.active ? 'Active' : 'Inactive'}</Badge>
-                  <ActionsMenu
-                    ariaLabel={`Actions for ${selected.title}`}
-                    items={[
-                      { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setGroupDrawer({ mode: 'edit', group: selected }) },
-                      { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeletingGroup(selected), tone: 'danger' },
-                    ]}
-                  />
-                </header>
-
-                <div className="flex shrink-0 items-center justify-between gap-sm border-t border-border-default px-lg py-lg">
-                  <div className="grid gap-xxss">
-                    <h3 className="text-sm font-semibold text-text-primary">Regulation List</h3>
-                    <p className="text-xs text-text-muted">The regulations this kind of modification typically affects.</p>
-                  </div>
-                  <Button size="sm" leadingIcon={<Plus size={14} />} onClick={() => setRulesDrawer(selected.id)}>
-                    Add Regulation
-                  </Button>
-                </div>
-
-                {selectedRules.length === 0 ? (
-                  <div className="border-t border-border-default">
-                    <EmptyState
-                      icon={<ListTree size={48} strokeWidth={1.5} />}
-                      title="No results found."
-                      description="No regulations are attached to this group yet."
-                    />
-                  </div>
-                ) : (
-                  <div className="flex min-h-0 flex-1 flex-col border-t border-border-default">
-                    {/* Frozen header, own table, full width — a scrollbar
-                        never runs alongside a table's header
-                        (docs/COMPONENTS.md). */}
-                    <div ref={headerRef} className="shrink-0 overflow-x-hidden overflow-y-scroll scrollbar-none">
-                      <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_MIN_WIDTH }}>
-                        <colgroup>
-                          {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
-                        </colgroup>
-                        <thead>
-                          <tr className="border-b border-border-default bg-neutral-50">
-                            {COLUMNS.map((c) => (
-                              <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
-                                className="px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
-                            ))}
-                          </tr>
-                        </thead>
-                      </table>
-                    </div>
-                    <div className="min-h-0 flex-1 overflow-x-auto overflow-y-scroll scrollbar-none" onScroll={onBodyScroll}>
-                    <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_MIN_WIDTH }}>
-                      <caption className="sr-only">Regulations in {selected.title}</caption>
-                      <colgroup>
-                        {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
-                      </colgroup>
-                      <tbody>
-                        {sorted.map((s) => (
-                          <tr key={s.id} className="border-b border-border-default last:border-b-0">
-                            <td className="px-lg py-base"><GcpChip value={s.sectionRoot} label="section roots" /></td>
-                            <td className="px-lg py-base">
-                              <Badge tone={s.active ? 'success' : 'neutral'}>{s.active ? 'Active' : 'Inactive'}</Badge>
-                            </td>
-                            <td className="px-lg py-base">
-                              <ActionsMenu
-                                ariaLabel={`Actions for ${s.sectionRoot}`}
-                                items={[
-                                  { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setRulesDrawer(selected.id) },
-                                  { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeletingRule(s), tone: 'danger' },
-                                ]}
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    </div>
-                  </div>
-                )}
-              </section>
-            )}
+            <RegulationGroupRail groups={filtered} selectedId={selected?.id} count={(id) => rulesOf(id).length}
+              onSelect={select} onEdit={(group) => setGroupDrawer({ mode: 'edit', group })} onDelete={setDeletingGroup} />
+            {selected && <RegulationGroupRegulationsPanel group={selected} rules={selectedRules}
+              onEditRules={() => setRulesDrawer(selected.id)} onRemove={setDeletingRule} />}
           </div>
         )}
       </div>

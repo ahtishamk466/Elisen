@@ -1,3 +1,5 @@
+import { SELECTED_TAB_CLASS } from './tabStyles'
+
 export interface SectionTabsProps<T extends string> {
   tabs: readonly T[]
   active: T
@@ -26,7 +28,7 @@ export function SectionTabs<T extends string>({ tabs, active, onChange, ariaLabe
           onClick={() => onChange(t)}
           aria-current={active === t ? 'page' : undefined}
           className={`whitespace-nowrap border-b-2 py-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
-            ${active === t ? 'border-text-primary font-semibold text-text-primary' : 'border-transparent text-text-muted hover:text-text-primary'}`}
+            ${active === t ? SELECTED_TAB_CLASS : 'border-transparent text-text-muted hover:text-text-primary'}`}
         >
           {t}
           {counts?.[t] !== undefined && (

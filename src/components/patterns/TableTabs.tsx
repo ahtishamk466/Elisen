@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { SELECTED_TAB_CLASS } from './tabStyles'
 
 export interface TableTab {
   key: string
@@ -113,7 +114,7 @@ export function TableTabs({ tabs, activeKey, onChange, ariaLabel }: TableTabsPro
               onKeyDown={(e) => onKeyDown(e, i)}
               className={`-mb-px flex shrink-0 items-center gap-xs whitespace-nowrap border-b-2 px-base py-lg text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-text-primary
                 ${selected
-                  ? 'border-accent font-semibold text-text-primary'
+                  ? SELECTED_TAB_CLASS
                   : 'border-transparent text-text-secondary hover:text-text-primary'}`}
             >
               {tab.label}

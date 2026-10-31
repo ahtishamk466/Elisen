@@ -1,16 +1,21 @@
 import { useNavigate } from 'react-router-dom'
 import { SectionTabs } from '@/components/patterns/SectionTabs'
 
-export const REGULATION_SECTIONS = ['Regulations', 'Structure', 'Groups', 'Checklist'] as const
+export const REGULATION_SECTIONS = ['Regulations', 'Certification Topics', 'Regulation Groups', 'Checklist'] as const
 export type RegulationSection = (typeof REGULATION_SECTIONS)[number]
 
-export const sectionSlug = (s: RegulationSection) => s.toLowerCase().replace(/ /g, '-')
+/** Keep existing bookmarks while displaying the user-chosen section names. */
+export const sectionSlug = (s: RegulationSection) => {
+  if (s === 'Certification Topics') return 'structure'
+  if (s === 'Regulation Groups') return 'groups'
+  return s.toLowerCase().replace(/ /g, '-')
+}
 
 /**
- * The Regulations screen's own sections. Subpart and Subsection are not
+ * The Regulatory Library screen's own sections. Subpart and Subsection are not
  * sections of their own — they describe how a regulation is filed, so they sit
- * together under Structure; a group and the rules it carries sit together under
- * Groups.
+ * together under Certification Topics; a group and the rules it carries sit together under
+ * Regulation Groups.
  */
 export function GcpRegulationsTabs({ active, counts }: {
   active: RegulationSection
@@ -19,8 +24,8 @@ export function GcpRegulationsTabs({ active, counts }: {
   const navigate = useNavigate()
   return (
     <SectionTabs
-      ariaLabel="Regulation sections"
-      tabs={REGULATION_SECTIONS}
+      ariaLabel="Regulatory Library sections"
+      tabs={REGULATION_SECTIONS.filter((section) => section !== 'Checklist')}
       active={active}
       counts={counts}
       onChange={(s) => navigate(s === 'Regulations' ? '/gcp/regulations' : `/gcp/regulations?tab=${sectionSlug(s)}`)}

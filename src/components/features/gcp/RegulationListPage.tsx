@@ -8,7 +8,6 @@ import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
-import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { FilterChips } from '@/components/patterns/FilterChips'
 import { Truncate } from '@/components/patterns/Truncate'
 import { Alert } from '@/components/ui/Alert'
@@ -23,6 +22,7 @@ import type { Regulation } from '@/types/gcp'
 import { GcpRegulationsTabs } from './GcpRegulationsTabs'
 import { RegulationDrawer } from './RegulationDrawer'
 import { RegulationDetailDrawer } from './RegulationDetailDrawer'
+import { RegulationDeleteDialog } from './RegulationDeleteDialog'
 import { CodeWithName } from './CodeWithName'
 import { GcpChip } from './GcpChip'
 import { useGcpData } from './GcpDataGate'
@@ -82,7 +82,6 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
   const subsections = useGcpStore((s) => s.subsections)
   const addRegulation = useGcpStore((s) => s.addRegulation)
   const updateRegulation = useGcpStore((s) => s.updateRegulation)
-  const removeRegulation = useGcpStore((s) => s.removeRegulation)
 
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<RegulationFilters>(EMPTY_REGULATION_FILTERS)
@@ -128,16 +127,9 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
 
   const clearAll = () => { setQuery(''); setFilters(EMPTY_REGULATION_FILTERS); resetVisible() }
 
-  const confirmDelete = () => {
-    if (!deleting) return
-    removeRegulation(deleting.id)
-    showToast(`Regulation ${deleting.section} at ${deleting.amdt} deleted.`)
-    setDeleting(null)
-  }
-
   if (state === 'error') {
     return (
-      <AppShell activeItem="GCP" activeChild="Regulations" title="Regulations">
+      <AppShell activeItem="GCP" activeChild="Regulatory Library" title="Regulatory Library">
         <Alert title="We couldn't load regulations">Refresh the page, and if it keeps happening, contact your administrator.</Alert>
       </AppShell>
     )
@@ -146,8 +138,8 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
   return (
     <AppShell
       activeItem="GCP"
-      activeChild="Regulations"
-      title="Regulations"
+      activeChild="Regulatory Library"
+      title="Regulatory Library"
       description="The rule library shared by every certification basis."
       headerActions={
         <>
@@ -300,17 +292,8 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
         />
       )}
 
-      <ConfirmDialog
-        open={!!deleting}
-        title={`Delete ${deleting?.section} at ${deleting?.amdt}?`}
-        description={deleting
-          ? `"${deleting.title}" will be permanently removed from the rule pool. Certification bases built on it keep their own rows. This cannot be undone.`
-          : ''}
-        confirmLabel="Delete regulation"
-        tone="danger"
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleting(null)}
-      />
+      <RegulationDeleteDialog regulation={deleting} onClose={() => setDeleting(null)}
+        onDeleted={(id) => { if (viewing?.id === id) setViewing(null) }} />
     </AppShell>
   )
 }

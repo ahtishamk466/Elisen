@@ -762,3 +762,25 @@ gaps:
 ## Existing regulations with blank amendments — verified 2026-10-31
 
 Existing `amdt=''` is valid for linking an exact library record to a Basis; it is not IR. Display “No amendment recorded”, preserve the empty string and regulation ID, and never invent an amendment or select an arbitrary version from Section alone. Global Regulation creation/edit still requires an amendment. Basis import with blank Amendment may match an existing blank-version record, but must reject an unmatched blank rather than creating a new incomplete regulation/defaulting to IR. The local OLD TPMS audit found 68 such records already used across five Masters; see DECISIONS.md for source/schema evidence and `scripts/check-basis-amendments.mjs` for regression checks.
+
+
+## Contextual Regulations authoring trial — 2026-10-31
+
+User-approved isolated trial: worktree `/Users/rashda/.codex/worktrees/regulations-context-flow/Elisen`, branch `codex/regulations-context-flow`, local preview `http://127.0.0.1:5181`. Original checkout/Basis work stays separate; no commit, merge or deploy. Structure now opens Subpart → named topic → exact Regulation/amendment rows and adds a Regulation with both classifications selected. Global library Add/Edit/Copy remains. A Regulation draft can create a missing Subpart/Subsection through the existing drawers and resume with its fields retained; changed draft close uses a discard guard.
+
+Preserve actual 74-subsection data: prefix matches are suggestions combined with saved pairs, including K cross-prefix and `-`/special classifications. All existing choices remain selectable; initial edit/copy values win over context. New cross-prefix topics retain active-session creation context without inventing a persisted parent relationship. Never merge amendment records or normalize blanks to IR. Requirement text editing/validation and the existing safe formatted detail view are unchanged.
+
+Primary's user walkthrough verified C → C01 → Add with both values selected. Do not infer full browser coverage from that walkthrough. Focused checks are `scripts/check-regulation-structure.mjs` and `scripts/check-regulation-context-draft.mjs`; see DECISIONS.md and COMPONENTS.md for the trial rationale and component split. Review this branch before deciding whether to retain/merge it.
+
+Trial verification passed: TypeScript, Vite build, both focused scripts and whitespace check. Vite reports a large-chunk advisory. Remaining interaction review belongs to the live walkthrough; no extra browser cases are asserted by these automated results.
+
+
+Trial follow-up: selected-tab appearance is centralized in patterns/tabStyles.ts for SectionTabs/TableTabs; six page-level copies have been migrated to SectionTabs. Certification Topics also has a reversible codes-only Subpart rail using the same code badges in both modes. These remain uncommitted changes on codex/regulations-context-flow.
+
+Topic-table verification follow-up: Control Systems D05 long Section identifiers stay within their column without painting across Amendment; before/after screenshots are retained in the thread visualization directory. Browser verified View/Edit/Delete menu, correct Edit classification, and the used-record dialog (1 Basis) offering Make inactive; dialog was cancelled with no data mutation. Checklist is absent from navigation. TypeScript, usage regression checks and Vite build passed.
+
+## Regulatory Library review approved for release — 2026-10-31
+
+User reviewed the isolated Regulations trial in Chrome and authorized commit/deploy. The parent GCP menu and page heading are now Regulatory Library; internal tabs are Regulations, Certification Topics and Regulation Groups, with the existing structure/groups URLs preserved. Checklist is hidden from navigation for now. Certification Topics supports contextual authoring with retained drafts, a collapsible full-code Subpart rail, compact topic/search navigation and restored Part 23/25/27/29 ranges. Topic rules expose View/Edit/Delete; long section identifiers wrap within their column, and referenced records cannot be deleted. Regulation Groups starts directly at the regulation list, with group Edit/Delete in left-rail row menus. SectionTabs and TableTabs share the selected blue underline across the app.
+
+The original blank-amendment and exact-record Basis behavior is retained. Source fixtures and existing stored record identities are unchanged. The release uses the repository's main-branch GitHub Actions deployment, with TypeScript/production build and focused Regulation/Basis regressions checked before publishing. The separate Certification Basis team video is still being completed with the selected Lauren voice; do not report the caption preview as the narrated final.

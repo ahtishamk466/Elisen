@@ -244,6 +244,26 @@ function SectionTabsDemo() {
 }
 export const SectionTabsExample: Story = { render: () => <div className="p-lg"><SectionTabsDemo /></div> }
 
+/** Both tab patterns share the same selected underline/text treatment. */
+export const TabHighlightConsistency: Story = {
+  render: function TabHighlightConsistencyStory() {
+    const tabs = ['Overview', 'Details']
+    const [active, setActive] = useState('Overview')
+    return (
+      <div className="grid gap-lg p-lg">
+        <SectionTabs tabs={tabs} active={active} onChange={setActive} ariaLabel="Section navigation example" counts={{ Details: 3 }} />
+        <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+          <TableTabs tabs={tabs.map((label) => ({ key: label, label, count: label === 'Details' ? 3 : undefined }))}
+            activeKey={active} onChange={setActive} ariaLabel="Table navigation example" />
+          <div role="tabpanel" aria-labelledby={`tab-${active}`} tabIndex={0} className="p-lg text-sm text-text-secondary">
+            {active}
+          </div>
+        </div>
+      </div>
+    )
+  },
+}
+
 /** THE file picker for the whole app — every upload uses this, never a bare
     `<input type="file">` and never a FormField/FormSection wrapper around it.
     It carries its own label, hint, selected-file row and error message, so

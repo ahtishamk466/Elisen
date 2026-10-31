@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Pencil, Trash2, ShieldCheck } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
+import { SectionTabs } from '@/components/patterns/SectionTabs'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -78,15 +79,7 @@ export function TccaProjectDetailPage() {
           </div>
         </div>
 
-        <nav className="flex gap-lg overflow-x-auto rounded-sm border border-border-default bg-neutral-25 px-lg" aria-label="TCCA sections">
-          {TABS.map((t) => (
-            <button key={t} type="button" onClick={() => setTab(t)} aria-current={tab === t ? 'page' : undefined}
-              className={`whitespace-nowrap border-b-2 py-base text-sm transition-colors duration-fast focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary
-                ${tab === t ? 'border-text-primary font-semibold text-text-primary' : 'border-transparent text-text-muted hover:text-text-primary'}`}>
-              {t}
-            </button>
-          ))}
-        </nav>
+        <SectionTabs tabs={TABS} active={tab} onChange={setTab} ariaLabel="TCCA sections" />
 
         {tab === 'Overview' && <TccaOverviewTab tcca={tcca} />}
         {tab === 'Projects' && <TccaProjectsTab tcca={tcca} />}
