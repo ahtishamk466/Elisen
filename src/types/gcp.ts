@@ -78,8 +78,8 @@ export interface RegulationGroupSection {
  */
 export interface CertBasis {
   id: string
-  /** The aircraft model the basis is for, e.g. CL-650. Legacy bases carry
-      their Master Cert Basis code here, model + TCDS (DHC-8-3XX_A-142). */
+  /** Master Cert Basis code. Historical field name retained for dataset and
+      GCP workflow compatibility; not necessarily an aircraft model. */
   aircraftModel: string
   /** One line on what the basis covers, e.g. "TCCA TCDS A-142 for DHC-300
       series" — the legacy Master Cert Basis description. */

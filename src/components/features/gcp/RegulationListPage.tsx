@@ -1,3 +1,4 @@
+import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useState } from 'react'
 import { ArrowUpRight, BookMarked, Copy, Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
@@ -220,7 +221,7 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
                                 the row's identity, so none of it may be hidden. */}
                             <td className="break-words px-base py-base text-sm text-text-primary">{r.section}</td>
                             <td className="whitespace-nowrap px-base py-base">
-                              <GcpChip value={r.amdt} label="amendments" />
+                              <GcpChip value={amendmentLabel(r.amdt)} label="amendments" />
                             </td>
                             <td className="px-base py-base text-sm text-text-primary">
                               <Truncate lines={2}>{r.title}</Truncate>

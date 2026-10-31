@@ -35,6 +35,7 @@ interface GcpFlowState {
   /** Loads the database's bases and project links, and the demo plan on top. */
   hydrate: (bases: CertBasis[], projectBasis: Record<string, string>) => void
   saveBasis: (basis: CertBasis) => void
+  removeBasis: (id: string) => void
   linkBasis: (projectId: string, basisId: string) => void
 
   /** Initialize: writes one entry per rule in the basis, affected or not. */
@@ -71,6 +72,11 @@ export const useGcpFlowStore = create<GcpFlowState>((set) => ({
       ? s.bases.map((b) => (b.id === basis.id ? basis : b))
       : [basis, ...s.bases],
   })),
+  removeBasis: (id) => set((s) => {
+    const basis = s.bases.find((b) => b.id === id)
+    if (basis?.sourceDocument) URL.revokeObjectURL(basis.sourceDocument.url)
+    return { bases: s.bases.filter((b) => b.id !== id), projectBasis: Object.fromEntries(Object.entries(s.projectBasis).filter(([, basisId]) => basisId !== id)) }
+  }),
   linkBasis: (projectId, basisId) => set((s) => ({
     projectBasis: { ...s.projectBasis, [projectId]: basisId },
   })),

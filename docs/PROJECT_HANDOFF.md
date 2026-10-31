@@ -758,3 +758,7 @@ gaps:
    `dist/assets` and `dist/data` listed in `files`. Reuse the same
    Artifact's URL across republishes (pass it as `url`) rather than creating
    a new link each time, so the one you gave the user keeps working.
+
+## Existing regulations with blank amendments — verified 2026-10-31
+
+Existing `amdt=''` is valid for linking an exact library record to a Basis; it is not IR. Display “No amendment recorded”, preserve the empty string and regulation ID, and never invent an amendment or select an arbitrary version from Section alone. Global Regulation creation/edit still requires an amendment. Basis import with blank Amendment may match an existing blank-version record, but must reject an unmatched blank rather than creating a new incomplete regulation/defaulting to IR. The local OLD TPMS audit found 68 such records already used across five Masters; see DECISIONS.md for source/schema evidence and `scripts/check-basis-amendments.mjs` for regression checks.

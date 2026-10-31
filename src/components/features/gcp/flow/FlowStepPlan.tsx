@@ -1,3 +1,4 @@
+import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useState } from 'react'
 import { ArrowLeft, ListChecks, Pencil, Plus, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
@@ -222,7 +223,7 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
           mode={drawer.mode}
           initial={drawer.item}
           planEntryId={current.entry.id}
-          ruleLabel={`${current.rule.section} · ${current.rule.amdt}`}
+          ruleLabel={`${current.rule.section} · ${amendmentLabel(current.rule.amdt)}`}
           sectionRoot={current.rule.sectionRoot}
           tccaProjectId={current.entry.projectId}
           onClose={() => setDrawer(null)}

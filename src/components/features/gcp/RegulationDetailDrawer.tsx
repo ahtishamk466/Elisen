@@ -1,3 +1,5 @@
+import { regulationTextBlocks, decodeRegulationEntities } from '@/lib/regulationText'
+import { amendmentLabel } from '@/lib/gcpDisplay'
 
 import { Drawer } from '@/components/patterns/Drawer'
 import { DetailCard, DetailField } from '@/components/patterns/DetailView'
@@ -14,7 +16,7 @@ export interface RegulationDetailDrawerProps {
   subpart: string
   subsection: string
   onClose: () => void
-  onEdit: () => void
+  onEdit?: () => void
 }
 
 /** Read-only view of one regulation — every stored field, editing behind the
@@ -24,11 +26,11 @@ export function RegulationDetailDrawer({ regulation: r, subpart, subsection, onC
     <Drawer
       open
       onClose={onClose}
-      title={`${r.section} · ${r.amdt}`}
+      title={`${r.section} · ${amendmentLabel(r.amdt)}`}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Close</Button>
-          <Button onClick={onEdit}>Edit</Button>
+          {onEdit && <Button onClick={onEdit}>Edit</Button>}
         </>
       }
     >
@@ -36,7 +38,7 @@ export function RegulationDetailDrawer({ regulation: r, subpart, subsection, onC
         <DetailCard title="Rule">
           <div className="grid grid-cols-2 gap-lg">
             <DetailField label="Section">{r.section}</DetailField>
-            <DetailField label="Amendment"><GcpChip value={r.amdt} label="amendments" /></DetailField>
+            <DetailField label="Amendment"><GcpChip value={amendmentLabel(r.amdt)} label="amendments" /></DetailField>
             <DetailField label="Subpart">{subpart}</DetailField>
             <DetailField label="Subsection">{subsection}</DetailField>
           </div>
@@ -61,14 +63,19 @@ export function RegulationDetailDrawer({ regulation: r, subpart, subsection, onC
         </DetailCard>
 
         <DetailCard title="Text">
-          <DetailField label="Requirement Text">
-            <span className="whitespace-pre-wrap">{r.requirementText}</span>
-          </DetailField>
-          <div className="mt-lg">
-            <DetailField label="Default Means of Compliance (MOC) Text">
-              <span className="whitespace-pre-wrap">{r.defaultMocText}</span>
-            </DetailField>
-          </div>
+          <section aria-label="Requirement Text" className="grid gap-lg text-sm font-normal leading-relaxed text-text-primary">
+            <h3 className="text-xs font-normal text-text-muted">Requirement Text</h3>
+            {regulationTextBlocks(r.requirementText, decodeRegulationEntities).map((block, i) => (
+              <p key={i} className={`whitespace-pre-wrap break-words ${block.indent === 'number' ? 'pl-lg' : block.indent === 'roman' ? 'pl-2xl' : ''}`}>{block.text}</p>
+            ))}
+            {!r.requirementText.trim() && <p className="text-text-muted">No requirement text recorded.</p>}
+            {/<img\b/i.test(r.requirementText) && <p className="text-xs text-text-muted">The source includes images. Open the source reference to view them.</p>}
+          </section>
+          <section aria-label="Default Means of Compliance (MOC) Text" className="mt-lg grid gap-base text-sm font-normal leading-relaxed text-text-primary">
+            <h3 className="text-xs font-normal text-text-muted">Default Means of Compliance (MOC) Text</h3>
+            {regulationTextBlocks(r.defaultMocText, decodeRegulationEntities).map((block, i) => <p key={i} className="whitespace-pre-wrap break-words">{block.text}</p>)}
+            {!r.defaultMocText.trim() && <p className="text-text-muted">—</p>}
+          </section>
         </DetailCard>
 
         <DetailCard title="Placement">

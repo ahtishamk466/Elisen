@@ -7830,6 +7830,45 @@ and its GCP Data drawer, People & Authority, Reference Lists, Regulations and
 Certification Basis: no header or tab is clipped and there are no console
 errors.
 
+## 2026-10-30 — A real sign-in page replaces "Sign back in"
+**Context:** Asked to design the login page. After Logout the app showed
+`SignedOutScreen`, where one click signed you back in.
+**Choice:** `app/LoginScreen.tsx` replaces it, shown whenever no one is
+signed in. Built from `Input`, `Button`, `Alert` and `FormField` (stacked,
+`fullWidth`, since a 420px card has no room for the label column).
+- Email and Password, then a full-width Sign in button. Under it: "Forgot
+  your password? Ask your system administrator to reset it." That is plain
+  text, not a link, because no reset flow exists yet.
+- The email of whoever just signed out is filled in, and focus starts on
+  Password.
+- A blank field or a malformed email gets a field error, and focus moves to
+  that field. An unknown or inactive account gets one message, "Email or
+  password is incorrect". The page never says which one was wrong, so it
+  never confirms that an account exists. The password is then cleared and
+  focused.
+- While signing in, the button shows its spinner and screen readers hear
+  "Signing in…". A 600ms delay stands in for the server round trip.
+- `sessionStore.signIn(userId)` now takes the account to sign in as. The
+  default user is `u-2` (adrian.bergstrom, Sysadmin). The old `u-sysadmin`
+  matched no user, so Profile showed a blank username and email, and the
+  sidebar showed the "Admin User" fallback. There would also have been no
+  email to fill in after Logout.
+- `FormField` gives its help/error line the id `${htmlFor}-message`, so a
+  control can point `aria-describedby` at it.
+**Needs server enforcement:** This is a UI illusion. Any password works for
+any active user's email. No password may live in client code (SECURITY.md
+rule 1). The session is a flag in memory. The server must own all of it:
+- check the password hash
+- set an HttpOnly, Secure, SameSite session cookie
+- rate-limit and lock out repeated failures
+- give the same answer for unknown and inactive accounts
+- end the session server-side on Logout
+**Rationale:** The page has the shape the real one needs, and each state
+already behaves the way the backend will make it behave: blank, error,
+loading and success. Verified at desktop width and 375×812: no horizontal scroll,
+correct tab order (Email → Password → Sign in), visible focus ring on the
+button, and no console errors.
+
 ## 2026-10-30 — Every certification basis and regulation comes from the database
 **Context:** The user asked for all the certification bases from the
 database. The app had two invented bases and about 400 regulations copied by
@@ -7982,3 +8021,102 @@ band: an icon tile and a `text-xl` name over its description.
 the actions. The tinted figures band and the hidden empty figures stay.
 **Rationale:** The band alone separates the title, the figures and the
 rules table; the bigger title added height without helping anyone scan.
+
+## 2026-10-30 — Certification Basis card header back to its earlier layout
+**Context:** After the one-line title came back, the user also asked for the
+card's figures to go back to how they were before the header changes.
+**Choice:** `CertBasisSummary` and its two wrappers (the Certification Basis
+page and step 2's reuse picker) are restored exactly as they were before the
+header changes:
+- the one-line title
+- all five figures on white in one grid: Rules, Built From, Basis on the
+  TCDS, Source Document, Used By
+- "—" shown where a figure is empty
+
+This supersedes the two header entries above. The page title "Certification
+Basis" and everything else are unchanged.
+**Rationale:** The user's call: they preferred the earlier card.
+
+## 2026-10-31 — Certification Basis list, workspace and two-step creation
+
+Latest user direction supersedes the approved three-step prototype: creation has exactly two steps, Basis details and source, then Regulations and review. There is no project association selector in creation. Associations remain in GCP Projects; the Master workspace shows read-only usage links into that workflow.
+
+The list follows Projects with header search/actions, filtered counts, sortable Master rows and incremental reveal. Dedicated detail/create/edit routes sit under `/gcp/cert-bases`; old `?basis=` bookmarks redirect to detail. Detail follows Project overview/section navigation with source context, exact regulation records and Used By. Existing imports, shared regulation edits, version warnings and Keep Latest remain available.
+
+Code is required alongside Description. The historical `aircraftModel` property continues storing the unparsed Master code so legacy datasets, imports and GCP reuse remain compatible. Editing spreads existing metadata and retains all rule IDs; saving does not infer aircraft or regulations from code/PDF. PDF checks and the 20 MB limit remain in place; source URLs are session-only because this app has no upload backend.
+
+Deleting a Master now removes its projectBasis associations centrally, without deleting library regulations or initialized compliance plans. Removing a regulation link changes the shared Master, with explicit confirmation; already initialized project plans remain snapshots. No Project screens, production deployment or unrelated local changes were modified for this redesign.
+
+## 2026-10-31 — Make shared Basis usage identifiable
+
+Used By now provides a compact sortable table with TCCA number, description, linked Elisen project number/title, TCCA status and opened date from the existing stores. Missing dates/descriptions remain blank markers, missing linked records are identified without inventing projects, and records with no project IDs retain the existing Baseline / DAO convention. Long descriptions use the shared two-line Truncate treatment and usage rows reveal incrementally for larger lists. Open GCP continues to the existing project's Basis step. The workspace summary uses a compact count/link to Used By; association changes remain exclusively in GCP Projects. No creation, regulation or source behavior changes.
+
+## 2026-10-31 — Basis header search and Add label
+
+At the user’s request, widened the Basis list search to the established Project listing’s 400px desktop container, capped to its available width. Shortened list/detail header create labels to Add while retaining the Plus icon and original create behavior. This explicit label direction supersedes the older name-the-record header convention for this action only.
+
+## 2026-10-31 — Keep Basis editor actions visible
+
+Create/Edit Basis now uses AppShell’s established fill mode. A flex form pane owns scrolling while the action row stays outside it at the viewport bottom, with reserved layout space rather than an overlay. Both steps retain their existing actions, disabled/loading states, draft values and discard confirmation. No KPI changes.
+
+## 2026-10-31 — Remove Basis listing KPI cards
+
+Explicit user direction removes Bases shown, Regulation links and Linked TCCA projects from the listing. Header controls now lead directly into the table, with no replacement cards. Row-level regulation/usage counts, results footer, detail stats and the editor layout remain unchanged. This supersedes the listing’s earlier filtered-stat-strip decision for Certification Basis only.
+
+## 2026-10-31 — Preserve existing blank regulation amendments (verified legacy rule)
+
+Do not conflate `amdt=''` with explicit `IR` (initial revision). Read-only inspection of the running local OLD TPMS database found 3,973 regulations: 68 empty-string amendments, zero NULL amendments and 1,021 IR values. All 68 empty-amendment records already participate in 125 Cert Basis links across five Masters; e.g. regulation 3702, section 525.601. Counts describe the local snapshot inspected on this date, not a permanent dataset invariant.
+
+Legacy evidence: TPMS `models/base/Regulation.php:76,104` requires nonblank section/amdt on Regulation creation/editing; its subclass inherits this. The DB's amdt column is varchar(255), NOT NULL, with no declared default (`migrations/m260602_000039_create_regulation_table.php:26` agrees). NOT NULL still permits empty strings. Cert Basis instead requires mastercertbasis_id/regulation_id (`models/base/Certbasis.php:76`), with an existing-record selector labelled Section -- Amdt (`views/cert-basis/_form_create.php:149-171`). It therefore links existing blank-amendment records without inventing an amendment.
+
+Current behavior: display existing empty amendments as “No amendment recorded”, retaining raw empty string and exact record ID. Basis RulePicker and GCP quick-create use record IDs for version selection, including blank versions; section alone never picks an arbitrary version. IR stays a distinct choice. New/global Regulation creation and editing still require nonblank amendment; opening or linking an existing blank record never rewrites it. Editing such a record explains that it can be linked without editing. Amendment-level builders do not infer an order for blank versions; explicit override selection remains available.
+
+Import matches exact Section + raw Amendment. An empty amendment can link an existing matching library record; an unmatched empty amendment is rejected rather than creating a new incomplete Regulation or defaulting to IR. Existing import metadata validation remains in place. Repeated IDs remain skipped. The source dataset loader/reuse paths retain raw records and need no normalization change.
+
+Durable regression check: `node scripts/check-basis-amendments.mjs` covers real blank record identity/round-trip, display vs IR, exact import matching and duplicate skipping, rejection of unmatched blank imports, and no automatic amendment-level choice. Browser verification also checks blank-version pick/save/reopen and global Regulation validation. Legacy DB is never modified for these checks.
+
+## 2026-10-31 — Direct regulation reading and safe text formatting
+
+Basis rule sections and titles now open the existing right-side RegulationDetailDrawer directly using native buttons, including selected rules in the two-step editor. Menus, Read and Remove remain independent controls. Drawer scrolling and persistent Close/Edit actions are retained.
+
+Inspection of the current dataset found 1,967 nonempty requirement texts, 906 with HTML-like markup. Real records include legacy paragraph/br tags and literal escaped newline sequences, strong/emphasis, links and some images (e.g. 25.812 has long numbered clauses). Rendering now converts legacy content to React text paragraphs, preserving wording, line breaks and existing clause markers with indentation. HTML tags, source attributes and active script/style/iframe/object/template content are not mounted; only escaped text enters DOMParser to decode entities, and decoded results remain React text. No dangerouslySetInnerHTML, new dependency, arbitrary HTML renderer or new UI primitive was introduced. This avoids external-HTML rendering under SECURITY.md. Rich styling and images are not reproduced; a source-image note points readers to the existing source reference. Missing text is explicitly indicated without inventing legal wording. The shared drawer applies the same readable text treatment to global Regulation views. Exact ID and blank/IR display semantics are unchanged.
+
+## 2026-10-31 — Create Basis section contrast and hierarchy
+
+User found the section highlights too faint. Only Create Basis step one opts into FormSection emphasis: Master details gets an accent-subtle header and accent edge with an explicit Required badge; reference/source use neutral header bands with Optional badges. Cards use border-strong, white contents, base-size headings and secondary-color subtitles. Defaults and edit screens retain their prior styling. Existing semantic accent/text/border tokens and neutral surface tokens are reused, with no decorative shadows/gradients or workflow/field/validation changes. The viewport footer remains unchanged. Storybook BasisSectionHierarchy documents all presentations.
+
+## 2026-10-31 — Global neutral section-card standard supersedes Create-only highlights
+
+The user explicitly expanded the scope to a shared app-wide form/section standard and rejected Master looking selected merely because required. FormSection and DetailCard now share semantic section-header/surface/border tokens (Neutral-100/25/400), base semibold headings, secondary subtitles and consistent header/content padding. Existing controls, tables/charts and status/danger/success tokens are unchanged. FormSection emphasis is retired; requirement is a semantic neutral badge only, with identical card styling whether required, optional or unlabelled. Create Basis no longer has a blue edge/header. All other forms and read-only section cards inherit the same default through the shared patterns. SectionCardStandard replaces the opt-in hierarchy story. This supersedes the immediately preceding Create-only styling decision; workflow/footer/data semantics are unchanged.
+
+## 2026-10-31 — Title-only shared section headers
+
+User requested cleaner global section headers. FormSection no longer renders its descriptive subtitle line or spacing; the prop is retained for compatibility with existing callers. DetailCard already renders title-only headers. Shared neutral bands/borders, Required/Optional badges, actual data/Description fields, control help/validation, source upload constraints, page descriptions and step progress remain unchanged. This supersedes the subtitle typography portion of the immediately prior global section-card standard.
+
+## 2026-10-31 — Reversible local Create Basis layout trial (awaiting design retention decision)
+
+User asked to see the four review suggestions implemented before choosing whether to retain them. This is a reversible local trial, not production deployment or a final retention decision. The exact pre-trial uncommitted contents of CertBasisDrawer.tsx, RulePicker.tsx, COMPONENTS.md and DECISIONS.md are checkpointed outside the checkout at `/Users/rashda/.codex/backups/elisen-basis-layout-trial-2026-10-31-a8b10a8e`. Run its restore.py to undo only this trial; it refuses if later edits would be overwritten. No git reset/stash/commit is involved.
+
+Creation-only changes: desktop code/description and TCDS number/link in 1:2 rows with full-width controls per column; three-line statement textarea; an opt-in desktop RulePicker control row showing section/title and exact amendment selection; labelled compact review (code, description, selected count, TCDS, source with explicit absent values). Shared neutral title-only cards, title back guard, two steps and persistent footer remain. RulePicker defaults/edit consumers, business validation, exact IDs/blank-vs-IR semantics and store saves are unchanged. QA uses an unsaved local draft only; no real Basis is created/edited.
+
+Trial verification: desktop browser checked long code/description/TCDS URL, retained multiline statement, three selected rules (blank amendment, IR and another amendment), disabled duplicate ID, alternate-version warning, aligned control rows, no page-level horizontal overflow, visible footer and dirty header-back/Keep editing. No Basis was created or edited. Automated PDF selection was blocked by Chrome extension file-URL access; no browser permissions were changed, so uploaded long-filename review remains an explicit QA limitation.
+
+## 2026-10-31 — Fix section-only Add for a unique existing regulation
+
+Reproduced on real 525.601: selecting the section then Add failed because regId was empty until the user separately selected the only blank-version option. RulePicker now resolves an exact unique section record automatically and displays its amendment label. Multiple-version sections remain unresolved until explicit selection; an invalid/stale ID cannot fall back to a different record. Duplicate exact IDs disable Add with an explanation. Blank/whitespace amendment display is No amendment recorded, while the original string/ID remain unchanged and IR is separate. No blank record is synthesized; new/global Regulation validation is unchanged. Regression coverage includes real reg-3702 resolution/save round-trip, unique nonblank versions, multi-version ambiguity, wrong-ID rejection, whitespace preservation and existing import/IR checks.
+
+The presentation-trial checkpoint now has an additional without-trial-with-functional-fix target. Its restore.py reverts only trial presentation while retaining this behavior fix and functional notes. Original before/ snapshots remain immutable; updated trial.patch excludes the fix. Any later modifications still make restore refuse rather than overwrite them.
+
+## 2026-10-31 — Remove only Basis Reference details field helper lines
+
+Explicit additive user request removes “Blank for a project-specific basis.” and “Copy the certification basis line, so the rules can be checked against it.” from the shared Create/Edit Basis renderer. This is not a global FormField help change. Values, labels, placeholders, validation/errors, source PDF instructions and the current layout trial remain. The layout-only rollback target includes this cleanup as well as the unique-record Add fix.
+
+## 2026-10-31 — Format inline clauses in actual Regulation View
+
+User clarified exact standalone regulation 23.1 at amendment 23-34 (reg-4) had [(a)...categories.] (b) Each person... stored in one paragraph. The safe shared text renderer now inserts display-only breaks at genuine inline clause starts following sentence/list boundaries or closing brackets and capital prose. It preserves exact saved wording/brackets and avoids breaking ordinary references such as paragraph (a) of or under (a) and (b). Targeted exact-record/cross-reference/security tests and browser checks of standalone and Basis views pass. No regulatory data, authoring or validation change. Layout-trial rollback excludes this independent fix and retains this note.
+
+## 2026-10-31 — User-approved true exact-record multi-select
+
+The user explicitly authorized selecting one or several exact existing regulation records in one dropdown and adding the batch once in Create and Edit, superseding the earlier separate Section/Amendment picking interaction. RulePicker now uses the shared searchable checkbox MultiSelect with section/amendment/title identity, including No amendment recorded for actual blank values and separate IR. appendBasisRules preserves existing IDs, filters invalid staged IDs, and deduplicates exact IDs. Alternate versions remain allowed with warning. Selection is staged until Add selected(N), which is disabled when empty and clears staging after Add. Pending ticks also trigger the existing discard guard; added draft rows survive Back. No new Regulation validation, fabricated versions, project linking location or workflow steps change.
+
+An opt-in virtualized MultiSelect bounds the large regulation library to roughly fifteen mounted options while retaining search, keyboard active-option navigation and checkbox semantics; default consumers retain their original rendering. No new package. Regression checks cover different sections/versions, blank/IR preservation, duplicates, unknown IDs, single-record batches and alternate-version warning. Browser verified Create five exact records→one Add→save/reopen in disposable in-memory state, Edit batch addition, pending Cancel/Keep editing, duplicate disabled state and keyboard navigation. TypeScript/build passed. Layout-only rollback mirrors this functional RulePicker and pending guard, so it does not discard the multi-select or previous behavior fixes.

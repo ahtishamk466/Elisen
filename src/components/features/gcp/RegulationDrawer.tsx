@@ -1,3 +1,4 @@
+import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useState } from 'react'
 import { Drawer } from '@/components/patterns/Drawer'
 import { FormSection } from '@/components/patterns/FormSection'
@@ -58,7 +59,7 @@ export function RegulationDrawer({ mode, initial, onClose, onSubmit }: Regulatio
   const submit = () => {
     const e: typeof errors = {}
     if (!section.trim()) e.section = 'Section is required.'
-    if (!amdt.trim()) e.amdt = 'Amendment is required. Use IR for the rule as first issued.'
+    if (!amdt.trim()) e.amdt = 'Amendment is required when creating or editing a regulation.'
     if (!title.trim()) e.title = 'Title is required.'
     if (!subpartCode) e.subpartCode = 'Subpart Code is required.'
     if (!subsectionCode) e.subsectionCode = 'Subsection Code is required.'
@@ -90,9 +91,9 @@ export function RegulationDrawer({ mode, initial, onClose, onSubmit }: Regulatio
   }
 
   const title_ = isEdit
-    ? `Edit Regulation “${initial!.section} · ${initial!.amdt}”`
+    ? `Edit Regulation “${initial!.section} · ${amendmentLabel(initial!.amdt)}”`
     : mode === 'copy'
-      ? `Copy of “${initial!.section} · ${initial!.amdt}”`
+      ? `Copy of “${initial!.section} · ${amendmentLabel(initial!.amdt)}”`
       : 'Add Regulation'
 
   return (
@@ -112,7 +113,7 @@ export function RegulationDrawer({ mode, initial, onClose, onSubmit }: Regulatio
           <Input id="reg-section" value={section} error={!!errors.section} placeholder="e.g. 23.21(a)"
             onChange={(e) => { setSection(e.target.value); setErrors((p) => ({ ...p, section: undefined })) }} />
         </FormField>
-        <FormField label="Amendment" htmlFor="reg-amdt" required error={errors.amdt} help="IR is the rule as first issued.">
+        <FormField label="Amendment" htmlFor="reg-amdt" required error={errors.amdt} help={isEdit && initial?.amdt === '' ? 'This record has no amendment recorded. You can link it to a basis without editing it.' : 'Use IR only for an explicitly recorded initial revision.'}>
           <Input id="reg-amdt" value={amdt} error={!!errors.amdt} placeholder="e.g. 23-34"
             onChange={(e) => { setAmdt(e.target.value); setErrors((p) => ({ ...p, amdt: undefined })) }} />
         </FormField>

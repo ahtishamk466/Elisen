@@ -239,3 +239,17 @@ Each paired with a label; required marker supported.
 ## Decisions log
 
 See [DECISIONS.md](DECISIONS.md) for dated entries.
+
+
+## Shared form and read-only section cards (2026-10-31)
+
+All FormSection and DetailCard consumers use one neutral section treatment:
+- `section-header`: Neutral-100 (#F1F5F9).
+- `section-surface`: Neutral-25 (white).
+- `section-border`: Neutral-400 (#94A3B8), 1px perimeter and header divider.
+- Header padding: lg; heading: base/semibold/text-primary. Section headers display titles and optional semantic badges only; no descriptive subtitle line or reserved subtitle spacing.
+- Content padding: lg. Form controls retain their existing focus and validation styles.
+
+Required/Optional are neutral textual badges, not selection states. Permanent section headers do not use accent highlights. Accent/selected tokens remain reserved for interactive state. This standard is shared globally through FormSection/DetailCard, not applied to every table/chart/container border. It supersedes the earlier Create Basis-only required/optional emphasis treatment.
+
+Section header subtitles are omitted globally (2026-10-31). Page descriptions, record Description fields, control help, validation messages and step progress remain unchanged.

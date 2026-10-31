@@ -122,3 +122,6 @@ function hostOf(url: string) {
 export function initialsOf(code: string) {
   return code.slice(0, 2)
 }
+
+/** Display only: an unrecorded amendment is distinct from explicit IR. */
+export const amendmentLabel = (amdt: string) => amdt.trim() === '' ? 'No amendment recorded' : amdt

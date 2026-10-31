@@ -27,7 +27,8 @@ export interface ImportPlan {
  * from row 2 to the first empty row; a regulation is found by Section +
  * Amendment or created (active); a rule the basis already has is skipped.
  * Two things are stricter than the legacy code, which saved whatever it read:
- * Section and Amendment are required, and Subpart / Subsection must be a
+ * Section is required; a blank Amendment must match an existing blank-version
+ * record (never defaulted to IR). New records require Amendment. Subpart / Subsection must be a
  * known id (what the legacy sheet holds) or code.
  */
 export function planImport(
@@ -52,7 +53,8 @@ export function planImport(
       const [section, amdt, title, subpart, subsection, url, sort, sectionRoot] = cells
       const at = `${sheet.name} row ${n}`
       const problems = [
-        (!section || !amdt) && 'Section and Amendment are required',
+        !section && 'Section is required',
+        (!amdt && !byKey.has(`${section}\u0000${amdt}`)) && 'Amendment is required for a new regulation; no existing record matches this section with no amendment recorded',
         cells.some((c, i) => i !== 5 && c.length > MAX_TEXT) && `a value is over ${MAX_TEXT} characters`,
         url && (url.length > MAX_URL || !/^https?:\/\//i.test(url)) && 'URL must be a web link (http or https)',
         codeOf(subpart, subparts) === undefined && `Subpart "${subpart}" is not a known id or code`,

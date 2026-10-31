@@ -1691,3 +1691,22 @@ export const FileLinkExample: Story = {
     )
   },
 }
+
+
+/** Shared neutral, title-only headers; legacy subtitle props are intentionally not rendered. */
+export const SectionCardStandard: Story = {
+  render: () => (
+    <div className="grid gap-2xl p-2xl bg-neutral-50">
+      <FormSection title="Default section" subtitle="Every form uses the shared neutral section standard.">
+        <FormField label="Example" htmlFor="hierarchy-default" fullWidth><Input id="hierarchy-default" placeholder="Enter value…" /></FormField>
+      </FormSection>
+      <FormSection requirement="required" title="Master details" subtitle="A reusable certification basis, identified by its Master code.">
+        <FormField label="Code" htmlFor="hierarchy-code" required fullWidth><Input id="hierarchy-code" placeholder="e.g. DHC-8-3XX_A-142" /></FormField>
+      </FormSection>
+      <FormSection requirement="optional" title="Reference details" subtitle="Add source metadata when available.">
+        <FormField label="TCDS Number" htmlFor="hierarchy-tcds" fullWidth><Input id="hierarchy-tcds" placeholder="e.g. A-123" /></FormField>
+      </FormSection>
+      <DetailCard title="Read-only section"><DetailField label="Description">The same neutral header and boundary.</DetailField></DetailCard>
+    </div>
+  ),
+}

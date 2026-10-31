@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/Button'
+import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useMemo } from 'react'
 import { Eye, Pencil, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
@@ -88,9 +90,9 @@ export function CertBasisTable({ basis, rules, pool, onView, onEditRegulation, o
               const note = notes.get(r.id)
               return (
                 <tr key={r.id} className="border-b border-border-default last:border-b-0">
-                  <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{r.section}</td>
-                  <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{r.amdt}</td>
-                  <td className="px-lg py-base text-sm text-text-primary"><Truncate lines={2}>{r.title}</Truncate></td>
+                  <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary"><Button variant="tertiary" size="sm" aria-label={`Read ${r.section} at ${amendmentLabel(r.amdt)}`} onClick={() => onView(r)}>{r.section}</Button></td>
+                  <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{amendmentLabel(r.amdt)}</td>
+                  <td className="px-lg py-base text-sm text-text-primary"><Button variant="tertiary" size="sm" className="!h-auto !whitespace-normal text-left" onClick={() => onView(r)}><Truncate lines={2}>{r.title}</Truncate></Button></td>
                   <td className="px-lg py-base">
                     <span className="flex flex-wrap gap-xs">
                       {note?.override && <Badge tone="info">Override</Badge>}
@@ -98,7 +100,7 @@ export function CertBasisTable({ basis, rules, pool, onView, onEditRegulation, o
                     </span>
                   </td>
                   <td className="px-lg py-base">
-                    <ActionsMenu ariaLabel={`Actions for ${r.section} · ${r.amdt}`} items={[
+                    <ActionsMenu ariaLabel={`Actions for ${r.section} · ${amendmentLabel(r.amdt)}`} items={[
                       { label: 'View', icon: <Eye size={16} />, onSelect: () => onView(r) },
                       { label: 'Edit Regulation', icon: <Pencil size={16} />, onSelect: () => onEditRegulation(r) },
                       { label: 'Remove from Basis', icon: <Trash2 size={16} />, onSelect: () => onRemove(r), tone: 'danger' as const },

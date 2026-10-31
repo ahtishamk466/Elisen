@@ -1,10 +1,15 @@
-import { useMemo, useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { appendBasisRules } from '@/lib/basisRuleBatch'
+import { amendmentLabel } from '@/lib/gcpDisplay'
+import { useEffect, useMemo, useState } from 'react'
+import { Plus, Trash2, Eye } from 'lucide-react'
 import { FormField } from '@/components/patterns/FormField'
+import { Alert } from '@/components/ui/Alert'
+import { duplicateSections } from '@/lib/certBasisLevel'
 import { Button } from '@/components/ui/Button'
-import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { MultiSelect } from '@/components/ui/MultiSelect'
 import { useGcpStore } from '@/stores/gcpStore'
 import { amdtOrder } from '@/lib/certBasisLevel'
+import { RegulationDetailDrawer } from './RegulationDetailDrawer'
 import type { Regulation } from '@/types/gcp'
 
 export interface RulePickerProps {
@@ -18,70 +23,56 @@ export interface RulePickerProps {
   existing?: string[]
   /** Heading over the list, e.g. "Rules to add". */
   listLabel: string
+  onPendingChange?: (pending: boolean) => void
+  /** Desktop row trial; other consumers retain the existing stacked presentation. */
+  layout?: 'stacked' | 'row'
 }
 
+const EMPTY_IDS: string[] = []
 const bySection = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true })
 const byAmdt = (a: Regulation, b: Regulation) => (amdtOrder(a.amdt) ?? 9999) - (amdtOrder(b.amdt) ?? 9999) || a.amdt.localeCompare(b.amdt)
 
-/**
- * Adds rules to a certification basis one exact rule at a time: a Regulation
- * Section, then one of its amendments, then Add (user's choice, 2026-10-30,
- * over one combined search). The two fields stay separate, as the client
- * asked on 2026-09-24, but nothing is ever combined: the old pair of
- * multi-selects attached every chosen section at every chosen amendment, so
- * A4N_23-14's 402 rules read back as 520. An amendment already in the basis
- * or on the list is offered greyed out with the reason, and a second version
- * of a section is allowed but called out, since a basis applies each rule at
- * one amendment.
- */
-export function RulePicker({ idPrefix, value, onChange, existing = [], listLabel }: RulePickerProps) {
+/** Stages multiple exact library records for one explicit batch Add.
+ * Every option retains its own section/amendment/title identity. */
+export function RulePicker({ idPrefix, value, onChange, existing = EMPTY_IDS, listLabel, onPendingChange, layout = 'stacked' }: RulePickerProps) {
   const regulations = useGcpStore((s) => s.regulations)
-  const [section, setSection] = useState('')
-  const [regId, setRegId] = useState('')
-  const [error, setError] = useState('')
+  const [checkedIds, setCheckedIds] = useState<string[]>([])
+  const [viewing, setViewing] = useState<Regulation | null>(null)
 
   const byId = useMemo(() => new Map(regulations.map((r) => [r.id, r])), [regulations])
-  const sectionOptions = useMemo(() => {
-    const title = new Map<string, string>()
-    for (const r of regulations) if (!title.has(r.section)) title.set(r.section, r.title)
-    return [...title].sort(([a], [b]) => bySection(a, b)).map(([s, t]) => ({ value: s, label: s, hint: t }))
-  }, [regulations])
-
-  const taken = new Set([...existing, ...value])
-  const versions = regulations.filter((r) => r.section === section).sort(byAmdt)
-  const otherVersions = versions.filter((r) => taken.has(r.id) && r.id !== regId)
+  const taken = useMemo(() => new Set([...existing, ...value]), [existing, value])
+  const options = useMemo(() => [...regulations].sort((a, b) => bySection(a.section, b.section) || byAmdt(a, b)).map((r) => ({
+    value: r.id, label: `${r.section} · ${amendmentLabel(r.amdt)}`, hint: r.title,
+    disabled: taken.has(r.id), disabledReason: 'Already in this basis',
+  })), [regulations, taken])
+  const batch = appendBasisRules(value, checkedIds, regulations, existing)
+  const hasPending = batch.additions.length > 0
+  useEffect(() => { onPendingChange?.(hasPending) }, [hasPending, onPendingChange])
+  useEffect(() => () => { onPendingChange?.(false) }, [onPendingChange])
   const picked = value.map((id) => byId.get(id)).filter((r): r is Regulation => !!r)
-
+  const pending = batch.additions.map((id) => byId.get(id)!).filter(Boolean)
   const add = () => {
-    if (!section || !regId) { setError('Pick a section and an amendment first.'); return }
-    onChange([...value, regId])
-    setSection('')
-    setRegId('')
+    if (batch.additions.length === 0) return
+    onChange(batch.ids)
+    setCheckedIds([])
   }
 
   return (
     <div className="grid gap-base">
-      <FormField label="Regulation Section" htmlFor={`${idPrefix}-section`} fullWidth error={error && !section ? error : undefined}>
-        <SearchableSelect id={`${idPrefix}-section`} value={section} placeholder="Type a section, e.g. 25.1301…"
-          emptyLabel="No regulations in the library yet." options={sectionOptions}
-          onChange={(s) => { setSection(s); setRegId(''); setError('') }} />
-      </FormField>
-      <FormField label="Regulation Amendment" htmlFor={`${idPrefix}-amdt`} fullWidth error={error && section && !regId ? error : undefined}
-        help={section && otherVersions.length > 0
-          ? `Already has ${section} at ${otherVersions.map((r) => r.amdt).join(', ')}; a second version shows as a duplicate.`
-          : undefined}>
-        <SearchableSelect id={`${idPrefix}-amdt`} value={regId} disabled={!section}
-          placeholder={section ? 'Pick an amendment…' : 'Pick a section first'}
-          options={versions.map((r) => ({
-            value: r.id, label: r.amdt, hint: r.title, disabled: taken.has(r.id),
-            disabledReason: existing.includes(r.id) ? 'Already in this basis' : 'Already on the list',
-          }))}
-          onChange={(id) => { setRegId(id); setError('') }} />
-      </FormField>
-      <div>
-        <Button variant="secondary" leadingIcon={<Plus size={16} />} onClick={add}>Add Rule</Button>
+      <div className={layout === 'row' ? 'grid gap-lg laptop:grid-cols-6' : 'grid gap-base'}>
+        <div className={layout === 'row' ? 'min-w-0 laptop:col-span-5' : 'min-w-0'}>
+          <FormField label="Select regulations" htmlFor={`${idPrefix}-records`} fullWidth>
+            <MultiSelect id={`${idPrefix}-records`} value={checkedIds} onChange={setCheckedIds}
+              options={options} virtualized placeholder="Search and select regulations…"
+              emptyLabel="No regulations in the library yet." />
+          </FormField>
+        </div>
+        <div className={layout === 'row' ? 'laptop:pt-2xl' : ''}>
+          <Button variant="secondary" size={layout === 'row' ? 'lg' : 'md'} className={layout === 'row' ? 'w-full' : ''}
+            leadingIcon={<Plus size={16} />} disabled={batch.additions.length === 0} onClick={add}>Add selected ({batch.additions.length})</Button>
+        </div>
       </div>
-
+      {duplicateSections([...picked, ...pending]).length > 0 && <Alert tone="warning" title="Multiple amendments selected">Your selection includes more than one amendment of the same section. Check each version before adding or saving.</Alert>}
       <div className="overflow-hidden rounded-sm border border-border-default">
         <p className="border-b border-border-default bg-neutral-50 px-lg py-sm text-sm font-semibold text-text-secondary" aria-live="polite">
           {listLabel} ({picked.length})
@@ -89,19 +80,21 @@ export function RulePicker({ idPrefix, value, onChange, existing = [], listLabel
         {picked.length === 0 ? (
           <p className="px-lg py-base text-sm text-text-muted">Rules you add appear here.</p>
         ) : (
-          <ul className="max-h-80 overflow-y-auto">
-            {picked.map((r) => (
-              <li key={r.id} className="flex items-center gap-base border-b border-border-default px-lg py-xs text-sm last:border-b-0">
-                <span className="w-20 shrink-0 font-semibold text-text-primary">{r.section}</span>
-                <span className="w-16 shrink-0 text-text-primary">{r.amdt}</span>
-                <span className="min-w-0 flex-1 truncate text-text-secondary" title={r.title}>{r.title}</span>
-                <Button variant="tertiary" size="sm" leadingIcon={<Trash2 size={14} />} aria-label={`Remove ${r.section} at ${r.amdt}`}
-                  onClick={() => onChange(value.filter((id) => id !== r.id))}>Remove</Button>
-              </li>
-            ))}
-          </ul>
+          <div className="max-h-96 overflow-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-neutral-50"><tr><th className="px-lg py-base">Section</th><th className="px-lg py-base">Amendment</th><th className="px-lg py-base">Regulation Title</th><th className="px-lg py-base">Actions</th></tr></thead>
+              <tbody>{picked.map((r) => <tr key={r.id} className="border-t border-border-default">
+                <td className="whitespace-nowrap px-lg py-base font-semibold"><Button variant="tertiary" size="sm" aria-label={`Read ${r.section} at ${amendmentLabel(r.amdt)}`} onClick={() => setViewing(r)}>{r.section}</Button></td>
+                <td className="whitespace-nowrap px-lg py-base">{amendmentLabel(r.amdt)}</td>
+                <td className="px-lg py-base text-text-secondary"><Button variant="tertiary" size="sm" className="!h-auto !whitespace-normal text-left" onClick={() => setViewing(r)}>{r.title}</Button></td>
+                <td className="px-lg py-base"><div className="flex gap-sm"><Button variant="tertiary" size="sm" leadingIcon={<Eye size={14} />} onClick={() => setViewing(r)}>Read</Button>
+                  <Button variant="tertiary" size="sm" leadingIcon={<Trash2 size={14} />} aria-label={`Remove ${r.section} at ${amendmentLabel(r.amdt)}`} onClick={() => onChange(value.filter((id) => id !== r.id))}>Remove</Button></div></td>
+              </tr>)}</tbody>
+            </table>
+          </div>
         )}
       </div>
+      {viewing && <RegulationDetailDrawer regulation={viewing} subpart={viewing.subpartCode} subsection={viewing.subsectionCode} onClose={() => setViewing(null)} />}
     </div>
   )
 }

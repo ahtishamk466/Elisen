@@ -1,3 +1,4 @@
+import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useMemo, useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Copy, Eye, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
@@ -287,7 +288,7 @@ export function FlowStepProject({ projectId, onPick, state = 'ready', query, onQ
                           </td>
                           <td className="truncate px-lg py-base text-sm text-text-primary" title={elisenProjectLabel(t.projectIds)}>{elisenProjectLabel(t.projectIds)}</td>
                           <td className="truncate px-lg py-base text-sm text-text-primary" title={moreRules ? `${primaryRule?.section} · ${moreRules}` : primaryRule?.section}>{primaryRule?.section ?? '—'}</td>
-                          <td className="truncate px-lg py-base text-sm text-text-primary" title={moreRules ? `${primaryRule?.amdt} · ${moreRules}` : primaryRule?.amdt}>{primaryRule?.amdt ?? '—'}</td>
+                          <td className="truncate px-lg py-base text-sm text-text-primary" title={moreRules ? `${primaryRule?.amdt} · ${moreRules}` : primaryRule?.amdt}>{primaryRule ? amendmentLabel(primaryRule.amdt) : '—'}</td>
                           <td className="px-lg py-base text-sm text-text-primary" title={moreRules}>
                             {primaryRule ? <Truncate lines={1}>{primaryRule.title}</Truncate> : '—'}
                           </td>

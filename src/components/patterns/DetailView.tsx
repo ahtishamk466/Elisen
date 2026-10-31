@@ -16,9 +16,9 @@ export interface DetailCardProps {
     dims real values to the same gray as an empty placeholder. */
 export function DetailCard({ title, onEdit, children }: DetailCardProps) {
   return (
-    <section className="rounded-sm border border-border-default bg-neutral-25 p-lg">
-      <div className="flex items-start justify-between gap-lg">
-        <h2 className="text-lg font-bold text-text-primary">{title}</h2>
+    <section className="overflow-hidden rounded-sm border border-section-border bg-section-surface">
+      <header className="flex items-start justify-between gap-lg border-b border-section-border bg-section-header px-lg py-lg">
+        <h2 className="text-base font-semibold text-text-primary">{title}</h2>
         {onEdit && (
           <button
             type="button"
@@ -29,8 +29,8 @@ export function DetailCard({ title, onEdit, children }: DetailCardProps) {
             <Pencil size={16} aria-hidden />
           </button>
         )}
-      </div>
-      <div className="mt-lg">{children}</div>
+      </header>
+      <div className="p-lg">{children}</div>
     </section>
   )
 }

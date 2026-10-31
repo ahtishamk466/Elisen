@@ -17,6 +17,8 @@ export interface FormFieldProps {
 }
 
 export function FormField({ label, htmlFor, required, description, help, error, counter, fullWidth = false, children }: FormFieldProps) {
+  // So the control can point aria-describedby at its help or error line.
+  const messageId = htmlFor ? `${htmlFor}-message` : undefined
   return (
     <div className={fullWidth ? 'grid gap-xs' : 'grid gap-xs tablet:grid-cols-3 tablet:items-start tablet:gap-lg'}>
       <label htmlFor={htmlFor} className={`text-sm font-semibold text-text-primary ${fullWidth ? '' : 'tablet:pt-base'}`}>
@@ -32,9 +34,9 @@ export function FormField({ label, htmlFor, required, description, help, error, 
         )}
         {children}
         {error ? (
-          <p className="text-xs text-danger">{error}</p>
+          <p id={messageId} className="text-xs text-danger">{error}</p>
         ) : help ? (
-          <p className="text-xs text-text-muted">{help}</p>
+          <p id={messageId} className="text-xs text-text-muted">{help}</p>
         ) : null}
       </div>
     </div>

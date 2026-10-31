@@ -25,16 +25,17 @@ import { ApprovalDetailPage } from '@/components/features/approvals/ApprovalDeta
 import { DocumentsPage } from '@/components/features/documents/DocumentsPage'
 import { GcpFlowPage } from '@/components/features/gcp/flow/GcpFlowPage'
 import { GcpRegulationsPage } from '@/components/features/gcp/GcpRegulationsPage'
-import { GcpCertBasesPage } from '@/components/features/gcp/GcpCertBasesPage'
+import { CertBasisDetailPage } from '@/components/features/gcp/CertBasisDetailPage'
+import { GcpCertBasesPage, CertBasisCreatePage } from '@/components/features/gcp/GcpCertBasesPage'
 import { GcpPeoplePage } from '@/components/features/gcp/GcpPeoplePage'
 import { GcpReferencePage } from '@/components/features/gcp/GcpReferencePage'
 import { GcpReportsPage } from '@/components/features/gcp/GcpReportsPage'
-import { SignedOutScreen } from './SignedOutScreen'
+import { LoginScreen } from './LoginScreen'
 import { useSessionStore } from '@/stores/sessionStore'
 
 export default function App() {
   const signedIn = useSessionStore((s) => s.signedIn)
-  if (!signedIn) return <SignedOutScreen />
+  if (!signedIn) return <LoginScreen />
 
   return (
     <BrowserRouter>
@@ -60,6 +61,9 @@ export default function App() {
         <Route path="/gcp/flow" element={<GcpFlowPage />} />
         <Route path="/gcp/regulations" element={<GcpRegulationsPage />} />
         <Route path="/gcp/cert-bases" element={<GcpCertBasesPage />} />
+        <Route path="/gcp/cert-bases/new" element={<CertBasisCreatePage />} />
+        <Route path="/gcp/cert-bases/:id" element={<CertBasisDetailPage />} />
+        <Route path="/gcp/cert-bases/:id/edit" element={<CertBasisDetailPage />} />
         <Route path="/gcp/people" element={<GcpPeoplePage />} />
         <Route path="/gcp/reference" element={<GcpReferencePage />} />
         <Route path="/gcp/reports" element={<GcpReportsPage />} />

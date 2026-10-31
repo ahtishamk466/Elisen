@@ -1,3 +1,4 @@
+import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useMemo, useState } from 'react'
 import { ArrowLeft, ArrowUpRight, Search } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -94,7 +95,7 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
   const q = query.trim().toLowerCase()
   const filteredRules = useMemo(() => {
     if (!q) return bySubpart
-    return bySubpart.filter((r) => `${r.section} ${r.amdt} ${r.title} ${r.sectionRoot}`.toLowerCase().includes(q))
+    return bySubpart.filter((r) => `${r.section} ${amendmentLabel(r.amdt)} ${r.title} ${r.sectionRoot}`.toLowerCase().includes(q))
   }, [bySubpart, q])
 
   /** Re-opening the step shows the answers already given; a rule not yet
@@ -237,7 +238,7 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
                 <tr key={r.id} className="border-b border-border-default last:border-b-0">
                   <td className="px-base py-base">
                     <Checkbox
-                      aria-label={`Mark ${r.section} · ${r.amdt} as affected`}
+                      aria-label={`Mark ${r.section} · ${amendmentLabel(r.amdt)} as affected`}
                       checked={isAssigned}
                       onChange={(e) => setMarks((m) => ({ ...m, [r.id]: e.target.checked }))}
                     />
@@ -245,7 +246,7 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
                   <td className="px-base py-base"><CodeWithName {...subpartParts(r.subpartCode, subparts)} /></td>
                   <td className="px-base py-base"><CodeWithName {...subsectionParts(r.subsectionCode, subsections)} /></td>
                   <td className="px-base py-base text-sm text-text-primary">{r.section}</td>
-                  <td className="px-base py-base text-sm text-text-primary">{r.amdt}</td>
+                  <td className="px-base py-base text-sm text-text-primary">{amendmentLabel(r.amdt)}</td>
                   <td className="px-base py-base text-sm text-text-primary"><Truncate lines={2}>{r.title}</Truncate></td>
                   <td className="whitespace-nowrap px-base py-base text-sm">
                     {r.url ? (
@@ -253,7 +254,7 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
                         className="inline-flex items-center gap-xxss rounded-sm text-sm text-accent underline underline-offset-2 transition-colors duration-fast hover:text-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary">
                         {sourceLabel(r.url)}
                         <ArrowUpRight size={14} aria-hidden className="shrink-0" />
-                        <span className="sr-only"> for {r.section} at {r.amdt}, opens in a new tab</span>
+                        <span className="sr-only"> for {r.section} at {amendmentLabel(r.amdt)}, opens in a new tab</span>
                       </a>
                     ) : (
                       <span className="text-text-muted">No source</span>

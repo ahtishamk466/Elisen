@@ -20,7 +20,10 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
   // render. Depending on `onClose` here re-stole focus from form fields on
   // every keystroke, because callers pass a new function each render.
   useEffect(() => {
-    if (open) panelRef.current?.focus()
+    if (!open) return
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    panelRef.current?.focus()
+    return () => { if (trigger?.isConnected) trigger.focus() }
   }, [open])
 
   useEffect(() => {

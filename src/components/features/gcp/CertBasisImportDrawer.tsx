@@ -102,7 +102,7 @@ export function CertBasisImportDrawer({ initialBasisId = '', onClose, onImported
     >
       <FormSection title="Import Certification Basis" subtitle={`Row 1 is headings. Columns A–H: ${IMPORT_COLUMNS.join(', ')}.`}>
         <FormField label="Certification Basis" htmlFor="import-basis" required error={basisError} fullWidth
-          help="The rules are added to it; ones it already has are skipped.">
+          help="Existing rules are skipped. Blank amendments must match an existing library record; new regulations require an amendment.">
           <SearchableSelect id="import-basis" value={basisId} error={!!basisError}
             onChange={(id) => { setBasisId(id); setBasisError('') }}
             placeholder="Select a certification basis…" emptyLabel="No certification bases yet. Add one first."

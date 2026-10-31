@@ -22,6 +22,8 @@ export interface MultiSelectProps {
   /** Lists at or under this length skip the search box — a search field over
       four options is noise. Above it, typing is the only sane way through. */
   searchThreshold?: number
+  /** Fixed two-line rows and bounded DOM for large searchable libraries. */
+  virtualized?: boolean
 }
 
 /**
@@ -37,7 +39,7 @@ export interface MultiSelectProps {
  */
 export function MultiSelect({
   id, options, value, onChange, placeholder = 'Select…', emptyLabel = 'Nothing to choose from.',
-  showChips = true, disabled = false, error = false, searchThreshold = 5, size = 'md',
+  showChips = true, disabled = false, error = false, searchThreshold = 5, size = 'md', virtualized = false,
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -45,11 +47,14 @@ export function MultiSelect({
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  const [scrollTop, setScrollTop] = useState(0)
 
   /** Flips above the trigger and caps its height so it always fits on screen. */
   const position = usePanelPosition(open, triggerRef)
 
-  const selected = options.filter((o) => value.includes(o.value))
+  const selectedValues = useMemo(() => new Set(value), [value])
+  const selected = options.filter((o) => selectedValues.has(o.value))
 
   /* The chip row never wraps to a second line (client instruction,
      2026-09-24) — past whatever fits, the rest collapse into one "+N more"
@@ -104,7 +109,20 @@ export function MultiSelect({
     return options.filter((o) => `${o.label} ${o.hint ?? ''}`.toLowerCase().includes(q))
   }, [options, query])
 
+  // Two text lines (20 + 16) plus vertical padding (8 + 8), at design scale.
+  const rowHeight = 52
+  const start = virtualized ? Math.max(0, Math.floor(scrollTop / rowHeight) - 4) : 0
+  const end = virtualized ? Math.min(filtered.length, start + Math.ceil((position?.maxHeight ?? 360) / rowHeight) + 8) : filtered.length
+  const rendered = filtered.slice(start, end)
   const showSearch = options.length > searchThreshold
+
+  useEffect(() => {
+    if (!virtualized || !open || !listRef.current) return
+    const list = listRef.current
+    const top = activeIndex * rowHeight
+    if (top < list.scrollTop) list.scrollTop = top
+    else if (top + rowHeight > list.scrollTop + list.clientHeight) list.scrollTop = top + rowHeight - list.clientHeight
+  }, [activeIndex, open, virtualized])
 
   /* The panel only mounts once its position is known, so focus waits for
      that — keyed on `open` alone it fired first, found no input, and left
@@ -116,7 +134,7 @@ export function MultiSelect({
     if (panelShown) (showSearch ? inputRef.current : panelRef.current)?.focus()
   }, [panelShown, showSearch])
   useEffect(() => {
-    if (!open) { setQuery(''); setActiveIndex(0) }
+    if (!open) { setQuery(''); setActiveIndex(0); setScrollTop(0) }
   }, [open])
 
   useEffect(() => {
@@ -252,27 +270,35 @@ export function MultiSelect({
                 ref={inputRef}
                 type="text"
                 value={query}
-                onChange={(e) => { setQuery(e.target.value); setActiveIndex(0) }}
+                onChange={(e) => { setQuery(e.target.value); setActiveIndex(0); setScrollTop(0); if (listRef.current) listRef.current.scrollTop = 0 }}
                 onKeyDown={onKeyDown}
                 aria-label="Search options"
+                aria-controls={virtualized ? `${id}-listbox` : undefined}
+                aria-activedescendant={virtualized && filtered[activeIndex] ? `${id}-option-${activeIndex}` : undefined}
                 className="w-full bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted"
                 placeholder="Type to search…"
               />
             </div>
             )}
-            <ul id={`${id}-listbox`} role="listbox" aria-multiselectable className="min-h-0 flex-1 overflow-y-auto py-xs">
+            <ul ref={listRef} id={`${id}-listbox`} role="listbox" aria-multiselectable onScroll={virtualized ? (e) => setScrollTop(e.currentTarget.scrollTop) : undefined} className="min-h-0 flex-1 overflow-y-auto py-xs">
               {filtered.length === 0 && (
                 <li className="px-base py-sm text-sm text-text-muted">
                   {options.length === 0 ? emptyLabel : 'No matches.'}
                 </li>
               )}
-              {filtered.map((o, i) => {
-                const checked = value.includes(o.value)
+              {virtualized && start > 0 && <li role="presentation" aria-hidden style={{ height: start * rowHeight }} />}
+              {rendered.map((o, localIndex) => {
+                const i = start + localIndex
+                const checked = selectedValues.has(o.value)
                 return (
-                  <li key={o.value}>
+                  <li key={o.value} style={virtualized ? { height: rowHeight } : undefined}>
                     <button
                       type="button"
                       role="option"
+                      id={virtualized ? `${id}-option-${i}` : undefined}
+                      aria-posinset={virtualized ? i + 1 : undefined}
+                      aria-setsize={virtualized ? filtered.length : undefined}
+                      style={virtualized ? { height: rowHeight } : undefined}
                       aria-selected={checked}
                       disabled={o.disabled}
                       onMouseEnter={() => !o.disabled && setActiveIndex(i)}
@@ -305,6 +331,7 @@ export function MultiSelect({
                   </li>
                 )
               })}
+              {virtualized && end < filtered.length && <li role="presentation" aria-hidden style={{ height: (filtered.length - end) * rowHeight }} />}
             </ul>
           </div>,
           document.body,

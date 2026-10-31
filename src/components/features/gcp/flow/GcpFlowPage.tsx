@@ -1,3 +1,4 @@
+import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ExternalLink, FolderKanban, Plus, Search } from 'lucide-react'
@@ -85,7 +86,7 @@ export function GcpFlowPage() {
      named rule, matching the legacy `gcp/create` screen's own fields (Section
      and Amdt are their own dropdowns there too, not one merged field). */
   const [createSection, setCreateSection] = useState('')
-  const [createAmdt, setCreateAmdt] = useState('')
+  const [createRegulationId, setCreateRegulationId] = useState('')
   const [createDao, setCreateDao] = useState('')
   const [createMoc, setCreateMoc] = useState('')
   const [createFoc, setCreateFoc] = useState('')
@@ -97,17 +98,13 @@ export function GcpFlowPage() {
   const [projectQuery, setProjectQuery] = useState('')
 
   const createSectionOptions = useMemo(() => [...new Set(regulations.map((r) => r.section))].sort(), [regulations])
-  const createAmdtOptions = useMemo(() => {
-    const pool = createSection ? regulations.filter((r) => r.section === createSection) : regulations
-    return [...new Set(pool.map((r) => r.amdt))].sort()
-  }, [regulations, createSection])
+  const createVersionOptions = useMemo(() => regulations.filter((r) => r.section === createSection), [regulations, createSection])
   const handleCreateSectionChange = (next: string) => {
     setCreateSection(next)
-    const validAmdts = new Set(regulations.filter((r) => r.section === next).map((r) => r.amdt))
-    setCreateAmdt((prev) => (validAmdts.has(prev) ? prev : ''))
+    setCreateRegulationId('') // Always require an explicit version choice, including blank amendments.
   }
   const resetCreateForm = () => {
-    setCreateProjectId(''); setCreateSection(''); setCreateAmdt('')
+    setCreateProjectId(''); setCreateSection(''); setCreateRegulationId('')
     setCreateDao(''); setCreateMoc(''); setCreateFoc(''); setCreateDeliverable('')
   }
 
@@ -119,7 +116,7 @@ export function GcpFlowPage() {
      is preserved untouched. */
   const handleCreateGcp = () => {
     const targetProject = tccaProjects.find((t) => t.id === createProjectId)
-    const regulation = regulations.find((r) => r.section === createSection && r.amdt === createAmdt)
+    const regulation = regulations.find((r) => r.section === createSection && r.id === createRegulationId)
     if (!targetProject || !regulation) return
 
     const existingBasis = bases.find((b) => b.id === projectBasis[targetProject.id])
@@ -302,7 +299,7 @@ export function GcpFlowPage() {
                         value={currentPlanRow.entry.id}
                         onChange={(id) => setPlanIndex(planRows.findIndex((r) => r.entry.id === id))}
                         placeholder="Select…"
-                        options={planRows.map((r) => ({ value: r.entry.id, label: `${r.rule.section} · ${r.rule.amdt}`, hint: r.rule.title }))}
+                        options={planRows.map((r) => ({ value: r.entry.id, label: `${r.rule.section} · ${amendmentLabel(r.rule.amdt)}`, hint: r.rule.title }))}
                       />
                     </div>
                     <Button
@@ -331,7 +328,7 @@ export function GcpFlowPage() {
                   <ReadOnlyField label="Subsection Code">{currentPlanRow.rule.subsectionCode}</ReadOnlyField>
                   <ReadOnlyField label="Subsection Title">{currentSubsection?.title}</ReadOnlyField>
                   <ReadOnlyField label="Regulation Section">{currentPlanRow.rule.section}</ReadOnlyField>
-                  <ReadOnlyField label="Regulation Amendment">{currentPlanRow.rule.amdt}</ReadOnlyField>
+                  <ReadOnlyField label="Regulation Amendment">{amendmentLabel(currentPlanRow.rule.amdt)}</ReadOnlyField>
                   <ReadOnlyField label="Regulation Title">{currentPlanRow.rule.title}</ReadOnlyField>
                   <div className="min-w-0">
                     <dt className="text-xs font-normal text-text-muted">Regulation Url</dt>
@@ -341,7 +338,7 @@ export function GcpFlowPage() {
                           className="inline-flex items-center gap-xxss text-sm font-medium text-accent underline underline-offset-2 transition-colors duration-fast hover:text-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary">
                           {sourceLabel(currentPlanRow.rule.url)}
                           <ExternalLink size={14} aria-hidden className="shrink-0" />
-                          <span className="sr-only"> for {currentPlanRow.rule.section} at {currentPlanRow.rule.amdt}, opens in a new tab</span>
+                          <span className="sr-only"> for {currentPlanRow.rule.section} at {amendmentLabel(currentPlanRow.rule.amdt)}, opens in a new tab</span>
                         </a>
                       ) : (
                         <span className="text-sm font-medium text-text-muted">No source</span>
@@ -410,7 +407,7 @@ export function GcpFlowPage() {
           footer={
             <>
               <Button variant="secondary" onClick={() => { setCreateOpen(false); resetCreateForm() }}>Cancel</Button>
-              <Button disabled={!createProjectId || !createSection || !createAmdt} onClick={handleCreateGcp}>
+              <Button disabled={!createProjectId || !createSection || !createRegulationId} onClick={handleCreateGcp}>
                 Create
               </Button>
             </>
@@ -443,10 +440,11 @@ export function GcpFlowPage() {
             <FormField label="Regulation Amendment" htmlFor="create-gcp-amdt" required fullWidth>
               <SearchableSelect
                 id="create-gcp-amdt"
-                value={createAmdt}
-                onChange={setCreateAmdt}
+                value={createRegulationId}
+                onChange={setCreateRegulationId}
                 placeholder="Select regulation amendment…"
-                options={createAmdtOptions.map((a) => ({ value: a, label: a }))}
+                disabled={!createSection}
+                options={createVersionOptions.map((r) => ({ value: r.id, label: amendmentLabel(r.amdt), hint: r.title }))}
               />
             </FormField>
             <FormField label="Design Approval Organization (DAO) Specialty Code" htmlFor="create-gcp-dao" fullWidth

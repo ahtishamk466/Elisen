@@ -1,3 +1,4 @@
+import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useEffect, useMemo, useState } from 'react'
 import { BookMarked } from 'lucide-react'
 import { EmptyState } from '@/components/patterns/EmptyState'
@@ -145,11 +146,11 @@ export function BasisLevelBuilder({ projectNumber, existing, onDraft }: {
                 <tr key={p.section} className="border-b border-border-default last:border-b-0">
                   <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{p.section}</td>
                   <td className="truncate px-lg py-base text-sm text-text-primary" title={shown.title}>{shown.title}</td>
-                  <td className="truncate px-lg py-base text-sm text-text-muted">{p.versions.map((v) => v.amdt).join(', ')}</td>
+                  <td className="truncate px-lg py-base text-sm text-text-muted">{p.versions.map((v) => amendmentLabel(v.amdt)).join(', ')}</td>
                   <td className="px-lg py-sm">
                     <SearchableSelect id={`applies-${p.section}`} size="sm" value={value} ariaLabel={`Amendment of ${p.section} that applies`}
                       onChange={(v) => setOverrides((o) => ({ ...o, [p.section]: v }))}
-                      options={[...p.versions.map((v) => ({ value: v.id, label: v.amdt })), { value: '', label: 'Leave out' }]} />
+                      options={[...p.versions.map((v) => ({ value: v.id, label: amendmentLabel(v.amdt) })), { value: '', label: 'Leave out' }]} />
                   </td>
                   <td className="px-lg py-base">{why}</td>
                 </tr>
