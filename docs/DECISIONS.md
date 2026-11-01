@@ -8968,3 +8968,21 @@ in step 4. Checked in the app: an owned basis keeps all its details; a basis
 shared by four projects is untouched while the fifth gets its own copy; a
 rebuilt step 2 keeps the description and PDF; a removed rule's MOC text,
 comment and GCP row survive Create plan and return with the rule.
+
+## 2026-11-02 — GCP flow buttons stay at the bottom of the screen
+**Context:** The user asked for the flow's bottom buttons to stick to the
+footer. Scope Rules (step 3) and Reports (step 5) already kept them below a
+scrolling area. Certification Basis (step 2) and Compliance Plan (step 4)
+didn't: Back and Continue scrolled away under a long form.
+**Choice:**
+- Step 2 now matches step 3: the choices scroll in their own pane, and the
+  button row sits below it.
+- Step 4 scrolls the window by design (2026-09-24, its editors need the
+  room), so its row is `sticky` to the bottom instead. It extends over
+  `<main>`'s `pb-2xl` so nothing scrolls by beneath it, and the buttons sit
+  at the same height as on the other steps. Every descendant has
+  `scroll-mb-6xl`, so a field reached with the keyboard scrolls in above the
+  row, not behind it (WCAG 2.4.11).
+**Rationale:** No new component: the same layout classes the flow already
+uses. Checked at 1440×900 and 375×812: the buttons stay on screen at the top,
+middle and end of each step, with no horizontal scroll.

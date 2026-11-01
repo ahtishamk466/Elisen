@@ -84,7 +84,9 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
   const currentItems = items.filter((i) => i.planEntryId === current.entry.id)
 
   return (
-    <section className="grid gap-lg">
+    /* `scroll-mb` on every descendant: a field focused by keyboard scrolls in
+       above the pinned Back / Continue row instead of behind it. */
+    <section className="grid gap-lg [&_*]:scroll-mb-6xl">
       <div className="grid gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg py-lg">
         <div className="grid gap-xxss">
           <h2 className="text-base font-semibold text-text-primary">Compliance plan</h2>
@@ -214,7 +216,11 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      {/* This step scrolls the window, not a pane (GcpFlowPage), so the row
+          sticks to the bottom of the screen. It reaches down over `<main>`'s
+          `pb-2xl` (AppShell), so nothing scrolls by beneath the buttons, which
+          sit where every other step's do. */}
+      <div className="sticky -bottom-2xl z-sticky -mb-2xl flex items-center justify-between bg-neutral-50 pb-2xl pt-base">
         <Button variant="secondary" leadingIcon={<ArrowLeft size={16} />} onClick={onBack}>Back</Button>
         <Button onClick={onNext}>Continue to Reports</Button>
       </div>

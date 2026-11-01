@@ -72,25 +72,29 @@ export function FlowStepBasis({ project, onBack, onNext }: { project: TccaProjec
   const count = draft?.kind === 'save' ? draft.regulationIds.length : 0
 
   return (
-    <section className="grid gap-lg">
-      <div className="grid gap-xxss">
-        <h2 className="text-base font-semibold text-text-primary">Certification basis</h2>
-        <p className="text-xs text-text-muted">The rules this project is certified against, each at one amendment.</p>
+    /* The choices scroll; Back and Continue stay at the bottom of the screen
+       (as on Scope Rules) instead of scrolling away under a long rule list. */
+    <section className="flex min-h-0 flex-1 flex-col gap-lg">
+      <div className="grid min-h-0 flex-1 content-start gap-lg overflow-y-auto">
+        <div className="grid gap-xxss">
+          <h2 className="text-base font-semibold text-text-primary">Certification basis</h2>
+          <p className="text-xs text-text-muted">The rules this project is certified against, each at one amendment.</p>
+        </div>
+
+        <fieldset className="grid gap-base tablet:grid-cols-3">
+          <legend className="sr-only">How to build the certification basis</legend>
+          {MODES.map((m) => (
+            <RadioCard key={m.mode} name="basis-mode" value={m.mode} title={m.title} description={m.description}
+              checked={mode === m.mode} onChange={() => changeMode(m.mode)} />
+          ))}
+        </fieldset>
+
+        {mode === 'level' && <BasisLevelBuilder projectNumber={project.number} existing={owned} onDraft={setDraft} />}
+        {mode === 'reuse' && <BasisReusePicker initialBasisId={shared ? existing?.id : undefined} onDraft={setDraft} />}
+        {mode === 'hand' && <BasisHandPicker existing={owned} onDraft={setDraft} />}
       </div>
 
-      <fieldset className="grid gap-base tablet:grid-cols-3">
-        <legend className="sr-only">How to build the certification basis</legend>
-        {MODES.map((m) => (
-          <RadioCard key={m.mode} name="basis-mode" value={m.mode} title={m.title} description={m.description}
-            checked={mode === m.mode} onChange={() => changeMode(m.mode)} />
-        ))}
-      </fieldset>
-
-      {mode === 'level' && <BasisLevelBuilder projectNumber={project.number} existing={owned} onDraft={setDraft} />}
-      {mode === 'reuse' && <BasisReusePicker initialBasisId={shared ? existing?.id : undefined} onDraft={setDraft} />}
-      {mode === 'hand' && <BasisHandPicker existing={owned} onDraft={setDraft} />}
-
-      <div className="flex items-center justify-between">
+      <div className="flex shrink-0 items-center justify-between">
         <Button variant="secondary" leadingIcon={<ArrowLeft size={16} />} onClick={onBack}>Back</Button>
         <Button disabled={!draft} onClick={continueWithBasis}>
           {mode === 'reuse'
