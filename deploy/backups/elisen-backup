@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+kind=${1:?Usage: elisen-backup database|jasper [--local-only]}
+[[ $kind == database || $kind == jasper ]] || exit 2
+base=/var/backups/elisen
+install -d -m 700 "$base/$kind"
+exec 9>"$base/backup.lock"
+flock -n 9 || { echo 'Another backup is running' >&2; exit 1; }
+stamp=$(TZ=Asia/Karachi date +%Y%m%dT%H%M%S%z)
+work=$(mktemp -d "$base/.work.XXXXXX")
+trap 'rm -rf "$work"' EXIT
+if [[ $kind == database ]]; then
+  # Read the production application's existing credentials without logging them.
+  php -r '
+    $c = require "/var/www/tpms/tpms/config/db.php";
+    preg_match("/host=([^;]+)/", $c["dsn"], $h);
+    preg_match("/dbname=([^;]+)/", $c["dsn"], $d);
+    if (empty($h[1]) || empty($d[1])) exit(1);
+    $q = fn($s) => "\"" . str_replace(["\\", "\"", "\n", "\r"], ["\\\\", "\\\"", "\\n", "\\r"], $s) . "\"";
+    file_put_contents($argv[1], "[client]\nhost=".$q($h[1])."\nuser=".$q($c["username"])."\npassword=".$q($c["password"])."\n");
+    file_put_contents($argv[2], $d[1]);
+  ' "$work/mysql.cnf" "$work/database"
+  db=$(cat "$work/database")
+  mysqldump --defaults-extra-file="$work/mysql.cnf" --single-transaction \
+    --quick --routines --events --triggers --hex-blob --no-tablespaces \
+    --set-gtid-purged=OFF --databases "$db" | gzip -1 > "$work/database-$stamp.sql.gz"
+  gzip -t "$work/database-$stamp.sql.gz"
+  mv "$work/database-$stamp.sql.gz" "$base/$kind/"
+else
+  jasper=/home/jasperserver/jasperreports-server-cp-8.2.0-bin
+  (cd "$jasper/buildomatic"; ./js-export.sh --everything --output-zip "$work/repository.zip") > "$work/export.log" 2>&1 || {
+    install -m 600 "$work/export.log" "$base/jasper-export-error.log"
+    echo 'Jasper repository export failed; no complete backup created' >&2; exit 1;
+  }
+  test -s "$work/repository.zip"
+  unzip -tq "$work/repository.zip" > /dev/null
+  # Include keys required to decrypt exported repository credentials.
+  test -s /root/.jrsks && test -s /root/.jrsksp
+  tar -czf "$work/jasper-$stamp.tar.gz" \
+    --exclude='jasperreports-server-cp-8.2.0-bin/apache-tomcat/temp' \
+    --exclude='jasperreports-server-cp-8.2.0-bin/apache-tomcat/work' \
+    --exclude='jasperreports-server-cp-8.2.0-bin/apache-tomcat/logs' \
+    -C "$work" repository.zip \
+    -C /root .jrsks .jrsksp \
+    -C /home/jasperserver jasperreports-server-cp-8.2.0-bin
+  gzip -t "$work/jasper-$stamp.tar.gz"
+  mv "$work/jasper-$stamp.tar.gz" "$base/$kind/"
+fi
+file=$(find "$base/$kind" -maxdepth 1 -type f -name "*-$stamp.*" -print -quit)
+(cd "$(dirname "$file")"; sha256sum "$(basename "$file")" > "$(basename "$file").sha256")
+if [[ ${2:-} == --local-only ]]; then
+  echo "Local backup verified: $file"
+  exit 0
+fi
+remote="elisen-drive:Backups/$kind"
+RCLONE=(rclone --config /etc/elisen-backup/rclone.conf --contimeout 20s --timeout 5m --retries 3 --low-level-retries 5)
+# Copy preserves historical backups; never sync or delete Drive content.
+"${RCLONE[@]}" copyto "$file" "$remote/$(basename "$file")" --immutable
+"${RCLONE[@]}" copyto "$file.sha256" "$remote/$(basename "$file").sha256" --immutable
+"${RCLONE[@]}" check "$base/$kind" "$remote" --one-way --include "$(basename "$file")" --include "$(basename "$file").sha256"
+echo "Backup uploaded and verified: $(basename "$file")"
+# Only prune files made by this script after this run is verified off-site.
+keep=7
+[[ $kind == jasper ]] && keep=2
+mapfile -t archives < <(find "$base/$kind" -maxdepth 1 -type f -name "$kind-*.gz" | sort -r)
+for old in "${archives[@]:$keep}"; do rm -f -- "$old" "$old.sha256"; done

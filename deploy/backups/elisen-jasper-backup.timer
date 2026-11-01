@@ -1,0 +1,10 @@
+[Unit]
+Description=Monthly Elisen JasperReports backup
+
+[Timer]
+OnCalendar=*-*-01 03:30:00 Asia/Karachi
+Persistent=true
+Unit=elisen-backup@jasper.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Elisen database backup
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 Asia/Karachi
+Persistent=true
+Unit=elisen-backup@database.service
+
+[Install]
+WantedBy=timers.target

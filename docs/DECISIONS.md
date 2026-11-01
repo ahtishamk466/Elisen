@@ -8444,3 +8444,7 @@ JavaScript.
 
 **Rationale:** The tab bar's colour follows the system appearance, not the clock,
 so that is the signal to follow.
+
+## 2026-11-01 — Server backups to Google Drive
+
+User requested production database backups daily and JasperReports backups monthly, uploaded directly from the Elisen server while the Mac is off. Added `deploy/backups/` scripts and systemd timers (03:00 daily / 03:30 on day 1, Asia/Karachi). Production DB credentials are read server-side; Jasper uses its repository export plus installation and encryption keys, excluding Tomcat temporary files/work/logs. Archives and SHA-256 sidecars are copied and verified with rclone; Drive history is preserved, local archives are pruned only after successful upload. Independent server Drive consent completed with a dedicated internal OAuth client in Google Cloud project `tranquil-apogee-513418-p4`, avoiding rclone shared-client quota failures. Initial database and Jasper uploads verified with zero differences; both timers enabled.
