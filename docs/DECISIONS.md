@@ -8819,3 +8819,33 @@ whole by default: the inactive flag is a legacy field, not a removal. The
 Regulatory Library keeps its Filters → Active option; the switch is for the
 basis page, where status is the first thing a reviewer narrows by.
 
+## 2026-11-02 — Certification Basis walkthrough video, updated and in the app
+
+**Context:** User request: adjust the Certification Basis video and add it to the
+page so the client can view it. v3 (1 Nov) was built from screenshots taken before
+this redesign (band, no Overview tab, new columns, 13px text, Rethink Sans), and its
+narration said "Overview shows its identity and references".
+
+**Choice:**
+- **v4 video.** Same narration voice, chapters, spotlights and previous-TPMS
+  chapter. All current-UI screens are fresh captures driven in headless Chrome
+  (1470×664 at 2×). Each spotlight is measured from the DOM, not placed by eye.
+- **Narration cut.** The Overview sentence is removed at its surrounding pauses
+  (−2.93 s, 40 ms crossfade in silence). Nothing was re-voiced, so v4 runs 2:40.
+- **New shots.** "Choose Edit" and "Import option" now show the band's ⋮ menu
+  open, since both actions moved into it. The opening card says "Walkthrough",
+  not "Team walkthrough".
+- **In the app.** The list page's **Watch Walkthrough** opens
+  `/gcp/cert-bases/walkthrough`: native player with an English captions track
+  (WebVTT from the word timings), poster, `preload="none"`, and the transcript
+  below.
+
+**Rationale:**
+- A page rather than the 680px `Drawer`: the UI in the video needs the width to
+  be readable.
+- Captions and a transcript cover WCAG 1.2.2 and 1.2.3 without burning subtitles
+  into the picture, which the earlier review rejected.
+- The web copy is 13 MB (CRF 24, 1080p, faststart), fetched only on play.
+- Production files stay outside the repo (`~/.codex/outputs/.../team-video`,
+  `render_team_video_v4.py`, `capture_v4.mjs`).
+

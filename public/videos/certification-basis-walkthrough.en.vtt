@@ -1,0 +1,203 @@
+WEBVTT
+
+1
+00:00:02.600 --> 00:00:06.740
+This walkthrough compares the previous
+certification basis workflow with the
+
+2
+00:00:06.760 --> 00:00:07.850
+updated application.
+
+3
+00:00:08.700 --> 00:00:13.570
+In the previous TPMS, related tasks were
+spread across four maintenance areas.
+
+4
+00:00:14.500 --> 00:00:16.830
+Master Cert Basis held
+the code and description.
+
+5
+00:00:17.300 --> 00:00:20.020
+Cert Basis attached
+regulations to that Master,
+
+6
+00:00:20.040 --> 00:00:22.190
+using Add or Bulk Add.
+
+7
+00:00:22.800 --> 00:00:25.550
+Spreadsheet Import provided
+another way to add regulations,
+
+8
+00:00:25.940 --> 00:00:30.420
+while Master Cert Basis Associate
+linked the Basis to TCCA projects.
+
+9
+00:00:30.440 --> 00:00:35.000
+Maintaining the record meant moving between
+these areas and opening the relevant
+
+10
+00:00:35.020 --> 00:00:36.030
+Update screens.
+
+11
+00:00:36.660 --> 00:00:41.060
+The Cert Basis listing also displayed
+one row for each regulation link,
+
+12
+00:00:41.080 --> 00:00:43.450
+repeating the same Master
+code and description.
+
+13
+00:00:44.080 --> 00:00:48.250
+In the updated application, the
+area is called Certification Basis.
+
+14
+00:00:48.720 --> 00:00:52.450
+Each Basis appears once in the
+listing, alongside its description,
+
+15
+00:00:52.780 --> 00:00:55.100
+regulation count and project usage count.
+
+16
+00:00:55.120 --> 00:00:59.790
+Search helps us find the record, and
+clicking its code opens the details.
+
+17
+00:01:00.340 --> 00:01:02.830
+To create a Basis, select Add.
+
+18
+00:01:03.240 --> 00:01:05.090
+Creation follows two steps.
+
+19
+00:01:05.460 --> 00:01:07.970
+First, enter the Basis
+code and description,
+
+20
+00:01:08.340 --> 00:01:11.710
+the same identity previously
+created in Master Cert Basis.
+
+21
+00:01:12.160 --> 00:01:16.850
+This step adds dedicated optional
+reference fields for the TCDS number,
+
+22
+00:01:17.040 --> 00:01:20.130
+source link and Basis statement
+as written in the document.
+
+23
+00:01:20.660 --> 00:01:24.340
+An optional source PDF upload is
+available alongside these references.
+
+24
+00:01:24.360 --> 00:01:27.690
+Select Continue to choose the regulations.
+
+25
+00:01:28.380 --> 00:01:32.010
+The searchable list identifies
+each existing rule by its section,
+
+26
+00:01:32.220 --> 00:01:33.630
+amendment and title.
+
+27
+00:01:33.960 --> 00:01:38.800
+Select one rule, or tick several,
+then use Add selected to include them
+
+28
+00:01:38.820 --> 00:01:42.590
+together. The selected regulations
+appear in the table below.
+
+29
+00:01:42.920 --> 00:01:45.810
+Review the list, remove
+any unwanted entries,
+
+30
+00:01:46.160 --> 00:01:49.830
+and check the Basis details
+before selecting Create Basis.
+
+31
+00:01:50.140 --> 00:01:54.310
+After creation, return to the
+listing and reopen the same Basis.
+
+32
+00:01:54.790 --> 00:01:59.470
+Regulations shows the selected rules,
+and opening a rule displays its saved
+
+33
+00:01:59.490 --> 00:02:02.060
+requirement text in a readable side panel.
+
+34
+00:02:02.230 --> 00:02:06.790
+To adjust the selection later, choose
+Edit and use the same control to add
+
+35
+00:02:06.810 --> 00:02:07.940
+further regulations.
+
+36
+00:02:08.570 --> 00:02:13.710
+For an existing shared Basis, Used By
+shows the TCCA projects that use it,
+
+37
+00:02:13.730 --> 00:02:16.260
+with links to the relevant GCP workflow.
+
+38
+00:02:16.710 --> 00:02:20.580
+Project association remains
+managed within GCP Projects.
+
+39
+00:02:21.170 --> 00:02:24.990
+The spreadsheet Import option is also
+retained for adding a prepared regulation
+
+40
+00:02:25.010 --> 00:02:26.920
+list to an existing Basis.
+
+41
+00:02:27.490 --> 00:02:29.840
+The result is a clearer
+route through the work:
+
+42
+00:02:30.190 --> 00:02:34.600
+find the Basis, review its references,
+select the appropriate regulations,
+
+43
+00:02:35.170 --> 00:02:37.200
+and see where the shared record is used.
