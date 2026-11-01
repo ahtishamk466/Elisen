@@ -9,6 +9,7 @@ import { useGcpFlowStore } from '@/stores/gcpFlowStore'
 import { useGcpStore } from '@/stores/gcpStore'
 import { useDocumentsStore } from '@/stores/documentsStore'
 import { useTccaStore } from '@/stores/tccaStore'
+import { focOptionsForRule } from '@/lib/focOptions'
 import type { GcpItem } from '@/types/gcp'
 
 export interface GcpItemDrawerProps {
@@ -67,14 +68,7 @@ export function GcpItemDrawer({ mode, planEntryId, initial, ruleLabel, sectionRo
     .map((d) => ({ value: d.daoSpecialtyCode, label: `${d.daoSpecialtyCode} -- ${d.elisenDiscipline}` }))
   const mocOptions = mocs.map((m) => ({ value: m.code, label: `${m.code} -- ${m.description}` }))
 
-  const delegated = new Set(delegations.filter((d) => d.sectionRoot === sectionRoot).map((d) => d.focCode))
-  const focLabel = (code: string, name: string) => `${code} -- ${name}`
-  const focOptions = [
-    ...focs.filter((f) => delegated.has(f.code))
-      .map((f) => ({ value: f.code, label: focLabel(f.code, f.authoritySpecialist), hint: 'Delegated for this rule' })),
-    ...focs.filter((f) => f.isDefault && !delegated.has(f.code))
-      .map((f) => ({ value: f.code, label: focLabel(f.code, f.authoritySpecialist) })),
-  ]
+  const focOptions = focOptionsForRule(focs, delegations, sectionRoot)
 
   const linkedRevisionIds = new Set(docLinks.filter((l) => l.tccaProjectId === tccaProjectId).map((l) => l.revisionId))
   const linkedDocumentIds = new Set(revisions.filter((r) => linkedRevisionIds.has(r.id)).map((r) => r.documentId))

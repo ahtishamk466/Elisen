@@ -790,3 +790,9 @@ The original blank-amendment and exact-record Basis behavior is retained. Source
 User requested local commits only while further work is collected, followed by one combined live release. Keep the detailed Regulation Group picker and shared MultiSelect keyboard fix on codex/regulations-context-flow; do not push to main or deploy these follow-up changes until the user requests the combined release. Existing live Regulatory Library release remains the previously deployed ce53852 commit.
 
 The Group picker uses exact Section Roots as verified in OLD TPMS, with source titles in searchable checkbox options and reduced drawer headings/help. Unknown/blank saved roots remain selectable, and unspecified shared roots are labelled explicitly. Browser QA verified multiple selections, Escape closing only the dropdown with values retained, and one Enter causing one toggle. TypeScript, production build, the root-options regression and whitespace checks passed.
+
+## Frontend mockup scope clarified — 2026-11-01
+
+Client is reviewing a usable frontend populated with OLD TPMS data. The existing backend is to be connected later. Do not build a parallel backend identity/authorization/delete system in local stores as a prerequisite for UI work; preserve an integration note to map OLD stable FOC/Discipline IDs and backend in-use deletion rules at that stage. The proposed People & Authority + Reference Lists → Compliance Setup merge remains a review recommendation, not an implemented navigation change.
+
+Frontend fixes retain saved Delegation roots/FOCs (including missing library choices) and share rule-specific/default FOC picker choices across Create GCP and plan item forms. Group picker and these follow-up changes stay local on the existing branch, with no push/deploy until the user requests the combined release.

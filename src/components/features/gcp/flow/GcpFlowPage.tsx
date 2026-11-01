@@ -1,4 +1,5 @@
 import { amendmentLabel } from '@/lib/gcpDisplay'
+import { focOptionsForRule } from '@/lib/focOptions'
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ExternalLink, FolderKanban, Plus, Search } from 'lucide-react'
@@ -56,6 +57,7 @@ export function GcpFlowPage() {
   const disciplines = useGcpStore((s) => s.disciplines)
   const mocs = useGcpStore((s) => s.mocs)
   const focs = useGcpStore((s) => s.focs)
+  const delegations = useGcpStore((s) => s.delegations)
   const bases = useGcpFlowStore((s) => s.bases)
   const projectBasis = useGcpFlowStore((s) => s.projectBasis)
   const planEntries = useGcpFlowStore((s) => s.planEntries)
@@ -99,9 +101,17 @@ export function GcpFlowPage() {
 
   const createSectionOptions = useMemo(() => [...new Set(regulations.map((r) => r.section))].sort(), [regulations])
   const createVersionOptions = useMemo(() => regulations.filter((r) => r.section === createSection), [regulations, createSection])
+  const createRegulation = regulations.find((r) => r.section === createSection && r.id === createRegulationId)
+  const createFocOptions = focOptionsForRule(focs, delegations, createRegulation?.sectionRoot)
   const handleCreateSectionChange = (next: string) => {
     setCreateSection(next)
     setCreateRegulationId('') // Always require an explicit version choice, including blank amendments.
+    setCreateFoc('')
+  }
+  const handleCreateRegulationChange = (id: string) => {
+    setCreateRegulationId(id)
+    const rule = regulations.find((r) => r.section === createSection && r.id === id)
+    if (!focOptionsForRule(focs, delegations, rule?.sectionRoot).some((option) => option.value === createFoc)) setCreateFoc('')
   }
   const resetCreateForm = () => {
     setCreateProjectId(''); setCreateSection(''); setCreateRegulationId('')
@@ -441,7 +451,7 @@ export function GcpFlowPage() {
               <SearchableSelect
                 id="create-gcp-amdt"
                 value={createRegulationId}
-                onChange={setCreateRegulationId}
+                onChange={handleCreateRegulationChange}
                 placeholder="Select regulation amendment…"
                 disabled={!createSection}
                 options={createVersionOptions.map((r) => ({ value: r.id, label: amendmentLabel(r.amdt), hint: r.title }))}
@@ -474,7 +484,8 @@ export function GcpFlowPage() {
                 value={createFoc}
                 onChange={setCreateFoc}
                 placeholder="Select a finding of compliance code…"
-                options={focs.map((f) => ({ value: f.code, label: `${f.code} -- ${f.authoritySpecialist}` }))}
+                disabled={!createRegulation}
+                options={createFocOptions}
               />
             </FormField>
             {/* Free text, not a dropdown: unlike Section/Amdt/DAO/MOC/FOC, no

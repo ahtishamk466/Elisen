@@ -5,6 +5,7 @@ import { FormField } from '@/components/patterns/FormField'
 import { Button } from '@/components/ui/Button'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { Select } from '@/components/ui/Select'
+import { delegationOptions } from '@/lib/delegationOptions'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { Delegation } from '@/types/gcp'
 
@@ -25,16 +26,13 @@ export function DelegationDrawer({ mode, initial, onClose, onSubmit }: Delegatio
   const regulations = useGcpStore((s) => s.regulations)
   const focs = useGcpStore((s) => s.focs)
 
-  const sectionRootOptions = useMemo(() => {
-    const roots = new Set(regulations.map((r) => r.sectionRoot).filter(Boolean))
-    return [...roots].sort().map((root) => ({ value: root, label: root }))
-  }, [regulations])
-
   const [sectionRoot, setSectionRoot] = useState(initial?.sectionRoot ?? '')
   const [focCode, setFocCode] = useState(initial?.focCode ?? '')
   const [limitation, setLimitation] = useState(initial?.limitation ?? false)
   const [active, setActive] = useState(initial?.active ?? true)
   const [errors, setErrors] = useState<{ sectionRoot?: string; focCode?: string }>({})
+  const options = useMemo(() => delegationOptions(regulations, focs, isEdit ? initial : undefined, { sectionRoot, focCode }),
+    [regulations, focs, isEdit, initial, sectionRoot, focCode])
 
   const submit = () => {
     const e: typeof errors = {}
@@ -42,15 +40,15 @@ export function DelegationDrawer({ mode, initial, onClose, onSubmit }: Delegatio
     if (!focCode.trim()) e.focCode = 'FOC Code is required.'
     if (!e.sectionRoot && !e.focCode) {
       const clash = delegations.find((d) => d.id !== (isEdit ? initial?.id : undefined)
-        && d.sectionRoot === sectionRoot.trim() && d.focCode === focCode.trim())
+        && d.sectionRoot === sectionRoot && d.focCode === focCode)
       if (clash) e.focCode = `${clash.sectionRoot} · ${clash.focCode} already exists.`
     }
     setErrors(e)
     if (Object.keys(e).length > 0) return
     onSubmit({
       id: isEdit ? initial!.id : crypto.randomUUID(),
-      sectionRoot: sectionRoot.trim(),
-      focCode: focCode.trim(),
+      sectionRoot,
+      focCode,
       limitation,
       active,
     })
@@ -77,7 +75,7 @@ export function DelegationDrawer({ mode, initial, onClose, onSubmit }: Delegatio
             error={!!errors.sectionRoot}
             placeholder="Select a Section Root"
             emptyLabel="No section roots yet."
-            options={sectionRootOptions}
+            options={options.sectionRoots}
             onChange={(v) => { setSectionRoot(v); setErrors((p) => ({ ...p, sectionRoot: undefined })) }}
           />
         </FormField>
@@ -88,7 +86,7 @@ export function DelegationDrawer({ mode, initial, onClose, onSubmit }: Delegatio
             error={!!errors.focCode}
             placeholder="Select a Foc Code"
             emptyLabel="No FOC codes yet."
-            options={focs.map((f) => ({ value: f.code, label: f.code, hint: f.authoritySpecialist }))}
+            options={options.focCodes}
             onChange={(v) => { setFocCode(v); setErrors((p) => ({ ...p, focCode: undefined })) }}
           />
         </FormField>
