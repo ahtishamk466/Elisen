@@ -14,6 +14,7 @@ import { RegulationGroupSectionDrawer } from './RegulationGroupSectionDrawer'
 import { RegulationGroupRail } from './RegulationGroupRail'
 import { RegulationGroupRegulationsPanel } from './RegulationGroupRegulationsPanel'
 import { useGcpData } from './GcpDataGate'
+import { WalkthroughButton } from './WalkthroughButton'
 
 /**
  * GCP → Regulations → Groups, as a **master–detail**, the same shape as
@@ -82,6 +83,7 @@ export function RegulationGroupsPage() {
               placeholder="Search by group or section root..."
               value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
+          <WalkthroughButton to="/gcp/regulations/walkthrough" />
           <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setGroupDrawer({ mode: 'create' })}>
             Add Group
           </Button>

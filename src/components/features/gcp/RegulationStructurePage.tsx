@@ -17,6 +17,7 @@ import { GcpDataGate } from './GcpDataGate'
 import { RegulationSubpartRail } from './RegulationSubpartRail'
 import { RegulationSubsectionsPanel } from './RegulationSubsectionsPanel'
 import { RegulationTopicPanel } from './RegulationTopicPanel'
+import { WalkthroughButton } from './WalkthroughButton'
 
 /** Browse existing Subpart → topic → exact regulation/amendment records.
  * Prefix-based topic suggestions also include saved cross-topic classifications. */
@@ -109,6 +110,7 @@ export function RegulationStructurePage() {
               placeholder="Search by subpart or subsection..."
               value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
+          <WalkthroughButton to="/gcp/regulations/walkthrough" />
           <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setSubpartDrawer({ mode: 'create' })}>
             Add Subpart
           </Button>

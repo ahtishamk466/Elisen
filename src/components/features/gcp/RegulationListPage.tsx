@@ -28,6 +28,7 @@ import { CodeWithName } from './CodeWithName'
 import { GcpChip } from './GcpChip'
 import { RegulationSectionButton } from './RegulationSectionButton'
 import { RegulationSourceLink } from './RegulationSourceLink'
+import { WalkthroughButton } from './WalkthroughButton'
 import { useGcpData } from './GcpDataGate'
 import {
   EMPTY_REGULATION_FILTERS, RegulationFilterMenu, regulationFilterChips, type RegulationFilters,
@@ -165,6 +166,7 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
             filters={filters}
             onApply={(f) => { setFilters(f); resetVisible() }}
           />
+          <WalkthroughButton to="/gcp/regulations/walkthrough" />
           <Button size="md" leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>Add</Button>
         </>
       }

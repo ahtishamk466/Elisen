@@ -8849,3 +8849,29 @@ narration said "Overview shows its identity and references".
 - Production files stay outside the repo (`~/.codex/outputs/.../team-video`,
   `render_team_video_v4.py`, `capture_v4.mjs`).
 
+## 2026-11-02 — Regulatory Library walkthrough video, and one walkthrough page
+
+**Context:** User request: the same video for regulations, from Aqeel's Loom
+"TPMS Regulation Library Design Changes" (the second Loom link was unavailable).
+
+**Choice:**
+- **Video.** The Certification Basis video's style and pipeline, on a new script the
+  user approved: Previous TPMS (five maintenance screens), the Regulatory Library list,
+  a regulation (side panel, add, edit, in-use protection), Certification Topics,
+  reading by topic, Regulation Groups, and a summary. It runs 2:52.
+- **Narration.** Lauren on Eleven v4, generated in ElevenLabs. The in-app browser
+  cannot download, and Claude in Chrome was not connected, so the user downloaded the
+  take from ElevenLabs History. Whisper missed one phrase ("its FAA source is one click
+  away. Previous"); its timing comes from the speech energy, as noted in
+  `qa/alignment.json`.
+- **Screens.** Old TPMS screens captured from the local legacy app, with the signed-in
+  name masked; current screens from the dev server. Four galley rules were attached to
+  Galley Modification in memory for the demo and were never saved.
+- **In the app.** "Watch Walkthrough" on all three Regulatory Library tabs opens
+  `/gcp/regulations/walkthrough`. The Certification Basis page became a shared
+  `WalkthroughPage` fed by `lib/walkthroughs.ts`, so a third area (Compliance Setup,
+  in progress in another session) adds data rather than another page.
+
+**Rationale:** Same viewing experience in every area. One page component keeps the
+captions, error state, back link and transcript identical across walkthroughs.
+

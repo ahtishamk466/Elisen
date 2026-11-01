@@ -1,7 +1,7 @@
 import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { CirclePlay, Eye, Pencil, Plus, Search, Download, Trash2 } from 'lucide-react'
+import { Eye, Pencil, Plus, Search, Download, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -22,6 +22,7 @@ import type { CertBasis, Regulation } from '@/types/gcp'
 import { GcpDataGate } from './GcpDataGate'
 import { CertBasisImportDrawer } from './CertBasisImportDrawer'
 import { CertBasisDrawer } from './CertBasisDrawer'
+import { WalkthroughButton } from './WalkthroughButton'
 
 /** Header cell: the Projects List heading style (small, semibold, secondary). */
 const TH = 'px-base py-base text-sm font-semibold text-text-secondary'
@@ -54,7 +55,7 @@ export function GcpCertBasesPage() {
   const bookmarked = bases.find((b) => b.id === params.get('basis'))
   if (bookmarked) return <LegacyBasisRedirect id={bookmarked.id} />
   return <AppShell activeItem="GCP" activeChild="Certification Basis" title="Certification Basis" description="Shared certification bases and the regulations each one applies."
-    headerActions={<><div className="min-w-0 max-w-full" style={{ width: 400 }}><Input id="basis-search" aria-label="Search certification bases" size="sm" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by code, description or TCDS..." leadingIcon={<Search size={16} />} /></div><Button variant="secondary" leadingIcon={<CirclePlay size={16} />} onClick={() => navigate('/gcp/cert-bases/walkthrough')}>Watch Walkthrough</Button><Button variant="secondary" leadingIcon={<Download size={16} />} onClick={() => setImportOpen(true)}>Import</Button><Button leadingIcon={<Plus size={16} />} onClick={() => navigate('/gcp/cert-bases/new')}>Add</Button></>}>
+    headerActions={<><div className="min-w-0 max-w-full" style={{ width: 400 }}><Input id="basis-search" aria-label="Search certification bases" size="sm" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by code, description or TCDS..." leadingIcon={<Search size={16} />} /></div><WalkthroughButton to="/gcp/cert-bases/walkthrough" /><Button variant="secondary" leadingIcon={<Download size={16} />} onClick={() => setImportOpen(true)}>Import</Button><Button leadingIcon={<Plus size={16} />} onClick={() => navigate('/gcp/cert-bases/new')}>Add</Button></>}>
     <GcpDataGate><div className="grid gap-lg">
       {sorted.length === 0 ? <EmptyState title={query ? 'No certification bases match your search' : 'No certification bases yet'} description="Create a reusable Master, then add regulations when ready." /> :
       <div className="rounded-sm border border-border-default bg-neutral-25"><FrozenTable footer={<AutoLoadFooter total={sorted.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="bases" />} columns={['auto', 160, 130, 110, 64]} minWidth={860}

@@ -1,0 +1,215 @@
+WEBVTT
+
+1
+00:00:02.600 --> 00:00:06.080
+This walkthrough shows how regulations
+are maintained in the updated
+
+2
+00:00:06.100 --> 00:00:12.000
+application. In the previous TPMS,
+regulation data was kept on five separate
+
+3
+00:00:12.020 --> 00:00:13.010
+maintenance screens.
+
+4
+00:00:13.540 --> 00:00:17.730
+Subpart held the topics of the book,
+each with a code and a description.
+
+5
+00:00:18.400 --> 00:00:21.220
+Subsection held the
+sections inside each topic,
+
+6
+00:00:21.240 --> 00:00:23.510
+and named the Subpart it belonged to.
+
+7
+00:00:23.880 --> 00:00:26.470
+Regulation was one long list.
+
+8
+00:00:26.800 --> 00:00:30.730
+For every rule we typed the
+section, amendment and title,
+
+9
+00:00:31.040 --> 00:00:34.930
+the Subpart and Subsection
+codes, the FAA source link,
+
+10
+00:00:35.100 --> 00:00:39.600
+the sort order, the requirement text,
+the means of compliance and the section
+
+11
+00:00:39.620 --> 00:00:44.810
+root. Regulation Group and Regulation
+Group Section were two more screens,
+
+12
+00:00:44.980 --> 00:00:47.950
+linking a kind of modification
+to the rules it affects.
+
+13
+00:00:48.480 --> 00:00:52.950
+In the updated application, this area
+is called the Regulatory Library.
+
+14
+00:00:53.540 --> 00:00:56.710
+Its Regulations tab is
+the same complete list,
+
+15
+00:00:56.800 --> 00:00:58.110
+made easier to read.
+
+16
+00:00:58.520 --> 00:01:01.690
+Each row shows the
+section, amendment, title,
+
+17
+00:01:01.960 --> 00:01:05.770
+subpart, subsection,
+section root, source link,
+
+18
+00:01:05.820 --> 00:01:07.550
+and whether the rule is active.
+
+19
+00:01:08.000 --> 00:01:11.650
+Search finds a rule by its
+section, amendment or title,
+
+20
+00:01:11.940 --> 00:01:13.890
+and Filters narrow the list further.
+
+21
+00:01:14.380 --> 00:01:19.020
+Opening a rule displays its saved requirement
+text and means of compliance in a
+
+22
+00:01:19.040 --> 00:01:23.030
+readable side panel, together with the
+other amendments of the same section,
+
+23
+00:01:23.280 --> 00:01:26.022
+and its FAA source is one click away.
+
+24
+00:01:26.380 --> 00:01:28.670
+Previous and Next move through the list.
+
+25
+00:01:29.100 --> 00:01:32.430
+Add Regulation asks for the
+same details as before,
+
+26
+00:01:32.680 --> 00:01:37.580
+grouped into Rule, Text and Placement,
+with the subpart and subsection chosen at
+
+27
+00:01:37.600 --> 00:01:40.410
+the top. Edit uses the same form.
+
+28
+00:01:40.920 --> 00:01:45.090
+A regulation that a basis or plan
+already uses cannot be deleted;
+
+29
+00:01:45.500 --> 00:01:47.330
+it can be made inactive instead.
+
+30
+00:01:47.900 --> 00:01:52.310
+Subparts and subsections now live
+together under Certification Topics.
+
+31
+00:01:52.900 --> 00:01:55.300
+The topics of the book
+are listed on the left,
+
+32
+00:01:55.320 --> 00:01:57.050
+each with its number of subsections.
+
+33
+00:01:57.800 --> 00:02:02.160
+Selecting a topic shows its subsections,
+and how many regulations each one
+
+34
+00:02:02.180 --> 00:02:05.910
+holds. Add Subpart takes
+the code, description,
+
+35
+00:02:06.560 --> 00:02:11.130
+sort order and active state, and Add
+Subsection takes the code and title.
+
+36
+00:02:11.940 --> 00:02:13.890
+Opening a subsection
+lists its regulations,
+
+37
+00:02:14.460 --> 00:02:16.230
+so the library reads like a book:
+
+38
+00:02:16.680 --> 00:02:18.560
+topic, subsection, rule.
+
+39
+00:02:18.580 --> 00:02:23.880
+From here, a regulation can be added,
+viewed or edited without leaving the
+
+40
+00:02:23.900 --> 00:02:28.090
+topic. Regulation Groups brings
+the two group screens together.
+
+41
+00:02:28.620 --> 00:02:32.110
+Groups, such as a galley
+modification, are listed on the left,
+
+42
+00:02:32.440 --> 00:02:35.270
+and the selected group shows
+the rules it usually affects.
+
+43
+00:02:35.860 --> 00:02:38.330
+Rules are attached from inside the group.
+
+44
+00:02:38.720 --> 00:02:41.770
+The result is one library for every rule:
+
+45
+00:02:42.160 --> 00:02:46.040
+find it in the list, read it in
+place, organise it by topic,
+
+46
+00:02:46.060 --> 00:02:48.450
+and group it by the kind of modification.
