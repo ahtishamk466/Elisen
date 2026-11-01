@@ -8,6 +8,7 @@ import { useTableSort } from '@/components/patterns/useTableSort'
 import { useSyncedScroll } from '@/components/patterns/useSyncedScroll'
 import { proportionalWidths } from '@/lib/tableWidths'
 import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { Delegation } from '@/types/gcp'
 import { DelegationDetailDrawer } from './DelegationDetailDrawer'
@@ -33,7 +34,7 @@ const TABLE_WIDTH = COLUMNS.reduce((sum, c) => sum + (c.style?.width as number),
 const COL_WIDTHS = proportionalWidths([...COLUMNS.map((c) => c.style?.width as number), ACTIONS_WIDTH])
 
 export interface GcpDelegationTabProps {
-  /** The page header's "Add Delegation" button controls this drawer — see
+  /** The page header's Add button controls this drawer — see
       docs/COMPONENTS.md, "Tabbed page layout". */
   createOpen: boolean
   onCreateOpenChange: (open: boolean) => void
@@ -115,8 +116,16 @@ export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpD
               </colgroup>
               <tbody>
                 {sorted.map((d) => (
-                  <tr key={d.id} className="border-b border-border-default last:border-b-0">
-                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{d.sectionRoot}</td>
+                  <tr key={d.id} onClick={() => setViewing(d)}
+                    className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
+                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">
+                      <Button type="button" variant="tertiary" size="sm" className="justify-start px-0 text-left text-sm font-normal"
+                        style={{ height: 'auto', textDecorationLine: 'none' }}
+                        aria-label={`View delegation ${d.sectionRoot} for ${d.focCode}`}
+                        onClick={(event) => { event.stopPropagation(); setViewing(d) }}>
+                        {d.sectionRoot}
+                      </Button>
+                    </td>
                     <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{d.focCode}</td>
                     <td className="px-lg py-base">
                       <Badge tone={d.limitation ? 'success' : 'danger'}>{d.limitation ? 'Yes' : 'No'}</Badge>
@@ -124,7 +133,7 @@ export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpD
                     <td className="px-lg py-base">
                       <Badge tone={d.active ? 'success' : 'neutral'}>{d.active ? 'Active' : 'Inactive'}</Badge>
                     </td>
-                    <td className="px-lg py-base">
+                    <td className="px-lg py-base" onClick={(event) => event.stopPropagation()}>
                       <ActionsMenu
                         ariaLabel={`Actions for ${d.sectionRoot} · ${d.focCode}`}
                         items={[

@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useTableSort } from '@/components/patterns/useTableSort'
 import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { Foc } from '@/types/gcp'
 import { FocDetailDrawer } from './FocDetailDrawer'
@@ -21,7 +22,7 @@ const COLUMNS: { label: string; sort: SortKey; style?: CSSProperties }[] = [
 ]
 
 export interface GcpFocTabProps {
-  /** The page header's "Add FOC" button controls this drawer — see
+  /** The page header's Add button controls this drawer — see
       docs/COMPONENTS.md, "Tabbed page layout" for why Add lives there and
       not in this panel. */
   createOpen: boolean
@@ -86,14 +87,19 @@ export function GcpFocTab({ createOpen, onCreateOpenChange, query }: GcpFocTabPr
             </thead>
             <tbody>
               {rows.map((f) => (
-                <tr key={f.id} className="border-b border-border-default last:border-b-0">
-                  <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{f.code}</td>
+                <tr key={f.id} onClick={() => setViewing(f)}
+                  className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
+                  <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">
+                    <Button type="button" variant="tertiary" size="sm" className="justify-start px-0 text-left text-sm font-normal"
+                      style={{ height: 'auto', textDecorationLine: 'none' }} aria-label={`View FOC ${f.code}`}
+                      onClick={(event) => { event.stopPropagation(); setViewing(f) }}>{f.code}</Button>
+                  </td>
                   <td className="px-lg py-base text-sm text-text-primary">{f.authoritySpecialist}</td>
                   <td className="px-lg py-base text-sm text-text-primary">{f.specialty || '—'}</td>
                   <td className="px-lg py-base">
                     <Badge tone={f.isDefault ? 'success' : 'neutral'}>{f.isDefault ? 'Yes' : 'No'}</Badge>
                   </td>
-                  <td className="px-lg py-base">
+                  <td className="px-lg py-base" onClick={(event) => event.stopPropagation()}>
                     <ActionsMenu
                       ariaLabel={`Actions for ${f.code}`}
                       items={[

@@ -14,16 +14,16 @@ import { useGcpData } from './GcpDataGate'
 /** Who may sign, for which rule, in which technical field — the three lists
     that decide what the compliance-item picker offers. */
 const TABS = [
-  { key: 'foc', label: 'Finding of Compliance (FOC)', addLabel: 'Add FOC', searchPlaceholder: 'Search by code, specialist or specialty...' },
-  { key: 'delegation', label: 'Delegation', addLabel: 'Add Delegation', searchPlaceholder: 'Search by section root or FOC code...' },
-  { key: 'discipline', label: 'Discipline', addLabel: 'Add Discipline', searchPlaceholder: 'Search by code or discipline...' },
+  { key: 'foc', label: 'Finding of Compliance (FOC)', searchPlaceholder: 'Search by code, specialist or specialty...' },
+  { key: 'delegation', label: 'Delegation', searchPlaceholder: 'Search by section root or FOC code...' },
+  { key: 'discipline', label: 'Discipline', searchPlaceholder: 'Search by code or discipline...' },
 ] as const
 
 /**
  * Tabs and table sit in their own containers, not one shared card. The
  * page's one Add action and its search box both live top-right in the
- * header (`AppShell`'s `headerActions`) — Add's label swaps to name the
- * active tab ("Add FOC", "Add Delegation") — and each tab's label carries
+ * header (`AppShell`'s `headerActions`) — the shared Add action opens the
+ * active tab's form — and each tab's label carries
  * its own row count, matching the app's Aircraft / Serial Numbers reference
  * data screen. See docs/COMPONENTS.md, "Tabbed page layout".
  */
@@ -61,7 +61,7 @@ export function GcpPeoplePage() {
             <Input id="people-authority-search" size="sm" leadingIcon={<Search size={16} />}
               placeholder={active.searchPlaceholder} value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
-          <Button leadingIcon={<Plus size={16} />} onClick={() => setCreateOpen(true)}>{active.addLabel}</Button>
+          <Button leadingIcon={<Plus size={16} />} onClick={() => setCreateOpen(true)}>Add</Button>
         </>
       }
     >
