@@ -36,7 +36,7 @@ export function GcpReportsPage() {
 
   return (
     <AppShell
-      activeItem="GCP"
+      activeItem="General Certification"
       activeChild="GCP Reports"
       title="Reports"
       description="The reports available across every TCCA project."

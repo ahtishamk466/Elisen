@@ -92,7 +92,7 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
   }
 
   return (
-    <AppShell activeItem="GCP" activeChild="Certification Basis" fill
+    <AppShell activeItem="General Certification" activeChild="Certification Basis" fill
       headerLeft={isEdit ? undefined : (
         <div className="min-w-0">
           <div className="flex items-center gap-sm">

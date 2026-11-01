@@ -102,7 +102,7 @@ export function GcpComplianceSetupPage() {
 
   return (
     <AppShell
-      activeItem="GCP"
+      activeItem="General Certification"
       activeChild="Compliance Setup"
       title="Compliance Setup"
       fill={personWorkspace}

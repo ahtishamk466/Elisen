@@ -85,7 +85,7 @@ export function CertBasisDetailPage() {
 
   return (
     <AppShell
-      activeItem="GCP"
+      activeItem="General Certification"
       activeChild="Certification Basis"
       title={selected?.aircraftModel || "Certification Basis not found"}
       /* Without a basis there is no identity card to carry the <h1>, so the

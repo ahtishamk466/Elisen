@@ -70,7 +70,7 @@ const NAV: NavItem[] = [
   // /reports route, page and TOP_ROUTES entry are untouched, so it comes back
   // by re-adding { label: 'Reports', icon: <ListChecks size={18} /> } here.
   // People, authority coverage and planning reference codes share one setup workspace.
-  { label: 'GCP', icon: <ShieldCheck size={18} />, children: ['GCP Projects', 'Certification Basis', 'Regulatory Library', 'Compliance Setup', 'GCP Reports'] },
+  { label: 'General Certification', icon: <ShieldCheck size={18} />, children: ['GCP Projects', 'Certification Basis', 'Regulatory Library', 'Compliance Setup', 'GCP Reports'] },
   // Three administrative sections split by *what* they hold, not by who is
   // senior enough to see them: business data staff maintain, access
   // management, and machine-side tooling. Ordered most-used first, and each

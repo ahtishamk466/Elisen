@@ -189,7 +189,7 @@ export function GcpFlowPage() {
 
   return (
     <AppShell
-      activeItem="GCP"
+      activeItem="General Certification"
       activeChild="GCP Projects"
       title="GCP Projects"
       /* Step 1 showed two headings stacked — this page's own "Certification

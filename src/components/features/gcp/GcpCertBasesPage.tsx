@@ -54,7 +54,7 @@ export function GcpCertBasesPage() {
   // Preserve legacy bookmarks while keeping list selection out of the new workspace.
   const bookmarked = bases.find((b) => b.id === params.get('basis'))
   if (bookmarked) return <LegacyBasisRedirect id={bookmarked.id} />
-  return <AppShell activeItem="GCP" activeChild="Certification Basis" title="Certification Basis" description="Shared certification bases and the regulations each one applies."
+  return <AppShell activeItem="General Certification" activeChild="Certification Basis" title="Certification Basis" description="Shared certification bases and the regulations each one applies."
     headerActions={<><div className="min-w-0 max-w-full" style={{ width: 400 }}><Input id="basis-search" aria-label="Search certification bases" size="sm" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by code, description or TCDS..." leadingIcon={<Search size={16} />} /></div><WalkthroughButton to="/gcp/cert-bases/walkthrough" /><Button variant="secondary" leadingIcon={<Download size={16} />} onClick={() => setImportOpen(true)}>Import</Button><Button leadingIcon={<Plus size={16} />} onClick={() => navigate('/gcp/cert-bases/new')}>Add</Button></>}>
     <GcpDataGate><div className="grid gap-lg">
       {sorted.length === 0 ? <EmptyState title={query ? 'No certification bases match your search' : 'No certification bases yet'} description="Create a reusable Master, then add regulations when ready." /> :

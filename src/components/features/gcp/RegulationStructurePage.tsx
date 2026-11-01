@@ -97,7 +97,7 @@ export function RegulationStructurePage() {
 
   return (
     <AppShell
-      activeItem="GCP"
+      activeItem="General Certification"
       activeChild="Regulatory Library"
       title="Regulatory Library"
       description="The rule library shared by every certification basis."

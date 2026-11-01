@@ -8901,3 +8901,19 @@ Coverage, Disciplines, MOC, DDS Types), from Aqeel's Loom; the user pasted its t
 
 **Rationale:** The shorter script still names every list and the one real change
 (Delegation became Specialist Coverage, read by person) without a second credit purchase.
+
+## 2026-11-02 — The GCP menu reads "General Certification"
+**Context:** The user asked for the sidebar's GCP menu to read "General
+Certification Plan" if it fit. It doesn't. A menu label has 158px (256px sidebar,
+less padding, icon and chevron), and the name measures 163px bold (active) and
+166px regular in Rethink Sans, so it wraps to two lines and fills the 40px row.
+Keeping "GCP", a 272px sidebar and two-line menu rows were offered; the user
+chose "General Certification" instead (132px bold, 135px regular).
+**Choice:** The menu label is **General Certification**. Its children keep their
+names (GCP Projects, GCP Reports), and GCP stays the short form in page names.
+The label is also the `activeItem` key, so the 11 GCP pages changed with it.
+**Rationale:** One line, no change to the sidebar's width or row height. The
+client hasn't confirmed the expansion (Harris's recording says "general
+compliance program"); if they do, "General Certification" still reads right.
+Supersedes the 2026-10-30 naming note's "GCP in menu names". The walkthrough
+videos recorded earlier on 2026-11-02 still show "GCP" in the sidebar.

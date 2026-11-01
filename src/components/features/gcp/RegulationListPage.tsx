@@ -133,7 +133,7 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
 
   if (state === 'error') {
     return (
-      <AppShell activeItem="GCP" activeChild="Regulatory Library" title="Regulatory Library">
+      <AppShell activeItem="General Certification" activeChild="Regulatory Library" title="Regulatory Library">
         <Alert title="We couldn't load regulations">Refresh the page, and if it keeps happening, contact your administrator.</Alert>
       </AppShell>
     )
@@ -141,7 +141,7 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
 
   return (
     <AppShell
-      activeItem="GCP"
+      activeItem="General Certification"
       activeChild="Regulatory Library"
       title="Regulatory Library"
       description="The rule library shared by every certification basis."

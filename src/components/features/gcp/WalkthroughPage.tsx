@@ -18,7 +18,7 @@ export function WalkthroughPage({ walkthrough: w }: { walkthrough: Walkthrough }
   const navigate = useNavigate()
   const [failed, setFailed] = useState(false)
   return (
-    <AppShell activeItem="GCP" activeChild={w.activeChild} title={w.title} description={w.description}
+    <AppShell activeItem="General Certification" activeChild={w.activeChild} title={w.title} description={w.description}
       headerLeft={
         <div className="min-w-0">
           <div className="flex items-center gap-sm">

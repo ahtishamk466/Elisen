@@ -157,7 +157,7 @@ non-project hours are never folded into Actual against a budget.
 Added after the original handoff synthesis above (which predates it — see
 its own "Open questions" entry, now stale on this point). GCP is Elisen's
 certification-compliance tracking against Transport Canada (TCCA)
-regulations, live under the `GCP` sidebar item.
+regulations, live under the `General Certification` sidebar item.
 
 **Certification Flow (`/gcp/flow`, `GcpFlowPage.tsx`)** — the client's
 requested alternative to ~20 separate legacy tab screens, one linear wizard:
