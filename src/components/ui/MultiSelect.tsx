@@ -153,7 +153,7 @@ export function MultiSelect({
   }
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { e.preventDefault(); setOpen(false); triggerRef.current?.focus(); return }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setOpen(false); triggerRef.current?.focus(); return }
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
       const dir = e.key === 'ArrowDown' ? 1 : -1
@@ -258,7 +258,7 @@ export function MultiSelect({
           <div
             ref={panelRef}
             tabIndex={-1}
-            onKeyDown={showSearch ? undefined : onKeyDown}
+            onKeyDown={onKeyDown}
             data-dropdown-panel
             className="fixed z-dropdown flex flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-25 shadow-lg outline-none"
             style={position}
@@ -271,7 +271,6 @@ export function MultiSelect({
                 type="text"
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setActiveIndex(0); setScrollTop(0); if (listRef.current) listRef.current.scrollTop = 0 }}
-                onKeyDown={onKeyDown}
                 aria-label="Search options"
                 aria-controls={virtualized ? `${id}-listbox` : undefined}
                 aria-activedescendant={virtualized && filtered[activeIndex] ? `${id}-option-${activeIndex}` : undefined}
@@ -301,6 +300,7 @@ export function MultiSelect({
                       style={virtualized ? { height: rowHeight } : undefined}
                       aria-selected={checked}
                       disabled={o.disabled}
+                      onFocus={() => !o.disabled && setActiveIndex(i)}
                       onMouseEnter={() => !o.disabled && setActiveIndex(i)}
                       onClick={() => toggle(o)}
                       className={`flex w-full items-start gap-sm px-base py-sm text-left transition-colors duration-fast

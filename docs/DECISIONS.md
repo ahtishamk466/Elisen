@@ -8247,3 +8247,14 @@ Group Edit/Delete now belongs to each left rail row as an ActionsMenu sibling of
 ## 2026-10-31 — Keep topic context bound to its explicitly selected Subpart
 
 Final review found that header search could filter away the URL-selected Subpart while leaving its topic resolved globally. The fallback parent could then be paired with that stale topic in Add Regulation. `selectedRegulationTopic` now opens a topic only when the effective selected Subpart still matches the explicit URL parent. Clearing search restores the original explicit context; global exact-topic lookup remains available for saved cross-prefix pairs and newly created topics. A focused regression checks filtered-away parent isolation, restoration, cross-prefix/new context and missing topic/parent cases without rewriting classifications.
+
+## 2026-11-01 — Detailed, quieter Regulation Group selection
+
+User requested the detailed searchable checkbox treatment shown in the Certification Basis picker and removal of redundant headings/helper text from Regulation Groups → Add Regulation. Verified the OLD TPMS create form: Available/Selected Regulation Section Roots, 797 root options; legacy group membership stores roots without a selected amendment. Keep that contract and show root plus actual library title(s), without implying an arbitrary amendment is selected. Reuse Drawer, FormField, MultiSelect and Button: one field label, no extra FormSection header/count help, virtualized options and existing whole-set Cancel/Save. The shared MultiSelect Escape handler closes the dropdown before its parent drawer. Source record data and group schema remain unchanged.
+
+
+## 2026-11-01 — Shared MultiSelect keyboard handling after option focus
+
+Browser QA reproduced a shared defect: a searchable MultiSelect listened for keyboard events only on its search input. Clicking an option moved focus to that button, where Escape could no longer close the popup. Keyboard handling now lives once on the popup container for both input and option focus; the input has no duplicate listener. Escape prevents its default, stops propagation to the parent Drawer, closes the popup and restores trigger focus. Option focus synchronizes the active choice, and Enter prevents native button activation before toggling once. Search typing, checkbox values, disabled-option skipping and existing virtualized navigation remain unchanged; no public API or new package is introduced.
+
+Patterns/Overview → MultiSelectKeyboardInDrawer provides searchable regular and virtualized controls in an actual Drawer, a disabled option and a selection-update counter for click/Enter/Escape regression review. The shared fix replaces the need for a group-specific Escape boundary; browser verification remains with the primary agent.

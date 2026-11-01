@@ -924,6 +924,42 @@ function DropdownLayeringDemo() {
 }
 export const DropdownLayering: Story = { render: () => <DropdownLayeringDemo /> }
 
+/** Click an option before pressing Escape: option focus must behave just like
+    search-input focus, closing only the popup and returning to its trigger. */
+export const MultiSelectKeyboardInDrawer: Story = {
+  render: function MultiSelectKeyboardInDrawerStory() {
+    const [open, setOpen] = useState(false)
+    const [regular, setRegular] = useState<string[]>([])
+    const [virtual, setVirtual] = useState<string[]>([])
+    const [changes, setChanges] = useState(0)
+    const options = Array.from({ length: 8 }, (_, index) => ({
+      value: String(index), label: `Test rule ${index + 1}`, hint: `Searchable title ${index + 1}`,
+      disabled: index === 1, disabledReason: 'Unavailable test option',
+    }))
+    return (
+      <div className="p-lg">
+        <Button onClick={() => setOpen(true)}>Open keyboard regression drawer</Button>
+        <Drawer open={open} onClose={() => setOpen(false)} title="Multi-select keyboard regression"
+          footer={<Button variant="secondary" onClick={() => setOpen(false)}>Close drawer</Button>}>
+          <p className="text-sm text-text-secondary">
+            Open a picker, search, then click a choice and press Escape. Only the popup closes and focus returns to its trigger.
+            Reopen it: arrows skip the disabled choice, and each Enter toggles one choice once. A second Escape closes the drawer.
+          </p>
+          <FormField label="Regular options" htmlFor="keyboard-regular" fullWidth>
+            <MultiSelect id="keyboard-regular" options={options} value={regular}
+              onChange={(value) => { setRegular(value); setChanges((count) => count + 1) }} />
+          </FormField>
+          <FormField label="Virtualized options" htmlFor="keyboard-virtual" fullWidth>
+            <MultiSelect id="keyboard-virtual" options={options} value={virtual} virtualized
+              onChange={(value) => { setVirtual(value); setChanges((count) => count + 1) }} />
+          </FormField>
+          <p role="status" className="text-sm text-text-secondary">Selection updates: {changes}</p>
+        </Drawer>
+      </div>
+    )
+  },
+}
+
 /** The standard for any table cell that can hold long free text (titles,
     descriptions, comments, model names): clip at 2 lines instead of
     stretching the whole row, full text on hover via the native title
