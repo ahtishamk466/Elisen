@@ -8875,3 +8875,29 @@ narration said "Overview shows its identity and references".
 **Rationale:** Same viewing experience in every area. One page component keeps the
 captions, error state, back link and transcript identical across walkthroughs.
 
+
+## 2026-11-02 — Compliance Setup walkthrough video
+
+**Context:** User request: the same video for GCP › Compliance Setup (FOC, Specialist
+Coverage, Disciplines, MOC, DDS Types), from Aqeel's Loom; the user pasted its transcript.
+
+**Choice:**
+- **Script.** The user approved a 348-word draft, then chose a 232-word version because
+  ElevenLabs had 1,516 credits left and the full take needed about 2,080. It keeps all
+  seven chapters (Previous TPMS, the one page, then one per list) and a summary; the old
+  per-screen descriptions, the row menu, Add FOC and the Section Root picker were cut.
+- **Narration.** Lauren on Eleven v4, one request, generated in the app's built-in
+  browser (Claude in Chrome was not connected); the user downloaded both takes from
+  History. Take 1 (1:39) is used: Whisper heard all 232 words in order; take 2 had a
+  possible stutter ("with with"). FOC, DAO and AP-01 were spelled as letters for the
+  voice only; captions and the transcript keep the normal spelling.
+- **Screens.** Old TPMS screens from the local legacy app (the GCP › Maintenance menu,
+  the 661-row Delegation list, the DDS create form) with the signed-in name masked; current
+  screens from the dev server, AP-01's 147 rules as the example, as in Aqeel's Loom. Only
+  reads, sorts and opened forms; nothing was saved.
+- **In the app.** "Watch Walkthrough" on the Compliance Setup header (all five tabs)
+  opens `/gcp/compliance-setup/walkthrough`, one more `Walkthrough` entry in
+  `lib/walkthroughs.ts` on the shared `WalkthroughPage`. It runs 1:44.
+
+**Rationale:** The shorter script still names every list and the one real change
+(Delegation became Specialist Coverage, read by person) without a second credit purchase.

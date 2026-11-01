@@ -27,7 +27,7 @@ import { GcpFlowPage } from '@/components/features/gcp/flow/GcpFlowPage'
 import { GcpRegulationsPage } from '@/components/features/gcp/GcpRegulationsPage'
 import { CertBasisDetailPage } from '@/components/features/gcp/CertBasisDetailPage'
 import { WalkthroughPage } from '@/components/features/gcp/WalkthroughPage'
-import { CERT_BASIS_WALKTHROUGH, REGULATIONS_WALKTHROUGH } from '@/lib/walkthroughs'
+import { CERT_BASIS_WALKTHROUGH, COMPLIANCE_SETUP_WALKTHROUGH, REGULATIONS_WALKTHROUGH } from '@/lib/walkthroughs'
 import { GcpCertBasesPage, CertBasisCreatePage } from '@/components/features/gcp/GcpCertBasesPage'
 import { GcpComplianceSetupPage, GcpComplianceSetupRedirect } from '@/components/features/gcp/GcpComplianceSetupPage'
 import { GcpReportsPage } from '@/components/features/gcp/GcpReportsPage'
@@ -68,6 +68,7 @@ export default function App() {
         <Route path="/gcp/cert-bases/:id" element={<CertBasisDetailPage />} />
         <Route path="/gcp/cert-bases/:id/edit" element={<CertBasisDetailPage />} />
         <Route path="/gcp/compliance-setup" element={<GcpComplianceSetupPage />} />
+        <Route path="/gcp/compliance-setup/walkthrough" element={<WalkthroughPage walkthrough={COMPLIANCE_SETUP_WALKTHROUGH} />} />
         <Route path="/gcp/people" element={<GcpComplianceSetupRedirect />} />
         <Route path="/gcp/reference" element={<GcpComplianceSetupRedirect defaultTab="moc" />} />
         <Route path="/gcp/reports" element={<GcpReportsPage />} />

@@ -13,6 +13,7 @@ import { GcpDelegationTab } from './GcpDelegationTab'
 import { GcpDisciplineTab } from './GcpDisciplineTab'
 import { GcpFocTab } from './GcpFocTab'
 import { GcpMocTab } from './GcpMocTab'
+import { WalkthroughButton } from './WalkthroughButton'
 
 const TABS = [
   {
@@ -114,6 +115,7 @@ export function GcpComplianceSetupPage() {
               placeholder={active.searchPlaceholder} value={query}
               onChange={(event) => setControls((current) => ({ ...current, tab: active.key, query: event.target.value }))} />
           </div>
+          <WalkthroughButton to="/gcp/compliance-setup/walkthrough" />
           <Button leadingIcon={<Plus size={16} />} aria-label={active.addLabel} onClick={() => onCreateOpenChange(true)}>Add</Button>
         </>
       }

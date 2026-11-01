@@ -91,3 +91,43 @@ export const REGULATIONS_WALKTHROUGH: Walkthrough = {
     },
   ],
 }
+
+export const COMPLIANCE_SETUP_WALKTHROUGH: Walkthrough = {
+  title: 'Compliance Setup Walkthrough',
+  description: 'A narrated tour of the five reference lists used to prepare certification plans. 1 min 44 s.',
+  activeChild: 'Compliance Setup',
+  back: { to: '/gcp/compliance-setup', label: 'Go back to Compliance Setup' },
+  video: '/videos/compliance-setup-walkthrough.mp4',
+  captions: '/videos/compliance-setup-walkthrough.en.vtt',
+  poster: '/videos/compliance-setup-walkthrough.jpg',
+  chapters: [
+    {
+      title: 'Previous TPMS: five separate maintenance screens',
+      text: 'This walkthrough covers the reference lists used to prepare a certification plan. In the previous TPMS, they were five separate screens under GCP, Maintenance. Delegation was the hardest to read: one long list of several hundred rows, each pairing a section root with an FOC code, so seeing what one specialist covered meant remembering the codes.',
+    },
+    {
+      title: 'Compliance Setup: five lists on one page',
+      text: 'In the updated application, the five lists come together under Compliance Setup, as tabs with their counts. Search and Add work on the open tab, and the information button explains what each list is for and where it is used.',
+    },
+    {
+      title: 'Finding of Compliance (FOC)',
+      text: 'Finding of Compliance lists each FOC code with its authority specialist, specialty, and whether it is offered by default on every rule.',
+    },
+    {
+      title: 'Specialist Coverage: the former Delegation',
+      text: 'Delegation is now called Specialist Coverage. Specialists appear on the left with the number of rules they cover; AP-01, for example, covers 147. Selecting one shows each section root, with its regulation title, limitation and active state. Add opens with that specialist already chosen.',
+    },
+    {
+      title: 'Disciplines',
+      text: 'Disciplines links each DAO specialty code to its Elisen and TCCA discipline.',
+    },
+    {
+      title: 'Means of Compliance (MOC)',
+      text: 'Means of Compliance lists the methods used to show compliance, such as design review or flight test.',
+    },
+    {
+      title: 'DDS Types',
+      text: 'DDS Types holds the detailed design specification types for Part 23 work, and each can now carry its own text. One page now holds every list a compliance plan draws on, with a clear view of which rules each specialist covers.',
+    },
+  ],
+}

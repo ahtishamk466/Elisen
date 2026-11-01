@@ -1,0 +1,115 @@
+WEBVTT
+
+1
+00:00:02.600 --> 00:00:07.170
+This walkthrough covers the reference lists
+used to prepare a certification plan.
+
+2
+00:00:07.680 --> 00:00:13.050
+In the previous TPMS, they were five
+separate screens under GCP, Maintenance.
+
+3
+00:00:13.660 --> 00:00:19.290
+Delegation was the hardest to read:
+one long list of several hundred rows,
+
+4
+00:00:19.480 --> 00:00:22.570
+each pairing a section
+root with an FOC code,
+
+5
+00:00:22.980 --> 00:00:26.710
+so seeing what one specialist
+covered meant remembering the codes.
+
+6
+00:00:27.220 --> 00:00:32.290
+In the updated application, the five lists
+come together under Compliance Setup,
+
+7
+00:00:32.400 --> 00:00:33.950
+as tabs with their counts.
+
+8
+00:00:34.480 --> 00:00:36.850
+Search and Add work on the open tab,
+
+9
+00:00:36.920 --> 00:00:41.310
+and the information button explains what
+each list is for and where it is used.
+
+10
+00:00:41.720 --> 00:00:47.470
+Finding of Compliance lists each FOC code
+with its authority specialist, specialty,
+
+11
+00:00:47.720 --> 00:00:50.870
+and whether it is offered
+by default on every rule.
+
+12
+00:00:51.340 --> 00:00:54.230
+Delegation is now called
+Specialist Coverage.
+
+13
+00:00:54.860 --> 00:00:58.390
+Specialists appear on the left with
+the number of rules they cover;
+
+14
+00:00:58.900 --> 00:01:01.810
+AP-01, for example, covers 147.
+
+15
+00:01:03.120 --> 00:01:07.160
+Selecting one shows each section
+root, with its regulation title,
+
+16
+00:01:07.180 --> 00:01:09.110
+limitation and active state.
+
+17
+00:01:09.520 --> 00:01:12.390
+Add opens with that
+specialist already chosen.
+
+18
+00:01:12.980 --> 00:01:18.490
+Disciplines links each DAO specialty
+code to its Elisen and TCCA discipline.
+
+19
+00:01:19.320 --> 00:01:22.630
+Means of Compliance lists the
+methods used to show compliance,
+
+20
+00:01:22.920 --> 00:01:24.980
+such as design review or flight test.
+
+21
+00:01:25.000 --> 00:01:31.070
+DDS Types holds the detailed design
+specification types for Part 23 work,
+
+22
+00:01:31.160 --> 00:01:33.570
+and each can now carry its own text.
+
+23
+00:01:34.280 --> 00:01:38.120
+One page now holds every list
+a compliance plan draws on,
+
+24
+00:01:38.140 --> 00:01:41.450
+with a clear view of which
+rules each specialist covers.
