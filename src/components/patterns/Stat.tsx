@@ -21,7 +21,7 @@ export interface StatProps {
  * cards, summary strips, header stat bands. One spec, fixed by the client
  * against the Project Overview "Dates" card:
  *
- *   label — 12px, regular, Neutral 500 (`text-text-muted`)
+ *   label — 13px (`text-xs`), regular, Neutral 500 (`text-text-muted`)
  *   value — 14px, semibold, Neutral 950 (`text-text-primary`)
  *   gap   — 2px (`mt-xxss`)
  *

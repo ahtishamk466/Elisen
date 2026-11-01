@@ -82,7 +82,7 @@ export function TeamActivityTable({ personName, items, catalogActivities }: Team
                 ownsKeys={c.sorts?.map((o) => o.key)}
                 sort={sort}
                 onSortChange={setSort}
-                className="whitespace-nowrap px-sm py-sm text-xs font-semibold text-text-secondary"
+                className="whitespace-nowrap px-sm py-sm text-sm font-semibold text-text-secondary"
               >
                 {c.sorts
                   ? <SortMenu label={c.label} options={c.sorts} sort={sort} onChange={setSort} />

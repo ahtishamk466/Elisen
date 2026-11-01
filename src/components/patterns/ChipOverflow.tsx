@@ -62,7 +62,11 @@ export function ChipOverflow({ items, max = 2, label, onShowAll, stack = false }
       key={t}
       title={inRow ? t : undefined}
       style={inRow ? { maxWidth: 96 } : undefined}
-      className={`rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary ${inRow ? 'truncate' : 'whitespace-nowrap'}`}
+      /* Out of row mode a chip keeps to one line while it fits, and wraps
+         inside its own box only when it is wider than the cell (a long legacy
+         amendment, "525-3 (91-11-01)", in a narrow Amendment column) instead
+         of running into the next column (2026-11-02). */
+      className={`rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary ${inRow ? 'truncate' : 'max-w-full break-words'}`}
     >
       {t}
     </span>

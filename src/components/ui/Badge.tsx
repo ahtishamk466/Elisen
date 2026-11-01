@@ -2,8 +2,8 @@ import type { ReactNode } from 'react'
 
 export type BadgeTone = 'danger' | 'info' | 'success' | 'warning' | 'neutral'
 export type BadgeAppearance = 'subtle' | 'outline'
-/** `sm` (20px) is the table/row badge and the default — every existing call
-    site keeps it. `md` is the card-heading status tag: 12px semibold, a
+/** `sm` (22px tall) is the table/row badge and the default — every existing call
+    site keeps it. `md` is the card-heading status tag: 13px semibold, a
     touch more padding than `sm` so it still reads as a deliberately larger
     tag rather than the same badge with bigger type. */
 export type BadgeSize = 'sm' | 'md'

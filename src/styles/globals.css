@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @config "../../tailwind.config.ts";
 @import "./tokens.css";
+@import "./fonts.css";
 
 /* Full window height under the --ui-scale zoom. `100vh` is measured before
    the zoom shrinks it, so `h-screen` would leave a blank band at the bottom. */

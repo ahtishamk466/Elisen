@@ -2,8 +2,9 @@ import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { appendBasisRules } from '@/lib/basisRuleBatch'
 import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Trash2, Eye } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { FormField } from '@/components/patterns/FormField'
+import { Truncate } from '@/components/patterns/Truncate'
 import { Alert } from '@/components/ui/Alert'
 import { duplicateSections } from '@/lib/certBasisLevel'
 import { Button } from '@/components/ui/Button'
@@ -11,7 +12,12 @@ import { MultiSelect } from '@/components/ui/MultiSelect'
 import { useGcpStore } from '@/stores/gcpStore'
 import { amdtOrder } from '@/lib/certBasisLevel'
 import { RegulationDetailDrawer } from './RegulationDetailDrawer'
+import { AmendmentText } from './AmendmentText'
+import { RegulationSectionButton } from './RegulationSectionButton'
 import type { Regulation } from '@/types/gcp'
+
+/** Header cell: the Projects List heading style (small, semibold, secondary). */
+const TH = 'px-base py-base text-sm font-semibold text-text-secondary'
 
 export interface RulePickerProps {
   /** Prefix for the two fields' ids, unique on the page. */
@@ -82,22 +88,24 @@ export function RulePicker({ idPrefix, value, onChange, existing = EMPTY_IDS, li
           <p className="px-lg py-base text-sm text-text-muted">Rules you add appear here.</p>
         ) : (
           <div>
-            <FrozenTable columns={[140, 130, 310, 180]} minWidth={760}
-              columnLabels={['Section', 'Amendment', 'Regulation Title', 'Actions']} caption="Selected regulations"
-              tableClassName="w-full text-left text-sm" header={<thead className="bg-neutral-50"><tr><th className="px-lg py-base">Section</th><th className="px-lg py-base">Amendment</th><th className="px-lg py-base">Regulation Title</th><th className="px-lg py-base">Actions</th></tr></thead>}>
+            <FrozenTable columns={[140, 130, 'auto', 72]} minWidth={620}
+              columnLabels={['Section', 'Amendment', 'Title', 'Actions']} caption="Selected regulations"
+              tableClassName="w-full text-left text-sm" header={<thead className="bg-neutral-50"><tr><th className={TH}>Section</th><th className={TH}>Amendment</th><th className={TH}>Title</th><th className={TH}>Actions</th></tr></thead>}>
 
-              <tbody>{picked.map((r) => <tr key={r.id} className="border-t border-border-default">
-                <td className="whitespace-nowrap px-lg py-base font-semibold"><Button variant="tertiary" size="sm" aria-label={`Read ${r.section} at ${amendmentLabel(r.amdt)}`} onClick={() => setViewing(r)}>{r.section}</Button></td>
-                <td className="whitespace-nowrap px-lg py-base">{amendmentLabel(r.amdt)}</td>
-                <td className="px-lg py-base text-text-secondary"><Button variant="tertiary" size="sm" className="!h-auto !whitespace-normal text-left" onClick={() => setViewing(r)}>{r.title}</Button></td>
-                <td className="px-lg py-base"><div className="flex gap-sm"><Button variant="tertiary" size="sm" leadingIcon={<Eye size={14} />} onClick={() => setViewing(r)}>Read</Button>
-                  <Button variant="tertiary" size="sm" leadingIcon={<Trash2 size={14} />} aria-label={`Remove ${r.section} at ${amendmentLabel(r.amdt)}`} onClick={() => onChange(value.filter((id) => id !== r.id))}>Remove</Button></div></td>
+              {/* Same reading order as the basis page's rules table: a bold section, a
+                  regular title, the whole row opens the rule, one quiet Remove icon. */}
+              <tbody>{picked.map((r) => <tr key={r.id} onClick={() => setViewing(r)} className="cursor-pointer border-t border-border-default transition-colors duration-fast hover:bg-accent-subtle">
+                <td className="px-base py-base"><RegulationSectionButton regulation={r} onOpen={() => setViewing(r)} /></td>
+                <td className="px-base py-base"><AmendmentText amdt={r.amdt} /></td>
+                <td className="px-base py-base text-text-primary"><Truncate lines={2}>{r.title}</Truncate></td>
+                <td className="px-base py-base"><Button variant="tertiary" size="sm" leadingIcon={<Trash2 size={16} />} aria-label={`Remove ${r.section} at ${amendmentLabel(r.amdt)}`} title="Remove"
+                  onClick={(e) => { e.stopPropagation(); onChange(value.filter((id) => id !== r.id)) }} /></td>
               </tr>)}</tbody>
             </FrozenTable>
           </div>
         )}
       </div>
-      {viewing && <RegulationDetailDrawer regulation={viewing} subpart={viewing.subpartCode} subsection={viewing.subsectionCode} onClose={() => setViewing(null)} />}
+      {viewing && <RegulationDetailDrawer regulation={viewing} sequence={picked} onClose={() => setViewing(null)} />}
     </div>
   )
 }

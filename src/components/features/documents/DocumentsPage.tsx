@@ -143,16 +143,19 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
      rather than pouring it all into one. */
   const columns: { label: string; width: number; sort?: SortKey }[] = isDrawing
     ? [
-        { label: 'Number', width: 106, sort: 'number' }, { label: 'Revision', width: 88, sort: 'revision' },
+        /* Retuned for the 90% UI scale (2026-11-01) against measured header and
+           content widths, so the table fits a 1440 screen: every column keeps
+           its widest header or value plus padding. */
+        { label: 'Number', width: 106, sort: 'number' }, { label: 'Revision', width: 98, sort: 'revision' },
         /* Wide enough to read at least ~15 characters before the ellipsis
            takes over (client instruction, 2026-09-28) — the old 112px/108px
            left barely 80px/76px of actual text room once `px-lg`'s 32px of
            padding came out, clipping "LIGHT/GASPER BEZEL" down to
            "LIGHT/GA…" and "BD-700-1A11" down to "BD-700-1…". */
-        { label: 'Title / Type', width: 190, sort: 'title' }, { label: 'Aircraft', width: 150, sort: 'aircraft' },
-        { label: 'ATA', width: 74, sort: 'ata' }, { label: 'Opened', width: 134, sort: 'opened' },
-        { label: 'Due', width: 134, sort: 'due' }, { label: 'Next Action', width: 112, sort: 'nextAction' },
-        { label: 'Status', width: 98, sort: 'status' }, { label: 'Created For', width: 100, sort: 'createdFor' },
+        { label: 'Title / Type', width: 136, sort: 'title' }, { label: 'Aircraft', width: 126, sort: 'aircraft' },
+        { label: 'ATA', width: 72, sort: 'ata' }, { label: 'Opened', width: 118, sort: 'opened' },
+        { label: 'Due', width: 118, sort: 'due' }, { label: 'Next Action', width: 120, sort: 'nextAction' },
+        { label: 'Status', width: 98, sort: 'status' }, { label: 'Created For', width: 122, sort: 'createdFor' },
         /* Wide enough for one full, untruncated project number ("3241-00",
            the widest real value is ~7 chars) — the chips stack vertically
            here (client instruction, 2026-09-28: up to 2 chips one above the
@@ -162,14 +165,14 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
            content width once `px-lg`'s 32px of padding came out of it, so a
            single-line chip used to clip to one character with no visible
            ellipsis — the full number must always show, never truncated. */
-        { label: 'Used In', width: 124, sort: 'usedIn' }, { label: 'Actions', width: 76 },
+        { label: 'Used In', width: 100, sort: 'usedIn' }, { label: 'Actions', width: 76 },
       ]
     : [
-        { label: 'Number', width: 112, sort: 'number' }, { label: 'Revision', width: 88, sort: 'revision' },
+        { label: 'Number', width: 112, sort: 'number' }, { label: 'Revision', width: 98, sort: 'revision' },
         { label: 'Title / Type', width: 132, sort: 'title' }, { label: 'Owner', width: 120, sort: 'owner' },
-        { label: 'Opened', width: 134, sort: 'opened' }, { label: 'Due', width: 134, sort: 'due' },
+        { label: 'Opened', width: 122, sort: 'opened' }, { label: 'Due', width: 122, sort: 'due' },
         { label: 'Next Action', width: 120, sort: 'nextAction' }, { label: 'Status', width: 102, sort: 'status' },
-        { label: 'Created For', width: 104, sort: 'createdFor' }, { label: 'Used In', width: 124, sort: 'usedIn' },
+        { label: 'Created For', width: 122, sort: 'createdFor' }, { label: 'Used In', width: 124, sort: 'usedIn' },
         { label: 'Actions', width: 80 },
       ]
 
@@ -269,7 +272,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                     {columns.slice(0, -1).map((c) => (
                       <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
                         style={{ width: c.width }}
-                        className="whitespace-nowrap px-lg py-lg align-middle text-xs font-semibold text-text-secondary">
+                        className="whitespace-nowrap px-lg py-lg align-middle text-sm font-semibold text-text-secondary">
                         {c.label}
                       </SortableTh>
                     ))}
@@ -283,7 +286,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                         correctly but simply doesn't render). */}
                     <SortableTh
                       style={{ width: columns[columns.length - 1].width }}
-                      className="sticky right-0 z-sticky whitespace-nowrap border-b border-b-neutral-300 border-l border-l-border-default bg-neutral-50 px-lg py-lg align-middle text-xs font-semibold text-text-secondary"
+                      className="sticky right-0 z-sticky whitespace-nowrap border-b border-b-neutral-300 border-l border-l-border-default bg-neutral-50 px-lg py-lg align-middle text-sm font-semibold text-text-secondary"
                     >
                       <span aria-hidden className="pointer-events-none absolute inset-0 shadow-sticky" />
                       {columns[columns.length - 1].label}
@@ -314,7 +317,7 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                             <td className="px-lg py-lg align-middle text-sm font-semibold text-text-primary">
                               <span className="block truncate" title={doc.number}>{doc.number}</span>
                             </td>
-                            <td className="whitespace-nowrap px-lg py-lg align-middle text-sm font-semibold text-text-primary">
+                            <td className="whitespace-nowrap px-lg py-lg align-middle text-sm text-text-primary">
                               {rev.rev}
                             </td>
                             {/* Title leads, type qualifies it underneath. */}

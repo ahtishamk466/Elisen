@@ -20,6 +20,9 @@ import { RevisionDrawer } from './RevisionDrawer'
 import type { DocRevision, DocumentKind, ProjectDocument } from '@/types/documents'
 import { DateText } from '@/components/patterns/DateText'
 
+const DOCUMENT_WIDTHS = [140, 104, 150, 110, 116, 116, 126, 114, 82]
+const DRAWING_WIDTHS = [140, 104, 170, 130, 76, 116, 126, 114, 82]
+
 export interface ProjectDocumentsTabProps {
   kind: DocumentKind
   projectId: string
@@ -178,9 +181,13 @@ export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProp
 
           <div className="rounded-sm border border-border-default bg-neutral-25">
             <FrozenTable
-              columns={proportionalWidths(isDrawing ? [120, 100, 240, 160, 90, 140, 140, 120, 90] : [120, 100, 240, 160, 140, 140, 140, 120, 90])}
+              /* Weights are each column's measured need (header with its sort icon,
+                 or widest value, plus padding) now that the tab sits beside the
+                 320px identity card (2026-11-01); they sum to the minimum width, so a
+                 narrower screen scrolls the table instead of wrapping dates. */
+              columns={proportionalWidths(isDrawing ? DRAWING_WIDTHS : DOCUMENT_WIDTHS)}
               columnLabels={columns.map((c) => c.label)}
-              minWidth={820}
+              minWidth={(isDrawing ? DRAWING_WIDTHS : DOCUMENT_WIDTHS).reduce((n, w) => n + w, 0)}
               tableClassName="w-full border-collapse text-left"
               caption={<>{label.plural} linked to this project</>}
               header={<thead>
@@ -201,7 +208,7 @@ export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProp
                         <span className="ml-xs align-middle text-text-muted" title="Reused from another project"><ExternalLink size={12} aria-label="Reused from another project" /></span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">{rev.rev}</td>
+                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{rev.rev}</td>
                     <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 260 }}>
                       <Truncate lines={1}>{doc.title}</Truncate>
                       <span className="block truncate text-xs text-text-muted">{doc.type}</span>
@@ -210,13 +217,13 @@ export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProp
                       <>
                         <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{doc.aircraft || '—'}</td>
                         <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{doc.ataChapter || '—'}</td>
-                        <td className="px-lg py-base text-sm tabular-nums text-text-primary"><DateText value={rev.openedDate} /></td>
+                        <td className="whitespace-nowrap px-lg py-base text-sm tabular-nums text-text-primary"><DateText value={rev.openedDate} /></td>
                       </>
                     ) : (
                       <>
                         <td className="px-lg py-base"><PersonCell name={doc.owner} /></td>
-                        <td className="px-lg py-base text-sm tabular-nums text-text-primary"><DateText value={rev.openedDate} /></td>
-                        <td className="px-lg py-base text-sm tabular-nums text-text-primary"><DateText value={rev.dueDate} /></td>
+                        <td className="whitespace-nowrap px-lg py-base text-sm tabular-nums text-text-primary"><DateText value={rev.openedDate} /></td>
+                        <td className="whitespace-nowrap px-lg py-base text-sm tabular-nums text-text-primary"><DateText value={rev.dueDate} /></td>
                       </>
                     )}
                     <td className="px-lg py-base"><PersonCell name={rev.nextAction} /></td>

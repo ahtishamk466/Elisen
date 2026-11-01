@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 const LEVELS: { name: string; sizeClass: string; size: string; lineHeight: string }[] = [
-  { name: 'xs',   sizeClass: 'text-xs',   size: '12px', lineHeight: '16px' },
+  { name: 'xs',   sizeClass: 'text-xs',   size: '13px', lineHeight: '18px' },
   { name: 'sm',   sizeClass: 'text-sm',   size: '14px', lineHeight: '20px' },
   { name: 'base', sizeClass: 'text-base', size: '16px', lineHeight: '24px' },
   { name: 'lg',   sizeClass: 'text-lg',   size: '18px', lineHeight: '26px' },

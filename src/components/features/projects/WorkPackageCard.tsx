@@ -138,7 +138,7 @@ export function WorkPackageCard({
                         ownsKeys={c.sorts?.map((o) => o.key)}
                         sort={sort}
                         onSortChange={setSort}
-                        className="whitespace-nowrap px-lg py-base text-xs font-semibold text-text-secondary"
+                        className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary"
                       >
                         {c.sorts
                           ? <SortMenu label={c.label} options={c.sorts} sort={sort} onChange={setSort} />

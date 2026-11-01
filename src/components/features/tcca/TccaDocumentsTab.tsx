@@ -20,6 +20,8 @@ import { DocTrackingDrawer } from './DocTrackingDrawer'
 import type { TccaDocLink, TccaProject } from '@/types/tcca'
 import { DateText } from '@/components/patterns/DateText'
 
+const WIDTHS = [170, 176, 128, 134, 116, 153, 76]
+
 type SortKey = 'number' | 'title' | 'project' | 'involvement' | 'sent' | 'status'
 
 const COLUMNS: { label: string; sort?: SortKey }[] = [
@@ -86,9 +88,12 @@ export function TccaDocumentsTab({ tcca }: { tcca: TccaProject }) {
       ) : (
         <div className="rounded-sm border border-border-default bg-neutral-25">
           <FrozenTable
-            columns={proportionalWidths([180, 260, 160, 160, 140, 140, 90])}
+            /* Weights are each column's measured need (header with its sort icon,
+               or widest value, plus padding) beside the identity card; they sum
+               to the minimum, so a narrower tab scrolls rather than clips (2026-11-01). */
+            columns={proportionalWidths(WIDTHS)}
             columnLabels={COLUMNS.map((c) => c.label)}
-            minWidth={760}
+            minWidth={WIDTHS.reduce((n, w) => n + w, 0)}
             tableClassName="w-full border-collapse text-left"
             caption={<>Documents tracked with Transport Canada</>}
             header={<thead>
@@ -117,7 +122,7 @@ export function TccaDocumentsTab({ tcca }: { tcca: TccaProject }) {
                       ) : '—'}
                     </td>
                     <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{INVOLVEMENT_LABEL[link.involvement]}</td>
-                    <td className="px-lg py-base text-sm text-text-primary"><DateText value={link.sentDate} /></td>
+                    <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary"><DateText value={link.sentDate} /></td>
                     <td className="px-lg py-base"><Badge tone={DOC_STATE_TONE[link.state]}>{DOC_STATE_LABEL[link.state]}</Badge></td>
                     <td className="px-lg py-base">
                       <ActionsMenu

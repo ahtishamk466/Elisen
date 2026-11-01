@@ -8422,6 +8422,176 @@ the basis closely supports project planning, detailed rule maintenance follows,
 and reports remain last. Only the two middle menu positions change; routes and
 page behavior remain unchanged.
 
+
+## 2026-11-01 — Certification Basis: make the pages scannable
+
+**Context:** The user found Certification Basis hard to scan and asked for it to
+be brought in line with the Figma (file "Elisen – Web app"), which has Project
+designs but no Certification Basis. Flow stays as it is; type, titles and
+placement only. Causes found: the basis code was 16px, no bigger than section
+headings; every clickable cell was semibold (tertiary `Button`), so long
+regulation titles formed a bold block; a sentence-length "Basis on the TCDS"
+was squeezed into one of five summary columns; summary, tab strip and content
+were three stacked boxes, with Overview repeating the summary; the list split
+code and description across a 500px column from the counts.
+
+**Choice:** Follow Figma "Opt-2 – Project Details" and the Projects List code
+built from it. Detail page: `CertBasisIdentityCard` (code as a 24px bold `h1`,
+description, Regulations / Used By / Built From) beside `SectionTabs`; Overview
+becomes References + Basis on the TCDS cards; list-level Import/Add leave the
+detail header (Import Regulations moves to the card's ⋮ menu). Tables: only the
+identifier is bold, titles regular, whole row opens, Projects List header cells;
+the list stacks code over description and adds a TCDS column. Create/Edit: the
+header stops repeating the stepper's step name, and the stepper is capped at
+720px so both steps sit together.
+
+**Rationale:** One clear anchor per screen and one bold item per row is what
+makes the Project pages easy to scan. The proposal also said to right-align the
+counts; that conflicts with the standing rule that every table column is
+left-aligned (COMPONENTS.md, 2026-08), so counts stay left-aligned with
+`tabular-nums` in narrow columns instead. Supersedes the 2026-10-31 decision that
+regulation titles are `Button`s: row click keeps that behaviour without the bold.
+
+
+## 2026-11-01 — Certification Basis: show what the data actually holds
+
+**Context:** Reviewing the redesigned pages with the 40 legacy bases: none has a
+TCDS link, basis statement, source PDF or amendment level (all "Picked by
+Hand"); 33 have a TCDS number; each holds up to 703 rules (typically ~400)
+across about 10 subparts; 13 carry sections at more than one amendment. So the
+default Overview tab was mostly dashes, Built From never varied, the Regulations
+tab was ~24 screens of scrolling with no search, and the list gave no sign of
+which bases needed fixing.
+
+**Choice:** Overview leads with a Contents card derived from the rules
+(regulation, subpart and duplicate counts, rules per subpart linking into the
+Regulations tab) and folds the optional references into one card. The identity
+card shows TCDS Number; Built From appears only for level-built bases. The
+Regulations tab gets `TableTabs` for All, Duplicates and each subpart, as on
+Scope Rules, with its search in the page header per the standing "Tabbed page
+layout" rule, and the slice in `?view=` so the duplicate
+warning's new Show Duplicates button and the Contents rows link to it. The list
+badges bases with duplicate sections. Subpart-tab logic moved to
+`lib/subpartTabs.ts`, shared with Scope Rules, instead of being copied.
+
+**Rationale:** At a glance means showing what every record has, not fields the
+data never fills. Counts derived from the rules are always present, and the
+warning and Contents become ways into the exact rows they describe.
+Duplicate counts are sections (list badge, warning, Contents) while the
+Duplicates tab counts the rows it lists, matching how every tab count works.
+
+
+## 2026-11-01 — Regulation drawer: lead with what a reader looks for
+
+**Context:** Reviewed with real data: of 3,973 regulations half have no
+requirement text, 24% a source link, 14% MOC text and 28% are active; 700
+sections exist at more than one amendment (up to 9). In a basis such as
+B737-8_A-146 only 74 of 412 rules have text, so most clicks opened a drawer
+saying "No requirement text recorded" with no pointer to a version that has it.
+The title was the fifth field, Active sat at the bottom, MOC came after up to
+two screens of requirement text, and reading text was 14px (~11px at the 80% UI
+scale).
+
+**Choice:** Title and status (Active, In this basis, source) at the top; MOC in
+its own card ahead of the requirement text, only when present; both at `base`
+size; a Versions card listing every amendment of the section with which have
+text, switching the drawer to any of them; Previous / Next through the list the
+drawer was opened from. Section and Amendment fields left the body (the header
+names them). The proposal also suggested dropping the Placement card (Section
+Root, Sort) as internal keys; the user said users need them, so it stays.
+
+**Rationale:** The drawer is where a rule is read, so its name, status and the
+compliance-relevant MOC come first, and an empty version should lead to one with
+text rather than end the trail. Text presence is judged after parsing, because
+some legacy MOC is only `<p>&nbsp;</p>` and rendered as an empty card.
+
+
+## 2026-11-01 — One bold item per table row, app-wide
+
+**Context:** The user liked the weight hierarchy on the Certification Basis
+pages and the regulation drawer and asked for it throughout the app. A sweep of
+every table found the rest of the app mostly following it already (TCCA
+Projects, Approvals and the lookup tables bold only their identifier; people
+cells are regular). The outliers were Projects List's Priority line and the
+Revision column beside the document number in Documents and Project →
+Documents.
+
+**Choice:** Those three cells are now regular weight, and the rule is written
+down in COMPONENTS.md ("One bold item per table row") with its two exceptions:
+meaningful emphasis (over-budget figures in danger) and tables whose rows are
+revisions.
+
+**Rationale:** One anchor per row is what made the basis tables easy to scan;
+a second bold column competes with it.
+
+
+## 2026-11-01 — Free-text Stat values stay semibold
+
+**Context:** After the one-bold-per-row table pass, long free text in detail
+cards (Comment, Comments, Description on Approval, TCCA, Project Notes,
+Timesheet entry, Aircraft serial, Activity catalog and the basis summary/review)
+still renders semibold through `Stat`. A regular-weight `Stat` option for free
+text was proposed.
+
+**Choice:** The user chose to keep them bold. The `Stat` spec in DESIGN.md is
+unchanged (value 14px semibold, every case).
+
+**Rationale:** User decision. Long reading text that is not a `Stat` value
+(regulation requirement and MOC text, the basis statement on the Certification
+Basis Overview) is unaffected.
+
+
+## 2026-11-01 — UI scale 80% → 90%
+
+**Context:** The user said the app "seems very zoomed out" and asked for the
+font a little larger. On 2026-10-30 they had found full size "still very zoomed
+in" and chosen 80%, applied as one `--ui-scale` zoom.
+**Choice:** `--ui-scale: 0.9` — the next browser-zoom step — so text, spacing,
+widths and icons grow together and keep their proportions; no token changes.
+**Effect, measured on 27 screens:** at 90% a 1440 screen lays out exactly like a
+1280 screen did at 80% (1,600 layout px). The basis Used By table needed its
+Actions column widened (10% → 12%) and the basis rules table its columns
+retuned (Amendment 110, Title 340, Note 110) to fit; both are clean at 1440 and
+1280. Design Data (91px) and Timesheet / Hours Worked (99px) now scroll sideways
+slightly at 1440, as they already did on 1280 laptops at 80%; their column
+widths were tuned per column, so they are left for a separate decision. GCP
+Projects and Projects Review were already wider than the screen at 80%.
+
+
+## 2026-11-01 — Blank amendments show "—" in table cells
+
+**Context:** "No amendment recorded" overran narrow Amendment columns and
+overlapped the Title (user report). The user suggested "N/A" or "-".
+**Choice:** Table cells show a muted em dash, the app's existing empty-value
+mark, with "No amendment recorded" on hover and for screen readers
+(`AmendmentText`). Headings, dropdown options and sentences keep the full
+phrase via `amendmentLabel`. Not "N/A": in certification "not applicable" would
+misstate a rule that does apply. The basis rules table and RulePicker also let
+Section and Amendment wrap, because real values such as "525-3 (91-11-01)" and
+"25.1707(a)(c)(d)(e)(f)(g)(h)(i)(j)(k)(l)" overran the same way. Data and the
+2026-10-31 linking rule (blank amendments link only to exact existing records)
+are unchanged.
+
+
+## 2026-11-01 — Design Data and Timesheet columns retuned for the 90% scale
+
+**Context:** After the 90% UI scale, Design Data (91px) and Timesheet / Hours
+Worked (99px) scrolled sideways on the user's 1440 screen. The user asked for
+them to be tightened.
+**Choice:** Only the narrow columns with measured slack were cut, each kept at
+or above its widest header (with sort icon) or value plus `px-lg` padding,
+measured in the browser on real rows. Design Data: Revision 88→84, Title/Type
+190→176 (still ~18 characters before the ellipsis, above the 2026-09-28 "~15"),
+Aircraft 150→136, ATA 74→58, Opened and Due 134→124, Next Action 112→104,
+Used In 124→104 (the one-chip floor is ~82). Timesheet: Deliverable, Date, the
+three hours columns, Valid., Active and Actions, 104px in all; Project, Work
+Package, Activity/Task and Comment, which truncate by design, are unchanged.
+**Verified at 1440:** Design Data, Timesheet and Deliverables have no sideways
+scroll and no clipped header or cell. Hours Worked had no entries in the
+current period; its columns are Timesheet's minus Comment plus Employee, 12px
+narrower, so it fits too. On a 1280 screen these wide tables still scroll
+sideways, as most did at 80%.
+
 ## 2026-11-01 — Reports hidden from the sidebar
 
 User asked to hide the Reports menu. Same treatment as Work Packages
@@ -8431,6 +8601,107 @@ route, `ReportsPage` and `TOP_ROUTES['Reports']` stay, so the page still opens
 if reached directly and comes back with a one-line change. GCP → GCP Reports is
 a separate entry and is unchanged. **Verified:** the sidebar goes Time Entry →
 GCP with no Reports row; `/reports` still renders.
+
+## 2026-11-01 — One record-page pattern for every detail page
+
+**Context:** Project, TCCA, Approval and Certification Basis detail pages each
+hand-built their own header, back link and identity block. Project showed its
+card on Overview only (2026-08, to give tables more width). TCCA used a
+full-width header box. Approval had a 300px side box plus a four-tile count row,
+header buttons and a second back button. Project and Approval had no `<h1>`,
+because the back link replaced the AppShell heading and the identifier was a
+styled `<p>`.
+
+**Choice:** Follow Figma "Opt-2 – Project Details", which Certification Basis
+already used. New patterns: `BackLink` (header "Go back to all <records>", a real
+link), `RecordLayout` (320px identity column beside the tabs, stacking below
+laptop) and `IdentityCard` (identifier as the page's `<h1>`, subtitle, badges, ⋮
+actions, key Stats under one divider). The card stays beside every tab, per the
+user's decision of 2026-11-01; this supersedes "identity card on Overview only".
+Project keeps its client-fixed card content and its health tiles full width
+above the layout. Approval's counts move onto its section tabs; Edit, Add
+Revision and Delete move into the card's ⋮ menu. Each identity card has its own
+file (ProjectIdentityCard, TccaIdentityCard, ApprovalIdentityCard,
+CertBasisIdentityCard).
+
+**Rationale:** One anchor per record (a large identifier, top left) and one
+place for record actions make every detail page read the same way, and holding
+the grid in one component stops the four pages drifting apart. Trade-off: tables
+on non-Overview tabs lose about 340px. See "Tables beside the identity card"
+below for how that was absorbed.
+
+## 2026-11-01 — Self-host Rethink Sans
+
+**Context:** DESIGN.md names Rethink Sans as the brand family, but no
+`@font-face` or font link existed, so the app rendered in a system fallback.
+Loading it from the Google Fonts CDN would send visitor requests to a third
+party, which the performance rule (self-hosted fonts with system fallbacks) and
+SECURITY.md both argue against.
+
+**Choice:** Serve Rethink Sans (SIL OFL 1.1) from `/public/fonts/rethink-sans`
+as variable woff2, latin and latin-ext only, declared in `src/styles/fonts.css`
+with `font-display: swap`, imported from `globals.css`, with the latin file
+preloaded in `index.html` and `OFL.txt` beside the fonts. Storybook serves
+`/public` (`staticDirs`) so stories render in the same face.
+
+**Rationale:** No third-party requests and no render-blocking CDN. Two small
+variable files (about 35 KB and 17 KB) cover weights 400–700; `swap` avoids
+invisible text; preloading only latin speeds first paint.
+
+## 2026-11-01 — Smallest text size 12px → 13px
+
+**Context:** At `--ui-scale` 0.9 the 12px `text-xs` token displayed at about
+10.8px, too small to read comfortably. The user approved a 13px floor.
+
+**Choice:** `--font-size-xs` 12px → 13px and `--line-height-xs` 16px → 18px in
+`tokens.css`. Every `text-xs` inherits it; `Typography.stories.tsx`, DESIGN.md,
+COMPONENTS.md and stale size comments (Badge, Stat, ProgressMeter and others)
+updated to match. Avatar `sm` initials (`text-[10px]` in a 20px circle) stay a
+fixed exception.
+
+**Rationale:** One token, no per-component overrides. Line-height rises 2px to
+keep the same ratio. Knock-on: Badge `sm`/`md` grow 2px (22px / 26px).
+
+## 2026-11-01 — Shared StackedCell and one table-header size
+
+**Context:** The two-line identifier cell (semibold number over a muted `xs`
+line) was hand-rolled in at least four list tables with small drift, and table
+headers were split between `text-xs` and `text-sm`.
+
+**Choice:** Extract `patterns/StackedCell` and set every list-table header to
+`text-sm font-semibold text-text-secondary` (padding stays per table), including
+the last six `xs` headers (RevisionDrawer, WorkPackageCard, TeamActivityTable,
+PersonProjectPanel, PersonWorkPackageCard, ReportDetailPanel). The Documents
+Title/Type cell stays regular weight by client layout; Approvals passes a real
+`Link` as the identifier.
+
+**Rationale:** Same as `PersonCell` and `Stat`: one component can't drift.
+`text-sm` was already the majority.
+
+## 2026-11-01 — Tables beside the identity card
+
+**Context:** With the card beside every tab, a tab is about 959px wide at 1440
+and 781px at 1280. QA found dates wrapping and headers clipping in Project →
+Deliverables, TCCA → Documents and Design Data, and sideways scroll in Used By
+and Approval → Revisions at 1280.
+
+**Choice:** Size columns to measured need (header with its sort icon, or widest
+value, plus padding) and derive `minWidth` from the same numbers, so a narrower
+tab scrolls inside the table's own frame instead of wrapping or clipping. Dates
+are `whitespace-nowrap`. Results, measured in the browser:
+
+- TCCA → Documents, Used By and Approval → Revisions fit at 1280 and 1440.
+- Design Data and Deliverables (Documents) headers no longer clip.
+- Project → Deliverables (9 columns, about 1,058px of need) still scrolls about
+  99px inside its frame at 1440. The user chose to keep the scroll rather than
+  merge columns (for example Opened / Due into one stacked column), so all nine
+  columns stay separate and readable at full width.
+
+The Certification Basis not-found page now keeps its `<h1>` and its button reads
+"Back to Certification Basis".
+
+**Rationale:** Measured widths are honest about what each column needs, and
+deriving `minWidth` from them stops the two from drifting apart.
 
 ## 2026-11-01 — Favicon follows light and dark mode
 
@@ -8445,6 +8716,106 @@ JavaScript.
 **Rationale:** The tab bar's colour follows the system appearance, not the clock,
 so that is the signal to follow.
 
+
 ## 2026-11-01 — Server backups to Google Drive
 
 User requested production database backups daily and JasperReports backups monthly, uploaded directly from the Elisen server while the Mac is off. Added `deploy/backups/` scripts and systemd timers (03:00 daily / 03:30 on day 1, Asia/Karachi). Production DB credentials are read server-side; Jasper uses its repository export plus installation and encryption keys, excluding Tomcat temporary files/work/logs. Archives and SHA-256 sidecars are copied and verified with rclone; Drive history is preserved, local archives are pruned only after successful upload. Independent server Drive consent completed with a dedicated internal OAuth client in Google Cloud project `tranquil-apogee-513418-p4`, avoiding rclone shared-client quota failures. Initial database and Jasper uploads verified with zero differences; both timers enabled.
+
+## 2026-11-01 — Certification Basis: identity band, no Overview tab
+
+**Context:** User review: on the basis page the Overview "has very little
+information" and the side card takes space, so the rules the client needs are
+squeezed. The 320px card held three facts (TCDS Number, Regulations, Used By)
+yet left the rule table 959px at 1440 and 781px at 1280. The Overview tab
+repeated the subpart counts already on the table's own tabs, and its References
+card (TCDS link, source PDF, basis wording) is empty for all 40 legacy bases.
+
+**Choice (user's picks):** Turn the card into a full-width band above the tabs
+(`IdentityCard` `layout="band"`): code, description and the same figures on one
+row, ⋮ menu top right. Remove the Overview tab and `CertBasisOverview`; the page
+opens on Regulations, and old `?tab=overview` links land there too. TCDS link,
+source document and basis wording appear in the band only when set. The
+duplicate warning's buttons move beside its text (`Alert` `actions`), so at
+1440 it is about 35px shorter. Certification Basis only: Project, TCCA and
+Approval keep the side card, and DESIGN.md → Record page records the exception.
+
+**Rationale:** The rule table is the page. It is now 1,295px wide at 1440 (was
+959) and 1,117px at 1280 (was 781), with no sideways scroll at either. The band
+costs about 65px of height, so 10 rows show at 1440×900 instead of 12. Wider
+columns mean titles no longer wrap, which is the better trade for a list read
+by section and title.
+
+## 2026-11-02 — Source link on each rule in a Certification Basis
+
+**Context:** User request: give each regulation in a basis its source link. The
+link was only in the regulation drawer, one click away per rule. 954 of the
+3,973 regulations store one (952 on FAA DRS, 2 on tc.canada.ca), which covers
+2,398 of the 14,308 basis rules; 4 bases have none.
+
+**Choice:** A sortable **Source** column in `CertBasisTable`, after Title: the
+same `FileLink` and `sourceLabel` the drawer uses ("FAA Source" / "Source",
+opens in a new tab), and a muted "No source" when no link is stored, as the
+Regulatory Library table shows (user request). Clicking the link does not
+also open the row's drawer. Sorting puts rules with a link first; blanks park
+last both ways. No data changed; missing links are the client's to supply.
+
+**Rationale:** Reading the rule text at its source is the step a reviewer takes
+after finding the rule, so the link belongs on the row. One link component and
+one label function keep the table and drawer saying the same thing.
+
+## 2026-11-02 — One look for the same regulation columns in every table
+
+**Context:** User request: show the amendment as the Regulatory Library does, and
+keep the same columns consistent across the app. Five tables showed regulation
+columns five ways. Amendment was a chip in the library but plain text in the
+basis rules, Certification Topics, the rule picker, Scope Rules and the GCP
+Projects list. Source was a trailing-↗ link in the library and Scope Rules, but a
+leading-icon `FileLink` in the basis table. Section was plain in the library,
+Scope Rules and GCP Projects, a blue link-style in Certification Topics, and
+bold in the basis table and picker.
+
+**Choice:** The Regulatory Library is the reference, with one exception settled
+by the user: Section follows the app-wide "one bold item per table row" rule
+(bold, opens the rule, the row opens it too) rather than the library's plain
+text. So the library and Certification Topics rows now open the rule drawer.
+Shared cells keep it from drifting: `AmendmentText` renders the chip,
+`RegulationSectionButton` the Section, and `RegulationSourceLink` the Source,
+moved out of the library and Scope Rules. That link now opens only
+`isOpenableUrl` values (SECURITY.md); the library's anchor previously used any
+stored string as its `href`. Headers aligned: "Title" (was "Regulation Title" in
+the picker), "Active" (was "Status" in Certification Topics), "Actions" (was
+"Action" in the library). Scope Rules opens the rule from Section only, since a
+row click there would collide with ticking the row. `ChipOverflow` chips now wrap
+inside their own box when wider than the cell, so "525-3 (91-11-01)" no longer
+runs into Title at 1280.
+
+**Left as is:** the GCP Projects list keeps its client-fixed headers and plain
+section (the TCCA project is that row's bold item), and only its Amendment cell
+changed. `BasisLevelBuilder` lists every version of a section, a different
+column. The plan step's read-only "Regulation Url" field is a field, not a
+column.
+
+## 2026-11-02 — Certification Basis: Active switch, and the library's columns instead of Note
+
+**Context:** User requests: a switch to show active or inactive rules, then
+"instead of notes, show section root and sort and active like in the
+regulation". Most basis rules are inactive in the legacy data (80.4% of
+memberships; BD-700_A-177_CL has 96 active of 657), and the basis table showed
+neither the status nor where a rule sits.
+
+**Choice (user's picks):** A new `ui/SegmentedControl` (All / Active / Inactive,
+with counts) in the page header beside the search, on the Regulations tab only,
+opening on All. It is native radios underneath (one tab stop, arrow keys), 36px
+like the search. The table's Note column gives way to Section Root (chip), Sort
+(plain, wraps) and Active (badge), matching the Regulatory Library and the
+drawer's Placement card. The Override / Duplicate tags move beside the section
+rather than disappearing. Duplicates are still judged on the whole basis; the
+switch narrows the rows, and the subpart and Duplicates tab counts follow it so
+they describe what is on screen.
+
+**Rationale:** A segmented control shows both choices and their counts, so
+switching never hides that the other set exists. Opening on All keeps the basis
+whole by default: the inactive flag is a legacy field, not a removal. The
+Regulatory Library keeps its Filters → Active option; the switch is for the
+basis page, where status is the first thing a reviewer narrows by.
+

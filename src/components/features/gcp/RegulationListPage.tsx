@@ -1,7 +1,6 @@
 import { FrozenTable } from '@/components/patterns/FrozenTable'
-import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useState } from 'react'
-import { ArrowUpRight, BookMarked, Copy, Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { BookMarked, Copy, Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
@@ -18,14 +17,17 @@ import { Input } from '@/components/ui/Input'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useGcpStore } from '@/stores/gcpStore'
 import { useToastStore } from '@/stores/toastStore'
-import { codeName, sourceLabel, subpartLabel, subpartParts, subsectionLabel, subsectionParts } from '@/lib/gcpDisplay'
+import { subpartLabel, subpartParts, subsectionLabel, subsectionParts } from '@/lib/gcpDisplay'
 import type { Regulation } from '@/types/gcp'
 import { GcpRegulationsTabs } from './GcpRegulationsTabs'
 import { RegulationDrawer } from './RegulationDrawer'
 import { RegulationDetailDrawer } from './RegulationDetailDrawer'
+import { AmendmentText } from './AmendmentText'
 import { RegulationDeleteDialog } from './RegulationDeleteDialog'
 import { CodeWithName } from './CodeWithName'
 import { GcpChip } from './GcpChip'
+import { RegulationSectionButton } from './RegulationSectionButton'
+import { RegulationSourceLink } from './RegulationSourceLink'
 import { useGcpData } from './GcpDataGate'
 import {
   EMPTY_REGULATION_FILTERS, RegulationFilterMenu, regulationFilterChips, type RegulationFilters,
@@ -49,7 +51,7 @@ const COLUMNS: { label: string; sort?: SortKey; width: number }[] = [
   { label: 'Section Root', sort: 'root', width: 120 },
   { label: 'Source', sort: 'source', width: 100 },
   { label: 'Active', sort: 'active', width: 84 },
-  { label: 'Action', width: 58 },
+  { label: 'Actions', width: 58 },
 ]
 
 const TABLE_WIDTH = COLUMNS.reduce((n, c) => n + c.width, 0)
@@ -209,12 +211,12 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
                           </tr>
                         ))
                       : sorted.slice(0, visibleCount).map((r) => (
-                          <tr key={r.id} className="border-b border-border-default last:border-b-0">
+                          <tr key={r.id} onClick={() => setViewing(r)} className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
                             {/* Wraps rather than truncates: a section number is
                                 the row's identity, so none of it may be hidden. */}
-                            <td className="break-words px-base py-base text-sm text-text-primary">{r.section}</td>
-                            <td className="whitespace-nowrap px-base py-base">
-                              <GcpChip value={amendmentLabel(r.amdt)} label="amendments" />
+                            <td className="px-base py-base"><RegulationSectionButton regulation={r} onOpen={() => setViewing(r)} /></td>
+                            <td className="px-base py-base">
+                              <AmendmentText amdt={r.amdt} />
                             </td>
                             <td className="px-base py-base text-sm text-text-primary">
                               <Truncate lines={2}>{r.title}</Truncate>
@@ -229,24 +231,12 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
                               <GcpChip value={r.sectionRoot} label="section roots" />
                             </td>
                             <td className="whitespace-nowrap px-base py-base text-sm">
-                              {r.url ? (
-                                /* Underlined and in the accent, with the arrow
-                                   that means "leaves this page" — a link has to
-                                   look like one before it is hovered. */
-                                <a href={r.url} target="_blank" rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-xxss rounded-sm text-sm text-accent underline underline-offset-2 transition-colors duration-fast hover:text-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary">
-                                  {sourceLabel(r.url)}
-                                  <ArrowUpRight size={14} aria-hidden className="shrink-0" />
-                                  <span className="sr-only"> for {r.section} at {r.amdt}, opens in a new tab</span>
-                                </a>
-                              ) : (
-                                <span className="text-text-muted">No source</span>
-                              )}
+                              <RegulationSourceLink regulation={r} />
                             </td>
                             <td className="whitespace-nowrap px-base py-base">
                               <Badge tone={r.active ? 'success' : 'neutral'}>{r.active ? 'Active' : 'Inactive'}</Badge>
                             </td>
-                            <td className="px-base py-base">
+                            <td className="px-base py-base" onClick={(e) => e.stopPropagation()}>
                               <ActionsMenu
                                 ariaLabel={`Actions for ${r.section} at ${r.amdt}`}
                                 items={[
@@ -283,10 +273,9 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
       {viewing && (
         <RegulationDetailDrawer
           regulation={viewing}
-          subpart={codeName(subpartParts(viewing.subpartCode, subparts))}
-          subsection={codeName(subsectionParts(viewing.subsectionCode, subsections))}
+          sequence={sorted}
           onClose={() => setViewing(null)}
-          onEdit={() => { setDrawer({ mode: 'edit', regulation: viewing }); setViewing(null) }}
+          onEdit={(r) => { setDrawer({ mode: 'edit', regulation: r }); setViewing(null) }}
         />
       )}
 

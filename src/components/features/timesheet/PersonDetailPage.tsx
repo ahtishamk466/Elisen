@@ -316,7 +316,7 @@ export function PersonDetailPage() {
             <nav aria-label={`Projects ${name} worked on`} className="flex min-h-0 flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-25">
               {/* The rail's own heading row — this is the "select a project"
                   control, so its labels carry heading weight (14px semibold,
-                  Neutral 950) rather than the 12px muted a table's column
+                  Neutral 950) rather than the muted secondary a table's column
                   headers use. Both labels move together: styling only the
                   first would leave two mismatched labels in one row. */}
               <div className="flex shrink-0 items-center gap-sm border-b border-border-default bg-neutral-100 px-base py-sm">

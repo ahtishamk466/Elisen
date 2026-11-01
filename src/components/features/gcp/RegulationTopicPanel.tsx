@@ -11,21 +11,21 @@ import { useTableSort } from '@/components/patterns/useTableSort'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { amendmentLabel, codeName, subpartParts, subsectionParts, titleCaseName } from '@/lib/gcpDisplay'
+import { amendmentLabel, titleCaseName } from '@/lib/gcpDisplay'
 import { regulationsForTopic } from '@/lib/regulationStructure'
 import { useGcpStore } from '@/stores/gcpStore'
 import { useToastStore } from '@/stores/toastStore'
 import type { Regulation, Subpart, Subsection } from '@/types/gcp'
 import { RegulationDrawer } from './RegulationDrawer'
 import { RegulationDetailDrawer } from './RegulationDetailDrawer'
+import { AmendmentText } from './AmendmentText'
+import { RegulationSectionButton } from './RegulationSectionButton'
 import { RegulationDeleteDialog } from './RegulationDeleteDialog'
 
 export function RegulationTopicPanel({ subpart, subsection, onBack }: {
   subpart: Subpart; subsection: Subsection; onBack: () => void
 }) {
   const regulations = useGcpStore((s) => s.regulations)
-  const subparts = useGcpStore((s) => s.subparts)
-  const subsections = useGcpStore((s) => s.subsections)
   const addRegulation = useGcpStore((s) => s.addRegulation)
   const updateRegulation = useGcpStore((s) => s.updateRegulation)
   const toast = useToastStore((s) => s.show)
@@ -44,7 +44,7 @@ export function RegulationTopicPanel({ subpart, subsection, onBack }: {
   }, { onSortChange: reset })
   const columns = [
     { label: 'Section', key: 'section' as const }, { label: 'Amendment', key: 'amdt' as const },
-    { label: 'Title', key: 'title' as const }, { label: 'Status', key: 'active' as const },
+    { label: 'Title', key: 'title' as const }, { label: 'Active', key: 'active' as const },
     { label: 'Actions' },
   ]
   return (
@@ -81,18 +81,12 @@ export function RegulationTopicPanel({ subpart, subsection, onBack }: {
                 className="px-lg py-base font-semibold text-text-secondary">{c.label}</SortableTh>)}
             </tr></thead>}>
 
-            <tbody>{sorted.slice(0, visibleCount).map((r) => <tr key={r.id} className="border-b border-border-default last:border-b-0">
-              <td className="px-lg py-base">
-                <Button variant="tertiary" size="sm" className="w-full min-w-0 max-w-full justify-start px-0 text-left font-normal text-accent"
-                  style={{ height: 'auto', whiteSpace: 'normal', textDecorationLine: 'none' }}
-                  onClick={() => setViewingId(r.id)} aria-label={`View ${r.section} at ${amendmentLabel(r.amdt)}`}>
-                  <span className="min-w-0 whitespace-normal break-words">{r.section}</span>
-                </Button>
-              </td>
-              <td className="px-lg py-base text-text-primary">{amendmentLabel(r.amdt)}</td>
+            <tbody>{sorted.slice(0, visibleCount).map((r) => <tr key={r.id} onClick={() => setViewingId(r.id)} className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
+              <td className="px-lg py-base"><RegulationSectionButton regulation={r} onOpen={() => setViewingId(r.id)} /></td>
+              <td className="px-lg py-base text-text-primary"><AmendmentText amdt={r.amdt} /></td>
               <td className="px-lg py-base text-text-primary"><Truncate lines={2}>{r.title}</Truncate></td>
               <td className="px-lg py-base"><Badge tone={r.active ? 'success' : 'neutral'}>{r.active ? 'Active' : 'Inactive'}</Badge></td>
-              <td className="px-lg py-base">
+              <td className="px-lg py-base" onClick={(e) => e.stopPropagation()}>
                 <ActionsMenu ariaLabel={`Actions for ${r.section} at ${amendmentLabel(r.amdt)}`} items={[
                   { label: 'View', icon: <Eye size={16} />, onSelect: () => setViewingId(r.id) },
                   { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setDrawer({ mode: 'edit', initial: r }) },
@@ -112,10 +106,8 @@ export function RegulationTopicPanel({ subpart, subsection, onBack }: {
           toast(`Regulation ${r.section} ${drawer.mode === 'edit' ? 'updated' : 'created'}.`)
           setViewingId(r.id)
         }} />}
-      {viewing && !drawer && <RegulationDetailDrawer regulation={viewing}
-        subpart={codeName(subpartParts(viewing.subpartCode, subparts))}
-        subsection={codeName(subsectionParts(viewing.subsectionCode, subsections))}
-        onClose={() => setViewingId(null)} onEdit={() => { setDrawer({ mode: 'edit', initial: viewing }); setViewingId(null) }} />}
+      {viewing && !drawer && <RegulationDetailDrawer regulation={viewing} sequence={sorted}
+        onClose={() => setViewingId(null)} onEdit={(r) => { setDrawer({ mode: 'edit', initial: r }); setViewingId(null) }} />}
       <RegulationDeleteDialog regulation={deleting} onClose={() => setDeleting(null)}
         onDeleted={(id) => { if (viewingId === id) setViewingId(null) }} />
     </>

@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Pencil, Trash2, ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
+import { BackLink } from '@/components/patterns/BackLink'
+import { RecordLayout } from '@/components/patterns/RecordLayout'
 import { SectionTabs } from '@/components/patterns/SectionTabs'
 import { EmptyState } from '@/components/patterns/EmptyState'
-import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
-import { Badge } from '@/components/ui/Badge'
 import { useTccaStore } from '@/stores/tccaStore'
-import { TCCA_STATUS_LABEL, TCCA_STATUS_TONE } from '@/lib/tccaDisplay'
+import { TccaIdentityCard } from './TccaIdentityCard'
 import { TccaOverviewTab } from './TccaOverviewTab'
 import { TccaProjectsTab } from './TccaProjectsTab'
 import { TccaDocumentsTab } from './TccaDocumentsTab'
@@ -51,34 +51,9 @@ export function TccaProjectDetailPage() {
     <AppShell
       activeChild="TCCA Projects"
       title={tcca.number}
-      headerLeft={
-        <button type="button" onClick={() => navigate('/tcca-projects')}
-          className="inline-flex items-center gap-sm rounded-sm text-sm text-text-secondary transition-colors duration-fast hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary">
-          <ArrowLeft size={18} aria-hidden />
-          Back to TCCA Projects
-        </button>
-      }
+      headerLeft={<BackLink to="/tcca-projects" label="Go back to all TCCA projects" />}
     >
-      <div className="grid gap-lg">
-        {/* Status + actions pinned right so a long description never shifts
-            them; the number keeps its own line. */}
-        <div className="flex items-start justify-between gap-lg rounded-sm border border-border-default bg-neutral-25 px-lg py-base">
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-text-primary">{tcca.number}</p>
-            <p className="mt-xxss text-sm text-text-secondary">{tcca.description}</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-sm">
-            <Badge tone={TCCA_STATUS_TONE[tcca.status]}>{TCCA_STATUS_LABEL[tcca.status]}</Badge>
-            <ActionsMenu
-              ariaLabel={`Actions for TCCA project ${tcca.number}`}
-              items={[
-                { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditing(true) },
-                { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(true), tone: 'danger' },
-              ]}
-            />
-          </div>
-        </div>
-
+      <RecordLayout identity={<TccaIdentityCard tcca={tcca} onEdit={() => setEditing(true)} onDelete={() => setDeleting(true)} />}>
         <SectionTabs tabs={TABS} active={tab} onChange={setTab} ariaLabel="TCCA sections" />
 
         {tab === 'Overview' && <TccaOverviewTab tcca={tcca} />}
@@ -95,7 +70,7 @@ export function TccaProjectDetailPage() {
             />
           </div>
         )}
-      </div>
+      </RecordLayout>
 
       {editing && (
         <TccaProjectDrawer

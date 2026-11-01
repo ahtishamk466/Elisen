@@ -99,14 +99,17 @@
   /* UI scale — the whole app renders at this fraction of the design spec,
      like browser zoom, so a data screen fits a 1440x900 laptop. Every size
      token below stays at its DESIGN.md value. Applied once as `zoom` on
-     <html> in globals.css. User request 2026-10-30 ("like browser zoom 80%"). */
-  --ui-scale: 0.8;
+     <html> in globals.css. User request 2026-10-30 ("like browser zoom 80%");
+     raised to 90% on 2026-11-01 ("seems very zoomed out"). */
+  --ui-scale: 0.9;
 
   /* Typography */
   --font-family-sans: "Rethink Sans", Inter, system-ui, sans-serif;
 
-  --font-size-xs: 12px;
-  --line-height-xs: 16px;
+  /* xs raised 12px -> 13px (line 16 -> 18) on 2026-11-01: at --ui-scale 0.9
+     12px renders ~10.8px, too small to read. */
+  --font-size-xs: 13px;
+  --line-height-xs: 18px;
   --font-size-sm: 14px;
   --line-height-sm: 20px;
   --font-size-base: 16px;

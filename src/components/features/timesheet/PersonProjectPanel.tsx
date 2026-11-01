@@ -160,7 +160,7 @@ export function PersonProjectPanel({ group, personName }: { group: PersonProject
                 for. It moves to the subtitle line instead, plain text beside
                 the counts it belongs with. */}
             <h2 className="truncate text-sm font-semibold text-text-primary">{group.projectTitle}</h2>
-            {/* Neutral 500 / 12px / Regular — one step quieter than the
+            {/* Neutral 500 / 13px / Regular — one step quieter than the
                 title, since this line is context for it, not a second
                 heading. */}
             <p className="mt-xs flex flex-wrap items-center gap-sm text-xs font-normal text-text-muted">
@@ -174,7 +174,7 @@ export function PersonProjectPanel({ group, personName }: { group: PersonProject
           <div className="flex shrink-0 flex-wrap items-center gap-sm">
             {/* Both tags are `Badge`, not one Badge beside a hand-rolled
                 span: the span had drifted to 14px/regular against the
-                badge's 12px/semibold, which is exactly the mismatch a
+                badge's xs/semibold, which is exactly the mismatch a
                 shared component prevents. Neutral tone gives the same
                 `bg-neutral-100` the span carried. */}
             <Badge tone="neutral" size="md">
@@ -263,7 +263,7 @@ export function PersonNonProjectPanel({ lines, total, personName }: { lines: Non
             <tr className="border-b border-border-default bg-neutral-50">
               {LINE_COLUMNS.map((c) => (
                 <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
-                  className="whitespace-nowrap px-base py-base text-xs font-semibold text-text-secondary">{c.label}</SortableTh>
+                  className="whitespace-nowrap px-base py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
               ))}
             </tr>
           </thead>}

@@ -1,6 +1,6 @@
 import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useMemo, useState } from 'react'
-import { ArrowLeft, ArrowUpRight, Search } from 'lucide-react'
+import { ArrowLeft, Search } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Input } from '@/components/ui/Input'
@@ -9,9 +9,14 @@ import { useSyncedScroll } from '@/components/patterns/useSyncedScroll'
 import { Truncate } from '@/components/patterns/Truncate'
 import { useGcpStore } from '@/stores/gcpStore'
 import { useGcpFlowStore } from '@/stores/gcpFlowStore'
-import { sourceLabel, subpartParts, subsectionParts, titleCaseName } from '@/lib/gcpDisplay'
+import { subpartParts, subsectionParts } from '@/lib/gcpDisplay'
+import { rulesInSubpartTab, subpartTabs } from '@/lib/subpartTabs'
 import { CodeWithName } from '../CodeWithName'
-import type { PlanEntry } from '@/types/gcp'
+import { AmendmentText } from '../AmendmentText'
+import { RegulationDetailDrawer } from '../RegulationDetailDrawer'
+import { RegulationSectionButton } from '../RegulationSectionButton'
+import { RegulationSourceLink } from '../RegulationSourceLink'
+import type { PlanEntry, Regulation } from '@/types/gcp'
 import type { TccaProject } from '@/types/tcca'
 
 /** Fixed pixel widths, `table-fixed` — the same reason `RegulationListPage`
@@ -47,6 +52,9 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
   const planEntries = useGcpFlowStore((s) => s.planEntries)
   const initializePlan = useGcpFlowStore((s) => s.initializePlan)
   const [query, setQuery] = useState('')
+  /* The rule open in the read-only drawer. Only Section opens it: a row click
+     here would collide with ticking the row's checkbox. */
+  const [viewing, setViewing] = useState<Regulation | null>(null)
   const bases = useGcpFlowStore((s) => s.bases)
   const projectBasis = useGcpFlowStore((s) => s.projectBasis)
 
@@ -59,38 +67,13 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
     return regulations.filter((r) => inBasis.has(r.id))
   }, [bases, projectBasis, project.id, regulations])
 
-  /* Subpart tabs — so picking which rules apply reads as "find the right
-     category, then work down its list" instead of scanning one flat pool
-     of hundreds. Built from whichever subparts this rule pool actually
-     uses (never the full, mostly-inactive Subpart catalog), each showing
-     how many rules fall under it. A rule whose subpart is the "-" / TBD
-     placeholder, inactive, or unrecognized altogether has nowhere named to
-     go, so it collects in one shared "Other" tab rather than vanishing or
-     getting a one-off tab of its own. */
+  /* Subpart tabs (lib/subpartTabs.ts), so picking which rules apply reads as
+     "find the right category, then work down its list" instead of scanning
+     one flat pool of hundreds. Shared with the Certification Basis page. */
   const [subpartTab, setSubpartTab] = useState('all')
   const { headerRef, onBodyScroll } = useSyncedScroll()
-  const { subpartTabs, otherCodes } = useMemo(() => {
-    const counts = new Map<string, number>()
-    rules.forEach((r) => counts.set(r.subpartCode, (counts.get(r.subpartCode) ?? 0) + 1))
-    const known = subparts
-      .filter((sp) => sp.active && sp.code !== '-' && counts.get(sp.code))
-      .sort((a, b) => a.sort.localeCompare(b.sort))
-      .map((sp) => ({ key: sp.code, label: `${sp.code} — ${titleCaseName(sp.description)}`, count: counts.get(sp.code)! }))
-    const knownCodeSet = new Set(known.map((t) => t.key))
-    const other = rules.filter((r) => !knownCodeSet.has(r.subpartCode))
-    const tabs = [
-      { key: 'all', label: 'All', count: rules.length },
-      ...known,
-      ...(other.length > 0 ? [{ key: 'other', label: 'Other', count: other.length }] : []),
-    ]
-    return { subpartTabs: tabs, otherCodes: knownCodeSet }
-  }, [rules, subparts])
-
-  const bySubpart = useMemo(() => {
-    if (subpartTab === 'all') return rules
-    if (subpartTab === 'other') return rules.filter((r) => !otherCodes.has(r.subpartCode))
-    return rules.filter((r) => r.subpartCode === subpartTab)
-  }, [rules, subpartTab, otherCodes])
+  const { tabs: subpartTabList, known } = useMemo(() => subpartTabs(rules, subparts), [rules, subparts])
+  const bySubpart = useMemo(() => rulesInSubpartTab(rules, subpartTab, known), [rules, subpartTab, known])
 
   const q = query.trim().toLowerCase()
   const filteredRules = useMemo(() => {
@@ -176,7 +159,7 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
             ariaLabel="Filter rules by subpart"
             activeKey={subpartTab}
             onChange={setSubpartTab}
-            tabs={subpartTabs}
+            tabs={subpartTabList}
           />
         </div>
         {/* Frozen header, own table — client instruction (2026-09-24): a
@@ -245,20 +228,11 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
                   </td>
                   <td className="px-base py-base"><CodeWithName {...subpartParts(r.subpartCode, subparts)} /></td>
                   <td className="px-base py-base"><CodeWithName {...subsectionParts(r.subsectionCode, subsections)} /></td>
-                  <td className="px-base py-base text-sm text-text-primary">{r.section}</td>
-                  <td className="px-base py-base text-sm text-text-primary">{amendmentLabel(r.amdt)}</td>
+                  <td className="px-base py-base"><RegulationSectionButton regulation={r} onOpen={() => setViewing(r)} /></td>
+                  <td className="px-base py-base"><AmendmentText amdt={r.amdt} /></td>
                   <td className="px-base py-base text-sm text-text-primary"><Truncate lines={2}>{r.title}</Truncate></td>
                   <td className="whitespace-nowrap px-base py-base text-sm">
-                    {r.url ? (
-                      <a href={r.url} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-xxss rounded-sm text-sm text-accent underline underline-offset-2 transition-colors duration-fast hover:text-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary">
-                        {sourceLabel(r.url)}
-                        <ArrowUpRight size={14} aria-hidden className="shrink-0" />
-                        <span className="sr-only"> for {r.section} at {amendmentLabel(r.amdt)}, opens in a new tab</span>
-                      </a>
-                    ) : (
-                      <span className="text-text-muted">No source</span>
-                    )}
+                    <RegulationSourceLink regulation={r} />
                   </td>
                   <td className="px-base py-base">
                     <span
@@ -283,6 +257,7 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
           Create plan from {affected} affected rule{affected === 1 ? '' : 's'}
         </Button>
       </div>
+      {viewing && <RegulationDetailDrawer regulation={viewing} sequence={filteredRules} onClose={() => setViewing(null)} />}
     </section>
   )
 }

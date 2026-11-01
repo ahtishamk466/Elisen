@@ -1,26 +1,25 @@
 import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Pencil, Copy, Trash2, Users, CalendarDays, DollarSign, Check, Minus } from 'lucide-react'
+import { Check, Minus } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
+import { BackLink } from '@/components/patterns/BackLink'
+import { RecordLayout } from '@/components/patterns/RecordLayout'
 import { SectionTabs } from '@/components/patterns/SectionTabs'
 import { EmptyState } from '@/components/patterns/EmptyState'
-import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { ReportCard } from '@/components/patterns/ReportCard'
 import { DetailCard as Card, DetailField as Field } from '@/components/patterns/DetailView'
-import { Avatar } from '@/components/patterns/Avatar'
 import { HealthSummary } from '@/components/patterns/HealthSummary'
-import { Badge } from '@/components/ui/Badge'
 import { useProjectsStore } from '@/stores/projectsStore'
 import { useWorkPackagesStore } from '@/stores/workPackagesStore'
 import { useTccaStore } from '@/stores/tccaStore'
 import { deliverableSummaries, useDocumentsStore } from '@/stores/documentsStore'
 import { useApprovalsStore } from '@/stores/approvalsStore'
-import { PRIORITY_LABEL, PRIORITY_TONE, STATUS_LABEL, STATUS_TONE, TYPE_LABEL } from '@/lib/projectDisplay'
 import { PENDING_REPORTS } from '@/lib/pendingReports'
 import { rollUpProject } from '@/lib/projectHealth'
 import { downloadCompletionChecklist } from '@/lib/pccReport'
 import { AddProjectDrawer } from './AddProjectDrawer'
+import { ProjectIdentityCard } from './ProjectIdentityCard'
 import { ProposalEditDrawer } from './ProposalEditDrawer'
 import { NotesEditDrawer } from './NotesEditDrawer'
 import { AircraftEditDrawer } from './AircraftEditDrawer'
@@ -187,16 +186,7 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
   return (
     <AppShell
       title={`${row.number}-${row.subNumber}`}
-      headerLeft={
-        <button
-          type="button"
-          onClick={() => navigate('/projects')}
-          className="inline-flex items-center gap-sm rounded-sm text-sm text-text-secondary transition-colors duration-fast hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
-        >
-          <ArrowLeft size={18} aria-hidden />
-          Go back to all projects
-        </button>
-      }
+      headerLeft={<BackLink to="/projects" label="Go back to all projects" />}
     >
       <div className="grid gap-lg">
         {/* Health first, above everything — the question "is this project in
@@ -205,190 +195,112 @@ export function ProjectDetailPage({ canSeeFinancials = true }: { canSeeFinancial
           <HealthSummary health={health} />
         )}
 
-        <SectionTabs tabs={TABS} active={tab} onChange={setTab} ariaLabel="Project sections" counts={tabCounts} />
-
-            {tab === 'Overview' ? (
-              /* The identity card lives on Overview only. Every other tab gets
-                 the full page: a table beside a 320px card had ~590px to work
-                 with, which is why the Work Packages table could not breathe. */
-              <div className="grid items-start gap-lg laptop:grid-cols-[320px_minmax(0,1fr)]">
-              <aside className="h-fit rounded-sm border border-border-default bg-neutral-25 p-lg">
-            <div className="flex items-start justify-between gap-sm">
-              <div className="flex items-center gap-xs">
-                <p className="text-2xl font-bold leading-tight text-text-primary">{row.number}-{row.subNumber}</p>
-                {row.isCopy && <Badge tone="info">Copy</Badge>}
-              </div>
-              <ActionsMenu
-                ariaLabel={`Actions for project ${row.number}-${row.subNumber}`}
-                items={[
-                  { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditStep(STEP_BASIC) },
-                  { label: 'Duplicate', icon: <Copy size={16} />, onSelect: handleDuplicate },
-                  { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeleting(true), tone: 'danger' },
-                ]}
-              />
-            </div>
-
-            <p className="mt-sm text-sm text-text-secondary">{row.title}</p>
-            <p className="mt-xs text-xs text-text-muted">{row.companyName} · {TYPE_LABEL[row.type]}</p>
-
-            <div className="mt-base flex flex-wrap items-center gap-sm">
-              <Badge tone={PRIORITY_TONE[row.priority]} appearance="outline">{PRIORITY_LABEL[row.priority]}</Badge>
-              <Badge tone={STATUS_TONE[row.status]} appearance="outline">{STATUS_LABEL[row.status]}</Badge>
-            </div>
-
-            {/* Hours deliberately not repeated here — the four stat boxes at
-                the top of the page are the single place budget is read. */}
-            <div className="mt-lg border-t border-border-default pt-lg">
-              <p className="flex items-center gap-xs text-xs text-text-muted">
-                <CalendarDays size={14} aria-hidden /> Due date
-              </p>
-              <p className="mt-xs text-base font-bold text-text-primary">{formatDate(row.dueDate)}</p>
-            </div>
-
-            {canSeeFinancials && (
-              <div className="mt-lg border-t border-border-default pt-lg">
-                <p className="flex items-center gap-xs text-xs text-text-muted">
-                  <DollarSign size={14} aria-hidden /> Contract value
-                </p>
-                <p className="mt-xs text-base font-bold text-text-primary">
-                  {row.contractValue
-                    ? `${row.contractCurrency} ${Number(row.contractValue).toLocaleString()}`
-                    : '—'}
-                </p>
-              </div>
-            )}
-
-            <div className="mt-lg border-t border-border-default pt-lg">
-              <p className="flex items-center gap-xs text-xs text-text-muted">
-                <Users size={14} aria-hidden /> People
-              </p>
-              <div className="mt-base grid gap-base">
-                {row.contactName !== '—' && (
-                  <div className="flex items-center gap-sm">
-                    <Avatar name={row.contactName} />
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-text-primary">{row.contactName}</p>
-                      {row.contactEmail ? (
-                        <a
-                          href={`mailto:${row.contactEmail}`}
-                          className="block truncate text-xs text-text-muted hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
-                        >
-                          Contact
-                        </a>
-                      ) : (
-                        <p className="text-xs text-text-muted">Contact</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center gap-sm">
-                  <Avatar name={row.personResponsible} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-text-primary">{row.personResponsible}</p>
-                    <p className="text-xs text-text-muted">Person responsible</p>
-                  </div>
+        {/* Figma "Opt-2 – Project Details": the identity card stays beside
+            every tab (user decision, 2026-11-01). */}
+        <RecordLayout identity={
+          <ProjectIdentityCard row={row} canSeeFinancials={canSeeFinancials} onEdit={() => setEditStep(STEP_BASIC)}
+            onDuplicate={handleDuplicate} onDelete={() => setDeleting(true)} />
+        }>
+          <SectionTabs tabs={TABS} active={tab} onChange={setTab} ariaLabel="Project sections" counts={tabCounts} />
+          {tab === 'Overview' ? (
+            <div className="grid gap-lg">
+              <Card title="Dates">
+                <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+                  <Field label="Project opened date">{formatDate(row.openedDate)}</Field>
+                  <Field label="Due date">{formatDate(row.dueDate)}</Field>
+                  <Field label="Company Number">{row.companyNumber}</Field>
+                  <Field label="Aircraft Input Date">{formatDate(row.aircraftInputDate)}</Field>
+                  <Field label="Closed Date">{formatDate(row.closedDate)}</Field>
                 </div>
-              </div>
-            </div>
-          </aside>
-              <div className="grid gap-lg">
-                <Card title="Dates">
-                  <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
-                    <Field label="Project opened date">{formatDate(row.openedDate)}</Field>
-                    <Field label="Due date">{formatDate(row.dueDate)}</Field>
-                    <Field label="Company Number">{row.companyNumber}</Field>
-                    <Field label="Aircraft Input Date">{formatDate(row.aircraftInputDate)}</Field>
-                    <Field label="Closed Date">{formatDate(row.closedDate)}</Field>
-                  </div>
-                </Card>
+              </Card>
 
-                <Card title="Scope">
-                  <div className="flex flex-wrap gap-sm">
-                    {SCOPES.map((s) => {
-                      const on = row.scope.includes(s.key)
-                      return (
-                        <span
-                          key={s.key}
-                          className={`inline-flex items-center gap-xs rounded-sm px-sm py-xxss text-xs font-medium
-                            ${on ? 'bg-success-subtle text-success' : 'bg-neutral-100 text-text-muted'}`}
-                        >
-                          {on ? <Check size={13} aria-hidden /> : <Minus size={13} aria-hidden />}
-                          {s.label}
-                        </span>
-                      )
-                    })}
-                  </div>
-                </Card>
+              <Card title="Scope">
+                <div className="flex flex-wrap gap-sm">
+                  {SCOPES.map((s) => {
+                    const on = row.scope.includes(s.key)
+                    return (
+                      <span
+                        key={s.key}
+                        className={`inline-flex items-center gap-xs rounded-sm px-sm py-xxss text-xs font-medium
+                          ${on ? 'bg-success-subtle text-success' : 'bg-neutral-100 text-text-muted'}`}
+                      >
+                        {on ? <Check size={13} aria-hidden /> : <Minus size={13} aria-hidden />}
+                        {s.label}
+                      </span>
+                    )
+                  })}
+                </div>
+              </Card>
 
-                {/* Only Proposal, Notes and Aircraft pass `onEdit` — those three
-                    sections own a focused edit drawer. Dates and Scope are
-                    edited from the project-level actions menu instead, so
-                    they render without an affordance. */}
-                <Card title="Proposal" onEdit={() => setActiveDrawer('proposal')}>
-                  <div className="grid grid-cols-2 gap-lg">
-                    <Field label="Proposal Submitted">{row.proposalSubmitted === 'yes' ? 'Yes' : 'No'}</Field>
-                    <Field label="Submitted Date">{formatDate(row.proposalSubmittedDate)}</Field>
-                    <Field label="Proposal Accepted">{row.proposalAccepted === 'yes' ? 'Yes' : 'No'}</Field>
-                    <Field label="Accepted Date">{formatDate(row.proposalAcceptedDate)}</Field>
-                  </div>
-                </Card>
+              {/* Only Proposal, Notes and Aircraft pass `onEdit` — those three
+                  sections own a focused edit drawer. Dates and Scope are
+                  edited from the project-level actions menu instead, so
+                  they render without an affordance. */}
+              <Card title="Proposal" onEdit={() => setActiveDrawer('proposal')}>
+                <div className="grid grid-cols-2 gap-lg">
+                  <Field label="Proposal Submitted">{row.proposalSubmitted === 'yes' ? 'Yes' : 'No'}</Field>
+                  <Field label="Submitted Date">{formatDate(row.proposalSubmittedDate)}</Field>
+                  <Field label="Proposal Accepted">{row.proposalAccepted === 'yes' ? 'Yes' : 'No'}</Field>
+                  <Field label="Accepted Date">{formatDate(row.proposalAcceptedDate)}</Field>
+                </div>
+              </Card>
 
-                <Card title="Notes" onEdit={() => setActiveDrawer('notes')}>
+              <Card title="Notes" onEdit={() => setActiveDrawer('notes')}>
+                <div className="grid gap-lg">
+                  <Field label="Next Action">{row.nextAction || '—'}</Field>
+                  <Field label="Comments">{row.comments || '—'}</Field>
+                </div>
+              </Card>
+
+              <Card title="Aircraft" onEdit={() => setActiveDrawer('aircraft')}>
+                {row.aircraft.length === 0 ? (
+                  <p className="text-sm text-text-muted">No aircraft added yet.</p>
+                ) : (
                   <div className="grid gap-lg">
-                    <Field label="Next Action">{row.nextAction || '—'}</Field>
-                    <Field label="Comments">{row.comments || '—'}</Field>
-                  </div>
-                </Card>
-
-                <Card title="Aircraft" onEdit={() => setActiveDrawer('aircraft')}>
-                  {row.aircraft.length === 0 ? (
-                    <p className="text-sm text-text-muted">No aircraft added yet.</p>
-                  ) : (
-                    <div className="grid gap-lg">
-                      {row.aircraft.map((a, i) => (
-                        <div key={a.id} className={i > 0 ? 'border-t border-border-default pt-lg' : ''}>
-                          <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
-                            <Field label="Model Name">{a.modelName || '—'}</Field>
-                            <Field label="Model Number" nowrap>{a.modelNumber || '—'}</Field>
-                            <Field label="Manufacture">{a.manufacturer || '—'}</Field>
-                            {/* Blank until the specific airframe is assigned —
-                                the project often starts with only a type. */}
-                            <Field label="Serial No" nowrap>{a.serial || 'Not assigned yet'}</Field>
-                          </div>
+                    {row.aircraft.map((a, i) => (
+                      <div key={a.id} className={i > 0 ? 'border-t border-border-default pt-lg' : ''}>
+                        <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+                          <Field label="Model Name">{a.modelName || '—'}</Field>
+                          <Field label="Model Number" nowrap>{a.modelNumber || '—'}</Field>
+                          <Field label="Manufacture">{a.manufacturer || '—'}</Field>
+                          {/* Blank until the specific airframe is assigned —
+                              the project often starts with only a type. */}
+                          <Field label="Serial No" nowrap>{a.serial || 'Not assigned yet'}</Field>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </Card>
-
-                <Card title="Reports">
-                  <div className="grid gap-lg tablet:grid-cols-2">
-                    <ReportCard
-                      title="Project Completion Checklist"
-                      onDownload={generatePcc}
-                      pending={linkedTcca.length === 0}
-                      subtitle={linkedTcca.length === 0 ? 'Needs a linked TCCA project' : undefined}
-                    />
-                    {PENDING_REPORTS.map((name) => (
-                      <ReportCard key={name} title={name} pending />
+                      </div>
                     ))}
                   </div>
-                </Card>
-              </div>
-              </div>
-            ) : tab === 'Work Packages' ? (
-              <ProjectWorkPackagesTab projectId={row.id} />
-            ) : tab === 'Team' ? (
-              <ProjectTeamTab projectId={row.id} />
-            ) : tab === 'Deliverables' ? (
-              <ProjectDocumentsTab kind="deliverable" projectId={row.id} />
-            ) : tab === 'Design Data' ? (
-              <ProjectDocumentsTab kind="drawing" projectId={row.id} />
-            ) : tab === 'Approvals' ? (
-              <ProjectApprovalsTab projectId={row.id} />
-            ) : (
-              <ProjectTccaTab projectId={row.id} />
-            )}
+                )}
+              </Card>
+
+              <Card title="Reports">
+                <div className="grid gap-lg tablet:grid-cols-2">
+                  <ReportCard
+                    title="Project Completion Checklist"
+                    onDownload={generatePcc}
+                    pending={linkedTcca.length === 0}
+                    subtitle={linkedTcca.length === 0 ? 'Needs a linked TCCA project' : undefined}
+                  />
+                  {PENDING_REPORTS.map((name) => (
+                    <ReportCard key={name} title={name} pending />
+                  ))}
+                </div>
+              </Card>
+            </div>
+          ) : tab === 'Work Packages' ? (
+            <ProjectWorkPackagesTab projectId={row.id} />
+          ) : tab === 'Team' ? (
+            <ProjectTeamTab projectId={row.id} />
+          ) : tab === 'Deliverables' ? (
+            <ProjectDocumentsTab kind="deliverable" projectId={row.id} />
+          ) : tab === 'Design Data' ? (
+            <ProjectDocumentsTab kind="drawing" projectId={row.id} />
+          ) : tab === 'Approvals' ? (
+            <ProjectApprovalsTab projectId={row.id} />
+          ) : (
+            <ProjectTccaTab projectId={row.id} />
+          )}
+        </RecordLayout>
       </div>
 
       {editStep !== null && (

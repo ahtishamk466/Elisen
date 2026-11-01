@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
 import { SortableTh } from '@/components/patterns/SortableTh'
+import { StackedCell } from '@/components/patterns/StackedCell'
 import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -241,14 +242,18 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
                             className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle"
                           >
                             <td className="px-sm py-base align-middle">
-                              <Link
-                                to={`/approvals/${a.id}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="block truncate text-sm font-semibold text-text-primary underline-offset-2 hover:text-accent hover:underline"
-                              >
-                                {a.number}
-                              </Link>
-                              {!a.active && <span className="block text-xs text-text-muted">Inactive</span>}
+                              <StackedCell
+                                identifier={
+                                  <Link
+                                    to={`/approvals/${a.id}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="underline-offset-2 hover:text-accent hover:underline"
+                                  >
+                                    {a.number}
+                                  </Link>
+                                }
+                                detail={a.active ? undefined : 'Inactive'}
+                              />
                             </td>
                             <td className="px-sm py-base align-middle text-sm text-text-primary">
                               <Truncate lines={2}>{a.description}</Truncate>

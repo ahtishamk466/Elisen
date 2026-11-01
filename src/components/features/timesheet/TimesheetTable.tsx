@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionsMenu, type ActionsMenuItem } from '@/components/patterns/ActionsMenu'
 import { SortMenu } from '@/components/patterns/SortMenu'
 import { SortableTh } from '@/components/patterns/SortableTh'
+import { StackedCell } from '@/components/patterns/StackedCell'
 import { useTableSort } from '@/components/patterns/useTableSort'
 import type { EnrichedTimesheetRow } from '@/lib/timesheetLookup'
 import { DateText } from '@/components/patterns/DateText'
@@ -53,17 +54,20 @@ const BASE_COLUMNS: Column[] = [
     width: 120 + GUTTER,
     sorts: [{ key: 'activity', label: 'Activity' }, { key: 'task', label: 'Task' }],
   },
-  { label: 'Deliverable', width: 102 + GUTTER, sort: 'deliverable' },
-  { label: 'Date', width: 100 + GUTTER, sort: 'date' },
-  { label: 'Hrs RG', width: 73 + GUTTER, sort: 'hoursRegular' },
-  { label: 'Hrs OT', width: 73 + GUTTER, sort: 'hoursOvertime' },
-  { label: 'Bk Hrs', width: 71 + GUTTER, sort: 'bankHours' },
+  /* The narrow columns below were retuned for the 90% UI scale (2026-11-01)
+     against measured header and content widths, so the table fits a 1440
+     screen; each keeps its widest header or value plus padding. */
+  { label: 'Deliverable', width: 86 + GUTTER, sort: 'deliverable' },
+  { label: 'Date', width: 88 + GUTTER, sort: 'date' },
+  { label: 'Hrs RG', width: 58 + GUTTER, sort: 'hoursRegular' },
+  { label: 'Hrs OT', width: 58 + GUTTER, sort: 'hoursOvertime' },
+  { label: 'Bk Hrs', width: 56 + GUTTER, sort: 'bankHours' },
   { label: 'Comment', width: 104 + GUTTER, sort: 'comment' },
   /* "Valid." rather than "Validated": the heading, not the Yes/No under it,
      was setting this column's width. */
-  { label: 'Valid.', width: 64 + GUTTER, sort: 'validated' },
-  { label: 'Active', width: 76 + GUTTER, sort: 'active' },
-  { label: 'Actions', width: 67 + GUTTER },
+  { label: 'Valid.', width: 50 + GUTTER, sort: 'validated' },
+  { label: 'Active', width: 64 + GUTTER, sort: 'active' },
+  { label: 'Actions', width: 62 + GUTTER },
 ]
 /* Same columns, Comment dropped — its 7% redistributed to the columns that
    most benefit (Project, Activity/Task carry the longest text). Used where
@@ -200,17 +204,12 @@ export function TimesheetTable({
                 >
                   {showEmployee && <td className="px-lg py-lg align-middle"><PersonCell name={row.employeeName} /></td>}
                   <td className="px-lg py-lg align-middle">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onView?.(row) }}
-                      className="block w-full min-w-0 text-left underline-offset-2 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
-                    >
-                      <span className="flex min-w-0 items-center gap-xs">
-                        <span className="truncate text-sm font-semibold text-text-primary">{row.projectLabel}</span>
-                        {row.isCopy && <Badge tone="info">Copy</Badge>}
-                      </span>
-                      <span className="block truncate text-xs text-text-secondary">{row.projectDescription}</span>
-                    </button>
+                    <StackedCell
+                      identifier={row.projectLabel}
+                      detail={row.projectDescription}
+                      trailing={row.isCopy ? <Badge tone="info">Copy</Badge> : undefined}
+                      onClick={() => onView?.(row)}
+                    />
                   </td>
                   <td className="px-lg py-lg align-middle text-sm text-text-primary">
                     <span className="block truncate">{row.workPackageTitle}</span>

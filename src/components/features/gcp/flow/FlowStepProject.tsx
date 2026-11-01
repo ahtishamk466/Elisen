@@ -1,4 +1,3 @@
-import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useMemo, useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Copy, Eye, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
@@ -6,6 +5,7 @@ import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
+import { StackedCell } from '@/components/patterns/StackedCell'
 import { StatCard } from '@/components/patterns/StatCard'
 import { useTableSort } from '@/components/patterns/useTableSort'
 import { useSyncedScroll } from '@/components/patterns/useSyncedScroll'
@@ -23,6 +23,7 @@ import { useToastStore } from '@/stores/toastStore'
 import { TccaProjectDrawer } from '@/components/features/tcca/TccaProjectDrawer'
 import { CodeWithSubname } from '../CodeWithSubname'
 import type { TccaProject } from '@/types/tcca'
+import { AmendmentText } from '../AmendmentText'
 
 type SortKey = 'number' | 'elisenProject' | 'regulation' | 'amdt' | 'regTitle' | 'discipline'
   | 'moc' | 'foc' | 'deliverable' | 'applicable' | 'affected' | 'opened' | 'status'
@@ -280,15 +281,11 @@ export function FlowStepProject({ projectId, onPick, state = 'ready', query, onQ
                           className={`group cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50 ${isCurrent ? 'bg-accent-subtle hover:bg-accent-subtle' : ''}`}
                         >
                           <td className="px-lg py-base" style={{ maxWidth: 240 }}>
-                            <div className="flex items-center gap-xs">
-                              <p className="truncate text-sm text-text-primary">{t.number}</p>
-                              {t.isCopy && <Badge tone="info">Copy</Badge>}
-                            </div>
-                            <p className="text-xs text-text-muted"><Truncate lines={1}>{t.description}</Truncate></p>
+                            <StackedCell identifier={t.number} detail={t.description} trailing={t.isCopy ? <Badge tone="info">Copy</Badge> : undefined} />
                           </td>
                           <td className="truncate px-lg py-base text-sm text-text-primary" title={elisenProjectLabel(t.projectIds)}>{elisenProjectLabel(t.projectIds)}</td>
                           <td className="truncate px-lg py-base text-sm text-text-primary" title={moreRules ? `${primaryRule?.section} · ${moreRules}` : primaryRule?.section}>{primaryRule?.section ?? '—'}</td>
-                          <td className="truncate px-lg py-base text-sm text-text-primary" title={moreRules ? `${primaryRule?.amdt} · ${moreRules}` : primaryRule?.amdt}>{primaryRule ? amendmentLabel(primaryRule.amdt) : '—'}</td>
+                          <td className="truncate px-lg py-base text-sm text-text-primary" title={moreRules ? `${primaryRule?.amdt} · ${moreRules}` : primaryRule?.amdt}>{primaryRule ? <AmendmentText amdt={primaryRule.amdt} /> : '—'}</td>
                           <td className="px-lg py-base text-sm text-text-primary" title={moreRules}>
                             {primaryRule ? <Truncate lines={1}>{primaryRule.title}</Truncate> : '—'}
                           </td>

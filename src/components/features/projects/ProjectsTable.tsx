@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ProgressMeter } from '@/components/patterns/ProgressMeter'
 import { PersonCell } from '@/components/patterns/PersonCell'
-import { Truncate } from '@/components/patterns/Truncate'
+import { StackedCell } from '@/components/patterns/StackedCell'
 import { SortMenu } from '@/components/patterns/SortMenu'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useElementWidth } from '@/components/patterns/useElementWidth'
@@ -272,7 +272,7 @@ export function ProjectsTable({
                   sort={sort}
                   onSortChange={onSortChange}
                   align={c.align}
-                  className={`whitespace-nowrap px-base py-base align-middle text-xs font-semibold text-text-secondary ${c.align === 'right' ? 'text-right' : ''}`}
+                  className={`whitespace-nowrap px-base py-base align-middle text-sm font-semibold text-text-secondary ${c.align === 'right' ? 'text-right' : ''}`}
                 >
                   {c.sorts && onSortChange
                     ? <SortMenu label={label} options={c.sorts} sort={sort} onChange={onSortChange} align={c.align} />
@@ -303,24 +303,18 @@ export function ProjectsTable({
                     {/* Number leads — it is how a project is asked for — with
                         the title under it as the line that confirms the row. */}
                     <td className="px-base py-base align-middle">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); onView?.(row) }}
-                        className="block w-full text-left underline-offset-2 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
-                      >
-                        <span className="flex items-center gap-xs">
-                          <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-text-primary">
-                            {row.number}-{row.subNumber}
-                          </span>
-                          {row.isCopy && <Badge tone="info">Copy</Badge>}
-                        </span>
-                        <span className="block text-xs text-text-secondary"><Truncate lines={1}>{row.title}</Truncate></span>
-                      </button>
+                      <StackedCell
+                        identifier={`${row.number}-${row.subNumber}`}
+                        detail={row.title}
+                        tabularNums
+                        trailing={row.isCopy ? <Badge tone="info">Copy</Badge> : undefined}
+                        onClick={() => onView?.(row)}
+                      />
                     </td>
                     {/* Priority reads as one phrase ("5 - Lowest"), with the
                         project's type under it. */}
                     <td className="px-base py-base align-middle">
-                      <span className="block truncate text-sm font-semibold text-text-primary">{PRIORITY_LABEL[row.priority]}</span>
+                      <span className="block truncate text-sm text-text-primary">{PRIORITY_LABEL[row.priority]}</span>
                       <span className="block truncate text-xs text-text-muted">{TYPE_LABEL[row.type]}</span>
                     </td>
                     {/* Both client-side: who we work for, and who we call. */}

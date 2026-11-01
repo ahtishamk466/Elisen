@@ -188,7 +188,7 @@ export function ProjectWorkPackagesTab({ projectId }: { projectId: string }) {
 }
 
 /** One label/value pair in the structure strip — the global `Stat` pair
-    (12px muted label / 14px semibold value) in this strip's own divider
+    (13px muted label / 14px semibold value) in this strip's own divider
     bay. The old local version was `text-lg font-bold`, one of five drifted
     hand-rolls of the same pair across the app. */
 function Stat({ label, value }: { label: string; value: number }) {

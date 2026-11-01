@@ -183,7 +183,7 @@ function PreviewTable({ result }: { result: ReportResult }) {
             <tr className="border-b border-border-default bg-neutral-50">
               {result.columns.map((c, i) => (
                 <SortableTh key={c} sortKey={String(i)} sort={sort} onSortChange={setSort}
-                  className="whitespace-nowrap bg-neutral-50 px-lg py-base text-xs font-semibold text-text-secondary">
+                  className="whitespace-nowrap bg-neutral-50 px-lg py-base text-sm font-semibold text-text-secondary">
                   {c}
                 </SortableTh>
               ))}

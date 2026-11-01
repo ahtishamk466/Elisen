@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--", "--port", "5180", "--strictPort"],
       "port": 5180
+    },
+    {
+      "name": "dev-mac",
+      "runtimeExecutable": "/Users/rashda/Library/Application Support/Codex/artifact-sessions/runtime-generations/generation-JRrIz4/runtime/bin/node",
+      "runtimeArgs": ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", "5180", "--strictPort"],
+      "port": 5180
     }
   ]
 }

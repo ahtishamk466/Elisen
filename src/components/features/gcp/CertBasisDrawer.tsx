@@ -100,14 +100,14 @@ export function CertBasisDrawer({ mode, initial, onClose, onSubmit }: CertBasisD
               leadingIcon={<ArrowLeft size={18} aria-hidden />} onClick={cancel} />
             <h1 className="text-2xl font-bold text-text-primary">Create Certification Basis</h1>
           </div>
-          <p className="mt-xxss text-sm text-text-secondary">Step {step + 1} of 2 · {step === 0 ? 'Basis details and source' : 'Regulations and review'}</p>
         </div>
       )}
       title={isEdit ? `Edit ${initial!.aircraftModel}` : 'Create Certification Basis'}
-      description={`Step ${step + 1} of 2 · ${step === 0 ? 'Basis details and source' : 'Regulations and review'}`}>
+      description={isEdit ? 'Changes apply to every project using this basis; initialized compliance plans stay as they are.' : undefined}>
       <div className="flex min-h-0 flex-1 flex-col gap-lg">
-      {isEdit && <p className="text-sm text-text-secondary">Changes update this shared Master for every project using it. Existing initialized compliance plans remain unchanged.</p>}
-      <Stepper steps={['Basis details and source', 'Regulations and review']} current={step} />
+      {/* The stepper names the step, so the header no longer repeats it, and its
+          two steps sit together rather than at opposite edges of a wide screen. */}
+      <div style={{ maxWidth: 720 }}><Stepper steps={['Basis details and source', 'Regulations and review']} current={step} /></div>
       <div aria-label="Basis form content" className="min-h-0 flex-1 overflow-y-auto">
       <div className="grid gap-2xl pb-lg">
       {step === 0 && <>

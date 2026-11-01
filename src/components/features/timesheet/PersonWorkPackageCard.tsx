@@ -166,7 +166,7 @@ export function PersonWorkPackageCard({ pkg, personName, defaultOpen }: {
                 {ACTIVITY_COLUMNS.map((c) => (
                   <SortableTh key={c.label} sortKey={c.sort} ownsKeys={c.sorts?.map((o) => o.key)}
                     sort={sort} onSortChange={setSort}
-                    className="overflow-hidden truncate px-sm py-base text-xs font-semibold text-text-secondary">
+                    className="overflow-hidden truncate px-sm py-base text-sm font-semibold text-text-secondary">
                     {c.sorts
                       ? <SortMenu label={c.label} options={c.sorts} sort={sort} onChange={setSort} />
                       : c.label}

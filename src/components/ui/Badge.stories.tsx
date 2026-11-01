@@ -10,10 +10,10 @@ import { Badge, type BadgeTone } from './Badge'
  * - **4px corner radius** (`radius-xs`) on every tag, every tone, every
  *   size — not the 8px other rectangular surfaces use. See docs/DESIGN.md
  *   → "Tags".
- * - `sm` (default) — 12px, medium: the table/row badge.
- * - `md` — 12px, semibold, roomier padding: the card-heading status tag.
+ * - `sm` (default) — 13px, medium: the table/row badge.
+ * - `md` — 13px, semibold, roomier padding: the card-heading status tag.
  *
- * Both sizes are 12px on purpose: a tag beside another tag must never be a
+ * Both sizes are 13px on purpose: a tag beside another tag must never be a
  * different text size, and `md` differs only in weight and padding.
  */
 const meta: Meta<typeof Badge> = {
@@ -51,8 +51,8 @@ export const AllVariants: Story = {
           Active
         </Badge>
       </div>
-      {/* Both sizes, side by side: `sm` (20px, the default every table uses)
-          against `md` (24px, 12px semibold, the card-heading status tag). */}
+      {/* Both sizes, side by side: `sm` (22px, the default every table uses)
+          against `md` (26px, 13px semibold, the card-heading status tag). */}
       <div className="flex flex-wrap items-center gap-sm">
         {TONES.map((tone) => (
           <Badge key={tone} tone={tone} size="md">

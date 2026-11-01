@@ -89,11 +89,15 @@ or Tailwind's default palette (CLAUDE.md rule 4).
 ### Typography
 
 Family: `"Rethink Sans", Inter, system-ui, sans-serif`
+Rethink Sans is self-hosted (2026-11-01) from `/public/fonts/rethink-sans`: variable
+woff2, weights 400–700, latin and latin-ext subsets, SIL OFL (licence in `OFL.txt`).
+The `@font-face` rules live in `src/styles/fonts.css`, imported by `globals.css`;
+`index.html` preloads the latin file. No third-party font requests.
 Weights in use: 400 (Regular), 500 (Medium), 600 (SemiBold), 700 (Bold)
 
 | Level | Size | Line-height |
 |---|---|---|
-| xs | 12px | 16px |
+| xs | 13px | 18px |
 | sm | 14px | 20px |
 | base | 16px | 24px |
 | lg | 18px | 26px |
@@ -123,6 +127,14 @@ Base unit: 4px grid.
 | 5xl | 48px |
 | 6xl | 60px |
 
+`xs` rose from 12px/16px to 13px/18px on 2026-11-01: at the 0.9 UI scale 12px
+rendered at about 10.8px. It is the smallest text in the app; tags grew 2px with it.
+
+Table headings: one size for every list table, `text-sm font-semibold
+text-text-secondary`; padding stays per table. List tables that lead with an
+identifier use `patterns/StackedCell`: identifier `sm` semibold primary, the
+confirming line `xs` secondary on one line with the full text on hover.
+
 ### Stat pair (label + value)
 
 Every label/value stat in the app — detail cards, summary strips, header
@@ -131,7 +143,7 @@ hand-roll it:**
 
 | Part | Size | Weight | Colour |
 |---|---|---|---|
-| Label | 12px (`text-xs`) | Regular (400) | Neutral 500 (`text-text-muted`) |
+| Label | 13px (`text-xs`) | Regular (400) | Neutral 500 (`text-text-muted`) |
 | Value | 14px (`text-sm`) | SemiBold (600) | Neutral 950 (`text-text-primary`) |
 
 Spacing between them: **2px** (`mt-xxss`).
@@ -140,6 +152,35 @@ The component owns only the pair. Layout around it — grid placement,
 divider rules, padding between stats — belongs to the caller, so a divided
 strip and a plain card grid share one typography and differ only in their
 own wrapper.
+
+### Record page
+
+Every detail page (Project, TCCA project, Approval, Certification Basis) has the
+same shape, Figma "Opt-2 – Project Details":
+
+- The header holds a `BackLink` ("Go back to all <records>") and only
+  tab-specific controls such as a search. When the record is missing, the header
+  keeps the `<h1>` title instead.
+- The body is `RecordLayout`: a 320px `IdentityCard` beside `SectionTabs` and the
+  open tab, stacked card-first below `laptop`. The card stays beside every tab
+  (user decision, 2026-11-01).
+- The card carries the identifier as the page's only `<h1>` (`2xl` bold), one
+  subtitle line (`sm` secondary), status badges, a ⋮ `ActionsMenu` for record
+  actions (never header buttons), and key `Stat`s under one divider.
+- Tables beside the card size their columns to measured need (header with its
+  sort icon, or widest value, plus padding). Where those needs add up to more
+  than the tab's width, the table scrolls inside its own frame. It never wraps
+  dates or clips headers.
+
+Exception, Certification Basis (user decision, 2026-11-01): its identity is a
+full-width `IdentityCard` band (`layout="band"`) above the tabs, not the side
+card. A basis has only a few facts, and its main content is one wide rule table
+that needs the page's width. It has no Overview tab; the page opens on
+Regulations. Other record pages keep the side card.
+
+Known exception: `ProjectIdentityCard`'s Due date and Contract value are
+client-fixed `base` bold pairs with an icon, not `Stat`s. They stay until the
+client agrees to move them onto `Stat`.
 
 ### Shape & Depth
 
@@ -177,11 +218,13 @@ Easing: `standard: cubic-bezier(0.4, 0, 0.2, 1)` · `enter: cubic-bezier(0, 0, 0
 
 ### UI scale
 
-`--ui-scale: 0.8`. The whole app renders at 80% of every size on this page, like
-browser zoom set to 80%, so a data screen fits a 1440×900 laptop. Text,
-spacing, control heights, px column widths and icons all shrink together. User
-request, 2026-10-30. It replaced the same day's token-by-token "compact" pass,
-which shrank text and spacing but left px widths and the sidebar full-size.
+`--ui-scale: 0.9`. The whole app renders at 90% of every size on this page, like
+browser zoom set to 90%. Text, spacing, control heights, px column widths and
+icons all scale together. User request, 2026-10-30 at 80% ("still very zoomed
+in" at full size), raised to 90% on 2026-11-01 ("seems very zoomed out"). The
+80% scale replaced the same day's token-by-token "compact" pass, which shrank
+text and spacing but left px widths and the sidebar full-size. At 90% a
+1440-wide screen lays out like a 1280 one did at 80%.
 
 - **Design at 100%.** Every token and spec on this page is the unscaled value.
   Never pre-shrink a size to make room; change `--ui-scale` instead.

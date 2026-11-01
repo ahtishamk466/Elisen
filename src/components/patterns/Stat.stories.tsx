@@ -10,7 +10,7 @@ type Story = StoryObj<typeof Stat>
 
 /**
  * The client-fixed spec, stated once where every variant can be checked
- * against it: label 12px / regular / Neutral 500, value 14px / semibold /
+ * against it: label 13px / regular / Neutral 500, value 14px / semibold /
  * Neutral 950, 2px between them. Every stat in the app renders through
  * this component — do not hand-roll the pair.
  */

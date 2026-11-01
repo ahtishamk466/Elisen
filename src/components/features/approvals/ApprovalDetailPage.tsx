@@ -3,11 +3,12 @@ import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft, Award, ExternalLink, FileText, Link2, Pencil, Plus, Trash2, Unlink,
+  Award, ExternalLink, FileText, Link2, Pencil, Plus, Trash2, Unlink,
 } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
+import { BackLink } from '@/components/patterns/BackLink'
+import { RecordLayout } from '@/components/patterns/RecordLayout'
 import { SectionTabs } from '@/components/patterns/SectionTabs'
-import { StatCard } from '@/components/patterns/StatCard'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useTableSort } from '@/components/patterns/useTableSort'
@@ -20,6 +21,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { ApprovalDrawer } from './ApprovalDrawer'
+import { ApprovalIdentityCard } from './ApprovalIdentityCard'
 import { ApprovalRevisionDrawer } from './ApprovalRevisionDrawer'
 import { useApprovalsStore } from '@/stores/approvalsStore'
 import { useProjectsStore } from '@/stores/projectsStore'
@@ -132,296 +134,240 @@ export function ApprovalDetailPage() {
 
   return (
     <AppShell
-      title={`${approval.number}: ${approval.description}`}
+      title={approval.number}
       activeItem="Approvals"
       activeChild="Approvals List"
-      headerActions={
-        <>
-          <Button variant="secondary" leadingIcon={<Pencil size={16} />} onClick={() => setEditing(true)}>
-            Edit approval
-          </Button>
-          <Button leadingIcon={<Plus size={16} />} onClick={() => setRevDrawer({})}>
-            Add Revision
-          </Button>
-          <ActionsMenu
-            ariaLabel={`More actions for ${approval.number}`}
-            items={[
-              { label: 'Delete approval', icon: <Trash2 size={16} />, onSelect: () => setDeletingApproval(true), tone: 'danger' },
-            ]}
-          />
-        </>
-      }
+      headerLeft={<BackLink to="/approvals" label="Go back to all approvals" />}
     >
-      <div className="grid gap-lg">
+      <RecordLayout identity={
+        <ApprovalIdentityCard approval={approval} latestRevision={latestRevision}
+          onEdit={() => setEditing(true)} onAddRevision={() => setRevDrawer({})} onDelete={() => setDeletingApproval(true)} />
+      }>
+        {/* Each collection's count on its tab, so coverage reads before anything is clicked. */}
+        <SectionTabs tabs={TABS} active={tab} onChange={setTab} ariaLabel="Approval sections" counts={{
+          Revisions: revisions.length, Aircraft: linkedAircraft.length,
+          'Serial Numbers': linkedSerials.length, Projects: linkedProjects.length,
+        }} />
 
-        <button
-          type="button"
-          onClick={() => navigate('/approvals')}
-          className="inline-flex items-center gap-sm self-start rounded-sm text-sm text-text-secondary transition-colors duration-fast hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary"
-        >
-          <ArrowLeft size={16} aria-hidden /> Back to all approvals
-        </button>
-
-        {/* Four counts, same compact tiles as the Project List header. */}
-        <div className="grid gap-lg mobile:grid-cols-2 laptop:grid-cols-4">
-          <StatCard value={revisions.length} label="Revisions" />
-          <StatCard value={linkedAircraft.length} label="Aircraft covered" />
-          <StatCard value={linkedSerials.length} label="Serial numbers" />
-          <StatCard value={linkedProjects.length} label="Projects linked" />
-        </div>
-
-        <div className="grid gap-lg laptop:grid-cols-[300px_1fr]">
-          <aside className="rounded-sm border border-border-default bg-neutral-25 p-lg">
-            <p className="text-xl font-bold text-text-primary">{approval.number}</p>
-            <p className="mt-xxss text-sm text-text-secondary">{approval.description}</p>
-            <div className="mt-base flex flex-wrap gap-xs">
-              <Badge tone={approval.primary ? 'info' : 'neutral'}>
-                {approval.primary ? 'Primary approval' : 'Change approval'}
-              </Badge>
-              <Badge tone={approval.active ? 'success' : 'neutral'}>
-                {approval.active ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
-
-            <div className="mt-lg border-t border-border-default pt-lg">
-              <Field label="Design Approval Holder">{approval.designApprovalHolder || '—'}</Field>
-            </div>
-            {latestRevision && (
-              <div className="mt-lg border-t border-border-default pt-lg">
-                <Field label="Latest revision" nowrap>
-                  Rev {latestRevision.revision} · {formatDate(latestRevision.revisionDate)}
-                </Field>
+        {tab === 'Overview' ? (
+          <div className="grid gap-lg">
+            <Card title="Certificate" onEdit={() => setEditing(true)}>
+              <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
+                <Field label="Number" nowrap>{approval.number}</Field>
+                <Field label="Primary Approval">{approval.primary ? 'Yes' : 'No'}</Field>
+                <Field label="Design Approval Holder">{approval.designApprovalHolder || '—'}</Field>
+                <Field label="Description">{approval.description}</Field>
+                <Field label="Status">{approval.active ? 'Active' : 'Inactive'}</Field>
+                <Field label="Comment">{approval.comment || '—'}</Field>
               </div>
-            )}
-            {approval.comment && (
-              <div className="mt-lg border-t border-border-default pt-lg">
-                <Field label="Comment">{approval.comment}</Field>
-              </div>
-            )}
-          </aside>
+            </Card>
 
-          <div className="grid content-start gap-lg">
-            <SectionTabs tabs={TABS} active={tab} onChange={setTab} ariaLabel="Approval sections" />
-
-            {tab === 'Overview' ? (
-              <div className="grid gap-lg">
-                <Card title="Certificate" onEdit={() => setEditing(true)}>
+            {/* An approval has no date of its own — its first revision is when
+                it was granted, its latest is where it stands now. */}
+            <Card title="Revision history">
+              {revisions.length === 0 ? (
+                <p className="text-sm text-text-muted">
+                  No revisions recorded yet. A certificate is granted by its first revision, raise revision 1 to record it.
+                </p>
+              ) : (
+                <>
                   <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
-                    <Field label="Number" nowrap>{approval.number}</Field>
-                    <Field label="Primary Approval">{approval.primary ? 'Yes' : 'No'}</Field>
-                    <Field label="Design Approval Holder">{approval.designApprovalHolder || '—'}</Field>
-                    <Field label="Description">{approval.description}</Field>
-                    <Field label="Status">{approval.active ? 'Active' : 'Inactive'}</Field>
-                    <Field label="Comment">{approval.comment || '—'}</Field>
+                    <Field label="First issued" nowrap>{revisions[revisions.length - 1].revisionDate}</Field>
+                    <Field label="Current revision" nowrap>Rev {latestRevision.revision}</Field>
+                    <Field label="Current revision date" nowrap>{formatDate(latestRevision.revisionDate)}</Field>
                   </div>
-                </Card>
+                  {/* Full width of the card, not another cell in the stat grid above —
+                      the change description runs longer than a revision number or a date. */}
+                  <div className="mt-lg">
+                    <Field label="Latest change">{latestRevision.changeDescription}</Field>
+                  </div>
+                </>
+              )}
+            </Card>
+          </div>
+        ) : tab === 'Revisions' ? (
+          <div className="grid gap-lg">
+            <div className="flex flex-wrap items-center justify-between gap-sm">
+              <p className="text-sm text-text-secondary">
+                {revisions.length} revision{revisions.length === 1 ? '' : 's'} — each one a change to this
+                certificate, newest first.
+              </p>
+              <Button leadingIcon={<Plus size={16} />} onClick={() => setRevDrawer({})}>Add Revision</Button>
+            </div>
 
-                {/* An approval has no date of its own — its first revision is when
-                    it was granted, its latest is where it stands now. */}
-                <Card title="Revision history">
-                  {revisions.length === 0 ? (
-                    <p className="text-sm text-text-muted">
-                      No revisions recorded yet. A certificate is granted by its first revision, raise revision 1 to record it.
-                    </p>
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-2 gap-lg tablet:grid-cols-3">
-                        <Field label="First issued" nowrap>{revisions[revisions.length - 1].revisionDate}</Field>
-                        <Field label="Current revision" nowrap>Rev {latestRevision.revision}</Field>
-                        <Field label="Current revision date" nowrap>{formatDate(latestRevision.revisionDate)}</Field>
-                      </div>
-                      {/* Full width of the card, not another cell in the stat grid above —
-                          the change description runs longer than a revision number or a date. */}
-                      <div className="mt-lg">
-                        <Field label="Latest change">{latestRevision.changeDescription}</Field>
-                      </div>
-                    </>
-                  )}
-                </Card>
+            {revisions.length === 0 ? (
+              <div className="rounded-sm border border-border-default bg-neutral-25">
+                <EmptyState
+                  icon={<FileText size={48} strokeWidth={1.5} />}
+                  title="No revisions recorded yet"
+                  description="A certificate is granted by its first revision. Add revision 1 to record when it was granted and what it covered."
+                  action={<Button leadingIcon={<Plus size={16} />} onClick={() => setRevDrawer({})}>Add Revision</Button>}
+                />
               </div>
-            ) : tab === 'Revisions' ? (
-              <div className="grid gap-lg">
-                <div className="flex flex-wrap items-center justify-between gap-sm">
-                  <p className="text-sm text-text-secondary">
-                    {revisions.length} revision{revisions.length === 1 ? '' : 's'} — each one a change to this
-                    certificate, newest first.
-                  </p>
-                  <Button leadingIcon={<Plus size={16} />} onClick={() => setRevDrawer({})}>Add Revision</Button>
-                </div>
-
-                {revisions.length === 0 ? (
-                  <div className="rounded-sm border border-border-default bg-neutral-25">
-                    <EmptyState
-                      icon={<FileText size={48} strokeWidth={1.5} />}
-                      title="No revisions recorded yet"
-                      description="A certificate is granted by its first revision. Add revision 1 to record when it was granted and what it covered."
-                      action={<Button leadingIcon={<Plus size={16} />} onClick={() => setRevDrawer({})}>Add Revision</Button>}
-                    />
-                  </div>
-                ) : (
-                  <div className="rounded-sm border border-border-default bg-neutral-25">
-                    <FrozenTable
-                      columns={proportionalWidths([100, 320, 160, 180, 90])}
-                      columnLabels={REVISION_COLUMNS.map((c) => c.label)}
-                      minWidth={820}
-                      tableClassName="w-full border-collapse text-left"
-                      caption={<>Revisions of {approval.number}</>}
-                      header={<thead>
-                        <tr className="border-b border-border-default bg-neutral-50">
-                          {REVISION_COLUMNS.map((c) => (
-                            <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
-                              className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
-                          ))}
-                        </tr>
-                      </thead>}
-                    >
-                      <tbody>
-                        {sortedRevisions.map((r) => (
-                          <tr key={r.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
-                            <td className="whitespace-nowrap px-lg py-base align-top">
-                              <Badge appearance="outline">Rev {r.revision}</Badge>
-                            </td>
-                            <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 380 }}>
-                              {r.changeDescription}
-                            </td>
-                            <td className="px-lg py-base align-top text-sm text-text-primary"><DateText value={r.revisionDate} /></td>
-                            <td className="px-lg py-base align-top text-sm text-text-primary">
-                              <FileLink url={r.documentUrl} label={r.document ? 'Open PDF' : undefined} />
-                            </td>
-                            <td className="px-lg py-base align-top">
-                              <ActionsMenu
-                                ariaLabel={`Actions for revision ${r.revision}`}
-                                items={[
-                                  ...(isOpenableUrl(r.documentUrl ?? "")
-                                    ? [{ label: 'Open PDF', icon: <ExternalLink size={16} />, onSelect: () => window.open(r.documentUrl!.trim(), '_blank', 'noopener,noreferrer') }]
-                                    : []),
-                                  { label: 'Edit revision', icon: <Pencil size={16} />, onSelect: () => setRevDrawer({ revision: r }) },
-                                  { label: 'Delete revision', icon: <Trash2 size={16} />, onSelect: () => setDeletingRev(r), tone: 'danger' },
-                                ]}
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </FrozenTable>
-                  </div>
-                )}
-              </div>
-            ) : tab === 'Aircraft' ? (
-              <AssignList
-                summary={`${linkedAircraft.length} aircraft covered by this certificate`}
-                emptyTitle="No aircraft on this approval"
-                emptyDescription="Select an aircraft below to record that this certificate covers it. Aircraft models are managed in Reference Data."
-                selectId="ap-link-aircraft"
-                selectLabel="Select an aircraft to add"
-                selectHelp="From Reference Data. A revision is what authorises extending a certificate to further aircraft."
-                placeholder="Search aircraft by model or manufacturer..."
-                emptyLabel="No aircraft in Reference Data yet."
-                options={catalog
-                  .filter((a) => a.active || approval.aircraftIds.includes(a.id))
-                  .map((a) => ({
-                    value: a.id,
-                    label: a.modelName ? `${a.modelNumber}: ${a.modelName}` : a.modelNumber,
-                    hint: a.manufacturer,
-                    disabled: approval.aircraftIds.includes(a.id),
-                    disabledReason: 'Already on this approval',
-                  }))}
-                choice={aircraftChoice}
-                onChoice={setAircraftChoice}
-                onAdd={() => {
-                  linkAircraft(approval.id, aircraftChoice)
-                  const m = catalog.find((a) => a.id === aircraftChoice)
-                  showToast(`${m?.modelNumber ?? 'Aircraft'} added to ${approval.number}.`)
-                  setAircraftChoice('')
-                }}
-                rows={linkedAircraft.map((a) => ({
-                  id: a.id,
-                  primary: a.modelNumber,
-                  secondary: [a.modelName, a.manufacturer].filter(Boolean).join(' · '),
-                  onRemove: () => {
-                    // Serials of a model the approval no longer covers would be
-                    // orphaned, so they go with it.
-                    serials.filter((sn) => sn.aircraftId === a.id).forEach((sn) => unlinkSerial(approval.id, sn.id))
-                    unlinkAircraft(approval.id, a.id)
-                    showToast(`${a.modelNumber} removed from ${approval.number}.`)
-                  },
-                  removeLabel: 'Remove from approval',
-                }))}
-              />
-            ) : tab === 'Serial Numbers' ? (
-              <AssignList
-                summary={`${linkedSerials.length} airframe${linkedSerials.length === 1 ? '' : 's'} named on this certificate`}
-                emptyTitle="No serial numbers on this approval"
-                emptyDescription={approval.aircraftIds.length === 0
-                  ? 'Add an aircraft first. Serials are listed per model.'
-                  : 'Optional. An approval often covers a type generally, with specific airframes named as they are fitted.'}
-                selectId="ap-link-serial"
-                selectLabel="Select a serial number to add"
-                selectHelp="Only serials of the aircraft this certificate covers are offered."
-                placeholder={approval.aircraftIds.length === 0 ? 'Add an aircraft first' : 'Search by serial or registration...'}
-                emptyLabel="No serials recorded for the covered aircraft."
-                options={serialOptions}
-                choice={serialChoice}
-                onChoice={setSerialChoice}
-                onAdd={() => {
-                  linkSerial(approval.id, serialChoice)
-                  const sn = serials.find((s) => s.id === serialChoice)
-                  showToast(`S/N ${sn?.serial ?? ''} added to ${approval.number}.`)
-                  setSerialChoice('')
-                }}
-                rows={linkedSerials.map((sn) => ({
-                  id: sn.id,
-                  primary: sn.registration ? `${sn.serial}: ${sn.registration}` : sn.serial,
-                  secondary: catalog.find((a) => a.id === sn.aircraftId)?.modelNumber ?? '',
-                  onRemove: () => { unlinkSerial(approval.id, sn.id); showToast(`S/N ${sn.serial} removed from ${approval.number}.`) },
-                  removeLabel: 'Remove from approval',
-                }))}
-              />
             ) : (
-              /* The gap this page closes: linking a project from the approval
-                 side. Same two store verbs the project's Approvals tab calls,
-                 so the two directions can never disagree. */
-              <AssignList
-                summary={`${linkedProjects.length} project${linkedProjects.length === 1 ? '' : 's'} linked to this certificate`}
-                emptyTitle="No projects linked to this certificate"
-                emptyDescription="Select a project below, or link this certificate from the project's own Approvals tab. Both do the same thing."
-                selectId="ap-link-project"
-                selectLabel="Select a project to link"
-                selectHelp="One certificate can serve several projects, a change project references the Supplemental Type Certificate (STC) it amends."
-                placeholder="Search projects by number, title or company..."
-                emptyLabel="No projects exist yet."
-                options={projects.map((p) => ({
-                  value: p.id,
-                  label: `${p.number}-${p.subNumber}: ${p.title}`,
-                  hint: p.companyName || undefined,
-                  disabled: approval.projectIds.includes(p.id),
-                  disabledReason: 'Already linked to this approval',
-                }))}
-                choice={projectChoice}
-                onChoice={setProjectChoice}
-                addLabel="Link to approval"
-                onAdd={() => {
-                  linkToProject(approval.id, projectChoice)
-                  const p = projects.find((x) => x.id === projectChoice)
-                  showToast(`${p ? `${p.number}-${p.subNumber}` : 'Project'} linked to ${approval.number}.`)
-                  setProjectChoice('')
-                }}
-                rows={linkedProjects.map((p) => ({
-                  id: p.id,
-                  primary: `${p.number}-${p.subNumber}`,
-                  secondary: [p.title, p.companyName].filter(Boolean).join(' · '),
-                  href: `/projects/${p.id}`,
-                  onRemove: () => {
-                    unlinkFromProject(approval.id, p.id)
-                    showToast(`${p.number}-${p.subNumber} unlinked from ${approval.number}.`)
-                  },
-                  removeLabel: 'Unlink from approval',
-                }))}
-              />
+              <div className="rounded-sm border border-border-default bg-neutral-25">
+                <FrozenTable
+                  /* Fits the 781px the tab has beside the identity card at 1280
+                     with Revision's header (sort icon included) unclipped. */
+                  columns={proportionalWidths([104, 300, 140, 150, 86])}
+                  columnLabels={REVISION_COLUMNS.map((c) => c.label)}
+                  minWidth={760}
+                  tableClassName="w-full border-collapse text-left"
+                  caption={<>Revisions of {approval.number}</>}
+                  header={<thead>
+                    <tr className="border-b border-border-default bg-neutral-50">
+                      {REVISION_COLUMNS.map((c) => (
+                        <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                          className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
+                      ))}
+                    </tr>
+                  </thead>}
+                >
+                  <tbody>
+                    {sortedRevisions.map((r) => (
+                      <tr key={r.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
+                        <td className="whitespace-nowrap px-lg py-base align-top">
+                          <Badge appearance="outline">Rev {r.revision}</Badge>
+                        </td>
+                        <td className="px-lg py-base align-top text-sm text-text-primary" style={{ maxWidth: 380 }}>
+                          {r.changeDescription}
+                        </td>
+                        <td className="px-lg py-base align-top text-sm text-text-primary"><DateText value={r.revisionDate} /></td>
+                        <td className="px-lg py-base align-top text-sm text-text-primary">
+                          <FileLink url={r.documentUrl} label={r.document ? 'Open PDF' : undefined} />
+                        </td>
+                        <td className="px-lg py-base align-top">
+                          <ActionsMenu
+                            ariaLabel={`Actions for revision ${r.revision}`}
+                            items={[
+                              ...(isOpenableUrl(r.documentUrl ?? "")
+                                ? [{ label: 'Open PDF', icon: <ExternalLink size={16} />, onSelect: () => window.open(r.documentUrl!.trim(), '_blank', 'noopener,noreferrer') }]
+                                : []),
+                              { label: 'Edit revision', icon: <Pencil size={16} />, onSelect: () => setRevDrawer({ revision: r }) },
+                              { label: 'Delete revision', icon: <Trash2 size={16} />, onSelect: () => setDeletingRev(r), tone: 'danger' },
+                            ]}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </FrozenTable>
+              </div>
             )}
           </div>
-        </div>
-      </div>
+        ) : tab === 'Aircraft' ? (
+          <AssignList
+            summary={`${linkedAircraft.length} aircraft covered by this certificate`}
+            emptyTitle="No aircraft on this approval"
+            emptyDescription="Select an aircraft below to record that this certificate covers it. Aircraft models are managed in Reference Data."
+            selectId="ap-link-aircraft"
+            selectLabel="Select an aircraft to add"
+            selectHelp="From Reference Data. A revision is what authorises extending a certificate to further aircraft."
+            placeholder="Search aircraft by model or manufacturer..."
+            emptyLabel="No aircraft in Reference Data yet."
+            options={catalog
+              .filter((a) => a.active || approval.aircraftIds.includes(a.id))
+              .map((a) => ({
+                value: a.id,
+                label: a.modelName ? `${a.modelNumber}: ${a.modelName}` : a.modelNumber,
+                hint: a.manufacturer,
+                disabled: approval.aircraftIds.includes(a.id),
+                disabledReason: 'Already on this approval',
+              }))}
+            choice={aircraftChoice}
+            onChoice={setAircraftChoice}
+            onAdd={() => {
+              linkAircraft(approval.id, aircraftChoice)
+              const m = catalog.find((a) => a.id === aircraftChoice)
+              showToast(`${m?.modelNumber ?? 'Aircraft'} added to ${approval.number}.`)
+              setAircraftChoice('')
+            }}
+            rows={linkedAircraft.map((a) => ({
+              id: a.id,
+              primary: a.modelNumber,
+              secondary: [a.modelName, a.manufacturer].filter(Boolean).join(' · '),
+              onRemove: () => {
+                // Serials of a model the approval no longer covers would be
+                // orphaned, so they go with it.
+                serials.filter((sn) => sn.aircraftId === a.id).forEach((sn) => unlinkSerial(approval.id, sn.id))
+                unlinkAircraft(approval.id, a.id)
+                showToast(`${a.modelNumber} removed from ${approval.number}.`)
+              },
+              removeLabel: 'Remove from approval',
+            }))}
+          />
+        ) : tab === 'Serial Numbers' ? (
+          <AssignList
+            summary={`${linkedSerials.length} airframe${linkedSerials.length === 1 ? '' : 's'} named on this certificate`}
+            emptyTitle="No serial numbers on this approval"
+            emptyDescription={approval.aircraftIds.length === 0
+              ? 'Add an aircraft first. Serials are listed per model.'
+              : 'Optional. An approval often covers a type generally, with specific airframes named as they are fitted.'}
+            selectId="ap-link-serial"
+            selectLabel="Select a serial number to add"
+            selectHelp="Only serials of the aircraft this certificate covers are offered."
+            placeholder={approval.aircraftIds.length === 0 ? 'Add an aircraft first' : 'Search by serial or registration...'}
+            emptyLabel="No serials recorded for the covered aircraft."
+            options={serialOptions}
+            choice={serialChoice}
+            onChoice={setSerialChoice}
+            onAdd={() => {
+              linkSerial(approval.id, serialChoice)
+              const sn = serials.find((s) => s.id === serialChoice)
+              showToast(`S/N ${sn?.serial ?? ''} added to ${approval.number}.`)
+              setSerialChoice('')
+            }}
+            rows={linkedSerials.map((sn) => ({
+              id: sn.id,
+              primary: sn.registration ? `${sn.serial}: ${sn.registration}` : sn.serial,
+              secondary: catalog.find((a) => a.id === sn.aircraftId)?.modelNumber ?? '',
+              onRemove: () => { unlinkSerial(approval.id, sn.id); showToast(`S/N ${sn.serial} removed from ${approval.number}.`) },
+              removeLabel: 'Remove from approval',
+            }))}
+          />
+        ) : (
+          /* The gap this page closes: linking a project from the approval
+             side. Same two store verbs the project's Approvals tab calls,
+             so the two directions can never disagree. */
+          <AssignList
+            summary={`${linkedProjects.length} project${linkedProjects.length === 1 ? '' : 's'} linked to this certificate`}
+            emptyTitle="No projects linked to this certificate"
+            emptyDescription="Select a project below, or link this certificate from the project's own Approvals tab. Both do the same thing."
+            selectId="ap-link-project"
+            selectLabel="Select a project to link"
+            selectHelp="One certificate can serve several projects, a change project references the Supplemental Type Certificate (STC) it amends."
+            placeholder="Search projects by number, title or company..."
+            emptyLabel="No projects exist yet."
+            options={projects.map((p) => ({
+              value: p.id,
+              label: `${p.number}-${p.subNumber}: ${p.title}`,
+              hint: p.companyName || undefined,
+              disabled: approval.projectIds.includes(p.id),
+              disabledReason: 'Already linked to this approval',
+            }))}
+            choice={projectChoice}
+            onChoice={setProjectChoice}
+            addLabel="Link to approval"
+            onAdd={() => {
+              linkToProject(approval.id, projectChoice)
+              const p = projects.find((x) => x.id === projectChoice)
+              showToast(`${p ? `${p.number}-${p.subNumber}` : 'Project'} linked to ${approval.number}.`)
+              setProjectChoice('')
+            }}
+            rows={linkedProjects.map((p) => ({
+              id: p.id,
+              primary: `${p.number}-${p.subNumber}`,
+              secondary: [p.title, p.companyName].filter(Boolean).join(' · '),
+              href: `/projects/${p.id}`,
+              onRemove: () => {
+                unlinkFromProject(approval.id, p.id)
+                showToast(`${p.number}-${p.subNumber} unlinked from ${approval.number}.`)
+              },
+              removeLabel: 'Unlink from approval',
+            }))}
+          />
+        )}
+      </RecordLayout>
 
       {editing && (
         <ApprovalDrawer

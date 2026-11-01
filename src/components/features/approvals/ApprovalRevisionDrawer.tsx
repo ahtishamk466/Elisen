@@ -156,7 +156,7 @@ export function ApprovalRevisionDrawer({ approval, initial, onClose, onSaved }: 
                 <tr className="border-b border-border-default bg-neutral-50">
                   {REVISION_COLUMNS.map((c) => (
                     <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
-                      className="whitespace-nowrap px-base py-sm text-xs font-semibold text-text-secondary">{c.label}</SortableTh>
+                      className="whitespace-nowrap px-base py-sm text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                 </tr>
               </thead>}

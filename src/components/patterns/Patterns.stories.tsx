@@ -592,6 +592,12 @@ export const ChipOverflowExample: Story = {
           </div>
         </div>
       </div>
+      <div className="grid gap-sm">
+        <p className="text-xs font-semibold text-text-secondary">A chip wider than its cell wraps inside its own box (a long legacy amendment)</p>
+        <div className="rounded-sm border border-border-default bg-neutral-25 p-lg" style={{ width: 120 }}>
+          <ChipOverflow items={['525-3 (91-11-01)']} label="amendments" />
+        </div>
+      </div>
     </div>
   ),
 }
