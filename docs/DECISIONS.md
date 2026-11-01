@@ -8938,3 +8938,33 @@ asterisk; Amendment and FOC sat greyed out with no reason given.
 **Rationale:** Uses `FormSection`'s `requirement` badge and `FormField`'s
 default layout, so no new component. The Certification Basis walkthrough's
 transcript still says "GCP Projects", matching its recorded narration.
+
+## 2026-11-02 — GCP flow: three ways to lose data, fixed
+**Context:** Comparing the flow with the legacy TPMS turned up three places
+where saving threw away work. `saveBasis` replaces the whole record, and:
+1. Create GCP saved an existing basis with only its code, TCDS number and
+   rules, wiping description, TCDS link, TCDS statement, source document and
+   level. On a shared basis it also added the rule for every other project.
+2. Step 2 saved the project's own basis without its description or source
+   document.
+3. Step 3's Create plan rebuilt the project's entries from the current basis
+   only, deleting entries (MOC text, DDS, comments) for rules that had left
+   it and orphaning their GCP rows. Legacy never deleted plan rows this way.
+**Choice:**
+- Create GCP leaves the basis alone when the rule is already in it. Otherwise
+  it spreads the existing basis. A basis other projects share is copied for
+  this project instead, as step 2 already did: named after the project, with
+  the original's description, TCDS and level but not its source PDF, whose
+  `blob:` URL is revoked when the original is deleted.
+- Step 2 spreads the project's own basis before the builder's fields.
+- Step 3 keeps entries for rules outside the basis. `lib/projectPlan.ts`
+  defines a project's plan as its entries for rules in its current basis, and
+  step 1's counts, the summary stats, step gating and step 4 read it. A rule
+  removed from the basis drops out of the plan with its work kept, and comes
+  back with it if the rule returns.
+**Rationale:** No data model change and no new screen. The plan now always
+follows the basis, which also fixes a rule removed on the basis page staying
+in step 4. Checked in the app: an owned basis keeps all its details; a basis
+shared by four projects is untouched while the fifth gets its own copy; a
+rebuilt step 2 keeps the description and PDF; a removed rule's MOC text,
+comment and GCP row survive Create plan and return with the rule.

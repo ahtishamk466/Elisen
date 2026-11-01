@@ -54,11 +54,12 @@ export function FlowStepBasis({ project, onBack, onNext }: { project: TccaProjec
       linkBasis(project.id, draft.basisId)
     } else {
       const id = owned?.id ?? crypto.randomUUID()
+      /* The project's own basis keeps what the builder doesn't edit
+         (description, source document). */
       saveBasis({
+        ...owned,
         aircraftModel: owned?.aircraftModel ?? project.number,
         tcdsNumber: owned?.tcdsNumber ?? '',
-        tcdsUrl: owned?.tcdsUrl,
-        basisStatement: owned?.basisStatement,
         ...draft.fields,
         id,
         regulationIds: draft.regulationIds,

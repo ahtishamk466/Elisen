@@ -26,6 +26,7 @@ import { FlowStepReports } from './FlowStepReports'
 import { ReadOnlyField } from './ReadOnlyField'
 import { isOpenableUrl } from '@/components/patterns/UrlField'
 import { sourceLabel } from '@/lib/gcpDisplay'
+import { projectPlan } from '@/lib/projectPlan'
 import type { PlanEntry } from '@/types/gcp'
 import { GcpDataGate } from '../GcpDataGate'
 
@@ -69,7 +70,7 @@ export function GcpFlowPage() {
   const projectId = searchParams.get('project') ?? ''
   const project = tccaProjects.find((t) => t.id === projectId) ?? null
   const basisId = project ? projectBasis[project.id] : undefined
-  const projectEntries = planEntries.filter((e) => e.projectId === projectId)
+  const projectEntries = projectPlan(planEntries, projectId, bases.find((b) => b.id === basisId))
   const affected = projectEntries.filter((e) => e.affected)
   const complete = affected.filter((e) => e.complete)
 
@@ -130,14 +131,23 @@ export function GcpFlowPage() {
     if (!targetProject || !regulation) return
 
     const existingBasis = bases.find((b) => b.id === projectBasis[targetProject.id])
-    const basisId = existingBasis?.id ?? crypto.randomUUID()
-    saveBasis({
-      id: basisId,
-      aircraftModel: existingBasis?.aircraftModel ?? targetProject.number,
-      tcdsNumber: existingBasis?.tcdsNumber ?? '',
-      regulationIds: existingBasis ? [...new Set([...existingBasis.regulationIds, regulation.id])] : [regulation.id],
-    })
-    linkBasis(targetProject.id, basisId)
+    if (!existingBasis?.regulationIds.includes(regulation.id)) {
+      /* Adding the rule changes the basis: keep the rest of it, and copy a
+         basis other projects share instead of changing it under them, as step
+         2 does. The copy takes this project's number and leaves the source PDF
+         with the original, which revokes its URL when deleted. */
+      const shared = !!existingBasis && Object.entries(projectBasis).some(([pid, bid]) => bid === existingBasis.id && pid !== targetProject.id)
+      const basisId = existingBasis && !shared ? existingBasis.id : crypto.randomUUID()
+      saveBasis({
+        ...existingBasis,
+        id: basisId,
+        aircraftModel: existingBasis && !shared ? existingBasis.aircraftModel : targetProject.number,
+        tcdsNumber: existingBasis?.tcdsNumber ?? '',
+        sourceDocument: shared ? undefined : existingBasis?.sourceDocument,
+        regulationIds: [...(existingBasis?.regulationIds ?? []), regulation.id],
+      })
+      linkBasis(targetProject.id, basisId)
+    }
 
     const otherEntries = planEntries.filter((e) => e.projectId === targetProject.id && e.regulationId !== regulation.id)
     const existingEntry = planEntries.find((e) => e.projectId === targetProject.id && e.regulationId === regulation.id)

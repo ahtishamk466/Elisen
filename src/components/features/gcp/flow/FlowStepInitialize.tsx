@@ -120,7 +120,11 @@ export function FlowStepInitialize({ project, onBack, onNext }: { project: TccaP
             complete: false,
           }
     })
-    initializePlan(project.id, entries)
+    /* Entries for rules no longer in the basis keep their work: out of the
+       plan, not deleted (lib/projectPlan.ts). */
+    const ruleIds = new Set(rules.map((r) => r.id))
+    const kept = planEntries.filter((e) => e.projectId === project.id && !ruleIds.has(e.regulationId))
+    initializePlan(project.id, [...entries, ...kept])
     onNext()
   }
 

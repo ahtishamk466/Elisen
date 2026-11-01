@@ -23,6 +23,7 @@ import { useToastStore } from '@/stores/toastStore'
 import { TccaProjectDrawer } from '@/components/features/tcca/TccaProjectDrawer'
 import { CodeWithSubname } from '../CodeWithSubname'
 import type { TccaProject } from '@/types/tcca'
+import { projectPlan } from '@/lib/projectPlan'
 import { AmendmentText } from '../AmendmentText'
 
 type SortKey = 'number' | 'elisenProject' | 'regulation' | 'amdt' | 'regTitle' | 'discipline'
@@ -91,6 +92,8 @@ export function FlowStepProject({ projectId, onPick, state = 'ready', query, onQ
   const disciplines = useGcpStore((s) => s.disciplines)
   const mocs = useGcpStore((s) => s.mocs)
   const focs = useGcpStore((s) => s.focs)
+  const bases = useGcpFlowStore((s) => s.bases)
+  const projectBasis = useGcpFlowStore((s) => s.projectBasis)
   const planEntries = useGcpFlowStore((s) => s.planEntries)
   const items = useGcpFlowStore((s) => s.items)
 
@@ -120,14 +123,14 @@ export function FlowStepProject({ projectId, onPick, state = 'ready', query, onQ
      rather than exploding this table into one row per rule (client
      instruction, 2026-09-24 — confirmed keeping one row per project). */
   const rows = useMemo(() => tccaProjects.map((t) => {
-    const entries = planEntries.filter((e) => e.projectId === t.id)
+    const entries = projectPlan(planEntries, t.id, bases.find((b) => b.id === projectBasis[t.id]))
     const affected = entries.filter((e) => e.affected)
     const complete = affected.filter((e) => e.complete)
     const primaryRule = entries.length > 0 ? regulations.find((r) => r.id === entries[0].regulationId) : undefined
     const entryIds = new Set(entries.map((e) => e.id))
     const primaryItem = items.find((i) => entryIds.has(i.planEntryId))
     return { project: t, entries, affected, complete, primaryRule, primaryItem }
-  }), [tccaProjects, planEntries, regulations, items])
+  }), [tccaProjects, bases, projectBasis, planEntries, regulations, items])
 
   const q = query.trim().toLowerCase()
   const filtered = q
