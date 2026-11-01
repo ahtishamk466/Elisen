@@ -1,7 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
 import { DetailCard } from '@/components/patterns/DetailView'
 import { Alert } from '@/components/ui/Alert'
+import { Button } from '@/components/ui/Button'
 import { WALKTHROUGH } from '@/lib/certBasisWalkthrough'
 
 /**
@@ -11,10 +14,22 @@ import { WALKTHROUGH } from '@/lib/certBasisWalkthrough'
  * (`preload="none"`, the title card as poster). The transcript carries the same words.
  */
 export function CertBasisWalkthroughPage() {
+  const navigate = useNavigate()
   const [failed, setFailed] = useState(false)
+  const description = 'A narrated tour of finding, creating, reviewing and sharing a certification basis. 2 min 40 s.'
   return (
-    <AppShell activeItem="GCP" activeChild="Certification Basis" title="Certification Basis Walkthrough"
-      description="A narrated tour of finding, creating, reviewing and sharing a certification basis. 2 min 40 s.">
+    <AppShell activeItem="GCP" activeChild="Certification Basis" title="Certification Basis Walkthrough" description={description}
+      /* The ← beside the title, as on Create Certification Basis: back to the list it opens from. */
+      headerLeft={
+        <div className="min-w-0">
+          <div className="flex items-center gap-sm">
+            <Button variant="tertiary" size="sm" aria-label="Go back to all certification bases" title="Go back"
+              leadingIcon={<ArrowLeft size={18} aria-hidden />} onClick={() => navigate('/gcp/cert-bases')} />
+            <h1 className="text-2xl font-bold text-text-primary">Certification Basis Walkthrough</h1>
+          </div>
+          <p className="mt-xxss text-sm text-text-secondary">{description}</p>
+        </div>
+      }>
       <div className="grid gap-lg" style={{ maxWidth: 1280 }}>
         {failed && (
           <Alert tone="warning" title="The video could not be loaded">
