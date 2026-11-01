@@ -39,12 +39,12 @@ export function CertBasisUsage({ basisId }: { basisId: string }) {
   const { visibleCount, loadingMore, loadMore } = useInfiniteReveal(sorted.length, 25)
 
   if (!rows.length) return <EmptyState title="No linked TCCA projects"
-    description="Choose this Master from the Certification Basis step in GCP Projects." />
+    description="Choose this Master from the Certification Basis step in Certification Projects." />
 
   return (
     <div>
       <p className="border-b border-border-default px-lg py-base text-sm text-text-muted">
-        {rows.length} TCCA projects use this shared Master. Manage associations in GCP Projects.
+        {rows.length} TCCA projects use this shared Master. Manage associations in Certification Projects.
       </p>
       <div>
         <FrozenTable footer={<AutoLoadFooter total={sorted.length} visibleCount={visibleCount} loading={loadingMore}

@@ -32,7 +32,7 @@ const CHILD_ROUTES: Record<string, string> = {
   'Aircraft': '/admin/aircraft',
   'Activities & Tasks': '/admin/activities',
   'ATA Chapters': '/admin/ata-chapters',
-  'GCP Projects': '/gcp/flow',
+  'Certification Projects': '/gcp/flow',
   'Regulatory Library': '/gcp/regulations',
   'Certification Basis': '/gcp/cert-bases',
   'Compliance Setup': '/gcp/compliance-setup',
@@ -70,7 +70,7 @@ const NAV: NavItem[] = [
   // /reports route, page and TOP_ROUTES entry are untouched, so it comes back
   // by re-adding { label: 'Reports', icon: <ListChecks size={18} /> } here.
   // People, authority coverage and planning reference codes share one setup workspace.
-  { label: 'General Certification', icon: <ShieldCheck size={18} />, children: ['GCP Projects', 'Certification Basis', 'Regulatory Library', 'Compliance Setup', 'GCP Reports'] },
+  { label: 'General Certification', icon: <ShieldCheck size={18} />, children: ['Certification Projects', 'Certification Basis', 'Regulatory Library', 'Compliance Setup', 'GCP Reports'] },
   // Three administrative sections split by *what* they hold, not by who is
   // senior enough to see them: business data staff maintain, access
   // management, and machine-side tooling. Ordered most-used first, and each

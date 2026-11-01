@@ -8917,3 +8917,24 @@ client hasn't confirmed the expansion (Harris's recording says "general
 compliance program"); if they do, "General Certification" still reads right.
 Supersedes the 2026-10-30 naming note's "GCP in menu names". The walkthrough
 videos recorded earlier on 2026-11-02 still show "GCP" in the sidebar.
+
+## 2026-11-02 — "Certification Projects", and Create GCP in two sections
+**Context:** With the menu now reading General Certification, the user asked to
+rename GCP Projects too, and said the Create GCP drawer was hard to scan. As a
+menu item, "General Certification Projects" needs 192px and the space is 180px.
+The drawer was one section titled "GCP Projects" holding seven fields, labels
+above every control, three required and four optional told apart only by an
+asterisk; Amendment and FOC sat greyed out with no reason given.
+**Choice:**
+- Menu item and page heading: **Certification Projects** (138px). The
+  Certification Basis messages that point to it use the new name. GCP Reports
+  and the Create GCP button keep "GCP".
+- Create GCP: two sections in the legacy field order. **Project and Regulation**
+  (Required badge) holds TCCA Project, Regulation Section and Regulation
+  Amendment; **GCP Data** (Optional badge) holds DAO, MOC, FOC and Deliverable
+  Number, the step-4 drawer's section name. Labels sit on the left, as in that
+  drawer and the form standard (`fullWidth` is for a field that needs room).
+  Greyed-out fields read "Select a section first" / "Select an amendment first".
+**Rationale:** Uses `FormSection`'s `requirement` badge and `FormField`'s
+default layout, so no new component. The Certification Basis walkthrough's
+transcript still says "GCP Projects", matching its recorded narration.

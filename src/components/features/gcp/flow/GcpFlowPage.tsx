@@ -190,8 +190,8 @@ export function GcpFlowPage() {
   return (
     <AppShell
       activeItem="General Certification"
-      activeChild="GCP Projects"
-      title="GCP Projects"
+      activeChild="Certification Projects"
+      title="Certification Projects"
       /* Step 1 showed two headings stacked — this page's own "Certification
          Flow" title, then `FlowStepProject`'s own "All Projects" heading
          right under it — client instruction, 2026-09-24: one heading only.
@@ -210,7 +210,7 @@ export function GcpFlowPage() {
         </button>
       ) : step === 1 ? (
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-text-primary">GCP Projects</h1>
+          <h1 className="text-2xl font-bold text-text-primary">Certification Projects</h1>
           <p className="mt-xxss text-sm text-text-secondary">Choose a TCCA project to build its General Certification Plan (GCP).</p>
         </div>
       ) : undefined}
@@ -423,8 +423,8 @@ export function GcpFlowPage() {
             </>
           }
         >
-          <FormSection title="GCP Projects" subtitle="Pick the TCCA project to start its General Certification Plan (GCP) for.">
-            <FormField label="TCCA Project" htmlFor="create-gcp-project" required fullWidth>
+          <FormSection title="Project and Regulation" requirement="required">
+            <FormField label="TCCA Project" htmlFor="create-gcp-project" required>
               <SearchableSelect
                 id="create-gcp-project"
                 value={createProjectId}
@@ -438,7 +438,7 @@ export function GcpFlowPage() {
                 instruction, 2026-09-24. Single-pick, not `FlowStepBasis`'s
                 multi-select: Create GCP sets up one named rule, not a whole
                 basis at once. */}
-            <FormField label="Regulation Section" htmlFor="create-gcp-section" required fullWidth>
+            <FormField label="Regulation Section" htmlFor="create-gcp-section" required>
               <SearchableSelect
                 id="create-gcp-section"
                 value={createSection}
@@ -447,17 +447,19 @@ export function GcpFlowPage() {
                 options={createSectionOptions.map((s) => ({ value: s, label: s }))}
               />
             </FormField>
-            <FormField label="Regulation Amendment" htmlFor="create-gcp-amdt" required fullWidth>
+            <FormField label="Regulation Amendment" htmlFor="create-gcp-amdt" required>
               <SearchableSelect
                 id="create-gcp-amdt"
                 value={createRegulationId}
                 onChange={handleCreateRegulationChange}
-                placeholder="Select regulation amendment…"
+                placeholder={createSection ? 'Select regulation amendment…' : 'Select a section first'}
                 disabled={!createSection}
                 options={createVersionOptions.map((r) => ({ value: r.id, label: amendmentLabel(r.amdt), hint: r.title }))}
               />
             </FormField>
-            <FormField label="Design Approval Organization (DAO) Specialty Code" htmlFor="create-gcp-dao" fullWidth
+          </FormSection>
+          <FormSection title="GCP Data" requirement="optional">
+            <FormField label="Design Approval Organization (DAO) Specialty Code" htmlFor="create-gcp-dao"
               help="The discipline doing the work.">
               <SearchableSelect
                 id="create-gcp-dao"
@@ -467,7 +469,7 @@ export function GcpFlowPage() {
                 options={disciplines.filter((d) => d.active).map((d) => ({ value: d.daoSpecialtyCode, label: `${d.daoSpecialtyCode} -- ${d.elisenDiscipline}` }))}
               />
             </FormField>
-            <FormField label="Means of Compliance (MOC)" htmlFor="create-gcp-moc" fullWidth
+            <FormField label="Means of Compliance (MOC)" htmlFor="create-gcp-moc"
               help="How this rule will be shown.">
               <SearchableSelect
                 id="create-gcp-moc"
@@ -477,13 +479,13 @@ export function GcpFlowPage() {
                 options={mocs.map((m) => ({ value: m.code, label: `${m.code} -- ${m.description}` }))}
               />
             </FormField>
-            <FormField label="Finding of Compliance (FOC)" htmlFor="create-gcp-foc" fullWidth
+            <FormField label="Finding of Compliance (FOC)" htmlFor="create-gcp-foc"
               help="Who signs that the design meets this rule.">
               <SearchableSelect
                 id="create-gcp-foc"
                 value={createFoc}
                 onChange={setCreateFoc}
-                placeholder="Select a finding of compliance code…"
+                placeholder={createRegulation ? 'Select a finding of compliance code…' : 'Select an amendment first'}
                 disabled={!createRegulation}
                 options={createFocOptions}
               />
@@ -491,7 +493,7 @@ export function GcpFlowPage() {
             {/* Free text, not a dropdown: unlike Section/Amdt/DAO/MOC/FOC, no
                 deliverable-number master list exists yet anywhere in the app
                 to pick from (flagged rather than guessed at a source). */}
-            <FormField label="Deliverable Number" htmlFor="create-gcp-deliverable" fullWidth>
+            <FormField label="Deliverable Number" htmlFor="create-gcp-deliverable">
               <Input id="create-gcp-deliverable" value={createDeliverable} placeholder="e.g. A4ALL-2-08-1-1623-CR"
                 onChange={(e) => setCreateDeliverable(e.target.value)} />
             </FormField>

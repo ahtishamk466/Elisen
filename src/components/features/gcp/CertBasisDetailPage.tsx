@@ -114,7 +114,7 @@ export function CertBasisDetailPage() {
                 {tab === 'regulations' && (selectedRules.length === 0 ? (
                   <div className="rounded-sm border border-border-default bg-neutral-25">
                     <EmptyState icon={<ListTree size={48} strokeWidth={1.5} />} title="No regulations yet"
-                      description="Build this basis's rules in GCP Projects' Certification Basis step, or edit it here." />
+                      description="Build this basis's rules in Certification Projects' Certification Basis step, or edit it here." />
                   </div>
                 ) : (
                   <CertBasisTable basis={selected} rules={selectedRules} pool={regulations} view={ruleView} onViewChange={openRules} query={ruleQuery} status={ruleStatus}
