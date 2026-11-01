@@ -8412,3 +8412,12 @@ explicitly requested commit, push and deploy when the work was complete. This
 releases the earlier hold on all pending frontend commits. Validate the combined
 branch, fast-forward main without overwriting unrelated work, and use the
 existing Deploy TPMS V2 workflow. No meeting transcript files are included.
+
+
+## 2026-11-01 — Put Certification Basis before Regulatory Library
+
+User accepted the sidebar order GCP Projects → Certification Basis → Regulatory
+Library → Compliance Setup → GCP Reports. Project work remains the entry point;
+the basis closely supports project planning, detailed rule maintenance follows,
+and reports remain last. Only the two middle menu positions change; routes and
+page behavior remain unchanged.
