@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { LayoutDashboard, FolderOpen, Clock, ListChecks, ShieldCheck, Database, Settings, ChevronDown, ChevronRight, KeyRound, Award, FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, Clock, ShieldCheck, Database, Settings, ChevronDown, ChevronRight, KeyRound, Award, FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { SidebarProfile } from './SidebarProfile'
 import { ToastViewport } from './ToastViewport'
 import { useUiStore } from '@/stores/uiStore'
@@ -66,7 +66,9 @@ const NAV: NavItem[] = [
   { label: 'Documents', icon: <FileText size={18} /> },
   { label: 'Approvals', icon: <Award size={18} /> },
   { label: 'Time Entry', icon: <Clock size={18} />, children: ['Hours Worked', 'Timesheet'] },
-  { label: 'Reports', icon: <ListChecks size={18} /> },
+  // 'Reports' hidden from nav at the user's request — not deleted. The
+  // /reports route, page and TOP_ROUTES entry are untouched, so it comes back
+  // by re-adding { label: 'Reports', icon: <ListChecks size={18} /> } here.
   // People, authority coverage and planning reference codes share one setup workspace.
   { label: 'GCP', icon: <ShieldCheck size={18} />, children: ['GCP Projects', 'Certification Basis', 'Regulatory Library', 'Compliance Setup', 'GCP Reports'] },
   // Three administrative sections split by *what* they hold, not by who is

@@ -8421,3 +8421,13 @@ Library → Compliance Setup → GCP Reports. Project work remains the entry poi
 the basis closely supports project planning, detailed rule maintenance follows,
 and reports remain last. Only the two middle menu positions change; routes and
 page behavior remain unchanged.
+
+## 2026-11-01 — Reports hidden from the sidebar
+
+User asked to hide the Reports menu. Same treatment as Work Packages
+(2026-08-20): only the `NAV` array in `AppShell.tsx` changed, removing the
+top-level `Reports` entry and its now-unused `ListChecks` import. The `/reports`
+route, `ReportsPage` and `TOP_ROUTES['Reports']` stay, so the page still opens
+if reached directly and comes back with a one-line change. GCP → GCP Reports is
+a separate entry and is unchanged. **Verified:** the sidebar goes Time Entry →
+GCP with no Reports row; `/reports` still renders.
