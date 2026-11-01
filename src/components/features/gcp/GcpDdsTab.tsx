@@ -1,6 +1,6 @@
 import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useState } from 'react'
-import { Eye, FileText, Pencil, Trash2 } from 'lucide-react'
+import { FileText, Pencil, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { EmptyState } from '@/components/patterns/EmptyState'
@@ -10,7 +10,6 @@ import { useTableSort } from '@/components/patterns/useTableSort'
 import { proportionalWidths } from '@/lib/tableWidths'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { DdsType } from '@/types/gcp'
-import { DdsTypeDetailDrawer } from './DdsTypeDetailDrawer'
 import { DdsTypeDrawer } from './DdsTypeDrawer'
 
 type SortKey = 'type' | 'ddsText'
@@ -33,8 +32,7 @@ const COL_WIDTHS = proportionalWidths([...COLUMNS.map((c) => c.width), ACTIONS_W
 
 /** `DOMParser` never attaches the parsed document to the page, so nothing
     it contains executes — only `textContent` is read out of it, for a
-    safe plain-text table preview of the stored rich HTML (see
-    `DdsTypeDetailDrawer`'s own copy of this for the fuller comment). */
+    safe plain-text table preview of the stored rich HTML. */
 function htmlToText(html: string): string {
   if (!html) return ''
   return new DOMParser().parseFromString(html, 'text/html').body.textContent?.trim() ?? ''
@@ -60,7 +58,6 @@ export function GcpDdsTab({ createOpen, onCreateOpenChange, query }: GcpDdsTabPr
   const updateDdsType = useGcpStore((s) => s.updateDdsType)
   const removeDdsType = useGcpStore((s) => s.removeDdsType)
 
-  const [viewing, setViewing] = useState<DdsType | null>(null)
   const [editing, setEditing] = useState<DdsType | null>(null)
   const [toDelete, setToDelete] = useState<DdsType | null>(null)
 
@@ -113,7 +110,6 @@ export function GcpDdsTab({ createOpen, onCreateOpenChange, query }: GcpDdsTabPr
                     <ActionsMenu
                       ariaLabel={`Actions for DDS type ${d.type || 'untitled'}`}
                       items={[
-                        { label: 'View', icon: <Eye size={16} />, onSelect: () => setViewing(d) },
                         { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditing(d) },
                         { label: 'Remove', icon: <Trash2 size={16} />, onSelect: () => setToDelete(d), tone: 'danger' },
                       ]}
@@ -140,14 +136,6 @@ export function GcpDdsTab({ createOpen, onCreateOpenChange, query }: GcpDdsTabPr
           initial={editing}
           onClose={() => setEditing(null)}
           onSubmit={(d) => updateDdsType(d.id, d)}
-        />
-      )}
-
-      {viewing && (
-        <DdsTypeDetailDrawer
-          ddsType={viewing}
-          onClose={() => setViewing(null)}
-          onEdit={() => { setEditing(viewing); setViewing(null) }}
         />
       )}
 

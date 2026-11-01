@@ -1,16 +1,14 @@
 import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useState, type CSSProperties } from 'react'
-import { Eye, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
+import { Pencil, ShieldCheck, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useTableSort } from '@/components/patterns/useTableSort'
 import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { Discipline } from '@/types/gcp'
-import { DisciplineDetailDrawer } from './DisciplineDetailDrawer'
 import { DisciplineDrawer } from './DisciplineDrawer'
 
 type SortKey = 'daoSpecialtyCode' | 'elisenDiscipline' | 'tccaDiscipline' | 'active'
@@ -42,7 +40,6 @@ export function GcpDisciplineTab({ createOpen, onCreateOpenChange, query }: GcpD
   const updateDiscipline = useGcpStore((s) => s.updateDiscipline)
   const removeDiscipline = useGcpStore((s) => s.removeDiscipline)
 
-  const [viewing, setViewing] = useState<Discipline | null>(null)
   const [editing, setEditing] = useState<Discipline | null>(null)
   const [toDelete, setToDelete] = useState<Discipline | null>(null)
 
@@ -85,26 +82,17 @@ export function GcpDisciplineTab({ createOpen, onCreateOpenChange, query }: GcpD
             </thead>}>
             <tbody>
               {sorted.map((d) => (
-                <tr key={d.id} onClick={() => setViewing(d)}
-                  className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
-                  <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">
-                    <Button type="button" variant="tertiary" size="sm" className="justify-start px-0 text-left text-sm font-normal"
-                      style={{ height: 'auto', textDecorationLine: 'none' }}
-                      aria-label={`View discipline ${d.daoSpecialtyCode}`}
-                      onClick={(event) => { event.stopPropagation(); setViewing(d) }}>
-                      {d.daoSpecialtyCode}
-                    </Button>
-                  </td>
+                <tr key={d.id} className="border-b border-border-default last:border-b-0">
+                  <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{d.daoSpecialtyCode}</td>
                   <td className="px-lg py-base text-sm text-text-primary">{d.elisenDiscipline}</td>
                   <td className="px-lg py-base text-sm text-text-primary">{d.tccaDiscipline}</td>
                   <td className="px-lg py-base">
                     <Badge tone={d.active ? 'success' : 'neutral'}>{d.active ? 'Active' : 'Inactive'}</Badge>
                   </td>
-                  <td className="px-lg py-base" onClick={(event) => event.stopPropagation()}>
+                  <td className="px-lg py-base">
                     <ActionsMenu
                       ariaLabel={`Actions for ${d.daoSpecialtyCode}`}
                       items={[
-                        { label: 'View', icon: <Eye size={16} />, onSelect: () => setViewing(d) },
                         { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditing(d) },
                         { label: 'Remove', icon: <Trash2 size={16} />, onSelect: () => setToDelete(d), tone: 'danger' },
                       ]}
@@ -131,14 +119,6 @@ export function GcpDisciplineTab({ createOpen, onCreateOpenChange, query }: GcpD
           initial={editing}
           onClose={() => setEditing(null)}
           onSubmit={(d) => updateDiscipline(d.id, d)}
-        />
-      )}
-
-      {viewing && (
-        <DisciplineDetailDrawer
-          discipline={viewing}
-          onClose={() => setViewing(null)}
-          onEdit={() => { setEditing(viewing); setViewing(null) }}
         />
       )}
 

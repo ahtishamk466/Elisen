@@ -59,7 +59,7 @@ export function DelegationDrawer({ mode, initial, onClose, onSubmit }: Delegatio
     <Drawer
       open
       onClose={onClose}
-      title={isEdit ? `Edit Delegation “${initial!.sectionRoot} · ${initial!.focCode}”` : 'Add Delegation'}
+      title={isEdit ? `Edit Specialist Coverage “${initial!.sectionRoot} · ${initial!.focCode}”` : 'Add Specialist Coverage'}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
@@ -67,7 +67,7 @@ export function DelegationDrawer({ mode, initial, onClose, onSubmit }: Delegatio
         </>
       }
     >
-      <FormSection title="Delegation" subtitle="Which rule numbers this FOC code may make findings on, per its delegation letter.">
+      <FormSection title="Coverage" subtitle="Which rule numbers this FOC code may make findings on, per its delegation letter.">
         <FormField label="Section Root" htmlFor="delegation-section-root" required error={errors.sectionRoot}>
           <SearchableSelect
             id="delegation-section-root"

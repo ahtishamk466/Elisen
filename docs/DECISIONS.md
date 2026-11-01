@@ -8311,3 +8311,104 @@ its containing form grid instead of scrolling within the drawer. Apply inline-si
 containment on the shared frame so intrinsic table width does not size its parent.
 The rows viewport stays within the drawer, and its horizontal scroll remains
 synchronized with the fixed header.
+
+
+## 2026-11-01 — Combine planning reference lists as Compliance Setup
+
+User authorised merging Reference Lists and People & Authority after review of
+the Harris meetings. Use one Compliance Setup navigation item and canonical
+`/gcp/compliance-setup` workspace. Retain five separate concepts: FOC identifies
+who makes findings/recommendations, Delegation maps FOC codes to Section Roots
+independently of amendment, Discipline is a technical specialty, MOC is the
+demonstration method, and DDS Types covers applicable Part 23 specifications.
+DDS workflow details remain deferred by the client.
+
+User rejected the always-visible paragraph layout. Reuse AccordionSection for
+one compact purpose line per tab, with About this tab expanding two clear
+sections: What you can manage and Where it is used. Details stay available
+without pushing the table down by default. Reuse AppShell, TableTabs, Input,
+Button and existing list/form panels. Search and visible Add stay contextual;
+URL/tab changes reset search/create state and remount panel-local state.
+
+User also explicitly removed the separate View card: every table already shows
+its fields, so all five Actions menus now contain only Edit and Remove. Remove
+row-to-View handlers, code-cell View buttons and unused detail drawers. This
+supersedes the previous row-click View instruction for these setup tables.
+Preserve data, counts, sorting, frozen headers and existing Add/Edit/Remove forms.
+
+Old People and Reference URLs redirect to sensible default tabs, preserving
+valid tab keys, unrelated queries and hashes. Remove duplicate old pages. No
+store/schema/backend integration or live release is part of this change.
+
+
+## 2026-11-01 — Read delegations by specialist
+
+User found the code-only Delegation list difficult to understand: AP-01 should
+clearly identify Taif and show all rules linked to that specialist. Replace the
+flat list with a specialist rail and selected-person rules panel. Show FOC code,
+current name, specialty and unique-root count; show actual root/title data and
+existing Limitation/Active values on the right. Place specialists with rules
+first while retaining zero-rule and unknown saved FOC entries. Search matches
+names, codes, specialties, raw roots and titles; person matches reveal all their
+rules, rule matches reveal matching rows. Derive the selected person from that
+same filtered list so labels and rows cannot disagree.
+
+Keep all720 saved delegations, including577 inactive and226 roots absent from
+the current library. Missing titles are explicit; do not guess a regulation or
+amendment. Preserve exact identities and every duplicate row, counting unique
+roots separately. In source fixtures AP-01 has147 records and AP-08 has104.
+Those are linked-record counts, not newly inferred authority/eligibility rules.
+Global Add prefills the selected FOC through the existing create form; Edit and
+Remove still operate on exact saved records. No View drawer returns.
+
+Reuse the shared frozen table, existing actions, sort, badges, empty states and
+forms. Split the feature into small GcpDelegationTab, DelegationSpecialistRail
+and DelegationRulesPanel files. Only Delegation uses a bounded fill page; the
+other four Compliance Setup lists retain their existing natural layout. Both
+panes scroll independently, preserving top tabs/column headings. All work stays
+in frontend scope and under the existing local-commit-only release hold.
+
+
+User then requested the specialist code and name on one line with a clear dash.
+The full code stays semibold and unbroken, followed by the name; long names use
+an ellipsis with the complete name available on hover. Specialty remains below
+and the rule count stays at the right, reducing each rail row’s height.
+
+
+User removed the right pane’s repeated selected-person code/name/specialty and
+rule count, matching the compact Certification Topics and Regulation Groups
+pattern. The selected specialist remains identified in the left rail and in the
+rules region’s accessible name; the right pane starts directly with table
+headings, with no redundant summary row.
+
+
+User selected **Specialist Coverage** as the final tab label. Add/Edit form titles
+and the remove confirmation use coverage wording too. Internal Delegation types,
+record IDs and the legacy `tab=delegation` key remain unchanged, preserving
+existing links and the backend integration contract.
+
+
+## 2026-11-01 — Contextual help in a click-open info card
+
+User requested detailed tab help only when needed, opened by clicking an info
+icon, and selected Close as the only dismissal control. Replace the accordion
+row with InfoPopover at the right of the sticky tab strip. It is a separate
+button outside the tablist, avoiding nested tab buttons or altered tab keyboard
+navigation. Changing tabs unmounts the old popup and gives the new tab’s content.
+
+Proposed reusable InfoPopover uses Button, the existing useDropdown hook and a
+portal. The card has an accent info mark, clear title/summary and structured
+What you can manage / Where it is used content, one header Close icon, and no
+footer action. It is click-open, nonmodal, viewport-clamped in layout CSS pixels,
+with an internally scrolling body. Explicit Close/Escape return focus; outside
+click or focus leave dismiss without stealing focus. No hover-open help, modal
+backdrop, new dependency or shared dropdown behavior change.
+
+
+## 2026-11-01 — Authorise the combined live release
+
+After reviewing Specialist Coverage and the click-open help card, the user
+explicitly requested commit, push and deploy when the work was complete. This
+releases the earlier hold on all pending frontend commits. Validate the combined
+branch, fast-forward main without overwriting unrelated work, and use the
+existing Deploy TPMS V2 workflow. No meeting transcript files are included.

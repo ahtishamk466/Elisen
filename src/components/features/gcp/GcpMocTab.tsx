@@ -1,6 +1,6 @@
 import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useState } from 'react'
-import { BookOpen, Eye, Pencil, Trash2 } from 'lucide-react'
+import { BookOpen, Pencil, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { EmptyState } from '@/components/patterns/EmptyState'
@@ -10,7 +10,6 @@ import { useTableSort } from '@/components/patterns/useTableSort'
 import { proportionalWidths } from '@/lib/tableWidths'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { Moc } from '@/types/gcp'
-import { MocDetailDrawer } from './MocDetailDrawer'
 import { MocDrawer } from './MocDrawer'
 
 type SortKey = 'code' | 'title' | 'description'
@@ -47,7 +46,6 @@ export function GcpMocTab({ createOpen, onCreateOpenChange, query }: GcpMocTabPr
   const updateMoc = useGcpStore((s) => s.updateMoc)
   const removeMoc = useGcpStore((s) => s.removeMoc)
 
-  const [viewing, setViewing] = useState<Moc | null>(null)
   const [editing, setEditing] = useState<Moc | null>(null)
   const [toDelete, setToDelete] = useState<Moc | null>(null)
 
@@ -102,7 +100,6 @@ export function GcpMocTab({ createOpen, onCreateOpenChange, query }: GcpMocTabPr
                     <ActionsMenu
                       ariaLabel={`Actions for MOC ${m.code}`}
                       items={[
-                        { label: 'View', icon: <Eye size={16} />, onSelect: () => setViewing(m) },
                         { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditing(m) },
                         { label: 'Remove', icon: <Trash2 size={16} />, onSelect: () => setToDelete(m), tone: 'danger' },
                       ]}
@@ -129,14 +126,6 @@ export function GcpMocTab({ createOpen, onCreateOpenChange, query }: GcpMocTabPr
           initial={editing}
           onClose={() => setEditing(null)}
           onSubmit={(m) => updateMoc(m.id, m)}
-        />
-      )}
-
-      {viewing && (
-        <MocDetailDrawer
-          moc={viewing}
-          onClose={() => setViewing(null)}
-          onEdit={() => { setEditing(viewing); setViewing(null) }}
         />
       )}
 

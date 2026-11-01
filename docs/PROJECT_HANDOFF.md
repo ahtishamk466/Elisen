@@ -183,26 +183,24 @@ Every step fills the viewport (`AppShell`'s `fill`) — the browser window
 itself never scrolls; the stepper and project summary card stay fixed, and
 each step's own table or form scrolls in its own bounded pane.
 
-**People & Authority (`/gcp/people`, `GcpPeoplePage.tsx`)** — three tabs,
-all real legacy data: **FOC** (63 rows, names anonymized per the rule
-above), **Delegation** (720 rows — the largest list in the app, scrolls in
-a bounded frame rather than stretching the page), **Discipline** (23 rows,
-no personal data). This page is the reference implementation of the
-**"Tabbed page layout"** standing rule (below) — copy its shape for any
-new tabs-over-a-table screen.
+**Compliance Setup (`/gcp/compliance-setup`, `GcpComplianceSetupPage.tsx`)**
+merges the former People & Authority and Reference Lists pages. Five tabs use
+existing data and forms: FOC, Specialist Coverage, Disciplines, MOC and DDS Types. Each
+selected tab has a click-open info icon beside the tab strip; its popup explains
+purpose, What you can manage and Where it is used, plus its count, contextual search and
+one plain Add action. Tabs stay visible;
+rows use the shared frozen-header frame. All five lists show their record fields directly; three-dot menus contain only
+Edit/Remove, and rows do not open a separate View card. Old `/gcp/people` bookmarks
+redirect to FOC and `/gcp/reference` to MOC, retaining valid tab/query/hash values.
 
-**Regulations (`/gcp/regulations`, `RegulationListPage.tsx` etc.)** — the
-rule library itself (412 rows bundled from a legacy export, real total is
-higher), Subparts/Subsections, Regulation Groups. **Reference Lists**
-(`/gcp/reference`, `GcpReferencePage.tsx`) — **MOC and DDS are both fully
-live tabs** (`GcpMocTab`/`GcpDdsTab`, not placeholders — full View/Edit/
-Remove/Add, real data verified against the legacy portal 2026-09-25). Do not
-confuse this with `FlowStepPlan.tsx`'s own **DDS Id** field inside the
-Compliance Plan step, which is a separate, still-hardcoded 4-option list
-(`DDS_ID_OPTIONS`) — the legacy portal's actual DDS Type list has 10 real
-rows (`gcpFixtures.ts`'s `DDS_TYPES`, already live on the Reference Lists
-page) but that step's own dropdown hasn't been switched over to read from
-it yet — **still open**, see Open Questions.
+DDS Types remains the legacy ten-row reference list. This is separate from
+`FlowStepPlan.tsx`'s still-hardcoded four-option DDS Id picker (`DDS_ID_OPTIONS`);
+merging navigation does not settle the client's deferred DDS workflow.
+
+**Regulatory Library (`/gcp/regulations`)** contains the regulation library,
+Certification Topics and Regulation Groups. It remains separate from Compliance
+Setup, which holds the people, rule coverage, technical specialties and planning
+reference codes used by GCP items.
 
 **Cert Basis (`/gcp/cert-bases`, `GcpCertBasesPage.tsx`)** — rebuilt
 2026-09-25 into **one genuinely flat table** (one row per basis↔regulation
@@ -250,7 +248,7 @@ only GCP's:
 
 Reference implementations: the app's own **Roles & Permissions** screen
 (tabs/table separation, header Add) and **Aircraft** (`AircraftPage.tsx`,
-header search + tab count pills). `GcpPeoplePage.tsx` is the GCP-side
+header search + tab count pills). `GcpComplianceSetupPage.tsx` is the GCP-side
 reference now built to this full shape.
 
 ---
@@ -793,7 +791,7 @@ The Group picker uses exact Section Roots as verified in OLD TPMS, with source t
 
 ## Frontend mockup scope clarified — 2026-11-01
 
-Client is reviewing a usable frontend populated with OLD TPMS data. The existing backend is to be connected later. Do not build a parallel backend identity/authorization/delete system in local stores as a prerequisite for UI work; preserve an integration note to map OLD stable FOC/Discipline IDs and backend in-use deletion rules at that stage. The proposed People & Authority + Reference Lists → Compliance Setup merge remains a review recommendation, not an implemented navigation change.
+Client is reviewing a usable frontend populated with OLD TPMS data. The existing backend is to be connected later. Do not build a parallel backend identity/authorization/delete system in local stores as a prerequisite for UI work; preserve an integration note to map OLD stable FOC/Discipline IDs and backend in-use deletion rules at that stage. The user subsequently authorised People & Authority + Reference Lists → Compliance Setup; the merged five-tab workspace is now implemented, with local-only release hold unchanged.
 
 Frontend fixes retain saved Delegation roots/FOCs (including missing library choices) and share rule-specific/default FOC picker choices across Create GCP and plan item forms. Group picker and these follow-up changes stay local on the existing branch, with no push/deploy until the user requests the combined release.
 
@@ -807,3 +805,35 @@ in-scroll footer when adding tables. Existing frozen pane implementations still
 work. Discipline View field spacing is normalized locally. Frontend mockup scope
 and the user's local-commit-only release hold remain in effect: do not push or
 deploy these follow-ups until the user asks for a combined live release.
+
+
+## Compliance Setup and person-first Delegations — 2026-11-01
+
+The user authorised the five-tab merge and selected the compact expandable About
+this tab presentation. All five setup tables have Edit/Remove only; record View
+cards and their unused components were removed. Delegations is now specialist
+first: select the FOC code/name on the left, see its saved root/title links on the
+right. Search follows the same effective person/rows context, Add preselects that
+FOC, and raw roots/status flags remain unchanged. The pure grouping helper and
+fixture regression preserve all720 records, including inactive/missing/unknown
+references. Do not infer amendment applicability or authorisation from the new
+presentation. Continue respecting the local-only release hold.
+
+The final visible tab name is Specialist Coverage. Add/Edit titles and removal
+wording match; internal Delegation records and `tab=delegation` remain stable.
+The right pane has no repeated person/count header; the rail identifies the
+selected code and name on one line separated by a dash.
+
+Tab guidance now lives in a click-open InfoPopover at the right of the sticky
+strip, replacing the earlier helper/accordion row. One Close control only;
+Escape/outside dismissal and keyboard focus are supported. No extra guidance row
+takes table space. This supersedes the compact accordion presentation above.
+
+
+## Current release authorisation — 2026-11-01
+
+The user explicitly authorised committing, pushing and deploying the combined
+pending work after completion. This supersedes the earlier local-only release
+hold recorded above. Final TypeScript/build, delegation preservation and browser
+popup checks passed before release. Private Harris transcript files remain
+outside the repository and are not part of the deployment.

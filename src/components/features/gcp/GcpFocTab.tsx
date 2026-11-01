@@ -1,16 +1,14 @@
 import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useMemo, useState, type CSSProperties } from 'react'
-import { Eye, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
+import { Pencil, ShieldCheck, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useTableSort } from '@/components/patterns/useTableSort'
 import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
 import { useGcpStore } from '@/stores/gcpStore'
 import type { Foc } from '@/types/gcp'
-import { FocDetailDrawer } from './FocDetailDrawer'
 import { FocDrawer } from './FocDrawer'
 
 type SortKey = 'code' | 'authoritySpecialist' | 'specialty' | 'isDefault'
@@ -43,7 +41,6 @@ export function GcpFocTab({ createOpen, onCreateOpenChange, query }: GcpFocTabPr
   const updateFoc = useGcpStore((s) => s.updateFoc)
   const removeFoc = useGcpStore((s) => s.removeFoc)
 
-  const [viewing, setViewing] = useState<Foc | null>(null)
   const [editing, setEditing] = useState<Foc | null>(null)
   const [toDelete, setToDelete] = useState<Foc | null>(null)
 
@@ -88,23 +85,17 @@ export function GcpFocTab({ createOpen, onCreateOpenChange, query }: GcpFocTabPr
             </thead>}>
             <tbody>
               {rows.map((f) => (
-                <tr key={f.id} onClick={() => setViewing(f)}
-                  className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
-                  <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">
-                    <Button type="button" variant="tertiary" size="sm" className="justify-start px-0 text-left text-sm font-normal"
-                      style={{ height: 'auto', textDecorationLine: 'none' }} aria-label={`View FOC ${f.code}`}
-                      onClick={(event) => { event.stopPropagation(); setViewing(f) }}>{f.code}</Button>
-                  </td>
+                <tr key={f.id} className="border-b border-border-default last:border-b-0">
+                  <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{f.code}</td>
                   <td className="px-lg py-base text-sm text-text-primary">{f.authoritySpecialist}</td>
                   <td className="px-lg py-base text-sm text-text-primary">{f.specialty || '—'}</td>
                   <td className="px-lg py-base">
                     <Badge tone={f.isDefault ? 'success' : 'neutral'}>{f.isDefault ? 'Yes' : 'No'}</Badge>
                   </td>
-                  <td className="px-lg py-base" onClick={(event) => event.stopPropagation()}>
+                  <td className="px-lg py-base">
                     <ActionsMenu
                       ariaLabel={`Actions for ${f.code}`}
                       items={[
-                        { label: 'View', icon: <Eye size={16} />, onSelect: () => setViewing(f) },
                         { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setEditing(f) },
                         { label: 'Remove', icon: <Trash2 size={16} />, onSelect: () => setToDelete(f), tone: 'danger' },
                       ]}
@@ -131,14 +122,6 @@ export function GcpFocTab({ createOpen, onCreateOpenChange, query }: GcpFocTabPr
           initial={editing}
           onClose={() => setEditing(null)}
           onSubmit={(f) => updateFoc(f.id, f)}
-        />
-      )}
-
-      {viewing && (
-        <FocDetailDrawer
-          foc={viewing}
-          onClose={() => setViewing(null)}
-          onEdit={() => { setEditing(viewing); setViewing(null) }}
         />
       )}
 
