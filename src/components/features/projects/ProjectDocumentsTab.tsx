@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FileText, Link2, Pencil, Unlink, ExternalLink } from 'lucide-react'
@@ -174,17 +176,22 @@ export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProp
             </Button>
           </div>
 
-          <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
-            <table className="w-full border-collapse text-left" style={{ minWidth: 820 }}>
-              <caption className="sr-only">{label.plural} linked to this project</caption>
-              <thead>
+          <div className="rounded-sm border border-border-default bg-neutral-25">
+            <FrozenTable
+              columns={proportionalWidths(isDrawing ? [120, 100, 240, 160, 90, 140, 140, 120, 90] : [120, 100, 240, 160, 140, 140, 140, 120, 90])}
+              columnLabels={columns.map((c) => c.label)}
+              minWidth={820}
+              tableClassName="w-full border-collapse text-left"
+              caption={<>{label.plural} linked to this project</>}
+              header={<thead>
                 <tr className="border-b border-border-default bg-neutral-50">
                   {columns.map((c) => (
                     <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
                       className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                 </tr>
-              </thead>
+              </thead>}
+            >
               <tbody>
                 {sorted.map(({ rev, doc }) => (
                   <tr key={rev.id} className="border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-neutral-50">
@@ -233,7 +240,7 @@ export function ProjectDocumentsTab({ kind, projectId }: ProjectDocumentsTabProp
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </FrozenTable>
           </div>
         </>
       )}

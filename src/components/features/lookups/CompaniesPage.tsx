@@ -5,6 +5,8 @@ import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
 import { SortableTh } from '@/components/patterns/SortableTh'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
+import { proportionalWidths } from '@/lib/tableWidths'
 import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -55,15 +57,16 @@ function ContactChips({ contacts, onOpen }: { contacts: CompanyContact[]; onOpen
 type SortKey = 'name' | 'contacts' | 'address' | 'city' | 'postal' | 'active'
 
 /** Actions is the one heading with nothing to order by. */
-const COLUMNS: { label: string; sort?: SortKey }[] = [
-  { label: 'Name', sort: 'name' },
-  { label: 'Contacts', sort: 'contacts' },
-  { label: 'Address', sort: 'address' },
-  { label: 'City', sort: 'city' },
-  { label: 'Zip Code', sort: 'postal' },
-  { label: 'Active', sort: 'active' },
-  { label: 'Actions' },
+const COLUMNS: { label: string; sort?: SortKey; width: number }[] = [
+  { label: 'Name', sort: 'name', width: 205 },
+  { label: 'Contacts', sort: 'contacts', width: 170 },
+  { label: 'Address', sort: 'address', width: 210 },
+  { label: 'City', sort: 'city', width: 100 },
+  { label: 'Zip Code', sort: 'postal', width: 100 },
+  { label: 'Active', sort: 'active', width: 100 },
+  { label: 'Actions', width: 95 },
 ]
+const COLUMN_WIDTHS = proportionalWidths(COLUMNS.map((column) => column.width))
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -151,17 +154,25 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
           </div>
         ) : (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left" style={{ minWidth: 980 }}>
-              <caption className="sr-only">Companies and their contacts</caption>
-              <thead>
-                <tr className="border-b border-border-default bg-neutral-50">
-                  {COLUMNS.map((c) => (
-                    <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
-                      className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
-                  ))}
-                </tr>
-              </thead>
+            <FrozenTable
+              columns={COLUMN_WIDTHS}
+              minWidth={980}
+              caption="Companies and their contacts"
+              columnLabels={COLUMNS.map((column) => column.label)}
+              header={
+                <thead>
+                  <tr className="border-b border-border-default bg-neutral-50">
+                    {COLUMNS.map((c) => (
+                      <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                        className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
+                    ))}
+                  </tr>
+                </thead>
+              }
+              footer={!loading && (
+                  <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="companies" />
+              )}
+            >
               <tbody>
                 {loading
                   ? Array.from({ length: 6 }, (_, i) => (
@@ -212,11 +223,7 @@ export function CompaniesPage({ state = 'ready' }: { state?: PageState }) {
                       </tr>
                     ))}
               </tbody>
-            </table>
-          </div>
-          {!loading && (
-            <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="companies" />
-          )}
+            </FrozenTable>
           </div>
         )}
       </div>

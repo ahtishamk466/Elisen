@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Award, Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
@@ -205,17 +206,25 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
         ) : (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
             <ApprovalsTabs active="approvals" />
-            <div className="overflow-x-auto">
-              <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 900 }}>
-                <caption className="sr-only">Approvals, with the projects each is attached to</caption>
-                <thead>
+            <div>
+              <FrozenTable
+                footer={!loading && (
+                  <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="approvals" />
+                )}
+                columns={COLUMNS.map((c) => c.width)}
+                columnLabels={COLUMNS.map((c) => c.label)}
+                minWidth={900}
+                tableClassName="w-full table-fixed border-collapse text-left"
+                caption={<>Approvals, with the projects each is attached to</>}
+                header={<thead>
                   <tr className="border-b border-border-default bg-neutral-50">
                     {COLUMNS.map((c) => (
                       <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
                         style={{ width: c.width }} className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                     ))}
                   </tr>
-                </thead>
+                </thead>}
+              >
                 <tbody>
                   {loading
                     ? Array.from({ length: 6 }, (_, i) => (
@@ -285,11 +294,8 @@ export function ApprovalsPage({ state = 'ready' }: { state?: PageState }) {
                         )
                       })}
                 </tbody>
-              </table>
+              </FrozenTable>
             </div>
-            {!loading && (
-              <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="approvals" />
-            )}
           </div>
         )}
       </div>

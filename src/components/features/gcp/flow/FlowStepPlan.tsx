@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useState } from 'react'
 import { ArrowLeft, ListChecks, Pencil, Plus, Trash2 } from 'lucide-react'
@@ -158,10 +159,10 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
               title="No GCP data yet"
               description="Add a row for each discipline that has work to do against this rule." />
           ) : (
-            <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
-              <table className="w-full border-collapse text-left">
-                <caption className="sr-only">GCP data for {current.rule.section}</caption>
-                <thead>
+            <div className="rounded-sm border border-border-default bg-neutral-25">
+              <FrozenTable columns={[410, 280, 300, 220, 100, 90]} minWidth={1400}
+              columnLabels={['Design Approval Organization (DAO) Specialty Code', 'Means of Compliance (MOC)', 'Finding of Compliance (FOC)', 'Deliverable Number', 'Active', 'Actions']} caption={<>GCP data for {current.rule.section}</>}
+              tableClassName="w-full border-collapse text-left" header={<thead>
                   <tr className="border-b border-border-default bg-neutral-50">
                     {['Design Approval Organization (DAO) Specialty Code', 'Means of Compliance (MOC)', 'Finding of Compliance (FOC)', 'Deliverable Number', 'Active'].map((h) => (
                       <th key={h} scope="col" className="whitespace-nowrap px-base py-base text-sm font-semibold text-text-secondary">{h}</th>
@@ -174,7 +175,7 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
                         this table only). */}
                     <th scope="col" className="whitespace-nowrap px-base py-base text-sm font-semibold text-text-secondary">Actions</th>
                   </tr>
-                </thead>
+                </thead>}>
                 <tbody>
                   {currentItems.map((i) => (
                     <tr key={i.id} className="border-b border-border-default last:border-b-0">
@@ -207,7 +208,7 @@ export function FlowStepPlan({ rows, index, onBack, onNext }: FlowStepPlanProps)
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </FrozenTable>
             </div>
           )}
         </div>

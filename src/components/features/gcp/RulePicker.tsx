@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { appendBasisRules } from '@/lib/basisRuleBatch'
 import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useEffect, useMemo, useState } from 'react'
@@ -80,9 +81,11 @@ export function RulePicker({ idPrefix, value, onChange, existing = EMPTY_IDS, li
         {picked.length === 0 ? (
           <p className="px-lg py-base text-sm text-text-muted">Rules you add appear here.</p>
         ) : (
-          <div className="max-h-96 overflow-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-neutral-50"><tr><th className="px-lg py-base">Section</th><th className="px-lg py-base">Amendment</th><th className="px-lg py-base">Regulation Title</th><th className="px-lg py-base">Actions</th></tr></thead>
+          <div>
+            <FrozenTable columns={[140, 130, 310, 180]} minWidth={760}
+              columnLabels={['Section', 'Amendment', 'Regulation Title', 'Actions']} caption="Selected regulations"
+              tableClassName="w-full text-left text-sm" header={<thead className="bg-neutral-50"><tr><th className="px-lg py-base">Section</th><th className="px-lg py-base">Amendment</th><th className="px-lg py-base">Regulation Title</th><th className="px-lg py-base">Actions</th></tr></thead>}>
+
               <tbody>{picked.map((r) => <tr key={r.id} className="border-t border-border-default">
                 <td className="whitespace-nowrap px-lg py-base font-semibold"><Button variant="tertiary" size="sm" aria-label={`Read ${r.section} at ${amendmentLabel(r.amdt)}`} onClick={() => setViewing(r)}>{r.section}</Button></td>
                 <td className="whitespace-nowrap px-lg py-base">{amendmentLabel(r.amdt)}</td>
@@ -90,7 +93,7 @@ export function RulePicker({ idPrefix, value, onChange, existing = EMPTY_IDS, li
                 <td className="px-lg py-base"><div className="flex gap-sm"><Button variant="tertiary" size="sm" leadingIcon={<Eye size={14} />} onClick={() => setViewing(r)}>Read</Button>
                   <Button variant="tertiary" size="sm" leadingIcon={<Trash2 size={14} />} aria-label={`Remove ${r.section} at ${amendmentLabel(r.amdt)}`} onClick={() => onChange(value.filter((id) => id !== r.id))}>Remove</Button></div></td>
               </tr>)}</tbody>
-            </table>
+            </FrozenTable>
           </div>
         )}
       </div>

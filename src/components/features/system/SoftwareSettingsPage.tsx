@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useMemo, useState } from 'react'
 import { CircleCheck, CircleOff, Pencil, Plus, Settings as SettingsIcon, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
@@ -139,17 +141,25 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
           </div>
         ) : (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left" style={{ minWidth: 940 }}>
-                <caption className="sr-only">Software settings</caption>
-                <thead>
+            <div>
+              <FrozenTable
+                footer={!loading && (
+                  <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="items" />
+                )}
+                columns={proportionalWidths([60, 120, 140, 200, 180, 120, 280, 90])}
+                columnLabels={COLUMNS.map((c) => c.label)}
+                minWidth={940}
+                tableClassName="w-full border-collapse text-left"
+                caption={<>Software settings</>}
+                header={<thead>
                   <tr className="border-b border-border-default bg-neutral-50">
                     {COLUMNS.map((c) => (
                       <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
                         className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                     ))}
                   </tr>
-                </thead>
+                </thead>}
+              >
                 <tbody>
                   {loading
                     ? Array.from({ length: 8 }, (_, i) => (
@@ -197,11 +207,8 @@ export function SoftwareSettingsPage({ state = 'ready' }: { state?: PageState })
                         </tr>
                       ))}
                 </tbody>
-              </table>
+              </FrozenTable>
             </div>
-            {!loading && (
-              <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="items" />
-            )}
           </div>
         )}
       </div>

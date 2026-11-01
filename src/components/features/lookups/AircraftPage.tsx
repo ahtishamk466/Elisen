@@ -10,6 +10,8 @@ import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { TableTabs } from '@/components/patterns/TableTabs'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
+import { proportionalWidths } from '@/lib/tableWidths'
 import { Truncate } from '@/components/patterns/Truncate'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -29,29 +31,31 @@ type ModelSortKey = 'modelNumber' | 'modelName' | 'manufacturer' | 'tccaTc' | 'f
 type SerialSortKey = 'serial' | 'registration' | 'aircraft' | 'owner' | 'company'
   | 'location' | 'telephone' | 'active'
 
-const MODEL_COLUMNS: { label: string; sort?: ModelSortKey }[] = [
-  { label: 'Model Number', sort: 'modelNumber' },
-  { label: 'Model Name', sort: 'modelName' },
-  { label: 'Manufacture', sort: 'manufacturer' },
-  { label: 'TCCA TC', sort: 'tccaTc' },
-  { label: 'FAA TC', sort: 'faaTc' },
-  { label: 'EASA TC', sort: 'easaTc' },
-  { label: 'Prefix', sort: 'prefix' },
-  { label: 'Airframes', sort: 'airframes' },
-  { label: 'Active', sort: 'active' },
-  { label: 'Actions' },
+const MODEL_COLUMNS: { label: string; sort?: ModelSortKey; width: number }[] = [
+  { label: 'Model Number', sort: 'modelNumber', width: 139 },
+  { label: 'Model Name', sort: 'modelName', width: 136 },
+  { label: 'Manufacture', sort: 'manufacturer', width: 130 },
+  { label: 'TCCA TC', sort: 'tccaTc', width: 100 },
+  { label: 'FAA TC', sort: 'faaTc', width: 95 },
+  { label: 'EASA TC', sort: 'easaTc', width: 100 },
+  { label: 'Prefix', sort: 'prefix', width: 82 },
+  { label: 'Airframes', sort: 'airframes', width: 95 },
+  { label: 'Active', sort: 'active', width: 82 },
+  { label: 'Actions', width: 81 },
 ]
-const SERIAL_COLUMNS: { label: string; sort?: SerialSortKey }[] = [
-  { label: 'Serial No', sort: 'serial' },
-  { label: 'Registration Number', sort: 'registration' },
-  { label: 'Aircraft', sort: 'aircraft' },
-  { label: 'Owner', sort: 'owner' },
-  { label: 'Company', sort: 'company' },
-  { label: 'Location', sort: 'location' },
-  { label: 'Telephone', sort: 'telephone' },
-  { label: 'Active', sort: 'active' },
-  { label: 'Actions' },
+const SERIAL_COLUMNS: { label: string; sort?: SerialSortKey; width: number }[] = [
+  { label: 'Serial No', sort: 'serial', width: 100 },
+  { label: 'Registration Number', sort: 'registration', width: 180 },
+  { label: 'Aircraft', sort: 'aircraft', width: 110 },
+  { label: 'Owner', sort: 'owner', width: 140 },
+  { label: 'Company', sort: 'company', width: 140 },
+  { label: 'Location', sort: 'location', width: 150 },
+  { label: 'Telephone', sort: 'telephone', width: 120 },
+  { label: 'Active', sort: 'active', width: 90 },
+  { label: 'Actions', width: 90 },
 ]
+const MODEL_COLUMN_WIDTHS = proportionalWidths(MODEL_COLUMNS.map((column) => column.width))
+const SERIAL_COLUMN_WIDTHS = proportionalWidths(SERIAL_COLUMNS.map((column) => column.width))
 
 type Tab = 'aircraft' | 'serials'
 
@@ -216,9 +220,12 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
         ) : (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
             {tabs}
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left" style={{ minWidth: tab === 'aircraft' ? 1040 : 1120 }}>
-                <caption className="sr-only">{tab === 'aircraft' ? 'Aircraft types' : 'Aircraft serial numbers'}</caption>
+            <FrozenTable
+              columns={tab === 'aircraft' ? MODEL_COLUMN_WIDTHS : SERIAL_COLUMN_WIDTHS}
+              minWidth={tab === 'aircraft' ? 1040 : 1120}
+              caption={tab === 'aircraft' ? 'Aircraft types' : 'Aircraft serial numbers'}
+              columnLabels={columns.map((column) => column.label)}
+              header={
                 <thead>
                   <tr className="border-b border-border-default bg-neutral-50">
                     {columns.map((c) => (
@@ -227,88 +234,89 @@ export function AircraftPage({ state = 'ready' }: { state?: PageState }) {
                     ))}
                   </tr>
                 </thead>
-                <tbody>
-                  {loading
-                    ? Array.from({ length: 6 }, (_, i) => (
-                        <tr key={i} className="border-b border-border-default last:border-b-0">
-                          {columns.map((c) => <td key={c.label} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
-                        </tr>
-                      ))
-                    : tab === 'aircraft'
-                      ? modelSort.sorted.slice(0, visibleCount).map((a) => {
-                          const count = serialsOf(a.id).length
-                          return (
-                            <tr key={a.id} onClick={() => setModelDrawer({ mode: 'view', model: a })}
-                              className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
-                              <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">{a.modelNumber}</td>
-                              <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 220 }}><Truncate>{a.modelName || '—'}</Truncate></td>
-                              <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 200 }}><Truncate>{a.manufacturer || '—'}</Truncate></td>
-                              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{a.tccaTc || '—'}</td>
-                              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{a.faaTc || '—'}</td>
-                              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{a.easaTc || '—'}</td>
-                              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{a.drawingPrefix || '—'}</td>
-                              <td className="whitespace-nowrap px-lg py-base text-sm">
-                                {count === 0
-                                  ? <span className="text-text-muted">None</span>
-                                  : <button type="button"
-                                      onClick={(e) => { e.stopPropagation(); setQuery(a.modelNumber); setTab('serials'); resetVisible() }}
-                                      className="text-text-primary underline-offset-2 hover:text-accent hover:underline">
-                                      {count} airframe{count === 1 ? '' : 's'}
-                                    </button>}
-                              </td>
-                              <td className="whitespace-nowrap px-lg py-base">
-                                <Badge tone={a.active ? 'success' : 'neutral'}>{a.active ? 'Active' : 'Inactive'}</Badge>
-                              </td>
-                              <td className="px-lg py-base" onClick={(e) => e.stopPropagation()}>
-                                <ActionsMenu
-                                  ariaLabel={`Actions for ${a.modelNumber}`}
-                                  items={[
-                                    { label: 'View', icon: <Eye size={16} />, onSelect: () => setModelDrawer({ mode: 'view', model: a }) },
-                                    { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setModelDrawer({ mode: 'edit', model: a }) },
-                                    { label: 'Add serial number', icon: <Plus size={16} />, onSelect: () => setSerialDrawer({ mode: 'create', aircraftId: a.id }) },
-                                    { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeletingModel(a), tone: 'danger' },
-                                  ]}
-                                />
-                              </td>
-                            </tr>
-                          )
-                        })
-                      : serialSort.sorted.slice(0, visibleCount).map((sn) => {
-                          const m = modelOf(sn.aircraftId)
-                          const place = [sn.city, sn.provState, sn.country].filter(Boolean).join(', ')
-                          return (
-                            <tr key={sn.id} onClick={() => setSerialDrawer({ mode: 'view', serial: sn })}
-                              className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
-                              <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">{sn.serial}</td>
-                              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{sn.registration || '—'}</td>
-                              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{m?.modelNumber ?? '—'}</td>
-                              <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 180 }}><Truncate>{sn.ownerName || '—'}</Truncate></td>
-                              <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 200 }}><Truncate>{sn.company || '—'}</Truncate></td>
-                              <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 220 }}><Truncate>{place || '—'}</Truncate></td>
-                              <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{sn.telephone || '—'}</td>
-                              <td className="whitespace-nowrap px-lg py-base">
-                                <Badge tone={sn.active ? 'success' : 'neutral'}>{sn.active ? 'Active' : 'Inactive'}</Badge>
-                              </td>
-                              <td className="px-lg py-base" onClick={(e) => e.stopPropagation()}>
-                                <ActionsMenu
-                                  ariaLabel={`Actions for serial ${sn.serial}`}
-                                  items={[
-                                    { label: 'View', icon: <Eye size={16} />, onSelect: () => setSerialDrawer({ mode: 'view', serial: sn }) },
-                                    { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setSerialDrawer({ mode: 'edit', serial: sn }) },
-                                    { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeletingSerial(sn), tone: 'danger' },
-                                  ]}
-                                />
-                              </td>
-                            </tr>
-                          )
-                        })}
-                </tbody>
-              </table>
-            </div>
-            {!loading && (
-              <AutoLoadFooter total={rowCount} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore}
-                itemLabel={tab === 'aircraft' ? 'aircraft' : 'serial numbers'} />
-            )}
+              }
+              footer={!loading && (
+                  <AutoLoadFooter total={rowCount} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore}
+                    itemLabel={tab === 'aircraft' ? 'aircraft' : 'serial numbers'} />
+              )}
+            >
+              <tbody>
+                {loading
+                  ? Array.from({ length: 6 }, (_, i) => (
+                      <tr key={i} className="border-b border-border-default last:border-b-0">
+                        {columns.map((c) => <td key={c.label} className="px-lg py-base"><Skeleton className="h-4 w-full" /></td>)}
+                      </tr>
+                    ))
+                  : tab === 'aircraft'
+                    ? modelSort.sorted.slice(0, visibleCount).map((a) => {
+                        const count = serialsOf(a.id).length
+                        return (
+                          <tr key={a.id} onClick={() => setModelDrawer({ mode: 'view', model: a })}
+                            className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
+                            <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">{a.modelNumber}</td>
+                            <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 220 }}><Truncate>{a.modelName || '—'}</Truncate></td>
+                            <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 200 }}><Truncate>{a.manufacturer || '—'}</Truncate></td>
+                            <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{a.tccaTc || '—'}</td>
+                            <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{a.faaTc || '—'}</td>
+                            <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{a.easaTc || '—'}</td>
+                            <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{a.drawingPrefix || '—'}</td>
+                            <td className="whitespace-nowrap px-lg py-base text-sm">
+                              {count === 0
+                                ? <span className="text-text-muted">None</span>
+                                : <button type="button"
+                                    onClick={(e) => { e.stopPropagation(); setQuery(a.modelNumber); setTab('serials'); resetVisible() }}
+                                    className="text-text-primary underline-offset-2 hover:text-accent hover:underline">
+                                    {count} airframe{count === 1 ? '' : 's'}
+                                  </button>}
+                            </td>
+                            <td className="whitespace-nowrap px-lg py-base">
+                              <Badge tone={a.active ? 'success' : 'neutral'}>{a.active ? 'Active' : 'Inactive'}</Badge>
+                            </td>
+                            <td className="px-lg py-base" onClick={(e) => e.stopPropagation()}>
+                              <ActionsMenu
+                                ariaLabel={`Actions for ${a.modelNumber}`}
+                                items={[
+                                  { label: 'View', icon: <Eye size={16} />, onSelect: () => setModelDrawer({ mode: 'view', model: a }) },
+                                  { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setModelDrawer({ mode: 'edit', model: a }) },
+                                  { label: 'Add serial number', icon: <Plus size={16} />, onSelect: () => setSerialDrawer({ mode: 'create', aircraftId: a.id }) },
+                                  { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeletingModel(a), tone: 'danger' },
+                                ]}
+                              />
+                            </td>
+                          </tr>
+                        )
+                      })
+                    : serialSort.sorted.slice(0, visibleCount).map((sn) => {
+                        const m = modelOf(sn.aircraftId)
+                        const place = [sn.city, sn.provState, sn.country].filter(Boolean).join(', ')
+                        return (
+                          <tr key={sn.id} onClick={() => setSerialDrawer({ mode: 'view', serial: sn })}
+                            className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
+                            <td className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-primary">{sn.serial}</td>
+                            <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{sn.registration || '—'}</td>
+                            <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{m?.modelNumber ?? '—'}</td>
+                            <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 180 }}><Truncate>{sn.ownerName || '—'}</Truncate></td>
+                            <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 200 }}><Truncate>{sn.company || '—'}</Truncate></td>
+                            <td className="px-lg py-base text-sm text-text-primary" style={{ maxWidth: 220 }}><Truncate>{place || '—'}</Truncate></td>
+                            <td className="whitespace-nowrap px-lg py-base text-sm text-text-primary">{sn.telephone || '—'}</td>
+                            <td className="whitespace-nowrap px-lg py-base">
+                              <Badge tone={sn.active ? 'success' : 'neutral'}>{sn.active ? 'Active' : 'Inactive'}</Badge>
+                            </td>
+                            <td className="px-lg py-base" onClick={(e) => e.stopPropagation()}>
+                              <ActionsMenu
+                                ariaLabel={`Actions for serial ${sn.serial}`}
+                                items={[
+                                  { label: 'View', icon: <Eye size={16} />, onSelect: () => setSerialDrawer({ mode: 'view', serial: sn }) },
+                                  { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setSerialDrawer({ mode: 'edit', serial: sn }) },
+                                  { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeletingSerial(sn), tone: 'danger' },
+                                ]}
+                              />
+                            </td>
+                          </tr>
+                        )
+                      })}
+              </tbody>
+            </FrozenTable>
           </div>
         )}
       </div>

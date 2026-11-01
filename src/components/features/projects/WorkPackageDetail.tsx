@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { ClipboardCheck, Eye, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { SortMenu } from '@/components/patterns/SortMenu'
 import { SortableTh } from '@/components/patterns/SortableTh'
@@ -198,13 +199,17 @@ export function WorkPackageDetail({
             No activities yet. Add who will do this work.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
+          <div className="rounded-sm border border-border-default bg-neutral-25">
             {/* The shares fit the pane from ~1400px up; below that the headings
                 stop fitting their own share, so the table scrolls rather than
                 silently overflowing one column into the next. */}
-            <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 730 }}>
-              <caption className="sr-only">Activities in {workPackage.title}</caption>
-              <thead>
+            <FrozenTable
+              columns={COLUMNS.map((c) => c.width)}
+              columnLabels={COLUMNS.map((c) => c.label)}
+              minWidth={730}
+              tableClassName="w-full table-fixed border-collapse text-left"
+              caption={<>Activities in {workPackage.title}</>}
+              header={<thead>
                 <tr className="border-b border-border-default bg-neutral-50">
                   {COLUMNS.map((c) => (
                     <SortableTh key={c.label} sortKey={c.sort} ownsKeys={c.sorts?.map((o) => o.key)}
@@ -216,7 +221,8 @@ export function WorkPackageDetail({
                     </SortableTh>
                   ))}
                 </tr>
-              </thead>
+              </thead>}
+            >
               <tbody>
                 {sortedActivities.map((a) => {
                   const ah = healthOf(a.budgetHours, a.actualHours, workPackage.status === 'complete')
@@ -273,7 +279,7 @@ export function WorkPackageDetail({
                   )
                 })}
               </tbody>
-            </table>
+            </FrozenTable>
           </div>
         )}
       </section>

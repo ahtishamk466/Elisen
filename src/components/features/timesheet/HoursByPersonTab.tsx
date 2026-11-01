@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Users } from 'lucide-react'
 import { Avatar } from '@/components/patterns/Avatar'
@@ -142,12 +144,14 @@ export function HoursByPersonTab({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: MIN_TABLE_WIDTH }}>
-        <caption className="sr-only">
-          Hours per person: budget, actual and remaining across every project. View Details opens the full breakdown for that person.
-        </caption>
-        <thead>
+    <div>
+      <FrozenTable
+        columns={proportionalWidths(COLUMNS.map((c) => c.width))}
+        columnLabels={COLUMNS.map((c) => c.label)}
+        minWidth={MIN_TABLE_WIDTH}
+        tableClassName="w-full table-fixed border-collapse text-left"
+        caption={<>Hours per person: budget, actual and remaining across every project. View Details opens the full breakdown for that person.</>}
+        header={<thead>
           <tr className="border-b border-border-default bg-neutral-50">
             {COLUMNS.slice(0, -1).map((c) => (
               <SortableTh key={c.label} sortKey={c.sort} ownsKeys={c.sorts?.map((o) => o.key)} sort={sort} onSortChange={setSort}
@@ -173,7 +177,8 @@ export function HoursByPersonTab({
               {COLUMNS[COLUMNS.length - 1].label}
             </SortableTh>
           </tr>
-        </thead>
+        </thead>}
+      >
         <tbody>
           {sorted.map((p) => {
             const over = p.health.state === 'over-budget'
@@ -274,7 +279,7 @@ export function HoursByPersonTab({
             )
           })}
         </tbody>
-      </table>
+      </FrozenTable>
     </div>
   )
 }

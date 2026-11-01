@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useState } from 'react'
 import { ChevronDown, Eye, Pencil, Trash2, CheckCircle2, RotateCcw, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
@@ -117,10 +119,14 @@ export function WorkPackageCard({
           {activities.length === 0 ? (
             <p className="p-lg text-sm text-text-muted">No activities yet, add who will do this work.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left" style={{ minWidth: 900 }}>
-                <caption className="sr-only">Activities in {wp.title}, with budget health each</caption>
-                <thead>
+            <div>
+              <FrozenTable
+                columns={proportionalWidths([200, 180, 180, 140, 150, 140, 160, 90])}
+                columnLabels={ACTIVITY_COLUMNS.map((c) => c.label)}
+                minWidth={900}
+                tableClassName="w-full border-collapse text-left"
+                caption={<>Activities in {wp.title}, with budget health each</>}
+                header={<thead>
                   {/* A tinted row, not just the border below it — the border
                       alone read as one more inter-row line rather than a
                       boundary between titles and data. */}
@@ -140,7 +146,8 @@ export function WorkPackageCard({
                       </SortableTh>
                     ))}
                   </tr>
-                </thead>
+                </thead>}
+              >
                 <tbody>
                   {sortedActivities.map((a) => {
                     const ah = healthOf(a.budgetHours, a.actualHours, wp.status === 'complete')
@@ -187,7 +194,7 @@ export function WorkPackageCard({
                     )
                   })}
                 </tbody>
-              </table>
+              </FrozenTable>
             </div>
           )}
 

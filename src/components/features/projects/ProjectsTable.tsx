@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useRef, type ReactNode } from 'react'
 import { Eye, Pencil, Copy, Trash2, Package } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
@@ -243,16 +244,15 @@ export function ProjectsTable({
 
   return (
     <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-      <div ref={wrapRef} className="overflow-x-auto">
-      <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: fixedTotal + FLEX_FLOOR }}>
-        <caption className="sr-only">Projects, with budget health per project</caption>
-        {/* Widths live on <colgroup>, not the header cells — under
-            table-fixed a header without per-column cells hands its widths to
-            whatever the first body row happens to contain. */}
-        <colgroup>
-          {columns.map((c) => <col key={c.label} style={{ width: widthOf(c) }} />)}
-        </colgroup>
-        <thead>
+      <div ref={wrapRef}>
+      <FrozenTable
+        footer={pagination}
+        columns={columns.map(widthOf)}
+        columnLabels={columns.map((c) => c.label)}
+        minWidth={fixedTotal + FLEX_FLOOR}
+        tableClassName="w-full table-fixed border-collapse text-left"
+        caption={<>Projects, with budget health per project</>}
+        header={<thead>
           <tr className="border-b border-border-default bg-neutral-50">
             {columns.map((c) => {
               // The short form still names every field the column holds —
@@ -281,7 +281,8 @@ export function ProjectsTable({
               )
             })}
           </tr>
-        </thead>
+        </thead>}
+      >
         <tbody>
           {loading
             ? Array.from({ length: 6 }, (_, i) => (
@@ -417,9 +418,8 @@ export function ProjectsTable({
                 )
               })}
         </tbody>
-      </table>
+      </FrozenTable>
       </div>
-      {pagination}
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useState } from 'react'
 import { BookOpen, Eye, Pencil, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
@@ -72,14 +73,10 @@ export function GcpMocTab({ createOpen, onCreateOpenChange, query }: GcpMocTabPr
           />
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
-          <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
-            <caption className="sr-only">Means of Compliance codes</caption>
-            <colgroup>
-              {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
-              <col style={{ width: COL_WIDTHS[COLUMNS.length] }} />
-            </colgroup>
-            <thead>
+        <div className="rounded-sm border border-border-default bg-neutral-25">
+          <FrozenTable columns={COL_WIDTHS} minWidth={TABLE_WIDTH}
+              columnLabels={[...COLUMNS.map((c) => c.label), 'Actions']} caption={<>Means of Compliance codes</>}
+              tableClassName="w-full table-fixed border-collapse text-left" header={<thead>
               <tr className="border-b border-border-default bg-neutral-50">
                 {COLUMNS.map((c) => (
                   <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
@@ -89,7 +86,8 @@ export function GcpMocTab({ createOpen, onCreateOpenChange, query }: GcpMocTabPr
                 ))}
                 <SortableTh className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
               </tr>
-            </thead>
+            </thead>}>
+
             <tbody>
               {sorted.map((m) => (
                 <tr key={m.id} className="border-b border-border-default last:border-b-0">
@@ -113,7 +111,7 @@ export function GcpMocTab({ createOpen, onCreateOpenChange, query }: GcpMocTabPr
                 </tr>
               ))}
             </tbody>
-          </table>
+          </FrozenTable>
         </div>
       )}
 

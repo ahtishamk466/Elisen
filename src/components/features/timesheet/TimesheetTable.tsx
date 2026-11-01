@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import type { ReactNode } from 'react'
 import { Eye, Pencil, Copy, Trash2, CheckCircle2 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
@@ -141,13 +143,17 @@ export function TimesheetTable({
 
   return (
     <div className={bare ? '' : 'overflow-hidden rounded-sm border border-border-default bg-neutral-25'}>
-      <div className="overflow-x-auto">
+      <div>
       {/* Derived, so the declared minimum can never drift from the widths
           above the way a hand-kept number did. */}
-      <table className="w-full table-fixed border-collapse text-left"
-        style={{ minWidth: columns.reduce((n, c) => n + c.width, 0) }}>
-        <caption className="sr-only">Timesheet entries</caption>
-        <thead>
+      <FrozenTable
+        footer={pagination}
+        columns={proportionalWidths(columns.map((c) => c.width))}
+        columnLabels={columns.map((c) => c.label)}
+        minWidth={columns.reduce((n, c) => n + c.width, 0)}
+        tableClassName="w-full table-fixed border-collapse text-left"
+        caption={<>Timesheet entries</>}
+        header={<thead>
           <tr className="border-b border-border-default bg-neutral-50">
             {columns.slice(0, -1).map((c) => (
               <SortableTh key={c.label} sortKey={c.sort} ownsKeys={c.sorts?.map((o) => o.key)} sort={sort} onSortChange={setSort}
@@ -171,7 +177,8 @@ export function TimesheetTable({
               {columns[columns.length - 1].label}
             </SortableTh>
           </tr>
-        </thead>
+        </thead>}
+      >
         <tbody>
           {loading
             ? Array.from({ length: 6 }, (_, i) => (
@@ -238,9 +245,8 @@ export function TimesheetTable({
                 </tr>
               ))}
         </tbody>
-      </table>
+      </FrozenTable>
       </div>
-      {pagination}
     </div>
   )
 }

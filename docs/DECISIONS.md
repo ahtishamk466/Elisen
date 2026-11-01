@@ -8270,3 +8270,44 @@ The existing GcpFlowPage is large; extracting its Create GCP drawer is suggested
 ## 2026-11-01 — Plain Add and row-to-View in People & Authority
 
 User requested Add FOC, Add Delegation and Add Discipline to read simply Add. The shared header action still opens the active tab's form. This user instruction supersedes the older named-Add rule for these three tabs. User also requested row-click View consistently across FOC/Delegation/Discipline. Normal table-cell clicks open the existing exact-record detail drawer, with a native code-cell Button providing keyboard access and shared focus styles. Actions cells stop click propagation (including portalled action menus), so Edit/Remove do not open an extra View. Code buttons use no underline, matching the user's recent preference. No backend/store/schema changes or live release.
+
+## 2026-11-01 — Keep People & Authority tabs visible while scrolling
+
+User requested fixed top tabs. The existing shared tab-strip wrapper is sticky at top0 within AppShell's vertical main scroller, using the semantic sticky layer and its existing opaque surface. This keeps FOC/Delegation/Discipline navigation visible without introducing a second page scroll region or altering each table's scroll/header behavior. Dropdowns and drawers retain their higher layers. Local release hold remains in effect.
+
+
+## 2026-11-01 — Fixed column headings through a shared table frame
+
+User requested column headings to remain visible throughout the app while rows
+scroll, extending the fixed People & Authority tabs request. Existing tables used
+several layouts; blanket sticky CSS would be trapped by horizontal overflow
+wrappers and would put the scrollbar beside the header, contrary to the standing
+body-only scrollbar rule. Reuse the existing split-table/horizontal-sync pattern
+in shared FrozenTable with explicit matching columns. Ordinary lists across GCP,
+reference data, access, projects, approvals, documents, TCCA, timesheet and system
+now share that frame. Existing frozen master-detail/picker/report panes remain.
+Short tables shrink to content; long tables cap to the available viewport or use
+a bounded fill slot. Keep load-more footers inside the scrolling rows. Preserve
+sorting, select-all, row actions, pinned Actions and dynamic financial columns.
+Static, noninteractive headings in the body table retain column associations;
+interactive controls occur only once in the visible frozen header. This is a
+frontend layout change, with no stores, fixtures, backend or release changes.
+
+Discipline View also uses one gap grid. Its Active badge is locally flex-wrapped
+to remove an inline baseline that made the first field row slightly taller than
+the following Elisen/TCCA field groups. Existing shared label/value typography is
+unchanged. Browser measurements confirmed equal group gaps. All changes remain
+local until the user requests the combined live release.
+
+
+The user then requested the table to reach the bottom/footer automatically when
+zooming out. Remove the initial600CSS ceiling from the shared layout hook: long
+lists use the entire measured available space, including zoom changes. Reserve
+the containing pane's bottom padding and one CSS pixel for closing borders/rounding.
+Short nested tables still size to their rows, and bounded flex panes retain fill.
+
+Browser verification in RevisionDrawer also found that a wide table could enlarge
+its containing form grid instead of scrolling within the drawer. Apply inline-size
+containment on the shared frame so intrinsic table width does not size its parent.
+The rows viewport stays within the drawer, and its horizontal scroll remains
+synchronized with the fixed header.

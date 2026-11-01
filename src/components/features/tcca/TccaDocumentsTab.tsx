@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Pencil, Trash2, FileText } from 'lucide-react'
@@ -82,17 +84,22 @@ export function TccaDocumentsTab({ tcca }: { tcca: TccaProject }) {
           />
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
-          <table className="w-full border-collapse text-left" style={{ minWidth: 760 }}>
-            <caption className="sr-only">Documents tracked with Transport Canada</caption>
-            <thead>
+        <div className="rounded-sm border border-border-default bg-neutral-25">
+          <FrozenTable
+            columns={proportionalWidths([180, 260, 160, 160, 140, 140, 90])}
+            columnLabels={COLUMNS.map((c) => c.label)}
+            minWidth={760}
+            tableClassName="w-full border-collapse text-left"
+            caption={<>Documents tracked with Transport Canada</>}
+            header={<thead>
               <tr className="border-b border-border-default bg-neutral-50">
                 {COLUMNS.map((c) => (
                   <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
                     className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                 ))}
               </tr>
-            </thead>
+            </thead>}
+          >
             <tbody>
               {sorted.map((link) => {
                 const rev = revisionOf(link.revisionId)
@@ -125,7 +132,7 @@ export function TccaDocumentsTab({ tcca }: { tcca: TccaProject }) {
                 )
               })}
             </tbody>
-          </table>
+          </FrozenTable>
         </div>
       )}
 

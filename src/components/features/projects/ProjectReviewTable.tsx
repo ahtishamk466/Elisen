@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import type { ReactNode } from 'react'
 import { Eye, Pencil, Package } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
@@ -24,6 +26,7 @@ type SortKey = 'number' | 'company' | 'description' | 'priority' | 'status' | 'c
 
 interface Column {
   label: string
+  width: number
   sort?: SortKey
   /** Two figures in one cell; the heading offers both. */
   sorts?: { key: SortKey; label: string }[]
@@ -32,22 +35,23 @@ interface Column {
 }
 
 const COLUMNS: Column[] = [
-  { label: 'Number', sort: 'number' },
-  { label: 'Company Name', sort: 'company' },
-  { label: 'Description', sort: 'description' },
-  { label: 'Priority', sort: 'priority' },
-  { label: 'Status', sort: 'status' },
-  { label: 'Comments', sort: 'comments' },
-  { label: 'Next Action', sort: 'nextAction' },
-  { label: 'Due Date', sort: 'dueDate' },
-  { label: 'Aging', sort: 'aging' },
+  { label: 'Number', width: 140, sort: 'number' },
+  { label: 'Company Name', width: 200, sort: 'company' },
+  { label: 'Description', width: 280, sort: 'description' },
+  { label: 'Priority', width: 120, sort: 'priority' },
+  { label: 'Status', width: 120, sort: 'status' },
+  { label: 'Comments', width: 260, sort: 'comments' },
+  { label: 'Next Action', width: 180, sort: 'nextAction' },
+  { label: 'Due Date', width: 150, sort: 'dueDate' },
+  { label: 'Aging', width: 100, sort: 'aging' },
   {
     label: 'Actual / Budget',
+    width: 180,
     financial: true,
     sorts: [{ key: 'actual', label: 'Actual' }, { key: 'budget', label: 'Budget' }],
   },
-  { label: 'Active', sort: 'active' },
-  { label: 'Actions' },
+  { label: 'Active', width: 100, sort: 'active' },
+  { label: 'Actions', width: 90 },
 ]
 
 const HOURS = new Intl.NumberFormat('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -98,17 +102,16 @@ export function ProjectReviewTable({
     // table's header, not a control floating above it.
     <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
       {tabs}
-      {/* The scroll container is the tabpanel, and is itself a tab stop so it
-          can be scrolled from the keyboard. */}
-      <div
-        className="overflow-x-auto"
-        {...(activeTabKey
-          ? { role: 'tabpanel', 'aria-labelledby': `tab-${activeTabKey}`, tabIndex: 0 }
-          : {})}
-      >
-        <table className="w-full border-collapse text-left" style={{ minWidth: 1820 }}>
-          <caption className="sr-only">Projects review</caption>
-          <thead>
+      <div>
+        <FrozenTable
+          bodyProps={activeTabKey ? { role: 'tabpanel', 'aria-labelledby': `tab-${activeTabKey}`, tabIndex: 0 } : undefined}
+          footer={pagination}
+          columns={proportionalWidths(columns.map((c) => c.width))}
+          columnLabels={columns.map((c) => c.label)}
+          minWidth={1820}
+          tableClassName="w-full border-collapse text-left"
+          caption={<>Projects review</>}
+          header={<thead>
             <tr className="border-b border-border-default bg-neutral-50">
               {columns.slice(0, -1).map((c) => (
                 <SortableTh key={c.label} sortKey={c.sort} ownsKeys={c.sorts?.map((o) => o.key)}
@@ -131,7 +134,8 @@ export function ProjectReviewTable({
                 {columns[columns.length - 1].label}
               </SortableTh>
             </tr>
-          </thead>
+          </thead>}
+        >
           <tbody>
             {loading
               ? Array.from({ length: 8 }, (_, i) => (
@@ -214,9 +218,8 @@ export function ProjectReviewTable({
                   )
                 })}
           </tbody>
-        </table>
+        </FrozenTable>
       </div>
-      {pagination}
     </div>
   )
 }

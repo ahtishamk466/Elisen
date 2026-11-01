@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useState } from 'react'
 import { ArrowUpRight, BookMarked, Copy, Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
@@ -188,10 +189,10 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
             />
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
-                  <caption className="sr-only">Regulations</caption>
-                  <thead>
+              <div>
+                <FrozenTable footer={!loading && <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="regulations" />} columns={COLUMNS.map((c) => c.width)} minWidth={TABLE_WIDTH}
+              columnLabels={COLUMNS.map((c) => c.label)} caption={<>Regulations</>}
+              tableClassName="w-full table-fixed border-collapse text-left" header={<thead>
                     <tr className="border-b border-border-default bg-neutral-50">
                       {COLUMNS.map((c) => (
                         <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
@@ -199,7 +200,7 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
                           className="px-base py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                       ))}
                     </tr>
-                  </thead>
+                  </thead>}>
                   <tbody>
                     {loading
                       ? Array.from({ length: 6 }, (_, i) => (
@@ -259,11 +260,8 @@ export function RegulationListPage({ state: forced = 'ready' }: { state?: PageSt
                           </tr>
                         ))}
                   </tbody>
-                </table>
+                </FrozenTable>
               </div>
-              {!loading && (
-                <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="regulations" />
-              )}
             </>
           )}
         </div>

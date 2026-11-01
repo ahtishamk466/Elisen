@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { amendmentLabel } from '@/lib/gcpDisplay'
 import { useEffect, useMemo, useState } from 'react'
 import { BookMarked } from 'lucide-react'
@@ -121,20 +122,17 @@ export function BasisLevelBuilder({ projectNumber, existing, onDraft }: {
         <Stat dl label="Not at this level">{notAtLevel}</Stat>
       </dl>
 
-      <div className="overflow-x-auto border-t border-border-default">
-        <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 760 }}>
-          <caption className="sr-only">Which amendment of each Part {part} rule applies at level {level}</caption>
-          <colgroup>
-            <col style={{ width: '14%' }} /><col style={{ width: '30%' }} /><col style={{ width: '20%' }} />
-            <col style={{ width: '18%' }} /><col style={{ width: '18%' }} />
-          </colgroup>
-          <thead>
+      <div className=" border-t border-border-default">
+        <FrozenTable columns={['14%', '30%', '20%', '18%', '18%']} minWidth={760}
+              columnLabels={['Section', 'Title', 'Versions in pool', 'Applies', 'Why']} caption={<>Which amendment of each Part {part} rule applies at level {level}</>}
+              tableClassName="w-full table-fixed border-collapse text-left" header={<thead>
             <tr className="border-b border-border-default bg-neutral-50">
               {['Section', 'Title', 'Versions in pool', 'Applies', 'Why'].map((h) => (
                 <th key={h} scope="col" className="px-lg py-base text-sm font-semibold text-text-secondary">{h}</th>
               ))}
             </tr>
-          </thead>
+          </thead>}>
+
           <tbody>
             {picks.map((p) => {
               const value = applied(p.section, p.chosen?.id)
@@ -157,7 +155,7 @@ export function BasisLevelBuilder({ projectNumber, existing, onDraft }: {
               )
             })}
           </tbody>
-        </table>
+        </FrozenTable>
       </div>
     </div>
   )

@@ -5,7 +5,7 @@ import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { EmptyState } from '@/components/patterns/EmptyState'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useTableSort } from '@/components/patterns/useTableSort'
-import { useSyncedScroll } from '@/components/patterns/useSyncedScroll'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { proportionalWidths } from '@/lib/tableWidths'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -46,8 +46,7 @@ export interface GcpDelegationTabProps {
 /** Step 2 of the People & Authority tabs — which Section Root a FOC Code may
     sign for, exactly as the legacy Delegation list has it (720 rows). No
     personal data on this one either, so nothing needed anonymizing. The
-    table scrolls in its own bounded frame (like Scope Rules' regulation
-    pool) rather than stretching the page to 720 rows tall. */
+    shared frozen table bounds its scrolling rows to the available viewport. */
 export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpDelegationTabProps) {
   const delegations = useGcpStore((s) => s.delegations)
   const addDelegation = useGcpStore((s) => s.addDelegation)
@@ -69,7 +68,6 @@ export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpD
     limitation: (d) => d.limitation,
     active: (d) => d.active,
   })
-  const { headerRef, onBodyScroll } = useSyncedScroll()
 
   return (
     <div className="grid gap-lg">
@@ -83,18 +81,10 @@ export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpD
         </div>
       ) : (
         <div className="flex flex-col overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-          {/* Frozen header, own table, full width — a scrollbar must never
-              run alongside a table's header (client instruction,
-              2026-09-24). Sort controls are real, interactive `SortableTh`s,
-              so they stay in this one visible header rather than a hidden
-              duplicate; the body below carries no header of its own. */}
-          <div ref={headerRef} className="shrink-0 overflow-x-hidden overflow-y-scroll scrollbar-none">
-            <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
-              <colgroup>
-                {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
-                <col style={{ width: COL_WIDTHS[COLUMNS.length] }} />
-              </colgroup>
-              <thead>
+
+          <FrozenTable columns={COL_WIDTHS} minWidth={TABLE_WIDTH} caption="Delegations"
+            columnLabels={[...COLUMNS.map((c) => c.label), 'Actions']}
+            tableClassName="border-collapse text-left" header={<thead>
                 <tr className="border-b border-border-default bg-neutral-50">
                   {COLUMNS.map((c) => (
                     <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
@@ -104,16 +94,8 @@ export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpD
                   ))}
                   <SortableTh className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
                 </tr>
-              </thead>
-            </table>
-          </div>
-          <div className="max-h-[600px] overflow-x-auto overflow-y-scroll scrollbar-none" onScroll={onBodyScroll}>
-            <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: TABLE_WIDTH }}>
-              <caption className="sr-only">Delegations</caption>
-              <colgroup>
-                {COLUMNS.map((c, i) => <col key={c.label} style={{ width: COL_WIDTHS[i] }} />)}
-                <col style={{ width: COL_WIDTHS[COLUMNS.length] }} />
-              </colgroup>
+              </thead>}>
+
               <tbody>
                 {sorted.map((d) => (
                   <tr key={d.id} onClick={() => setViewing(d)}
@@ -146,8 +128,7 @@ export function GcpDelegationTab({ createOpen, onCreateOpenChange, query }: GcpD
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
+            </FrozenTable>
         </div>
       )}
 

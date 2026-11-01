@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Award, Unlink, Link2, ExternalLink } from 'lucide-react'
@@ -98,17 +100,22 @@ export function ProjectApprovalsTab({ projectId }: { projectId: string }) {
             </Button>
           </div>
 
-          <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
-            <table className="w-full border-collapse text-left" style={{ minWidth: 760 }}>
-              <caption className="sr-only">Approvals tied to this project</caption>
-              <thead>
+          <div className="rounded-sm border border-border-default bg-neutral-25">
+            <FrozenTable
+              columns={proportionalWidths([140, 280, 100, 160, 180, 90])}
+              columnLabels={COLUMNS.map((c) => c.label)}
+              minWidth={760}
+              tableClassName="w-full border-collapse text-left"
+              caption={<>Approvals tied to this project</>}
+              header={<thead>
                 <tr className="border-b border-border-default bg-neutral-50">
                   {COLUMNS.map((c) => (
                     <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
                       className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                 </tr>
-              </thead>
+              </thead>}
+            >
               <tbody>
                 {sorted.map((a) => {
                   const cr = currentRevision(a.id)
@@ -143,7 +150,7 @@ export function ProjectApprovalsTab({ projectId }: { projectId: string }) {
                   )
                 })}
               </tbody>
-            </table>
+            </FrozenTable>
           </div>
         </>
       )}

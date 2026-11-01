@@ -66,7 +66,7 @@ export function GcpPeoplePage() {
       }
     >
       <div className="grid gap-lg">
-        <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
+        <div className="sticky top-0 z-sticky overflow-hidden rounded-sm border border-border-default bg-neutral-25">
           <TableTabs
             ariaLabel="People and authority"
             activeKey={active.key}

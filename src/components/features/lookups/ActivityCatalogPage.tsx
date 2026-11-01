@@ -10,6 +10,7 @@ import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { TableTabs } from '@/components/patterns/TableTabs'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { Truncate } from '@/components/patterns/Truncate'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -255,9 +256,12 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
             />
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: 860 }}>
-                  <caption className="sr-only">{tab === 'activities' ? 'Catalog activities' : 'Catalog tasks'}</caption>
+              <FrozenTable
+                columns={columns.map((column) => column.width)}
+                minWidth={860}
+                caption={tab === 'activities' ? 'Catalog activities' : 'Catalog tasks'}
+                columnLabels={columns.map((column) => column.label)}
+                header={
                   <thead>
                     <tr className="border-b border-border-default bg-neutral-50">
                       {columns.map((c) => (
@@ -269,94 +273,95 @@ export function ActivityCatalogPage({ state = 'ready' }: { state?: PageState }) 
                       ))}
                     </tr>
                   </thead>
-                  <tbody>
-                    {loading
-                      ? Array.from({ length: 6 }, (_, i) => (
-                          <tr key={i} className="border-b border-border-default last:border-b-0">
-                            {columns.map((c) => <td key={c.label} className="px-sm py-base"><Skeleton className="h-4 w-full" /></td>)}
-                          </tr>
-                        ))
-                      : tab === 'activities'
-                        ? activitySort.sorted.slice(0, visibleCount).map((a) => {
-                            const linked = tasksForActivity(catalog, a.id)
-                            const broken = isMisconfigured(catalog, a)
-                            return (
-                              <tr key={a.id} onClick={() => setActivityDrawer({ mode: 'view', activity: a })}
-                                className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
-                                <td className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-primary">{a.name}</td>
-                                <td className="px-sm py-base text-sm text-text-primary" style={{ maxWidth: 300 }}>
-                                  <Truncate>{a.description || '—'}</Truncate>
-                                </td>
-                                <td className="whitespace-nowrap px-sm py-base text-sm">
-                                  {a.nonProject ? <span className="text-text-muted">Not applicable</span>
-                                    : linked.length === 0
-                                      ? <span className={broken ? 'font-semibold text-danger' : 'text-text-muted'}>None</span>
-                                      : <button type="button"
-                                          onClick={(e) => { e.stopPropagation(); setActivityDrawer({ mode: 'view', activity: a }) }}
-                                          className="text-text-primary underline-offset-2 hover:text-accent hover:underline">
-                                          {linked.length} task{linked.length === 1 ? '' : 's'}
-                                        </button>}
-                                </td>
-                                <td className="whitespace-nowrap px-sm py-base"><YesNo on={a.taskRequired} /></td>
-                                <td className="whitespace-nowrap px-sm py-base"><YesNo on={a.isDefault} /></td>
-                                <td className="whitespace-nowrap px-sm py-base">
-                                  <Badge tone={a.nonProject ? 'info' : 'neutral'}>{a.nonProject ? 'Non-project' : 'Project work'}</Badge>
-                                </td>
-                                <td className="whitespace-nowrap px-sm py-base"><YesNo on={a.active} yes="Active" no="Inactive" /></td>
-                                <td className="px-sm py-base" onClick={(e) => e.stopPropagation()}>
-                                  <ActionsMenu
-                                    ariaLabel={`Actions for activity ${a.name}`}
-                                    items={[
-                                      { label: 'View', icon: <Eye size={16} />, onSelect: () => setActivityDrawer({ mode: 'view', activity: a }) },
-                                      { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setActivityDrawer({ mode: 'edit', activity: a }) },
-                                      ...(a.nonProject ? [] : [{ label: 'Add task to this activity', icon: <Plus size={16} />, onSelect: () => setTaskDrawer({ mode: 'create', presetActivityId: a.id }) }]),
-                                      { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeletingActivity(a), tone: 'danger' as const },
-                                    ]}
-                                  />
-                                </td>
-                              </tr>
-                            )
-                          })
-                        : taskSort.sorted.slice(0, visibleCount).map((t) => {
-                            const owners = activitiesForTask(catalog, t.id)
-                            const used = taskUsage(t.name)
-                            return (
-                              <tr key={t.id} onClick={() => setTaskDrawer({ mode: 'view', task: t })}
-                                className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
-                                <td className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-primary">{t.name}</td>
-                                <td className="px-sm py-base text-sm">
-                                  {owners.length === 0
-                                    ? <span className="text-text-muted">Not linked yet</span>
-                                    : <span className="flex flex-wrap gap-xs">
-                                        {owners.map((a) => (
-                                          <span key={a.id} className="whitespace-nowrap rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{a.name}</span>
-                                        ))}
-                                      </span>}
-                                </td>
-                                <td className="whitespace-nowrap px-sm py-base text-sm text-text-primary">
-                                  {used === 0 ? <span className="text-text-muted">—</span> : `${used} ${used === 1 ? 'entry' : 'entries'}`}
-                                </td>
-                                <td className="whitespace-nowrap px-sm py-base"><YesNo on={t.active} yes="Active" no="Inactive" /></td>
-                                <td className="px-sm py-base" onClick={(e) => e.stopPropagation()}>
-                                  <ActionsMenu
-                                    ariaLabel={`Actions for task ${t.name}`}
-                                    items={[
-                                      { label: 'View', icon: <Eye size={16} />, onSelect: () => setTaskDrawer({ mode: 'view', task: t }) },
-                                      { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setTaskDrawer({ mode: 'edit', task: t }) },
-                                      { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeletingTask(t), tone: 'danger' as const },
-                                    ]}
-                                  />
-                                </td>
-                              </tr>
-                            )
-                          })}
-                  </tbody>
-                </table>
-              </div>
-              {!loading && (
-                <AutoLoadFooter total={rowCount} visibleCount={visibleCount} loading={loadingMore}
-                  onLoadMore={loadMore} itemLabel={tab} />
-              )}
+                }
+                footer={!loading && (
+                    <AutoLoadFooter total={rowCount} visibleCount={visibleCount} loading={loadingMore}
+                      onLoadMore={loadMore} itemLabel={tab} />
+                )}
+              >
+                <tbody>
+                  {loading
+                    ? Array.from({ length: 6 }, (_, i) => (
+                        <tr key={i} className="border-b border-border-default last:border-b-0">
+                          {columns.map((c) => <td key={c.label} className="px-sm py-base"><Skeleton className="h-4 w-full" /></td>)}
+                        </tr>
+                      ))
+                    : tab === 'activities'
+                      ? activitySort.sorted.slice(0, visibleCount).map((a) => {
+                          const linked = tasksForActivity(catalog, a.id)
+                          const broken = isMisconfigured(catalog, a)
+                          return (
+                            <tr key={a.id} onClick={() => setActivityDrawer({ mode: 'view', activity: a })}
+                              className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
+                              <td className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-primary">{a.name}</td>
+                              <td className="px-sm py-base text-sm text-text-primary" style={{ maxWidth: 300 }}>
+                                <Truncate>{a.description || '—'}</Truncate>
+                              </td>
+                              <td className="whitespace-nowrap px-sm py-base text-sm">
+                                {a.nonProject ? <span className="text-text-muted">Not applicable</span>
+                                  : linked.length === 0
+                                    ? <span className={broken ? 'font-semibold text-danger' : 'text-text-muted'}>None</span>
+                                    : <button type="button"
+                                        onClick={(e) => { e.stopPropagation(); setActivityDrawer({ mode: 'view', activity: a }) }}
+                                        className="text-text-primary underline-offset-2 hover:text-accent hover:underline">
+                                        {linked.length} task{linked.length === 1 ? '' : 's'}
+                                      </button>}
+                              </td>
+                              <td className="whitespace-nowrap px-sm py-base"><YesNo on={a.taskRequired} /></td>
+                              <td className="whitespace-nowrap px-sm py-base"><YesNo on={a.isDefault} /></td>
+                              <td className="whitespace-nowrap px-sm py-base">
+                                <Badge tone={a.nonProject ? 'info' : 'neutral'}>{a.nonProject ? 'Non-project' : 'Project work'}</Badge>
+                              </td>
+                              <td className="whitespace-nowrap px-sm py-base"><YesNo on={a.active} yes="Active" no="Inactive" /></td>
+                              <td className="px-sm py-base" onClick={(e) => e.stopPropagation()}>
+                                <ActionsMenu
+                                  ariaLabel={`Actions for activity ${a.name}`}
+                                  items={[
+                                    { label: 'View', icon: <Eye size={16} />, onSelect: () => setActivityDrawer({ mode: 'view', activity: a }) },
+                                    { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setActivityDrawer({ mode: 'edit', activity: a }) },
+                                    ...(a.nonProject ? [] : [{ label: 'Add task to this activity', icon: <Plus size={16} />, onSelect: () => setTaskDrawer({ mode: 'create', presetActivityId: a.id }) }]),
+                                    { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeletingActivity(a), tone: 'danger' as const },
+                                  ]}
+                                />
+                              </td>
+                            </tr>
+                          )
+                        })
+                      : taskSort.sorted.slice(0, visibleCount).map((t) => {
+                          const owners = activitiesForTask(catalog, t.id)
+                          const used = taskUsage(t.name)
+                          return (
+                            <tr key={t.id} onClick={() => setTaskDrawer({ mode: 'view', task: t })}
+                              className="cursor-pointer border-b border-border-default transition-colors duration-fast last:border-b-0 hover:bg-accent-subtle">
+                              <td className="whitespace-nowrap px-sm py-base text-sm font-semibold text-text-primary">{t.name}</td>
+                              <td className="px-sm py-base text-sm">
+                                {owners.length === 0
+                                  ? <span className="text-text-muted">Not linked yet</span>
+                                  : <span className="flex flex-wrap gap-xs">
+                                      {owners.map((a) => (
+                                        <span key={a.id} className="whitespace-nowrap rounded-xs bg-neutral-100 px-sm py-xxss text-xs text-text-secondary">{a.name}</span>
+                                      ))}
+                                    </span>}
+                              </td>
+                              <td className="whitespace-nowrap px-sm py-base text-sm text-text-primary">
+                                {used === 0 ? <span className="text-text-muted">—</span> : `${used} ${used === 1 ? 'entry' : 'entries'}`}
+                              </td>
+                              <td className="whitespace-nowrap px-sm py-base"><YesNo on={t.active} yes="Active" no="Inactive" /></td>
+                              <td className="px-sm py-base" onClick={(e) => e.stopPropagation()}>
+                                <ActionsMenu
+                                  ariaLabel={`Actions for task ${t.name}`}
+                                  items={[
+                                    { label: 'View', icon: <Eye size={16} />, onSelect: () => setTaskDrawer({ mode: 'view', task: t }) },
+                                    { label: 'Edit', icon: <Pencil size={16} />, onSelect: () => setTaskDrawer({ mode: 'edit', task: t }) },
+                                    { label: 'Delete', icon: <Trash2 size={16} />, onSelect: () => setDeletingTask(t), tone: 'danger' as const },
+                                  ]}
+                                />
+                              </td>
+                            </tr>
+                          )
+                        })}
+                </tbody>
+              </FrozenTable>
             </>
           )}
         </div>

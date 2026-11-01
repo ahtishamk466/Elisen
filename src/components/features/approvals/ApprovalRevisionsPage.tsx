@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ExternalLink, FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react'
@@ -133,17 +135,25 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
         ) : (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
             <ApprovalsTabs active="revisions" />
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left" style={{ minWidth: 950 }}>
-                <caption className="sr-only">Approval revisions across all certificates</caption>
-                <thead>
+            <div>
+              <FrozenTable
+                footer={!loading && (
+                  <AutoLoadFooter total={rows.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="revisions" />
+                )}
+                columns={proportionalWidths([180, 100, 320, 160, 180, 90])}
+                columnLabels={COLUMNS.map((c) => c.label)}
+                minWidth={950}
+                tableClassName="w-full border-collapse text-left"
+                caption={<>Approval revisions across all certificates</>}
+                header={<thead>
                   <tr className="border-b border-border-default bg-neutral-50">
                     {COLUMNS.map((c) => (
                       <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
                         className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                     ))}
                   </tr>
-                </thead>
+                </thead>}
+              >
                 <tbody>
                   {loading
                     ? Array.from({ length: 6 }, (_, i) => (
@@ -209,11 +219,8 @@ export function ApprovalRevisionsPage({ state = 'ready' }: { state?: PageState }
                         )
                       })}
                 </tbody>
-              </table>
+              </FrozenTable>
             </div>
-            {!loading && (
-              <AutoLoadFooter total={rows.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="revisions" />
-            )}
           </div>
         )}
       </div>

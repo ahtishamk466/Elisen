@@ -7,6 +7,8 @@ import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { Truncate } from '@/components/patterns/Truncate'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
+import { proportionalWidths } from '@/lib/tableWidths'
 import { RoleDrawer } from './RoleDrawer'
 import { useAccessStore } from '@/stores/accessStore'
 import { roleMembers, rolePermissionClosure } from '@/lib/accessDisplay'
@@ -14,15 +16,16 @@ import type { AccessRole } from '@/types/access'
 
 type SortKey = 'role' | 'description' | 'rule' | 'inherits' | 'permissions' | 'members'
 
-const COLUMNS: { label: string; sort?: SortKey }[] = [
-  { label: 'Role', sort: 'role' },
-  { label: 'Description', sort: 'description' },
-  { label: 'Rule Name', sort: 'rule' },
-  { label: 'Inherits', sort: 'inherits' },
-  { label: 'Permissions', sort: 'permissions' },
-  { label: 'Members', sort: 'members' },
-  { label: 'Actions' },
+const COLUMNS: { label: string; sort?: SortKey; width: number }[] = [
+  { label: 'Role', sort: 'role', width: 95 },
+  { label: 'Description', sort: 'description', width: 170 },
+  { label: 'Rule Name', sort: 'rule', width: 105 },
+  { label: 'Inherits', sort: 'inherits', width: 95 },
+  { label: 'Permissions', sort: 'permissions', width: 115 },
+  { label: 'Members', sort: 'members', width: 100 },
+  { label: 'Actions', width: 80 },
 ]
+const COLUMN_WIDTHS = proportionalWidths(COLUMNS.map((column) => column.width))
 
 export interface RolesTabProps {
   onToast: (msg: string) => void
@@ -71,17 +74,25 @@ export function RolesTab({ onToast, adding, setAdding }: RolesTabProps) {
   return (
     <div className="grid gap-lg">
       <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left" style={{ minWidth: 760 }}>
-          <caption className="sr-only">Roles</caption>
-          <thead>
-            <tr className="border-b border-border-default bg-neutral-50">
-              {COLUMNS.map((c) => (
-                <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
-                  className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
-              ))}
-            </tr>
-          </thead>
+        <FrozenTable
+          columns={COLUMN_WIDTHS}
+          minWidth={760}
+          caption="Roles"
+          columnLabels={COLUMNS.map((column) => column.label)}
+          header={
+            <thead>
+              <tr className="border-b border-border-default bg-neutral-50">
+                {COLUMNS.map((c) => (
+                  <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                    className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
+                ))}
+              </tr>
+            </thead>
+          }
+          footer={
+            <AutoLoadFooter total={roles.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="roles" />
+          }
+        >
           <tbody>
             {sorted.slice(0, visibleCount).map((role) => (
               <tr
@@ -120,9 +131,7 @@ export function RolesTab({ onToast, adding, setAdding }: RolesTabProps) {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
-      <AutoLoadFooter total={roles.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="roles" />
+        </FrozenTable>
       </div>
 
       {adding && (

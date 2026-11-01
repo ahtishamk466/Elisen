@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useMemo, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
@@ -88,9 +90,13 @@ export function AuditCleanTab({ loading = false, onCleaned }: AuditCleanTabProps
         </div>
 
         <div className="overflow-hidden rounded-sm border border-border-default">
-          <table className="w-full border-collapse text-left">
-            <caption className="sr-only">Audit record types, how many are stored, and how many are old enough to delete</caption>
-            <thead>
+          <FrozenTable
+            minWidth={600}
+            columns={proportionalWidths([380, 140, 200])}
+            columnLabels={['Record type', 'Stored', `Older than ${days} days`]}
+            tableClassName="w-full border-collapse text-left"
+            caption={<>Audit record types, how many are stored, and how many are old enough to delete</>}
+            header={<thead>
               <tr className="border-b border-border-default bg-neutral-50">
                 <SortableTh sortKey="type" sort={sort} onSortChange={setSort}
                   className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Record type</SortableTh>
@@ -99,7 +105,8 @@ export function AuditCleanTab({ loading = false, onCleaned }: AuditCleanTabProps
                 <SortableTh sortKey="purgeable" sort={sort} onSortChange={setSort}
                   className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">Older than {days} days</SortableTh>
               </tr>
-            </thead>
+            </thead>}
+          >
             <tbody>
               {sorted.map((r) => (
                 <tr key={r.key} className="border-b border-border-default last:border-b-0">
@@ -122,7 +129,7 @@ export function AuditCleanTab({ loading = false, onCleaned }: AuditCleanTabProps
                 </tr>
               ))}
             </tbody>
-          </table>
+          </FrozenTable>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-lg">

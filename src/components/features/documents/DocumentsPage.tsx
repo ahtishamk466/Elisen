@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ExternalLink, Eye, FilePlus2, FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react'
@@ -252,10 +254,17 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
         ) : (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
             {tabs}
-            <div className="overflow-x-auto">
-              <table className="w-full table-fixed border-collapse text-left" style={{ minWidth: minTableWidth }}>
-                <caption className="sr-only">{label.plural}, with the project each revision was created for and every project it's used on</caption>
-                <thead>
+            <div>
+              <FrozenTable
+                footer={!loading && (
+                  <AutoLoadFooter total={rows.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="revisions" />
+                )}
+                columns={proportionalWidths(columns.map((c) => c.width))}
+                columnLabels={columns.map((c) => c.label)}
+                minWidth={minTableWidth}
+                tableClassName="w-full table-fixed border-collapse text-left"
+                caption={<>{label.plural}, with the project each revision was created for and every project it's used on</>}
+                header={<thead>
                   <tr className="border-b border-border-default bg-neutral-50">
                     {columns.slice(0, -1).map((c) => (
                       <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
@@ -280,7 +289,8 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                       {columns[columns.length - 1].label}
                     </SortableTh>
                   </tr>
-                </thead>
+                </thead>}
+              >
                 <tbody>
                   {loading
                     ? Array.from({ length: 6 }, (_, i) => (
@@ -365,11 +375,8 @@ export function DocumentsPage({ kind, state = 'ready' }: { kind: DocumentKind; s
                         )
                       })}
                 </tbody>
-              </table>
+              </FrozenTable>
             </div>
-            {!loading && (
-              <AutoLoadFooter total={rows.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="revisions" />
-            )}
           </div>
         )}
       </div>

@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus, Search, Eye, Pencil, Trash2, ShieldCheck } from 'lucide-react'
@@ -116,17 +118,25 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
           </div>
         ) : (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left" style={{ minWidth: 760 }}>
-              <caption className="sr-only">TCCA projects</caption>
-              <thead>
+          <div>
+            <FrozenTable
+                footer={!loading && (
+                  <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="TCCA projects" />
+                )}
+              columns={proportionalWidths([160, 320, 180, 140, 160, 90])}
+              columnLabels={COLUMNS.map((c) => c.label)}
+              minWidth={760}
+              tableClassName="w-full border-collapse text-left"
+              caption={<>TCCA projects</>}
+              header={<thead>
                 <tr className="border-b border-border-default bg-neutral-50">
                   {COLUMNS.map((c) => (
                     <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
                       className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                 </tr>
-              </thead>
+              </thead>}
+            >
               <tbody>
                 {loading
                   ? Array.from({ length: 4 }, (_, i) => (
@@ -162,11 +172,8 @@ export function TccaProjectsListPage({ state = 'ready' }: TccaProjectsListPagePr
                       </tr>
                     ))}
               </tbody>
-            </table>
+            </FrozenTable>
           </div>
-          {!loading && (
-            <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="TCCA projects" />
-          )}
           </div>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useState, type CSSProperties } from 'react'
 import { Eye, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
@@ -68,10 +69,10 @@ export function GcpDisciplineTab({ createOpen, onCreateOpenChange, query }: GcpD
           />
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
-          <table className="w-full border-collapse text-left">
-            <caption className="sr-only">Disciplines</caption>
-            <thead>
+        <div className="rounded-sm border border-border-default bg-neutral-25">
+          <FrozenTable columns={[200, 320, 320, 100, 90]} minWidth={1030}
+              columnLabels={['Dao Specialty Code', 'Elisen discipline', 'TCCA discipline', 'Active', 'Actions']} caption={<>Disciplines</>}
+              tableClassName="w-full border-collapse text-left" header={<thead>
               <tr className="border-b border-border-default bg-neutral-50">
                 {COLUMNS.map((c) => (
                   <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
@@ -81,7 +82,7 @@ export function GcpDisciplineTab({ createOpen, onCreateOpenChange, query }: GcpD
                 ))}
                 <SortableTh style={{ width: 64 }} className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
               </tr>
-            </thead>
+            </thead>}>
             <tbody>
               {sorted.map((d) => (
                 <tr key={d.id} onClick={() => setViewing(d)}
@@ -112,7 +113,7 @@ export function GcpDisciplineTab({ createOpen, onCreateOpenChange, query }: GcpD
                 </tr>
               ))}
             </tbody>
-          </table>
+          </FrozenTable>
         </div>
       )}
 

@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useMemo, useState, type CSSProperties } from 'react'
 import { Eye, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
@@ -71,10 +72,10 @@ export function GcpFocTab({ createOpen, onCreateOpenChange, query }: GcpFocTabPr
           />
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-sm border border-border-default bg-neutral-25">
-          <table className="w-full border-collapse text-left">
-            <caption className="sr-only">Finding of Compliance (FOC) codes</caption>
-            <thead>
+        <div className="rounded-sm border border-border-default bg-neutral-25">
+          <FrozenTable columns={[200, 320, 280, 100, 90]} minWidth={990}
+              columnLabels={['Code', 'Authority Specialist', 'Specialty', 'Default', 'Actions']} caption={<>Finding of Compliance (FOC) codes</>}
+              tableClassName="w-full border-collapse text-left" header={<thead>
               <tr className="border-b border-border-default bg-neutral-50">
                 {COLUMNS.map((c) => (
                   <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
@@ -84,7 +85,7 @@ export function GcpFocTab({ createOpen, onCreateOpenChange, query }: GcpFocTabPr
                 ))}
                 <SortableTh style={{ width: 64 }} className="px-lg py-base text-sm font-semibold text-text-secondary">Actions</SortableTh>
               </tr>
-            </thead>
+            </thead>}>
             <tbody>
               {rows.map((f) => (
                 <tr key={f.id} onClick={() => setViewing(f)}
@@ -112,7 +113,7 @@ export function GcpFocTab({ createOpen, onCreateOpenChange, query }: GcpFocTabPr
                 </tr>
               ))}
             </tbody>
-          </table>
+          </FrozenTable>
         </div>
       )}
 

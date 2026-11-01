@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useState } from 'react'
 import { Database, DatabaseBackup as RestoreIcon, Plus, Trash2, Upload } from 'lucide-react'
 import { AppShell } from '@/components/patterns/AppShell'
@@ -107,17 +109,25 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
           </div>
         ) : (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left" style={{ minWidth: 900 }}>
-                <caption className="sr-only">Database backup files</caption>
-                <thead>
+            <div>
+              <FrozenTable
+                footer={!loading && (
+                  <AutoLoadFooter total={backups.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="items" />
+                )}
+                columns={proportionalWidths([320, 120, 180, 180, 90])}
+                columnLabels={COLUMNS.map((c) => c.label)}
+                minWidth={900}
+                tableClassName="w-full border-collapse text-left"
+                caption={<>Database backup files</>}
+                header={<thead>
                   <tr className="border-b border-border-default bg-neutral-50">
                     {COLUMNS.map((c) => (
                       <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
                         className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
                     ))}
                   </tr>
-                </thead>
+                </thead>}
+              >
                 <tbody>
                   {loading
                     ? Array.from({ length: 4 }, (_, i) => (
@@ -147,11 +157,8 @@ export function DatabaseBackupsPage({ state = 'ready' }: { state?: PageState }) 
                         </tr>
                       ))}
                 </tbody>
-              </table>
+              </FrozenTable>
             </div>
-            {!loading && (
-              <AutoLoadFooter total={backups.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="items" />
-            )}
           </div>
         )}
       </div>

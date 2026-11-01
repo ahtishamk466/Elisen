@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useState } from 'react'
 import { ExternalLink } from 'lucide-react'
 import { Drawer } from '@/components/patterns/Drawer'
@@ -148,17 +150,22 @@ export function RevisionDrawer({ document, projectId, initial, onClose, onSaved 
         <FormSection title="Previous revisions" subtitle={document.title}>
           {/* The same facts the workspace table shows, so deciding what the
               next revision needs doesn't mean closing this and going back. */}
-          <div className="overflow-x-auto rounded-sm border border-border-default">
-            <table className="w-full border-collapse text-left">
-              <caption className="sr-only">Revisions that already exist of {document.number}</caption>
-              <thead>
+          <div className="rounded-sm border border-border-default">
+            <FrozenTable
+              minWidth={920}
+              columns={proportionalWidths([120, 140, 140, 140, 160, 120, 100])}
+              columnLabels={REVISION_COLUMNS.map((c) => c.label)}
+              tableClassName="w-full border-collapse text-left"
+              caption={<>Revisions that already exist of {document.number}</>}
+              header={<thead>
                 <tr className="border-b border-border-default bg-neutral-50">
                   {REVISION_COLUMNS.map((c) => (
                     <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
                       className="whitespace-nowrap px-base py-sm text-xs font-semibold text-text-secondary">{c.label}</SortableTh>
                   ))}
                 </tr>
-              </thead>
+              </thead>}
+            >
               <tbody>
                 {sortedRevisions.map((r) => (
                   <tr key={r.id} className="border-b border-border-default last:border-b-0">
@@ -185,7 +192,7 @@ export function RevisionDrawer({ document, projectId, initial, onClose, onSaved 
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </FrozenTable>
           </div>
         </FormSection>
       )}

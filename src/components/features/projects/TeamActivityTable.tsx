@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { ProgressMeter } from '@/components/patterns/ProgressMeter'
 import { SortMenu } from '@/components/patterns/SortMenu'
 import { SortableTh } from '@/components/patterns/SortableTh'
@@ -64,10 +66,14 @@ export function TeamActivityTable({ personName, items, catalogActivities }: Team
   })
 
   return (
-    <div className="overflow-x-auto border-t border-border-default p-lg">
-      <table className="w-full border-collapse text-left" style={{ minWidth: 740 }}>
-        <caption className="sr-only">Activities held by {personName} on this project</caption>
-        <thead>
+    <div className="border-t border-border-default p-lg">
+      <FrozenTable
+        columns={proportionalWidths([180, 200, 180, 140, 150, 140, 140])}
+        columnLabels={COLUMNS.map((c) => c.label)}
+        minWidth={740}
+        tableClassName="w-full border-collapse text-left"
+        caption={<>Activities held by {personName} on this project</>}
+        header={<thead>
           <tr className="border-b border-border-default">
             {COLUMNS.map((c) => (
               <SortableTh
@@ -84,7 +90,8 @@ export function TeamActivityTable({ personName, items, catalogActivities }: Team
               </SortableTh>
             ))}
           </tr>
-        </thead>
+        </thead>}
+      >
         <tbody>
           {sorted.map(({ activity, workPackage, entries }) => {
             const h = healthOf(activity.budgetHours, activity.actualHours, workPackage.status === 'complete')
@@ -113,7 +120,7 @@ export function TeamActivityTable({ personName, items, catalogActivities }: Team
             )
           })}
         </tbody>
-      </table>
+      </FrozenTable>
     </div>
   )
 }

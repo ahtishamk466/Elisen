@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
@@ -44,10 +45,11 @@ export function CertBasisUsage({ basisId }: { basisId: string }) {
       <p className="border-b border-border-default px-lg py-base text-sm text-text-muted">
         {rows.length} TCCA projects use this shared Master. Manage associations in GCP Projects.
       </p>
-      <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm" style={{ minWidth: 1100 }}>
-          <colgroup>{[16, 28, 26, 10, 10, 10].map((width, i) => <col key={i} style={{ width: `${width}%` }} />)}</colgroup>
-          <thead className="bg-neutral-50">
+      <div>
+        <FrozenTable footer={<AutoLoadFooter total={sorted.length} visibleCount={visibleCount} loading={loadingMore}
+        onLoadMore={loadMore} itemLabel="TCCA projects" />} columns={['16%', '28%', '26%', '10%', '10%', '10%']} minWidth={1100}
+              columnLabels={['TCCA Project', 'Description', 'Linked Elisen Projects', 'Status', 'Opened', 'Actions']} caption="Projects using this certification basis"
+              tableClassName="w-full table-fixed text-left text-sm" header={<thead className="bg-neutral-50">
             <tr className="border-b border-border-default">
               {([
                 ['number', 'TCCA Project'], ['description', 'Description'],
@@ -58,7 +60,7 @@ export function CertBasisUsage({ basisId }: { basisId: string }) {
               ))}
               <th className="px-lg py-base">Actions</th>
             </tr>
-          </thead>
+          </thead>}>
           <tbody>
             {sorted.slice(0, visibleCount).map(({ project, linked }) => (
               <tr key={project.id} className="border-b border-border-default hover:bg-neutral-50">
@@ -82,10 +84,9 @@ export function CertBasisUsage({ basisId }: { basisId: string }) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </FrozenTable>
       </div>
-      <AutoLoadFooter total={sorted.length} visibleCount={visibleCount} loading={loadingMore}
-        onLoadMore={loadMore} itemLabel="TCCA projects" />
+
     </div>
   )
 }

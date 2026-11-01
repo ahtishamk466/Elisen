@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { Eye, ListTree, Pencil, Plus, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { EmptyState } from '@/components/patterns/EmptyState'
@@ -50,21 +51,15 @@ export function RegulationSubsectionsPanel({ subpart, subsections, regulations, 
           description={`Add the first topic under ${titleCaseName(subpart.description)}.`}
           action={<Button leadingIcon={<Plus size={16} />} onClick={onAdd}>Add Subsection</Button>} />
       ) : (
-        <div className="min-h-0 flex-1 overflow-auto border-t border-border-default">
-          <table className="w-full table-fixed border-collapse text-left text-sm" style={{ minWidth: 1000 }}>
-            <caption className="sr-only">Subsections under subpart {subpart.code}</caption>
-            <colgroup>
-              <col />
-              <col style={{ width: 120 }} /><col style={{ width: 120 }} />
-              <col style={{ width: 120 }} /><col style={{ width: 120 }} />
-              <col style={{ width: 130 }} /><col style={{ width: 90 }} /><col style={{ width: 70 }} />
-            </colgroup>
-            <thead className="sticky top-0 z-sticky bg-neutral-50">
+        <div className="flex min-h-0 flex-1 flex-col border-t border-border-default">
+          <FrozenTable fill columns={[230, 120, 120, 120, 120, 130, 90, 70]} minWidth={1000} columnLabels={columns.map((c) => c.label)}
+            caption={<>Subsections under subpart {subpart.code}</>} tableClassName="w-full table-fixed border-collapse text-left text-sm" header={<thead className="bg-neutral-50">
               <tr className="border-b border-border-default">
                 {columns.map((c) => <SortableTh key={c.label} sortKey={c.key} sort={sort} onSortChange={setSort}
                   className="px-base py-base font-semibold text-text-secondary">{c.label}</SortableTh>)}
               </tr>
-            </thead>
+            </thead>}>
+
             <tbody>
               {sorted.map((s) => (
                 <tr key={s.id} className="border-b border-border-default last:border-b-0">
@@ -92,7 +87,7 @@ export function RegulationSubsectionsPanel({ subpart, subsections, regulations, 
                 </tr>
               ))}
             </tbody>
-          </table>
+          </FrozenTable>
         </div>
       )}
     </>

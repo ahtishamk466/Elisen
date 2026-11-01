@@ -1,3 +1,5 @@
+import { proportionalWidths } from '@/lib/tableWidths'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { ProgressMeter } from '@/components/patterns/ProgressMeter'
 import { SortableTh } from '@/components/patterns/SortableTh'
 import { useTableSort } from '@/components/patterns/useTableSort'
@@ -251,16 +253,21 @@ export function PersonNonProjectPanel({ lines, total, personName }: { lines: Non
         </dl>
       </article>
       <section className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-        <table className="w-full border-collapse text-left" style={{ minWidth: 520 }}>
-          <caption className="sr-only">{personName}: non-project time</caption>
-          <thead>
+        <FrozenTable
+          columns={proportionalWidths([320, 120, 120])}
+          columnLabels={LINE_COLUMNS.map((c) => c.label)}
+          minWidth={520}
+          tableClassName="w-full border-collapse text-left"
+          caption={<>{personName}: non-project time</>}
+          header={<thead>
             <tr className="border-b border-border-default bg-neutral-50">
               {LINE_COLUMNS.map((c) => (
                 <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
                   className="whitespace-nowrap px-base py-base text-xs font-semibold text-text-secondary">{c.label}</SortableTh>
               ))}
             </tr>
-          </thead>
+          </thead>}
+        >
           <tbody>
             {sortedLines.map((l) => (
               <tr key={l.activityId} className="border-b border-border-default last:border-b-0">
@@ -270,7 +277,7 @@ export function PersonNonProjectPanel({ lines, total, personName }: { lines: Non
               </tr>
             ))}
           </tbody>
-        </table>
+        </FrozenTable>
       </section>
     </div>
   )

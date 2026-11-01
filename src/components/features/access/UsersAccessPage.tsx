@@ -6,6 +6,8 @@ import { EmptyState } from '@/components/patterns/EmptyState'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
 import { AutoLoadFooter } from '@/components/patterns/AutoLoadFooter'
 import { SortableTh } from '@/components/patterns/SortableTh'
+import { FrozenTable } from '@/components/patterns/FrozenTable'
+import { proportionalWidths } from '@/lib/tableWidths'
 import { useTableSort } from '@/components/patterns/useTableSort'
 import { useInfiniteReveal } from '@/components/patterns/useInfiniteReveal'
 import { Input } from '@/components/ui/Input'
@@ -20,14 +22,15 @@ import type { AccessUser } from '@/types/access'
 
 type SortKey = 'username' | 'email' | 'status' | 'roles' | 'grants'
 
-const COLUMNS: { label: string; sort?: SortKey }[] = [
-  { label: 'Username', sort: 'username' },
-  { label: 'Email', sort: 'email' },
-  { label: 'Status', sort: 'status' },
-  { label: 'Roles', sort: 'roles' },
-  { label: 'Direct grants', sort: 'grants' },
-  { label: 'Actions' },
+const COLUMNS: { label: string; sort?: SortKey; width: number }[] = [
+  { label: 'Username', sort: 'username', width: 180 },
+  { label: 'Email', sort: 'email', width: 270 },
+  { label: 'Status', sort: 'status', width: 110 },
+  { label: 'Roles', sort: 'roles', width: 180 },
+  { label: 'Direct grants', sort: 'grants', width: 135 },
+  { label: 'Actions', width: 85 },
 ]
+const COLUMN_WIDTHS = proportionalWidths(COLUMNS.map((column) => column.width))
 
 export type PageState = 'ready' | 'loading' | 'error'
 
@@ -113,17 +116,25 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
           </div>
         ) : (
           <div className="overflow-hidden rounded-sm border border-border-default bg-neutral-25">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left" style={{ minWidth: 960 }}>
-              <caption className="sr-only">Users and their access</caption>
-              <thead>
-                <tr className="border-b border-border-default bg-neutral-50">
-                  {COLUMNS.map((c) => (
-                    <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
-                      className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
-                  ))}
-                </tr>
-              </thead>
+            <FrozenTable
+              columns={COLUMN_WIDTHS}
+              minWidth={960}
+              caption="Users and their access"
+              columnLabels={COLUMNS.map((column) => column.label)}
+              header={
+                <thead>
+                  <tr className="border-b border-border-default bg-neutral-50">
+                    {COLUMNS.map((c) => (
+                      <SortableTh key={c.label} sortKey={c.sort} sort={sort} onSortChange={setSort}
+                        className="whitespace-nowrap px-lg py-base text-sm font-semibold text-text-secondary">{c.label}</SortableTh>
+                    ))}
+                  </tr>
+                </thead>
+              }
+              footer={!loading && (
+                  <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="users" />
+              )}
+            >
               <tbody>
                 {loading
                   ? Array.from({ length: 6 }, (_, i) => (
@@ -178,11 +189,7 @@ export function UsersAccessPage({ state = 'ready' }: { state?: PageState }) {
                       </tr>
                     ))}
               </tbody>
-            </table>
-          </div>
-          {!loading && (
-            <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="users" />
-          )}
+            </FrozenTable>
           </div>
         )}
       </div>

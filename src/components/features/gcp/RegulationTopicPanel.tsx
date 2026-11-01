@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useState } from 'react'
 import { ArrowLeft, BookMarked, Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { ActionsMenu } from '@/components/patterns/ActionsMenu'
@@ -73,14 +74,13 @@ export function RegulationTopicPanel({ subpart, subsection, onBack }: {
           action={q ? <Button variant="secondary" onClick={() => { setQuery(''); reset() }}>Clear search</Button>
             : <Button leadingIcon={<Plus size={16} />} onClick={() => setDrawer({ mode: 'create' })}>Add Regulation</Button>} />
       ) : (
-        <div className="min-h-0 flex-1 overflow-auto border-t border-border-default">
-          <table className="w-full table-fixed border-collapse text-left text-sm" style={{ minWidth: 820 }}>
-            <caption className="sr-only">Regulations in {subsection.code} under subpart {subpart.code}</caption>
-            <colgroup><col style={{ width: 240 }} /><col style={{ width: 160 }} /><col /><col style={{ width: 100 }} /><col style={{ width: 80 }} /></colgroup>
-            <thead className="sticky top-0 z-sticky bg-neutral-50"><tr className="border-b border-border-default">
+        <div className="flex min-h-0 flex-1 flex-col border-t border-border-default">
+          <FrozenTable fill columns={[240, 160, 240, 100, 80]} minWidth={820} columnLabels={columns.map((c) => c.label)}
+            caption={<>Regulations in {subsection.code} under subpart {subpart.code}</>} tableClassName="w-full table-fixed border-collapse text-left text-sm" footer={<AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="regulations" />} header={<thead className="bg-neutral-50"><tr className="border-b border-border-default">
               {columns.map((c) => <SortableTh key={c.label} sortKey={c.key} sort={sort} onSortChange={setSort}
                 className="px-lg py-base font-semibold text-text-secondary">{c.label}</SortableTh>)}
-            </tr></thead>
+            </tr></thead>}>
+
             <tbody>{sorted.slice(0, visibleCount).map((r) => <tr key={r.id} className="border-b border-border-default last:border-b-0">
               <td className="px-lg py-base">
                 <Button variant="tertiary" size="sm" className="w-full min-w-0 max-w-full justify-start px-0 text-left font-normal text-accent"
@@ -100,8 +100,8 @@ export function RegulationTopicPanel({ subpart, subsection, onBack }: {
                 ]} />
               </td>
             </tr>)}</tbody>
-          </table>
-          <AutoLoadFooter total={filtered.length} visibleCount={visibleCount} loading={loadingMore} onLoadMore={loadMore} itemLabel="regulations" />
+          </FrozenTable>
+
         </div>
       )}
       {drawer && <RegulationDrawer mode={drawer.mode} initial={drawer.initial}

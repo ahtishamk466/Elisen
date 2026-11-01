@@ -796,3 +796,14 @@ The Group picker uses exact Section Roots as verified in OLD TPMS, with source t
 Client is reviewing a usable frontend populated with OLD TPMS data. The existing backend is to be connected later. Do not build a parallel backend identity/authorization/delete system in local stores as a prerequisite for UI work; preserve an integration note to map OLD stable FOC/Discipline IDs and backend in-use deletion rules at that stage. The proposed People & Authority + Reference Lists → Compliance Setup merge remains a review recommendation, not an implemented navigation change.
 
 Frontend fixes retain saved Delegation roots/FOCs (including missing library choices) and share rule-specific/default FOC picker choices across Create GCP and plan item forms. Group picker and these follow-up changes stay local on the existing branch, with no push/deploy until the user requests the combined release.
+
+
+## Latest frontend follow-up — 2026-11-01
+
+People & Authority top tabs stay visible, and ordinary app list tables now reuse
+`patterns/FrozenTable` for fixed column headings and rows-only scrolling.
+Preserve its shared column widths, horizontal sync, static body column labels and
+in-scroll footer when adding tables. Existing frozen pane implementations still
+work. Discipline View field spacing is normalized locally. Frontend mockup scope
+and the user's local-commit-only release hold remain in effect: do not push or
+deploy these follow-ups until the user asks for a combined live release.

@@ -1,3 +1,4 @@
+import { FrozenTable } from '@/components/patterns/FrozenTable'
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { SortMenu } from '@/components/patterns/SortMenu'
@@ -155,14 +156,12 @@ export function PersonWorkPackageCard({ pkg, personName, defaultOpen }: {
 
       {open && (
         <div className="border-t border-border-default">
-          <table className="w-full table-fixed border-collapse text-left">
-            <caption className="sr-only">
-              {personName}: activities in {pkg.workPackageTitle}
-            </caption>
-            <colgroup>
-              {ACTIVITY_COLUMNS.map((c) => <col key={c.label} style={{ width: c.width }} />)}
-            </colgroup>
-            <thead>
+          <FrozenTable
+            columns={ACTIVITY_COLUMNS.map((c) => c.width)}
+            columnLabels={ACTIVITY_COLUMNS.map((c) => c.label)}
+            tableClassName="w-full table-fixed border-collapse text-left"
+            caption={<>{personName}: activities in {pkg.workPackageTitle}</>}
+            header={<thead>
               <tr className="border-b border-border-default bg-neutral-100">
                 {ACTIVITY_COLUMNS.map((c) => (
                   <SortableTh key={c.label} sortKey={c.sort} ownsKeys={c.sorts?.map((o) => o.key)}
@@ -174,7 +173,8 @@ export function PersonWorkPackageCard({ pkg, personName, defaultOpen }: {
                   </SortableTh>
                 ))}
               </tr>
-            </thead>
+            </thead>}
+          >
             <tbody>
               {sortedLines.map((line) => (
                 <tr key={line.key} className="border-b border-border-default last:border-b-0">
@@ -201,7 +201,7 @@ export function PersonWorkPackageCard({ pkg, personName, defaultOpen }: {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </FrozenTable>
         </div>
       )}
     </section>
