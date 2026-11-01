@@ -15,6 +15,8 @@ default assumptions. Read in full before any UI work (see CLAUDE.md rule 1).
 - Product name: **Elisen**
 - Logo: navy (`#062B5C`) swoosh mark + "elisen" wordmark, single SVG lockup.
   Asset at `public/logo-elisen.svg` (viewBox 600×104). Use via `<img src="/logo-elisen.svg" alt="Elisen" />`.
+- Favicon: the swoosh mark, `public/favicon.svg`. Navy in light mode, white in dark
+  mode, switched by the SVG's own `prefers-color-scheme` style.
 
 ---
 

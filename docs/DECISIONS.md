@@ -8431,3 +8431,16 @@ route, `ReportsPage` and `TOP_ROUTES['Reports']` stay, so the page still opens
 if reached directly and comes back with a one-line change. GCP → GCP Reports is
 a separate entry and is unchanged. **Verified:** the sidebar goes Time Entry →
 GCP with no Reports row; `/reports` still renders.
+
+## 2026-11-01 — Favicon follows light and dark mode
+
+**Context:** The navy (`#062B5C`) favicon all but disappears on a dark browser
+tab bar at night.
+
+**Choice:** `public/favicon.svg` carries its own `prefers-color-scheme` style:
+navy in light mode, white in dark mode. The browser switches it when the
+system appearance changes (macOS "Auto" turns dark at sunset), with no
+JavaScript.
+
+**Rationale:** The tab bar's colour follows the system appearance, not the clock,
+so that is the signal to follow.
