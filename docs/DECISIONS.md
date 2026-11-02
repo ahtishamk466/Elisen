@@ -8986,3 +8986,19 @@ didn't: Back and Continue scrolled away under a long form.
 **Rationale:** No new component: the same layout classes the flow already
 uses. Checked at 1440×900 and 375×812: the buttons stay on screen at the top,
 middle and end of each step, with no horizontal scroll.
+
+## 2026-11-02 — Create GCP drawer in its own component
+**Context:** `GcpFlowPage.tsx` had grown to 515 lines, past the ~200-line
+split point. Its Create GCP drawer was about a third of that, and the
+2026-11-01 People & Authority entry had already suggested moving it out.
+**Choice:** `features/gcp/flow/CreateGcpDrawer.tsx` now holds the drawer, its
+form state, the Section → Amendment → FOC cascade and `handleCreateGcp`,
+moved unchanged. The page keeps the Create GCP button and `createOpen`. It
+mounts the drawer only while open and passes `onClose`, plus
+`onCreated(projectId, planIndex)`, which sets the step-4 rule and goes to
+step 4. Mounting only while open replaces `resetCreateForm`: closing
+unmounts the drawer, so each opening starts blank, as before.
+**Rationale:** A pure refactor, with no visual or behaviour change. The page
+is now 340 lines. Checked in the app: Amendment and FOC unlock in turn,
+Create lands on step 4 with the new rule and its GCP Data row, Escape
+returns focus to the button, and reopening shows a blank form.
